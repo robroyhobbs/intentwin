@@ -40,7 +40,13 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, intake_data, win_strategy_data } = body;
+    const {
+      title,
+      intake_data,
+      win_strategy_data,
+      outcome_contract,
+      intent_status,
+    } = body;
 
     if (!title) {
       return NextResponse.json(
@@ -50,15 +56,31 @@ export async function POST(request: NextRequest) {
     }
 
     const adminClient = createAdminClient();
+
+    // Build proposal data with IDD fields
+    const proposalData: Record<string, unknown> = {
+      title,
+      intake_data: intake_data || {},
+      win_strategy_data: win_strategy_data || {},
+      status: "intake",
+      created_by: user.id,
+    };
+
+    // Add IDD fields if provided (these may not exist in older schemas)
+    if (outcome_contract) {
+      proposalData.outcome_contract = outcome_contract;
+    }
+    if (intent_status) {
+      proposalData.intent_status = intent_status;
+      if (intent_status === "approved") {
+        proposalData.intent_approved_by = user.id;
+        proposalData.intent_approved_at = new Date().toISOString();
+      }
+    }
+
     const { data: proposal, error } = await adminClient
       .from("proposals")
-      .insert({
-        title,
-        intake_data: intake_data || {},
-        win_strategy_data: win_strategy_data || {},
-        status: "intake",
-        created_by: user.id,
-      })
+      .insert(proposalData)
       .select()
       .single();
 
