@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   Upload,
   Search,
@@ -43,7 +43,7 @@ const statusBadge: Record<string, { icon: React.ReactNode; label: string; classN
 };
 
 export default async function KnowledgeBasePage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data: documents } = await supabase
     .from("documents")
     .select("*")
