@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getAuthUser } from "@/lib/supabase/auth-api";
+import { getUserContext, checkPlanLimit, incrementUsage } from "@/lib/supabase/auth-api";
 import { nanoid } from "nanoid";
 import { processDocument } from "@/lib/documents/pipeline";
 
@@ -16,10 +16,19 @@ const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getAuthUser(request);
+    const context = await getUserContext(request);
 
-    if (!user) {
+    if (!context) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Check plan limits
+    const limitCheck = await checkPlanLimit(context.organizationId, "max_documents");
+    if (!limitCheck.allowed) {
+      return NextResponse.json(
+        { error: limitCheck.message || "Document limit reached" },
+        { status: 403 }
+      );
     }
 
     const formData = await request.formData();
@@ -58,7 +67,8 @@ export async function POST(request: NextRequest) {
     }
 
     const adminClient = createAdminClient();
-    const storagePath = `${user.id}/${documentType}/${nanoid()}-${file.name}`;
+    // Use organization_id in storage path for proper isolation
+    const storagePath = `${context.organizationId}/${documentType}/${nanoid()}-${file.name}`;
 
     // Upload to Supabase Storage
     const { error: uploadError } = await adminClient.storage
@@ -74,7 +84,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create document record
+    // Create document record with organization scoping
     const { data: document, error: dbError } = await adminClient
       .from("documents")
       .insert({
@@ -90,7 +100,9 @@ export async function POST(request: NextRequest) {
         service_line: serviceLine,
         client_name: clientName,
         win_status: winStatus,
-        uploaded_by: user.id,
+        uploaded_by: context.user.id,
+        organization_id: context.organizationId,
+        team_id: context.teamId,
         processing_status: "pending",
       })
       .select()
@@ -102,6 +114,9 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    // Increment usage counter
+    await incrementUsage(context.organizationId, "documents_uploaded");
 
     // Trigger processing in the background (fire and forget)
     processDocument(document.id).catch((err) => {

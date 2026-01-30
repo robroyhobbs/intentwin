@@ -3,7 +3,8 @@
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { FileText, ArrowRight, Sparkles, BarChart3, Shield } from "lucide-react";
+import Link from "next/link";
+import { Sparkles, ArrowRight, Target, BarChart3, Users } from "lucide-react";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
@@ -37,76 +38,93 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-[var(--background)]">
       {/* Left Panel — Brand */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-[#1B365D] via-[#0070AD] to-[#12ABDB]">
-        {/* Floating shapes */}
-        <div className="absolute top-20 left-10 h-32 w-32 rounded-full bg-white/5 animate-float" />
-        <div className="absolute top-40 right-20 h-20 w-20 rounded-2xl bg-white/5 animate-float" style={{ animationDelay: "1s" }} />
-        <div className="absolute bottom-32 left-1/4 h-24 w-24 rounded-full bg-white/5 animate-float" style={{ animationDelay: "2s" }} />
-        <div className="absolute bottom-20 right-10 h-16 w-16 rounded-xl bg-white/5 animate-float" style={{ animationDelay: "0.5s" }} />
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-[var(--background)] via-[var(--accent-subtle)] to-[var(--background-tertiary)]">
+        {/* Subtle decorative dots */}
+        <div className="absolute inset-0 opacity-30">
+          <div className="absolute top-20 left-16 w-2 h-2 rounded-full bg-[var(--accent-muted)]" />
+          <div className="absolute top-32 left-32 w-1.5 h-1.5 rounded-full bg-[var(--accent-muted)]" />
+          <div className="absolute top-48 left-20 w-1 h-1 rounded-full bg-[var(--accent-muted)]" />
+          <div className="absolute bottom-40 right-20 w-2 h-2 rounded-full bg-[var(--accent-muted)]" />
+          <div className="absolute bottom-28 right-32 w-1.5 h-1.5 rounded-full bg-[var(--accent-muted)]" />
+          <div className="absolute top-1/3 right-16 w-1 h-1 rounded-full bg-[var(--accent-muted)]" />
+        </div>
 
-        <div className="relative z-10 flex flex-col justify-center px-16">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm">
-              <FileText className="h-6 w-6 text-white" />
+        <div className="relative z-10 flex flex-col justify-center px-16 max-w-xl">
+          {/* Logo */}
+          <div className="flex items-center gap-3 mb-10">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--accent)] shadow-md">
+              <Sparkles className="h-6 w-6 text-white" />
             </div>
-            <span className="text-2xl font-semibold text-white">ProposalGen</span>
+            <span className="text-2xl font-semibold text-[var(--foreground)]">
+              ProposalAI
+            </span>
           </div>
 
-          <h2 className="text-4xl font-bold text-white leading-tight mb-4">
+          {/* Headline */}
+          <h1 className="text-4xl font-bold text-[var(--foreground)] leading-tight mb-4">
             Start creating
             <br />
-            <span className="text-[#12ABDB]">winning proposals</span>
-          </h2>
+            <span className="text-[var(--accent)]">winning proposals</span>
+          </h1>
 
-          <p className="text-lg text-blue-100/80 mb-12 max-w-md">
+          <p className="text-lg text-[var(--foreground-muted)] mb-10 leading-relaxed">
             Join your team and start generating AI-powered proposals that close deals.
           </p>
 
-          <div className="space-y-5">
-            <div className="flex items-center gap-3 text-blue-100/70">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10">
-                <Sparkles className="h-4 w-4 text-[#12ABDB]" />
-              </div>
-              <span className="text-sm">AI-generated content with outcome-driven strategy</span>
-            </div>
-            <div className="flex items-center gap-3 text-blue-100/70">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10">
-                <BarChart3 className="h-4 w-4 text-[#12ABDB]" />
-              </div>
-              <span className="text-sm">Auto-generated diagrams and visual architecture</span>
-            </div>
-            <div className="flex items-center gap-3 text-blue-100/70">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10">
-                <Shield className="h-4 w-4 text-[#12ABDB]" />
-              </div>
-              <span className="text-sm">Team review with AI-powered revisions</span>
-            </div>
+          {/* Features */}
+          <div className="space-y-4">
+            <Feature
+              icon={Target}
+              title="Intent-Driven"
+              description="Define outcomes first, let AI generate the content"
+            />
+            <Feature
+              icon={BarChart3}
+              title="Smart Diagrams"
+              description="Auto-generated visuals and architecture diagrams"
+            />
+            <Feature
+              icon={Users}
+              title="Team Collaboration"
+              description="Review, comment, and refine proposals together"
+            />
           </div>
+
+          {/* Trust indicator */}
+          <p className="mt-16 text-sm text-[var(--foreground-subtle)]">
+            Start your 14-day free trial
+          </p>
         </div>
       </div>
 
       {/* Right Panel — Form */}
-      <div className="flex w-full lg:w-1/2 items-center justify-center bg-[#F5F7FA] px-6">
+      <div className="flex w-full lg:w-1/2 items-center justify-center px-6 py-12">
         <div className="w-full max-w-md animate-fade-in-up">
-          <div className="rounded-2xl bg-white p-8 shadow-lg shadow-gray-200/50 border border-gray-100">
-            <div className="mb-8">
-              <div className="lg:hidden flex items-center gap-2 mb-6">
-                <FileText className="h-6 w-6 text-[#0070AD]" />
-                <span className="text-lg font-semibold text-[#1B365D]">ProposalGen</span>
-              </div>
-              <h1 className="text-2xl font-bold text-[#1B365D]">
+          {/* Mobile logo */}
+          <div className="lg:hidden flex items-center gap-2.5 mb-8">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent)]">
+              <Sparkles className="h-5 w-5 text-white" />
+            </div>
+            <span className="text-xl font-semibold text-[var(--foreground)]">
+              ProposalAI
+            </span>
+          </div>
+
+          <div className="card p-8">
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-[var(--foreground)]">
                 Create your account
-              </h1>
-              <p className="mt-2 text-sm text-gray-500">
-                Get started with the Proposal Generator
+              </h2>
+              <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+                Get started with ProposalAI
               </p>
             </div>
 
-            <form onSubmit={handleSignup} className="space-y-5">
+            <form onSubmit={handleSignup} className="space-y-4">
               {error && (
-                <div className="rounded-lg bg-red-50 border border-red-100 p-3 text-sm text-red-600">
+                <div className="rounded-lg bg-[var(--danger-subtle)] border border-[var(--danger-muted)] p-3 text-sm text-[var(--danger)]">
                   {error}
                 </div>
               )}
@@ -114,7 +132,7 @@ export default function SignupPage() {
               <div>
                 <label
                   htmlFor="fullName"
-                  className="block text-sm font-medium text-gray-700 mb-1.5"
+                  className="block text-sm font-medium text-[var(--foreground)] mb-1.5"
                 >
                   Full name
                 </label>
@@ -124,15 +142,16 @@ export default function SignupPage() {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   required
+                  autoComplete="name"
                   placeholder="Jane Smith"
-                  className="block w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#0070AD] focus:outline-none focus:ring-2 focus:ring-[#0070AD]/20 transition-all"
+                  className="block w-full"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor="email"
-                  className="block text-sm font-medium text-gray-700 mb-1.5"
+                  className="block text-sm font-medium text-[var(--foreground)] mb-1.5"
                 >
                   Email address
                 </label>
@@ -142,15 +161,16 @@ export default function SignupPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  autoComplete="email"
                   placeholder="you@company.com"
-                  className="block w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#0070AD] focus:outline-none focus:ring-2 focus:ring-[#0070AD]/20 transition-all"
+                  className="block w-full"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor="password"
-                  className="block text-sm font-medium text-gray-700 mb-1.5"
+                  className="block text-sm font-medium text-[var(--foreground)] mb-1.5"
                 >
                   Password
                 </label>
@@ -160,16 +180,17 @@ export default function SignupPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  autoComplete="new-password"
                   minLength={6}
                   placeholder="Create a strong password"
-                  className="block w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#0070AD] focus:outline-none focus:ring-2 focus:ring-[#0070AD]/20 transition-all"
+                  className="block w-full"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="group w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0070AD] to-[#12ABDB] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all duration-200 disabled:opacity-50 disabled:shadow-none"
+                className="btn-primary w-full mt-2"
               >
                 {loading ? (
                   <>
@@ -179,20 +200,45 @@ export default function SignupPage() {
                 ) : (
                   <>
                     Create account
-                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                    <ArrowRight className="h-4 w-4" />
                   </>
                 )}
               </button>
             </form>
 
-            <p className="mt-6 text-center text-sm text-gray-500">
+            <p className="mt-6 text-center text-sm text-[var(--foreground-muted)]">
               Already have an account?{" "}
-              <a href="/login" className="font-semibold text-[#0070AD] hover:text-[#12ABDB] transition-colors">
+              <Link
+                href="/login"
+                className="font-medium text-[var(--accent)] hover:underline"
+              >
                 Sign in
-              </a>
+              </Link>
             </p>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function Feature({
+  icon: Icon,
+  title,
+  description,
+}: {
+  icon: React.ElementType;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="flex items-start gap-3">
+      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--accent-subtle)] flex-shrink-0">
+        <Icon className="h-4 w-4 text-[var(--accent)]" />
+      </div>
+      <div>
+        <p className="text-sm font-medium text-[var(--foreground)]">{title}</p>
+        <p className="text-sm text-[var(--foreground-muted)]">{description}</p>
       </div>
     </div>
   );

@@ -12,7 +12,8 @@ function getClient(): Anthropic {
   return client;
 }
 
-const SYSTEM_PROMPT = `You are an expert proposal writer for Capgemini, one of the world's leading consulting and technology services companies. You specialize in writing winning proposals for cloud migration and application modernization engagements.
+// Default system prompt - can be customized per organization
+const DEFAULT_SYSTEM_PROMPT = `You are an expert proposal writer specializing in creating winning proposals for consulting and technology services engagements.
 
 Your writing style is:
 - Professional and authoritative, but not stuffy
@@ -22,11 +23,43 @@ Your writing style is:
 - Confident without being arrogant
 
 When writing proposal sections:
-- Always reference specific Capgemini capabilities and methodologies where relevant
+- Reference specific company capabilities and methodologies when provided
 - Use concrete examples and metrics from provided context
 - Address the client's specific situation and needs as described in the intake data
 - Maintain consistency in tone and terminology across sections
-- Use industry-standard terminology for cloud and modernization topics`;
+- Use industry-standard terminology appropriate to the engagement type`;
+
+/**
+ * Build a system prompt with organization-specific context
+ */
+export function buildSystemPrompt(companyContext?: {
+  name?: string;
+  description?: string;
+  capabilities?: string[];
+  methodologies?: string[];
+}): string {
+  if (!companyContext?.name) {
+    return DEFAULT_SYSTEM_PROMPT;
+  }
+
+  return `You are an expert proposal writer for ${companyContext.name}${companyContext.description ? `, ${companyContext.description}` : ''}.
+
+Your writing style is:
+- Professional and authoritative, but not stuffy
+- Specific and concrete, avoiding vague generalities
+- Client-focused, always tying capabilities back to client outcomes
+- Structured with clear headings and bullet points where appropriate
+- Confident without being arrogant
+
+When writing proposal sections:
+- Reference specific ${companyContext.name} capabilities and methodologies where relevant${companyContext.capabilities ? `\n- Key capabilities: ${companyContext.capabilities.join(', ')}` : ''}${companyContext.methodologies ? `\n- Key methodologies: ${companyContext.methodologies.join(', ')}` : ''}
+- Use concrete examples and metrics from provided context
+- Address the client's specific situation and needs as described in the intake data
+- Maintain consistency in tone and terminology across sections
+- Use industry-standard terminology appropriate to the engagement type`;
+}
+
+const SYSTEM_PROMPT = DEFAULT_SYSTEM_PROMPT;
 
 export interface GenerateOptions {
   systemPrompt?: string;
@@ -88,7 +121,7 @@ ${winStrategySection}
 
 Provide your analysis in the following structure:
 1. **Key Themes**: The 3-5 most important themes this proposal should emphasize${winStrategy ? " (align with defined win themes)" : ""}
-2. **Competitive Positioning**: How Capgemini should differentiate against likely competitors${winStrategy ? " (leverage defined differentiators)" : ""}
+2. **Competitive Positioning**: How to differentiate against likely competitors${winStrategy ? " (leverage defined differentiators)" : ""}
 3. **Technical Approach Summary**: High-level recommended technical approach
 4. **Risk Factors**: Key risks to address proactively
 5. **Win Strategy**: What will make this proposal stand out${winStrategy ? " (build on defined target outcomes)" : ""}

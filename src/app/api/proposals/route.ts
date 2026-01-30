@@ -1,20 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getAuthUser } from "@/lib/supabase/auth-api";
+import { getUserContext, checkPlanLimit, incrementUsage } from "@/lib/supabase/auth-api";
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await getAuthUser(request);
+    const context = await getUserContext(request);
 
-    if (!user) {
+    if (!context) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const adminClient = createAdminClient();
+    // Get all proposals for the organization (not just user's own)
     const { data: proposals, error } = await adminClient
       .from("proposals")
       .select("*")
-      .eq("created_by", user.id)
+      .eq("organization_id", context.organizationId)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -33,10 +34,19 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getAuthUser(request);
+    const context = await getUserContext(request);
 
-    if (!user) {
+    if (!context) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Check plan limits before creating
+    const limitCheck = await checkPlanLimit(context.organizationId, "proposals_per_month");
+    if (!limitCheck.allowed) {
+      return NextResponse.json(
+        { error: limitCheck.message || "Proposal limit reached" },
+        { status: 403 }
+      );
     }
 
     const body = await request.json();
@@ -57,23 +67,25 @@ export async function POST(request: NextRequest) {
 
     const adminClient = createAdminClient();
 
-    // Build proposal data with IDD fields
+    // Build proposal data with IDD fields and organization scoping
     const proposalData: Record<string, unknown> = {
       title,
       intake_data: intake_data || {},
       win_strategy_data: win_strategy_data || {},
       status: "intake",
-      created_by: user.id,
+      created_by: context.user.id,
+      organization_id: context.organizationId,
+      team_id: context.teamId,
     };
 
-    // Add IDD fields if provided (these may not exist in older schemas)
+    // Add IDD fields if provided
     if (outcome_contract) {
       proposalData.outcome_contract = outcome_contract;
     }
     if (intent_status) {
       proposalData.intent_status = intent_status;
       if (intent_status === "approved") {
-        proposalData.intent_approved_by = user.id;
+        proposalData.intent_approved_by = context.user.id;
         proposalData.intent_approved_at = new Date().toISOString();
       }
     }
@@ -90,6 +102,9 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    // Increment usage counter
+    await incrementUsage(context.organizationId, "proposals_created");
 
     return NextResponse.json({ proposal }, { status: 201 });
   } catch (error) {
