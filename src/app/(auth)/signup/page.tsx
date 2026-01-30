@@ -10,6 +10,7 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [organizationName, setOrganizationName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -24,7 +25,10 @@ export default function SignupPage() {
       email,
       password,
       options: {
-        data: { full_name: fullName },
+        data: {
+          full_name: fullName,
+          organization_name: organizationName || `${fullName}'s Organization`,
+        },
       },
     });
 
@@ -32,7 +36,8 @@ export default function SignupPage() {
       setError(error.message);
       setLoading(false);
     } else {
-      router.push("/proposals");
+      // Redirect to onboarding for new users
+      router.push("/onboarding");
       router.refresh();
     }
   }
@@ -150,10 +155,28 @@ export default function SignupPage() {
 
               <div>
                 <label
+                  htmlFor="organizationName"
+                  className="block text-sm font-medium text-[var(--foreground)] mb-1.5"
+                >
+                  Company / Organization
+                </label>
+                <input
+                  id="organizationName"
+                  type="text"
+                  value={organizationName}
+                  onChange={(e) => setOrganizationName(e.target.value)}
+                  autoComplete="organization"
+                  placeholder="Acme Corp"
+                  className="block w-full"
+                />
+              </div>
+
+              <div>
+                <label
                   htmlFor="email"
                   className="block text-sm font-medium text-[var(--foreground)] mb-1.5"
                 >
-                  Email address
+                  Work email
                 </label>
                 <input
                   id="email"
