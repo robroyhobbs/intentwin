@@ -33,7 +33,45 @@ Tasks:
 - [ ] Add template preview before export
 - [ ] Allow custom header/footer text
 
-### Priority 3: Stripe Live Setup [CRITICAL]
+### Priority 3: Security Audit [CRITICAL - BEFORE PRODUCTION]
+**Branch:** `feat/security-audit`
+**Effort:** Medium
+**Impact:** Prevents data breaches, required for production
+
+Tasks:
+- [ ] Audit ALL API routes for proper authentication (getUserContext not getAuthUser)
+- [ ] Audit ALL API routes for organization scoping (no cross-tenant data access)
+- [ ] Review all database queries for SQL injection vulnerabilities
+- [ ] Check all user inputs are sanitized (XSS prevention)
+- [ ] Verify RLS policies cover all tables and operations
+- [ ] Audit file upload handling (type validation, size limits, path traversal)
+- [ ] Review environment variable usage (no secrets in client code)
+- [ ] Check for sensitive data in logs (no passwords, tokens, PII)
+- [ ] Verify CORS and CSP headers are properly configured
+- [ ] Run `npm audit` and fix vulnerabilities
+- [ ] Add rate limiting to API routes
+- [ ] Review authentication flow (session handling, token expiry)
+
+### Priority 4: Code Cleanup & Optimization [HIGH]
+**Branch:** `feat/code-cleanup`
+**Effort:** Medium
+**Impact:** Maintainability, performance, reduced bugs
+
+Tasks:
+- [ ] Remove unused imports and dead code across all files
+- [ ] Fix all TypeScript strict mode errors
+- [ ] Remove console.log statements (replace with proper logging)
+- [ ] Consolidate duplicate code into shared utilities
+- [ ] Add proper error boundaries to React components
+- [ ] Optimize database queries (add missing indexes, reduce N+1 queries)
+- [ ] Review and optimize bundle size (lazy loading, code splitting)
+- [ ] Add proper loading states and error handling to all pages
+- [ ] Standardize API response formats
+- [ ] Clean up CSS (remove unused styles, consolidate variables)
+- [ ] Add JSDoc comments to key functions
+- [ ] Set up ESLint rules for code consistency
+
+### Priority 5: Stripe Live Setup [CRITICAL]
 **Branch:** `main`
 **Effort:** Small
 **Impact:** Required for revenue
@@ -46,7 +84,7 @@ Tasks:
 - [ ] MANUAL: Configure webhook endpoint in Stripe dashboard
 - [ ] Test checkout flow with Stripe test mode
 
-### Priority 4: Production Deployment [CRITICAL]
+### Priority 6: Production Deployment [CRITICAL]
 **Branch:** `main`
 **Effort:** Small
 **Impact:** Required to accept customers
@@ -59,7 +97,7 @@ Tasks:
 - [ ] MANUAL: Run Supabase migrations on production database
 - [ ] Test full signup → trial → upgrade flow in production
 
-### Priority 5: Customer Acquisition [ONGOING]
+### Priority 7: Customer Acquisition [ONGOING]
 **Branch:** N/A (manual + content)
 **Effort:** Ongoing
 **Impact:** Revenue generation
