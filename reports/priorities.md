@@ -12,8 +12,10 @@
 **Impact:** Required to accept customers
 
 Tasks:
-- [ ] Deploy to Vercel (connect GitHub repo)
-- [ ] Configure production environment variables
+- [x] Create vercel.json configuration file for deployment settings
+- [x] Create .env.production.example with all required env vars documented
+- [ ] MANUAL: Deploy to Vercel (connect GitHub repo via vercel.com)
+- [ ] MANUAL: Configure production environment variables in Vercel dashboard
 - [ ] Run Supabase migrations on production database
 - [ ] Set up Stripe in live mode (create products/prices)
 - [ ] Configure Stripe webhook endpoint for production URL
