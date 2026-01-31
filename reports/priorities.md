@@ -4,11 +4,51 @@
 > Top priority gets picked up by auto-compound each night.
 > Updated by owner weekly (Monday check-in) or as needed.
 
-## Current Sprint: Week 2 - Launch
+## Current Sprint: Week 2 - Launch Ready
 
-### Priority 1: Production Deployment [CRITICAL]
-**Branch:** `main`
+### Priority 1: Enhanced Onboarding & Company Setup [CRITICAL]
+**Branch:** `feat/onboarding-v2`
 **Effort:** Medium
+**Impact:** Users can't create good proposals without their company context
+
+Tasks:
+- [ ] Add "Company Profile" step to onboarding (name, description, differentiators)
+- [ ] Create /settings/company-context page for L1 context management
+- [ ] Add guided knowledge base upload (drag-drop past proposals, case studies)
+- [ ] Create interactive tutorial/walkthrough (first proposal guide)
+- [ ] Add "Getting Started" checklist on dashboard
+- [ ] Show progress indicator for setup completion
+
+### Priority 2: Branding & Templates [HIGH]
+**Branch:** `feat/branding-templates`
+**Effort:** Medium
+**Impact:** Customers need their branding on outputs
+
+Tasks:
+- [ ] Add branding settings to organization (logo URL, primary/secondary colors, fonts)
+- [ ] Create /settings/branding page with logo upload and color picker
+- [ ] Update DOCX generator to use organization branding
+- [ ] Update PPTX generator to use organization branding
+- [ ] Update PDF generator to use organization branding
+- [ ] Add template preview before export
+- [ ] Allow custom header/footer text
+
+### Priority 3: Stripe Live Setup [CRITICAL]
+**Branch:** `main`
+**Effort:** Small
+**Impact:** Required for revenue
+
+Tasks:
+- [ ] MANUAL: Create Stripe products (Starter, Pro, Business) in dashboard
+- [ ] MANUAL: Create monthly and annual prices for each tier
+- [ ] Add STRIPE_*_PRICE_ID env vars to .env.production.example
+- [ ] Update checkout route to use pre-created price IDs (not dynamic creation)
+- [ ] MANUAL: Configure webhook endpoint in Stripe dashboard
+- [ ] Test checkout flow with Stripe test mode
+
+### Priority 4: Production Deployment [CRITICAL]
+**Branch:** `main`
+**Effort:** Small
 **Impact:** Required to accept customers
 
 Tasks:
@@ -16,13 +56,10 @@ Tasks:
 - [x] Create .env.production.example with all required env vars documented
 - [ ] MANUAL: Deploy to Vercel (connect GitHub repo via vercel.com)
 - [ ] MANUAL: Configure production environment variables in Vercel dashboard
-- [ ] Run Supabase migrations on production database
-- [ ] Set up Stripe in live mode (create products/prices)
-- [ ] Configure Stripe webhook endpoint for production URL
+- [ ] MANUAL: Run Supabase migrations on production database
 - [ ] Test full signup → trial → upgrade flow in production
-- [ ] Set up error monitoring (Sentry or similar)
 
-### Priority 2: Customer Acquisition [CRITICAL]
+### Priority 5: Customer Acquisition [ONGOING]
 **Branch:** N/A (manual + content)
 **Effort:** Ongoing
 **Impact:** Revenue generation
