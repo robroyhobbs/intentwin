@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { PlusCircle, FileText, Sparkles, TrendingUp, CheckCircle2 } from "lucide-react";
+import { PlusCircle, FileText, Sparkles, TrendingUp, CheckCircle2, Zap, Target } from "lucide-react";
 import { ProposalCard } from "@/components/ui/proposal-card";
 
 export const dynamic = "force-dynamic";
@@ -54,121 +54,127 @@ export default async function ProposalsPage({
   const exportedCount = statusCounts["exported"] || 0;
 
   return (
-    <div>
-      {/* Hero Section */}
-      <div className="relative mb-8 overflow-hidden rounded-2xl bg-gradient-to-br from-[#1B365D] via-[#0070AD] to-[#12ABDB] p-8 shadow-lg">
-        {/* Background shapes */}
-        <div className="absolute top-4 right-8 h-24 w-24 rounded-full bg-white/5 animate-float" />
-        <div className="absolute bottom-4 right-32 h-16 w-16 rounded-xl bg-white/5 animate-float" style={{ animationDelay: "1.5s" }} />
-
-        <div className="relative z-10">
-          <h1 className="text-3xl font-bold text-white mb-2">
-            Proposal Dashboard
-          </h1>
-          <p className="text-blue-100/70 text-sm max-w-lg">
-            Create, manage, and export AI-powered proposals with outcome-driven strategy
-          </p>
-
-          {/* Stats Row */}
-          <div className="mt-6 flex gap-4">
-            <div className="flex items-center gap-3 rounded-xl bg-white/10 backdrop-blur-sm px-4 py-3 border border-white/10">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10">
-                <FileText className="h-4.5 w-4.5 text-[#12ABDB]" />
-              </div>
-              <div>
-                <p className="text-xl font-bold text-white">{totalCount}</p>
-                <p className="text-[10px] uppercase tracking-wider text-blue-200/50">Total</p>
-              </div>
+    <div className="animate-fade-in">
+      {/* Header Section */}
+      <div className="mb-8">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--accent)] shadow-[var(--shadow-glow)]">
+              <Zap className="h-6 w-6 text-black" />
             </div>
-            <div className="flex items-center gap-3 rounded-xl bg-white/10 backdrop-blur-sm px-4 py-3 border border-white/10">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10">
-                <TrendingUp className="h-4.5 w-4.5 text-amber-300" />
-              </div>
-              <div>
-                <p className="text-xl font-bold text-white">{reviewCount}</p>
-                <p className="text-[10px] uppercase tracking-wider text-blue-200/50">In Review</p>
-              </div>
+            <div>
+              <h1 className="text-2xl font-bold text-[var(--foreground)]">
+                Proposals
+              </h1>
+              <p className="mt-0.5 text-sm text-[var(--foreground-muted)]">
+                Create and manage AI-powered proposals with Intent-Driven Development
+              </p>
             </div>
-            <div className="flex items-center gap-3 rounded-xl bg-white/10 backdrop-blur-sm px-4 py-3 border border-white/10">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10">
-                <CheckCircle2 className="h-4.5 w-4.5 text-emerald-300" />
-              </div>
-              <div>
-                <p className="text-xl font-bold text-white">{exportedCount}</p>
-                <p className="text-[10px] uppercase tracking-wider text-blue-200/50">Exported</p>
-              </div>
+          </div>
+
+          <Link href="/proposals/new" className="btn-primary inline-flex items-center gap-2 px-5 py-2.5">
+            <Sparkles className="h-4 w-4" />
+            New Proposal
+          </Link>
+        </div>
+
+        {/* Stats Row */}
+        <div className="mt-6 grid grid-cols-4 gap-4">
+          <div className="group flex items-center gap-4 rounded-xl bg-[var(--card-bg)] border border-[var(--border)] px-5 py-4 transition-all hover:border-[var(--accent)] hover:shadow-[var(--shadow-glow)]">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--accent-subtle)] border border-[var(--accent-muted)] group-hover:shadow-[var(--shadow-glow)] transition-all">
+              <FileText className="h-5 w-5 text-[var(--accent)]" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-[var(--foreground)]">{totalCount}</p>
+              <p className="text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wide">Total Proposals</p>
+            </div>
+          </div>
+
+          <div className="group flex items-center gap-4 rounded-xl bg-[var(--card-bg)] border border-[var(--border)] px-5 py-4 transition-all hover:border-[var(--warning)] hover:shadow-[0_0_20px_rgba(255,170,0,0.15)]">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--warning-subtle)] border border-[var(--warning-muted)] transition-all">
+              <TrendingUp className="h-5 w-5 text-[var(--warning)]" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-[var(--foreground)]">{reviewCount}</p>
+              <p className="text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wide">In Review</p>
+            </div>
+          </div>
+
+          <div className="group flex items-center gap-4 rounded-xl bg-[var(--card-bg)] border border-[var(--border)] px-5 py-4 transition-all hover:border-[var(--success)] hover:shadow-[0_0_20px_rgba(0,255,136,0.15)]">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--success-subtle)] border border-[var(--success-muted)] transition-all">
+              <CheckCircle2 className="h-5 w-5 text-[var(--success)]" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-[var(--foreground)]">{exportedCount}</p>
+              <p className="text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wide">Exported</p>
+            </div>
+          </div>
+
+          <div className="group flex items-center gap-4 rounded-xl bg-[var(--card-bg)] border border-[var(--border)] px-5 py-4 transition-all hover:border-[var(--info)] hover:shadow-[0_0_20px_rgba(0,102,255,0.15)]">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--info-subtle)] border border-[var(--info-muted)] transition-all">
+              <Target className="h-5 w-5 text-[var(--info)]" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-[var(--foreground)]">IDD</p>
+              <p className="text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wide">Methodology</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Actions Bar */}
-      <div className="mb-6 flex items-center justify-between">
-        {/* Filter tabs */}
-        <div className="flex gap-1 rounded-xl bg-gray-100/80 p-1 border border-gray-200/50">
-          {STATUS_TABS.map((t) => (
-            <Link
-              key={t.value}
-              href={t.value === "all" ? "/proposals" : `/proposals?tab=${t.value}`}
-              className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 ${
-                tab === t.value
-                  ? "bg-white text-[#1B365D] shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              {t.label}
-              {statusCounts[t.value] !== undefined && (
-                <span
-                  className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
-                    tab === t.value
-                      ? "bg-[#0070AD]/10 text-[#0070AD]"
-                      : "bg-gray-200/80 text-gray-500"
-                  }`}
-                >
-                  {statusCounts[t.value] || 0}
-                </span>
-              )}
-            </Link>
-          ))}
-        </div>
-
-        <Link
-          href="/proposals/new"
-          className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#0070AD] to-[#12ABDB] px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transition-all duration-200"
-        >
-          <Sparkles className="h-4 w-4" />
-          New Proposal
-        </Link>
+      {/* Filter tabs */}
+      <div className="mb-6 flex gap-1 rounded-xl bg-[var(--background-tertiary)] p-1.5 w-fit border border-[var(--border)]">
+        {STATUS_TABS.map((t) => (
+          <Link
+            key={t.value}
+            href={t.value === "all" ? "/proposals" : `/proposals?tab=${t.value}`}
+            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-150 ${
+              tab === t.value
+                ? "bg-[var(--card-bg)] text-[var(--accent)] shadow-sm border border-[var(--accent-muted)]"
+                : "text-[var(--foreground-muted)] hover:text-[var(--foreground)] hover:bg-[var(--background-elevated)]"
+            }`}
+          >
+            {t.label}
+            {statusCounts[t.value] !== undefined && (
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                  tab === t.value
+                    ? "bg-[var(--accent-subtle)] text-[var(--accent)]"
+                    : "bg-[var(--border)] text-[var(--foreground-muted)]"
+                }`}
+              >
+                {statusCounts[t.value] || 0}
+              </span>
+            )}
+          </Link>
+        ))}
       </div>
 
       {/* Content */}
       {!proposals || proposals.length === 0 ? (
-        <div className="rounded-2xl border-2 border-dashed border-gray-200 bg-white/50 p-16 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0070AD]/10 to-[#12ABDB]/10">
-            <FileText className="h-8 w-8 text-[#0070AD]" />
+        <div className="rounded-2xl border-2 border-dashed border-[var(--border)] bg-[var(--card-bg)] p-16 text-center">
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-[var(--accent-subtle)] border border-[var(--accent-muted)] shadow-[var(--shadow-glow)]">
+            <FileText className="h-10 w-10 text-[var(--accent)]" />
           </div>
-          <h3 className="mt-5 text-lg font-semibold text-[#1B365D]">
+          <h3 className="mt-6 text-xl font-bold text-[var(--foreground)]">
             {tab === "all" ? "No proposals yet" : `No ${tab} proposals`}
           </h3>
-          <p className="mt-2 text-sm text-gray-500 max-w-sm mx-auto">
-            Get started by creating your first AI-powered proposal with outcome-driven strategy.
+          <p className="mt-2 text-sm text-[var(--foreground-muted)] max-w-md mx-auto">
+            Get started by creating your first AI-powered proposal. Define your intent, and let AI generate winning content backed by verified case studies.
           </p>
-          <Link
-            href="/proposals/new"
-            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#0070AD] to-[#12ABDB] px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transition-all"
-          >
-            <Sparkles className="h-4 w-4" />
-            Create Proposal
+          <Link href="/proposals/new" className="btn-primary mt-8 inline-flex items-center gap-2 px-6 py-3">
+            <Sparkles className="h-5 w-5" />
+            Create Your First Proposal
           </Link>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {proposals.map((proposal, index) => {
             const intake = proposal.intake_data as Record<string, string>;
             return (
               <div
                 key={proposal.id}
-                className={`animate-fade-in-up stagger-${Math.min(index + 1, 6)}`}
+                className={`animate-fade-in-up stagger-${Math.min(index + 1, 5)}`}
               >
                 <ProposalCard
                   id={proposal.id}

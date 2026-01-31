@@ -1,13 +1,17 @@
 import type { WinStrategyData } from "@/types/outcomes";
+import type { CompanyInfo } from "@/types/idd";
 import { buildWinStrategySection } from "./win-strategy-section";
 
 export function buildMethodologyPrompt(
   intakeData: Record<string, unknown>,
   analysis: string,
   retrievedContext: string,
-  winStrategy?: WinStrategyData | null
+  winStrategy?: WinStrategyData | null,
+  companyInfo?: CompanyInfo
 ): string {
-  return `Write the "Methodology" section for a Capgemini proposal.
+  const companyName = companyInfo?.name || "Our Company";
+
+  return `Write the "Methodology" section for a ${companyName} proposal.
 
 ## Opportunity Details
 ${JSON.stringify(intakeData, null, 2)}
@@ -19,8 +23,8 @@ ${analysis}
 ${retrievedContext}
 ${buildWinStrategySection(winStrategy)}
 ## Instructions
-Write a section (500-700 words) describing the methodology Capgemini will use:
-1. Reference relevant frameworks (e.g., Capgemini's Cloud Assessment Framework, 6R Migration Strategy)
+Write a section (500-700 words) describing the methodology ${companyName} will use:
+1. Reference relevant frameworks (e.g., Cloud Assessment Framework, 6R Migration Strategy)
 2. Describe the quality assurance and testing approach
 3. Explain the change management and knowledge transfer methodology
 4. Describe the Agile/DevOps practices that will be applied

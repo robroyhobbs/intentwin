@@ -11,17 +11,17 @@ interface SectionStatusBadgeProps {
 }
 
 const BADGE_STYLES: Record<string, { bg: string; text: string; border: string }> = {
-  pending: { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200" },
-  generating: { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200" },
-  completed: { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200" },
-  failed: { bg: "bg-red-50", text: "text-red-700", border: "border-red-200" },
-  approved: { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200" },
-  needs_revision: { bg: "bg-red-50", text: "text-red-700", border: "border-red-200" },
-  draft: { bg: "bg-gray-50", text: "text-gray-600", border: "border-gray-200" },
-  review: { bg: "bg-orange-50", text: "text-orange-700", border: "border-orange-200" },
-  intake: { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200" },
-  exported: { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200" },
-  final: { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200" },
+  pending: { bg: "bg-amber-50", text: "text-amber-600", border: "border-amber-100" },
+  generating: { bg: "bg-[var(--accent-subtle)]", text: "text-[var(--accent)]", border: "border-[var(--accent-muted)]" },
+  completed: { bg: "bg-emerald-50", text: "text-emerald-600", border: "border-emerald-100" },
+  failed: { bg: "bg-red-50", text: "text-red-600", border: "border-red-100" },
+  approved: { bg: "bg-emerald-50", text: "text-emerald-600", border: "border-emerald-100" },
+  needs_revision: { bg: "bg-red-50", text: "text-red-600", border: "border-red-100" },
+  draft: { bg: "bg-stone-100", text: "text-stone-600", border: "border-stone-200" },
+  review: { bg: "bg-amber-50", text: "text-amber-600", border: "border-amber-100" },
+  intake: { bg: "bg-amber-50", text: "text-amber-600", border: "border-amber-100" },
+  exported: { bg: "bg-emerald-50", text: "text-emerald-600", border: "border-emerald-100" },
+  final: { bg: "bg-emerald-50", text: "text-emerald-600", border: "border-emerald-100" },
 };
 
 const BADGE_ICONS: Record<string, typeof Check> = {
@@ -40,16 +40,16 @@ const BADGE_ICONS: Record<string, typeof Check> = {
 
 const DOT_COLORS: Record<string, string> = {
   pending: "bg-amber-400",
-  generating: "bg-blue-400",
+  generating: "bg-[var(--accent)]",
   completed: "bg-emerald-500",
   failed: "bg-red-500",
   approved: "bg-emerald-500",
   needs_revision: "bg-red-500",
-  draft: "bg-gray-400",
-  review: "bg-orange-400",
+  draft: "bg-stone-400",
+  review: "bg-amber-500",
   intake: "bg-amber-400",
-  exported: "bg-emerald-600",
-  final: "bg-emerald-600",
+  exported: "bg-emerald-500",
+  final: "bg-emerald-500",
 };
 
 export function SectionStatusBadge({
@@ -65,7 +65,7 @@ export function SectionStatusBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold capitalize tracking-wide",
+        "inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium capitalize",
         style.bg,
         style.text,
         style.border,
@@ -89,7 +89,7 @@ export function StatusDot({
     <span className="relative inline-flex">
       <span
         className={cn(
-          "inline-block h-2.5 w-2.5 rounded-full",
+          "inline-block h-2 w-2 rounded-full",
           DOT_COLORS[status] || DOT_COLORS.pending,
           className
         )}

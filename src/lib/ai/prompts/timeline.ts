@@ -1,13 +1,17 @@
 import type { WinStrategyData } from "@/types/outcomes";
+import type { CompanyInfo } from "@/types/idd";
 import { buildWinStrategySection } from "./win-strategy-section";
 
 export function buildTimelinePrompt(
   intakeData: Record<string, unknown>,
   analysis: string,
   retrievedContext: string,
-  winStrategy?: WinStrategyData | null
+  winStrategy?: WinStrategyData | null,
+  companyInfo?: CompanyInfo
 ): string {
-  return `Write the "Timeline & Milestones" section for a Capgemini proposal.
+  const companyName = companyInfo?.name || "Our Company";
+
+  return `Write the "Timeline & Milestones" section for a ${companyName} proposal.
 
 ## Opportunity Details
 ${JSON.stringify(intakeData, null, 2)}

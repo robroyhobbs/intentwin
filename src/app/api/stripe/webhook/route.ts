@@ -84,17 +84,18 @@ export async function POST(request: NextRequest) {
 
         const tierConfig = PRICING_TIERS[tier] || PRICING_TIERS.starter;
 
+        // Get billing cycle from subscription items (API 2025+)
+        const subscriptionItem = subscription.items.data[0];
+        const periodStart = subscriptionItem?.current_period_start || Math.floor(Date.now() / 1000);
+        const periodEnd = subscriptionItem?.current_period_end || Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
+
         await adminClient
           .from("organizations")
           .update({
             plan_tier: tier,
             plan_limits: tierConfig.limits,
-            billing_cycle_start: new Date(
-              subscription.current_period_start * 1000
-            ).toISOString(),
-            billing_cycle_end: new Date(
-              subscription.current_period_end * 1000
-            ).toISOString(),
+            billing_cycle_start: new Date(periodStart * 1000).toISOString(),
+            billing_cycle_end: new Date(periodEnd * 1000).toISOString(),
           })
           .eq("id", organizationId);
 
@@ -158,8 +159,14 @@ export async function POST(request: NextRequest) {
       }
 
       case "invoice.paid": {
-        const invoice = event.data.object as Stripe.Invoice;
-        const subscriptionId = invoice.subscription as string;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const invoice = event.data.object as any;
+        const subscriptionId = invoice.subscription as string | undefined;
+
+        if (!subscriptionId) {
+          console.log("No subscription ID found in invoice");
+          break;
+        }
 
         // Reset usage counters on successful payment
         const { data: org } = await adminClient

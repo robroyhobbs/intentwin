@@ -1,13 +1,17 @@
 import type { WinStrategyData } from "@/types/outcomes";
+import type { CompanyInfo } from "@/types/idd";
 import { buildWinStrategySection } from "./win-strategy-section";
 
 export function buildUnderstandingPrompt(
   intakeData: Record<string, unknown>,
   analysis: string,
   retrievedContext: string,
-  winStrategy?: WinStrategyData | null
+  winStrategy?: WinStrategyData | null,
+  companyInfo?: CompanyInfo
 ): string {
-  return `Write the "Understanding of Client Needs" section for a Capgemini proposal.
+  const companyName = companyInfo?.name || "Our Company";
+
+  return `Write the "Understanding of Client Needs" section for a ${companyName} proposal.
 
 ## Opportunity Details
 ${JSON.stringify(intakeData, null, 2)}
@@ -19,7 +23,7 @@ ${analysis}
 ${retrievedContext}
 ${buildWinStrategySection(winStrategy)}
 ## Instructions
-Write a section (500-700 words) that demonstrates Capgemini deeply understands:
+Write a section (500-700 words) that demonstrates ${companyName} deeply understands:
 1. The client's current business context and challenges
 2. Their technical landscape and constraints
 3. The drivers behind this initiative

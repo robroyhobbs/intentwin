@@ -25,7 +25,7 @@ export function ProposalContentRenderer({
         }
 
         return (
-          <div key={`text-${i}`} className="prose prose-sm max-w-none text-gray-700">
+          <div key={`text-${i}`} className="prose prose-sm max-w-none text-[var(--foreground-muted)]">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {block.content}
             </ReactMarkdown>

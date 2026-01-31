@@ -26,7 +26,8 @@ async function applyMigration(supabase: ReturnType<typeof createClient>, migrati
     if (!statement || statement.startsWith("--")) continue;
 
     try {
-      const { error } = await supabase.rpc("exec_sql", { sql_query: statement + ";" });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any).rpc("exec_sql", { sql_query: statement + ";" });
       if (error) {
         // Try direct execution for DDL
         console.log(`   Statement preview: ${statement.slice(0, 60)}...`);

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getAuthUser } from "@/lib/supabase/auth-api";
+import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
 
 export async function GET(
   request: NextRequest,
@@ -8,20 +8,15 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const user = await getAuthUser(request);
+    const context = await getUserContext(request);
 
-    if (!user) {
+    if (!context) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const adminClient = createAdminClient();
-    const { data: proposal, error } = await adminClient
-      .from("proposals")
-      .select("*")
-      .eq("id", id)
-      .single();
-
-    if (error || !proposal) {
+    // Verify user has access to this proposal (organization check)
+    const proposal = await verifyProposalAccess(context, id);
+    if (!proposal) {
       return NextResponse.json(
         { error: "Proposal not found" },
         { status: 404 }
@@ -29,6 +24,7 @@ export async function GET(
     }
 
     // Fetch sections
+    const adminClient = createAdminClient();
     const { data: sections } = await adminClient
       .from("proposal_sections")
       .select("*")
@@ -51,10 +47,19 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const user = await getAuthUser(request);
+    const context = await getUserContext(request);
 
-    if (!user) {
+    if (!context) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Verify user has access to this proposal (organization check)
+    const existingProposal = await verifyProposalAccess(context, id);
+    if (!existingProposal) {
+      return NextResponse.json(
+        { error: "Proposal not found" },
+        { status: 404 }
+      );
     }
 
     const body = await request.json();
@@ -71,6 +76,7 @@ export async function PATCH(
       .from("proposals")
       .update(updates)
       .eq("id", id)
+      .eq("organization_id", context.organizationId)
       .select()
       .single();
 
@@ -97,17 +103,27 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const user = await getAuthUser(request);
+    const context = await getUserContext(request);
 
-    if (!user) {
+    if (!context) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Verify user has access to this proposal (organization check)
+    const existingProposal = await verifyProposalAccess(context, id);
+    if (!existingProposal) {
+      return NextResponse.json(
+        { error: "Proposal not found" },
+        { status: 404 }
+      );
     }
 
     const adminClient = createAdminClient();
     const { error } = await adminClient
       .from("proposals")
       .delete()
-      .eq("id", id);
+      .eq("id", id)
+      .eq("organization_id", context.organizationId);
 
     if (error) {
       return NextResponse.json(

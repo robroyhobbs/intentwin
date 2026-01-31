@@ -4,76 +4,128 @@
 > Top priority gets picked up by auto-compound each night.
 > Updated by owner weekly (Monday check-in) or as needed.
 
-## Current Sprint: Week 1 - Foundation
+## Current Sprint: Week 2 - Launch
 
-### Priority 1: Multi-Tenancy Migration [CRITICAL]
+### Priority 1: Production Deployment [CRITICAL]
+**Branch:** `main`
+**Effort:** Medium
+**Impact:** Required to accept customers
+
+Tasks:
+- [ ] Deploy to Vercel (connect GitHub repo)
+- [ ] Configure production environment variables
+- [ ] Run Supabase migrations on production database
+- [ ] Set up Stripe in live mode (create products/prices)
+- [ ] Configure Stripe webhook endpoint for production URL
+- [ ] Test full signup → trial → upgrade flow in production
+- [ ] Set up error monitoring (Sentry or similar)
+
+### Priority 2: Customer Acquisition [CRITICAL]
+**Branch:** N/A (manual + content)
+**Effort:** Ongoing
+**Impact:** Revenue generation
+
+Tasks:
+- [ ] Convert Capgemini pilot to paid enterprise ($500+/mo)
+- [ ] LinkedIn outreach: 20 connections/day to Proposal Managers
+- [ ] Cold email campaign to consulting firms (50-500 employees)
+- [ ] Get 3 referral intros from Capgemini contact
+- [ ] Publish one blog post per week
+
+---
+
+## Completed: Week 1 - Foundation
+
+### Multi-Tenancy Migration [COMPLETE]
 **Branch:** `feat/multi-tenancy`
 **Effort:** Large
 **Impact:** Blocker for everything else
 
 Tasks:
-- [ ] Create organizations table migration
-- [ ] Add organization_id to profiles table
-- [ ] Add organization_id to proposals table
-- [ ] Add organization_id to documents table
-- [ ] Update RLS policies for organization scoping
-- [ ] Fix company_context/evidence_library global access issue
-- [ ] Update all API routes with organization context
+- [x] Create organizations table migration (00014)
+- [x] Add organization_id to profiles table
+- [x] Add organization_id to proposals table
+- [x] Add organization_id to documents table
+- [x] Update RLS policies for organization scoping (00014, 00015)
+- [x] Fix company_context/evidence_library global access issue (00015)
+- [x] Update all API routes with organization context
+- [x] Add organization-scoped search functions (00016)
 
-### Priority 2: Stripe Integration [CRITICAL]
+### Priority 2: Stripe Integration [COMPLETE]
 **Branch:** `feat/stripe-billing`
 **Effort:** Large
 **Impact:** Required for revenue
 
 Tasks:
-- [ ] Install Stripe SDK
-- [ ] Create src/lib/stripe/client.ts
-- [ ] Create checkout session API route
-- [ ] Create webhook handler for subscription events
-- [ ] Create customer portal redirect
-- [ ] Add pricing page
-- [ ] Add plan_tier and usage tracking to organizations
+- [x] Install Stripe SDK
+- [x] Create src/lib/stripe/client.ts
+- [x] Create checkout session API route
+- [x] Create webhook handler for subscription events
+- [x] Create customer portal redirect
+- [x] Add pricing page with SEO metadata
+- [x] Add plan_tier and usage tracking to organizations
 
-### Priority 3: Rebrand Landing Page [HIGH]
+### Priority 3: Rebrand Landing Page [MOSTLY COMPLETE]
 **Branch:** `feat/rebrand-proposalai`
 **Effort:** Medium
 **Impact:** Required for public launch
 
 Tasks:
-- [ ] Remove all Capgemini references
-- [ ] Update hero section with ProposalAI branding
-- [ ] Add pricing section with tier CTAs
+- [x] Remove all Capgemini references
+- [x] Update hero section with ProposalAI branding
+- [x] Add pricing section with tier CTAs
 - [ ] Add social proof section (testimonials placeholder)
 - [ ] Add comparison table vs competitors
-- [ ] Update meta tags for SEO
+- [x] Update meta tags for SEO
 
-### Priority 4: Self-Service Signup [HIGH]
+### Priority 4: Self-Service Signup [COMPLETE]
 **Branch:** `feat/self-service-onboarding`
 **Effort:** Medium
 **Impact:** Enables autonomous customer acquisition
 
 Tasks:
-- [ ] Auto-create organization on signup
-- [ ] Start 14-day trial automatically
-- [ ] Create onboarding wizard component
-- [ ] Add template selection for first proposal
+- [x] Auto-create organization on signup (database trigger in 00014 migration)
+- [x] Start 14-day trial automatically (trial_ends_at default)
+- [x] Create onboarding wizard component (/onboarding/page.tsx)
+- [ ] Add template selection for first proposal (deferred - basic flow works)
 
-### Priority 5: Content & SEO [MEDIUM]
+### Priority 5: Content & SEO [COMPLETE]
 **Branch:** `feat/content-seo`
 **Effort:** Small per piece
 **Impact:** Long-term organic growth
 
 Tasks:
-- [ ] Create /blog directory structure
-- [ ] Write: "Ultimate Guide to AI Proposal Writing"
-- [ ] Write: "How to Write Winning RFP Responses"
-- [ ] Add sitemap.xml
-- [ ] Add robots.txt
-- [ ] Optimize meta descriptions
+- [x] Create /blog directory structure
+- [x] Write: "Ultimate Guide to AI Proposal Writing"
+- [x] Write: "How to Write Winning RFP Responses"
+- [x] Write: "AutogenAI vs ProposalAI" comparison
+- [x] Add sitemap.ts (Next.js dynamic sitemap)
+- [x] Add robots.txt
+- [x] Optimize meta descriptions (landing, pricing, blog pages)
+
+### Priority 6: Capgemini Conversion [CRITICAL]
+**Branch:** N/A (business development)
+**Effort:** Medium
+**Impact:** First revenue + case study
+
+Tasks:
+- [ ] Gather usage data from pilot
+- [ ] Build ROI presentation
+- [ ] Schedule conversion meeting
+- [ ] Request case study permission
+- [ ] Secure 3 referral introductions
 
 ---
 
 ## Backlog
+
+### Product Hunt Launch (Deferred)
+- Create 60-second demo video (Loom)
+- Prepare 5 product screenshots
+- Write maker comment
+- Line up 20+ supporters
+- Create launch day discount (50% off first year)
+- Prepare follow-up email sequence
 
 ### Product Features
 - Real-time collaboration (WebSocket)
@@ -99,7 +151,39 @@ Tasks:
 
 ## Completed
 
-### 2025-01-29: Foundation Sprint
+### 2026-01-30 (cont.): Build Fixes & Security
+- [x] Fix export route to pass company_name from organization to all generators
+- [x] Install missing framer-motion dependency
+- [x] Update Stripe API version to 2026-01-28.clover (match installed types)
+- [x] Fix Stripe webhook type errors for subscription periods (API changes)
+- [x] Fix Stripe invoice type errors
+- [x] Make Stripe client lazy-initialize for builds without env vars
+- [x] **SECURITY**: Fix document search route - was allowing cross-organization access
+- [x] Create migration 00016 for organization-scoped search functions
+- [x] **SECURITY**: Add verifyProposalAccess helper for multi-tenancy security
+- [x] **SECURITY**: Fix proposals/[id] route - add organization verification
+- [x] **SECURITY**: Fix proposals/[id]/generate route - add organization verification
+- [x] **SECURITY**: Fix proposals/[id]/export route - add organization verification
+- [x] Verify full build succeeds with `npm run build`
+
+### 2026-01-30: Strategy & Content Sprint
+- [x] Deep competitor analysis (AutogenAI, Responsive, Arphie, DeepRFP, Qwilr, Proposify)
+- [x] Go-to-market strategy for first 10 customers
+- [x] SEO content strategy and keyword research
+- [x] Blog infrastructure (index page, article template)
+- [x] First pillar article: "Ultimate Guide to AI Proposal Writing"
+- [x] Second pillar article: "How to Write Winning RFP Responses"
+- [x] Comparison article: "AutogenAI vs ProposalAI"
+- [x] Capgemini conversion playbook
+- [x] Remove Capgemini branding from landing, about, login, signup pages
+- [x] Add sitemap.ts and robots.txt for SEO
+- [x] Make AI prompts dynamic for multi-tenancy (all prompt builders, export generators)
+- [x] Add 'why_us' section type alongside legacy 'why_capgemini' for backwards compatibility
+- [x] SEO optimization: Add rich metadata to landing, pricing, and blog pages
+- [x] Fix root URL for SEO: Landing page now shows at '/' for unauthenticated users
+- [x] Implement Settings page with billing management, usage stats, and plan upgrades
+
+### 2026-01-29: Foundation Sprint
 - [x] Compound engineering infrastructure (scripts, launchd, AGENTS.md)
 - [x] Multi-tenancy migration (organizations table, RLS policies)
 - [x] Stripe billing integration (checkout, webhooks, pricing page)

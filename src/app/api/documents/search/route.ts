@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getAuthUser } from "@/lib/supabase/auth-api";
+import { getUserContext } from "@/lib/supabase/auth-api";
 import { generateQueryEmbedding } from "@/lib/ai/embeddings";
 
 export async function POST(request: NextRequest) {
   try {
-    // Note: Auth check temporarily relaxed for debugging
-    // The admin client is used for actual queries anyway
-    const user = await getAuthUser(request);
-    if (!user) {
-      console.warn("Search: No authenticated user found, proceeding anyway");
+    const context = await getUserContext(request);
+    if (!context) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
@@ -34,13 +32,14 @@ export async function POST(request: NextRequest) {
 
     const adminClient = createAdminClient();
 
-    // Call the match_document_chunks function
+    // Call the match_document_chunks function with organization filter
     const { data: results, error } = await adminClient.rpc(
-      "match_document_chunks",
+      "match_document_chunks_org",
       {
         query_embedding: JSON.stringify(queryEmbedding),
         match_threshold: threshold,
         match_count: limit,
+        filter_organization_id: context.organizationId,
         filter_document_type: document_type || null,
         filter_industry: industry || null,
         filter_service_line: service_line || null,

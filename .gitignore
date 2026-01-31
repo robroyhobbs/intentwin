@@ -43,3 +43,6 @@ next-env.d.ts
 # IDE
 .idea/
 .vscode/
+
+# Source PDFs (downloaded reference materials - too large for git)
+sources/pdfs/

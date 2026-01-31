@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   Loader2,
-  Play,
   Clock,
   RefreshCw,
   Download,
@@ -17,6 +16,7 @@ import {
   Wand2,
   ArrowRight,
   ChevronRight,
+  History,
 } from "lucide-react";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
 import { ProposalContentRenderer } from "@/components/proposal-content-renderer";
@@ -28,6 +28,8 @@ import { SkeletonSection } from "@/components/ui/skeleton";
 import { AgentationWrapper } from "@/components/review/agentation-wrapper";
 import { ReviewCommentsPanel } from "@/components/review/review-comments-panel";
 import { ReviewSummaryBar } from "@/components/review/review-summary-bar";
+import { VersionHistory } from "@/components/proposals/version-history";
+import { DealOutcomeSetter } from "@/components/ui/deal-outcome-setter";
 import type { ProposalReview, ReviewSummary } from "@/types/review";
 import { exportAnnotationsAsMarkdown } from "@/lib/review/export-annotations";
 
@@ -50,6 +52,8 @@ interface Proposal {
   status: string;
   intake_data: Record<string, unknown>;
   created_at: string;
+  deal_outcome?: string;
+  deal_value?: number;
 }
 
 export default function ProposalPage() {
@@ -73,6 +77,7 @@ export default function ProposalPage() {
     approvals: 0,
   });
   const [showReviewPanel, setShowReviewPanel] = useState(false);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [applyingFixes, setApplyingFixes] = useState(false);
   const authFetch = useAuthFetch();
 
@@ -266,11 +271,11 @@ export default function ProposalPage() {
 
   if (!proposal) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 text-gray-400">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-100 mb-4">
+      <div className="flex flex-col items-center justify-center py-24 text-[var(--foreground-muted)]">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--background-tertiary)] mb-4">
           <Sparkles className="h-8 w-8" />
         </div>
-        <p className="text-lg font-medium text-[#1B365D]">Proposal not found</p>
+        <p className="text-lg font-medium text-[var(--foreground)]">Proposal not found</p>
       </div>
     );
   }
@@ -282,7 +287,7 @@ export default function ProposalPage() {
   return (
     <div className="-m-6">
       {/* Top bar */}
-      <div className="border-b border-gray-200/50 bg-white/80 backdrop-blur-sm px-6 py-4">
+      <div className="border-b border-[var(--border)] bg-[var(--card-bg)] px-6 py-4">
         <div className="flex items-center justify-between">
           <div>
             <Breadcrumb
@@ -292,11 +297,11 @@ export default function ProposalPage() {
               ]}
             />
             <div className="mt-1.5 flex items-center gap-2">
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-[var(--foreground-muted)]">
                 {(proposal.intake_data as Record<string, string>)?.client_name ||
                   "Client"}
               </span>
-              <ChevronRight className="h-3 w-3 text-gray-300" />
+              <ChevronRight className="h-3 w-3 text-[var(--foreground-subtle)]" />
               <SectionStatusBadge
                 generationStatus={
                   proposal.status as
@@ -310,12 +315,35 @@ export default function ProposalPage() {
           </div>
 
           <div className="flex gap-2">
+            {/* Deal Outcome Setter - shown for review/exported proposals */}
+            {isReviewMode && (
+              <DealOutcomeSetter
+                proposalId={id}
+                currentOutcome={proposal.deal_outcome}
+                currentValue={proposal.deal_value}
+                onUpdate={() => fetchProposal()}
+              />
+            )}
+
+            {/* Version History Toggle */}
+            <button
+              onClick={() => setShowVersionHistory(!showVersionHistory)}
+              className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-all ${
+                showVersionHistory
+                  ? "border-[var(--accent)] bg-[var(--accent-subtle)] text-[var(--accent)]"
+                  : "border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-tertiary)]"
+              }`}
+            >
+              <History className="h-4 w-4" />
+              <span className="hidden sm:inline">Versions</span>
+            </button>
+
             {(proposal.status === "intake" ||
               proposal.status === "draft") && (
               <button
                 onClick={handleGenerate}
                 disabled={generating}
-                className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#0070AD] to-[#12ABDB] px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transition-all duration-200 disabled:opacity-50 disabled:shadow-none"
+                className="btn-primary"
               >
                 {generating ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -329,16 +357,16 @@ export default function ProposalPage() {
               <>
                 <button
                   onClick={() => setShowReviewPanel(!showReviewPanel)}
-                  className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
+                  className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-all ${
                     showReviewPanel
-                      ? "border-[#0070AD]/30 bg-[#0070AD]/5 text-[#0070AD]"
-                      : "border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300"
+                      ? "border-[var(--accent)] bg-[var(--accent-subtle)] text-[var(--accent)]"
+                      : "border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-tertiary)]"
                   }`}
                 >
                   <MessageSquare className="h-4 w-4" />
                   Review
                   {reviewSummary.open > 0 && (
-                    <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">
+                    <span className="badge badge-warning text-[10px]">
                       {reviewSummary.open}
                     </span>
                   )}
@@ -346,7 +374,7 @@ export default function ProposalPage() {
                 {reviews.length > 0 && (
                   <button
                     onClick={handleExportFeedback}
-                    className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
+                    className="btn-secondary"
                   >
                     <FileDown className="h-4 w-4" />
                     Feedback
@@ -354,7 +382,7 @@ export default function ProposalPage() {
                 )}
                 <button
                   onClick={() => router.push(`/proposals/${id}/export`)}
-                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all duration-200"
+                  className="inline-flex items-center gap-2 rounded-lg bg-[var(--success)] px-4 py-2 text-sm font-medium text-white shadow-sm hover:opacity-90 transition-all"
                 >
                   <Download className="h-4 w-4" />
                   Export
@@ -373,36 +401,34 @@ export default function ProposalPage() {
 
         {/* Generation Progress */}
         {proposal.status === "generating" && (
-          <div className="mt-4 rounded-xl border border-[#0070AD]/20 bg-gradient-to-r from-[#0070AD]/5 to-[#12ABDB]/5 p-4">
+          <div className="mt-4 rounded-lg border border-[var(--accent-muted)] bg-[var(--accent-subtle)] p-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0070AD]/10">
-                <Loader2 className="h-4 w-4 animate-spin text-[#0070AD]" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent-subtle)]">
+                <Loader2 className="h-4 w-4 animate-spin text-[var(--accent)]" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold text-[#1B365D]">
+                <p className="text-sm font-semibold text-[var(--foreground)]">
                   Generating proposal sections...
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-[var(--foreground-muted)]">
                   {completedCount} of {sections.length || "..."} sections complete
                 </p>
               </div>
-              <span className="text-lg font-bold text-[#0070AD]">
+              <span className="text-lg font-bold text-[var(--accent)]">
                 {sections.length
                   ? `${Math.round((completedCount / sections.length) * 100)}%`
                   : "..."}
               </span>
             </div>
-            <div className="mt-3 h-2 rounded-full bg-[#0070AD]/10 overflow-hidden">
+            <div className="mt-3 progress-bar h-2">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-[#0070AD] to-[#12ABDB] transition-all duration-500 relative"
+                className="progress-bar-fill"
                 style={{
                   width: sections.length
                     ? `${(completedCount / sections.length) * 100}%`
                     : "0%",
                 }}
-              >
-                <div className="absolute inset-0 animate-shimmer" />
-              </div>
+              />
             </div>
           </div>
         )}
@@ -425,13 +451,13 @@ export default function ProposalPage() {
           />
 
           {/* Content pane */}
-          <div className="flex-1 overflow-y-auto bg-white">
+          <div className="flex-1 overflow-y-auto bg-[var(--background-secondary)]">
             {currentSection ? (
               <div className="p-8 max-w-4xl mx-auto">
                 {/* Section header */}
                 <div className="mb-6 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <h2 className="text-xl font-bold text-[#1B365D]">
+                    <h2 className="text-xl font-bold text-[var(--foreground)]">
                       {currentSection.title}
                     </h2>
                     <SectionStatusBadge
@@ -444,7 +470,7 @@ export default function ProposalPage() {
                       }
                     />
                     {currentSection.is_edited && (
-                      <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                      <span className="badge badge-warning">
                         Edited
                       </span>
                     )}
@@ -459,7 +485,7 @@ export default function ProposalPage() {
                             handleApplyAIFixes(currentSection.id)
                           }
                           disabled={applyingFixes}
-                          className="group inline-flex items-center gap-2 rounded-xl border border-purple-200 bg-purple-50 px-4 py-2 text-xs font-semibold text-purple-700 hover:bg-purple-100 hover:border-purple-300 transition-all duration-200 disabled:opacity-50"
+                          className="inline-flex items-center gap-2 rounded-lg border border-[var(--info)] bg-[var(--info-subtle)] px-3 py-1.5 text-xs font-medium text-[var(--info)] hover:opacity-80 transition-all disabled:opacity-50"
                         >
                           {applyingFixes ? (
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -467,7 +493,7 @@ export default function ProposalPage() {
                             <Wand2 className="h-3.5 w-3.5" />
                           )}
                           Apply AI Fixes
-                          <span className="rounded-full bg-purple-200 px-1.5 py-0.5 text-[10px]">
+                          <span className="badge badge-info text-[10px]">
                             {openSectionReviews.length}
                           </span>
                         </button>
@@ -484,7 +510,7 @@ export default function ProposalPage() {
                                 ""
                             );
                           }}
-                          className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
+                          className="btn-secondary text-xs py-1.5"
                         >
                           <Edit3 className="h-3.5 w-3.5" />
                           Edit
@@ -493,13 +519,13 @@ export default function ProposalPage() {
                     {editingSection === currentSection.id && (
                       <button
                         onClick={() => setEditingSection(null)}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
+                        className="btn-secondary text-xs py-1.5"
                       >
                         <Eye className="h-3.5 w-3.5" />
                         Preview
                       </button>
                     )}
-                    <button className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200">
+                    <button className="btn-secondary text-xs py-1.5">
                       <RefreshCw className="h-3.5 w-3.5" />
                       Regenerate
                     </button>
@@ -508,9 +534,9 @@ export default function ProposalPage() {
 
                 {/* Error */}
                 {currentSection.generation_status === "failed" && (
-                  <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                  <div className="mb-6 rounded-lg border border-[var(--danger-muted)] bg-[var(--danger-subtle)] p-4 text-sm text-[var(--danger)]">
                     <p className="font-semibold">Generation Failed</p>
-                    <p className="mt-1 text-xs text-red-600">
+                    <p className="mt-1 text-xs opacity-80">
                       {currentSection.generation_error}
                     </p>
                   </div>
@@ -530,13 +556,13 @@ export default function ProposalPage() {
                           onClick={() =>
                             handleSaveEdit(currentSection.id)
                           }
-                          className="rounded-xl bg-gradient-to-r from-[#0070AD] to-[#12ABDB] px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transition-all"
+                          className="btn-primary"
                         >
                           Save Changes
                         </button>
                         <button
                           onClick={() => setEditingSection(null)}
-                          className="rounded-xl border border-gray-200 px-5 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all"
+                          className="btn-secondary"
                         >
                           Cancel
                         </button>
@@ -549,53 +575,53 @@ export default function ProposalPage() {
                       authFetch={authFetch}
                       onAnnotationAdded={() => fetchReviews()}
                     >
-                      <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+                      <div className="card p-6">
                         <ProposalContentRenderer
                           content={
                             currentSection.edited_content ||
                             currentSection.generated_content ||
                             ""
                           }
-                          className="text-sm leading-relaxed text-gray-700"
+                          className="text-sm leading-relaxed text-[var(--foreground)]"
                         />
                       </div>
                     </AgentationWrapper>
                   ) : (
-                    <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+                    <div className="card p-6">
                       <ProposalContentRenderer
                         content={
                           currentSection.edited_content ||
                           currentSection.generated_content ||
                           ""
                         }
-                        className="text-sm leading-relaxed text-gray-700"
+                        className="text-sm leading-relaxed text-[var(--foreground)]"
                       />
                     </div>
                   )
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+                  <div className="flex flex-col items-center justify-center py-16 text-[var(--foreground-muted)]">
                     {currentSection.generation_status === "generating" ? (
                       <>
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#0070AD]/10 mb-4">
-                          <Loader2 className="h-6 w-6 animate-spin text-[#0070AD]" />
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--accent-subtle)] mb-4">
+                          <Loader2 className="h-6 w-6 animate-spin text-[var(--accent)]" />
                         </div>
-                        <p className="text-sm font-medium text-[#1B365D]">Generating this section...</p>
-                        <p className="mt-1 text-xs text-gray-400">AI is crafting your content</p>
+                        <p className="text-sm font-medium text-[var(--foreground)]">Generating this section...</p>
+                        <p className="mt-1 text-xs text-[var(--foreground-muted)]">AI is crafting your content</p>
                       </>
                     ) : (
                       <>
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-100 mb-4">
-                          <Clock className="h-6 w-6 text-gray-400" />
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--background-tertiary)] mb-4">
+                          <Clock className="h-6 w-6 text-[var(--foreground-muted)]" />
                         </div>
-                        <p className="text-sm font-medium text-gray-600">Not yet generated</p>
-                        <p className="mt-1 text-xs text-gray-400">Click Generate to create this section</p>
+                        <p className="text-sm font-medium text-[var(--foreground)]">Not yet generated</p>
+                        <p className="mt-1 text-xs text-[var(--foreground-muted)]">Click Generate to create this section</p>
                       </>
                     )}
                   </div>
                 )}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+              <div className="flex flex-col items-center justify-center py-20 text-[var(--foreground-muted)]">
                 <ArrowRight className="h-6 w-6 mb-2" />
                 <p className="text-sm">Select a section from the sidebar</p>
               </div>
@@ -604,13 +630,13 @@ export default function ProposalPage() {
 
           {/* Review comments panel */}
           {showReviewPanel && isReviewMode && (
-            <div className="w-80 flex-shrink-0 border-l border-gray-200 bg-[#F5F7FA] overflow-y-auto animate-slide-in-right">
-              <div className="p-5 border-b border-gray-200/80">
+            <div className="w-80 flex-shrink-0 border-l border-[var(--border)] bg-[var(--background-secondary)] overflow-y-auto animate-slide-in-right">
+              <div className="p-5 border-b border-[var(--border)]">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-[#1B365D]">
+                  <h3 className="text-sm font-bold text-[var(--foreground)]">
                     Comments
                   </h3>
-                  <span className="rounded-full bg-gray-200/80 px-2 py-0.5 text-[10px] font-semibold text-gray-600">
+                  <span className="badge badge-default">
                     {sectionReviews.length}
                   </span>
                 </div>
@@ -624,23 +650,38 @@ export default function ProposalPage() {
               </div>
             </div>
           )}
+
+          {/* Version history panel */}
+          {showVersionHistory && (
+            <div className="w-80 flex-shrink-0 border-l border-[var(--border)] bg-[var(--background-secondary)] overflow-y-auto animate-slide-in-right">
+              <div className="p-4">
+                <VersionHistory
+                  proposalId={id}
+                  onRestore={() => {
+                    fetchProposal();
+                    fetchReviews();
+                  }}
+                />
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         proposal.status !== "generating" && (
           <div className="flex flex-col items-center justify-center py-24">
-            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0070AD]/10 to-[#12ABDB]/10 mb-6">
-              <Sparkles className="h-10 w-10 text-[#0070AD]" />
+            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[var(--accent-subtle)] mb-6">
+              <Sparkles className="h-10 w-10 text-[var(--accent)]" />
             </div>
-            <h3 className="text-xl font-bold text-[#1B365D]">
+            <h3 className="text-xl font-bold text-[var(--foreground)]">
               Ready to generate
             </h3>
-            <p className="mt-2 text-sm text-gray-500 max-w-md text-center">
+            <p className="mt-2 text-sm text-[var(--foreground-muted)] max-w-md text-center">
               Your proposal is configured. Click Generate to start creating all sections with AI-powered content.
             </p>
             <button
               onClick={handleGenerate}
               disabled={generating}
-              className="mt-6 group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#0070AD] to-[#12ABDB] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transition-all duration-200 disabled:opacity-50"
+              className="btn-primary mt-6"
             >
               {generating ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

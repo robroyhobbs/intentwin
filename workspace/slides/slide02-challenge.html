@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html { background: #ffffff; }
+body {
+  width: 720pt; height: 405pt; margin: 0; padding: 0;
+  background: #ffffff; font-family: Arial, sans-serif;
+  display: flex; flex-direction: column;
+}
+.header {
+  background: #1B365D; padding: 20pt 40pt; display: flex; align-items: center;
+}
+.header-accent {
+  width: 6pt; height: 30pt; background: #12ABDB; margin-right: 15pt;
+}
+h1 {
+  color: #ffffff; font-size: 28pt; margin: 0; font-weight: bold;
+}
+.content {
+  flex: 1; padding: 30pt 50pt; display: flex; flex-direction: column;
+}
+.intro {
+  color: #1B365D; font-size: 14pt; margin-bottom: 25pt;
+}
+.challenges {
+  display: flex; flex-wrap: wrap; gap: 15pt;
+}
+.challenge-item {
+  width: 200pt; background: #f5f7fa; border-left: 4pt solid #0070AD;
+  padding: 12pt 15pt;
+}
+.challenge-icon {
+  color: #0070AD; font-size: 11pt; font-weight: bold; margin-bottom: 5pt;
+}
+.challenge-text {
+  color: #1B365D; font-size: 12pt; line-height: 1.4;
+}
+.stat-box {
+  position: absolute; bottom: 60pt; right: 50pt;
+  background: #12ABDB; padding: 15pt 25pt; border-radius: 4pt;
+}
+.stat-number {
+  color: #ffffff; font-size: 28pt; font-weight: bold; text-align: center;
+}
+.stat-label {
+  color: #ffffff; font-size: 10pt; text-align: center;
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-accent"></div>
+  <h1>The Challenge</h1>
+</div>
+<div class="content">
+  <p class="intro">Our current proposal process creates bottlenecks and inconsistencies:</p>
+  <div class="challenges">
+    <div class="challenge-item">
+      <p class="challenge-icon">TIME</p>
+      <p class="challenge-text">Proposals take weeks to complete, missing opportunities</p>
+    </div>
+    <div class="challenge-item">
+      <p class="challenge-icon">QUALITY</p>
+      <p class="challenge-text">Inconsistent output quality across teams and regions</p>
+    </div>
+    <div class="challenge-item">
+      <p class="challenge-icon">KNOWLEDGE</p>
+      <p class="challenge-text">Best practices and case studies scattered across silos</p>
+    </div>
+    <div class="challenge-item">
+      <p class="challenge-icon">RESOURCES</p>
+      <p class="challenge-text">Senior experts bottlenecked on repetitive writing tasks</p>
+    </div>
+    <div class="challenge-item">
+      <p class="challenge-icon">REUSE</p>
+      <p class="challenge-text">Winning strategies rarely captured or replicated</p>
+    </div>
+    <div class="challenge-item">
+      <p class="challenge-icon">SCALE</p>
+      <p class="challenge-text">Cannot pursue more opportunities with current capacity</p>
+    </div>
+  </div>
+</div>
+<div class="stat-box">
+  <p class="stat-number">4-6 weeks</p>
+  <p class="stat-label">Average proposal cycle time</p>
+</div>
+</body>
+</html>

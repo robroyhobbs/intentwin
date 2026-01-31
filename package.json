@@ -22,6 +22,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "docxtemplater": "^3.67.6",
+    "framer-motion": "^12.29.2",
     "js-tiktoken": "^1.0.21",
     "lucide-react": "^0.563.0",
     "mammoth": "^1.11.0",

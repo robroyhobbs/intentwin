@@ -25,7 +25,7 @@ Based on this opportunity, generate a comprehensive win strategy. Return ONLY a 
 Requirements:
 - **win_themes** (3-5): High-level strategic themes that should run through the entire proposal. These are the "big ideas" that resonate with the client.
 - **success_metrics** (4-6): Specific, measurable metrics the client cares about. Be concrete (e.g., "Reduce infrastructure costs by 30%" not "Save money").
-- **differentiators** (3-4): What makes Capgemini uniquely positioned for THIS engagement. Tie to the client's specific situation.
+- **differentiators** (3-4): What makes your company uniquely positioned for THIS engagement. Tie to the client's specific situation.
 - **target_outcomes** (5-8): Specific outcomes organized by category. Each must be:
   - Specific to the client's industry and situation
   - Measurable or observable

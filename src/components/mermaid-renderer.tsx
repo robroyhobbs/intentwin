@@ -48,9 +48,9 @@ export function MermaidRenderer({ chart, className }: MermaidRendererProps) {
 
   if (error) {
     return (
-      <div className={`rounded-lg border border-amber-200 bg-amber-50 p-4 ${className || ""}`}>
-        <p className="mb-2 text-xs font-medium text-amber-700">Diagram (raw)</p>
-        <pre className="overflow-x-auto text-xs text-amber-900 font-mono whitespace-pre-wrap">
+      <div className={`rounded-lg border border-[var(--warning-subtle)] bg-[var(--warning-subtle)] p-4 ${className || ""}`}>
+        <p className="mb-2 text-xs font-medium text-[var(--warning)]">Diagram (raw)</p>
+        <pre className="overflow-x-auto text-xs text-[var(--foreground)] font-mono whitespace-pre-wrap">
           {chart}
         </pre>
       </div>
@@ -60,14 +60,14 @@ export function MermaidRenderer({ chart, className }: MermaidRendererProps) {
   return (
     <div className={`my-4 ${className || ""}`}>
       {!rendered && (
-        <div className="flex items-center gap-2 text-xs text-gray-400 py-2">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-blue-500" />
+        <div className="flex items-center gap-2 text-xs text-[var(--foreground-subtle)] py-2">
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--border)] border-t-[var(--accent)]" />
           Rendering diagram...
         </div>
       )}
       <div
         ref={containerRef}
-        className="flex justify-center overflow-x-auto rounded-lg border border-gray-200 bg-white p-4"
+        className="flex justify-center overflow-x-auto rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-4"
       />
     </div>
   );

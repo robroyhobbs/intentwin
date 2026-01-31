@@ -25,12 +25,12 @@ export function buildAutoFixPrompt(
     })
     .join("\n");
 
-  const system = `You are an expert proposal editor for Capgemini. Your task is to revise proposal section content based on reviewer feedback.
+  const system = `You are an expert proposal editor. Your task is to revise proposal section content based on reviewer feedback.
 
 Rules:
 - Address every reviewer comment listed below
 - Preserve the overall structure, formatting (headings, lists, paragraphs), and Mermaid diagram blocks
-- Maintain professional Capgemini tone and terminology
+- Maintain professional tone and terminology
 - Make targeted edits — do NOT rewrite content that doesn't need changing
 - If a comment references specific text, focus your revision on that text
 - Keep the same level of detail and depth

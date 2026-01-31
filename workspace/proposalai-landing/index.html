@@ -1,0 +1,1358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ProposalAI - Win More. Faster.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --black: #000000;
+      --dark: #0a0a0a;
+      --dark-2: #141414;
+      --dark-3: #1a1a1a;
+      --white: #ffffff;
+      --gray: #888888;
+      --light-gray: #cccccc;
+      --electric: #00ff88;
+      --electric-dim: #00cc6a;
+      --blue: #0066ff;
+      --purple: #8b5cf6;
+      --orange: #ff6b35;
+      --pink: #ff0080;
+      --font-display: 'Playfair Display', Georgia, serif;
+      --font-sans: 'Space Grotesk', system-ui, sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--black);
+      color: var(--white);
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    ::selection {
+      background: var(--electric);
+      color: var(--black);
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(40px);
+      transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal.revealed { opacity: 1; transform: translateY(0); }
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.2s; }
+    .reveal-delay-3 { transition-delay: 0.3s; }
+    .reveal-delay-4 { transition-delay: 0.4s; }
+    .reveal-delay-5 { transition-delay: 0.5s; }
+
+    /* ===== HERO ===== */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      padding: 4rem 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 20% 50%, rgba(0, 255, 136, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(0, 102, 255, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 60% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 40%);
+    }
+
+    .hero-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse at center, black 30%, transparent 70%);
+    }
+
+    .hero-content {
+      position: relative;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--electric);
+      margin-bottom: 2rem;
+    }
+
+    .hero-eyebrow::before {
+      content: '';
+      width: 40px;
+      height: 2px;
+      background: var(--electric);
+    }
+
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: clamp(4rem, 12vw, 9rem);
+      font-weight: 700;
+      line-height: 0.95;
+      letter-spacing: -0.03em;
+      margin-bottom: 2rem;
+    }
+
+    .hero-title .line-1 {
+      display: block;
+      color: var(--white);
+    }
+
+    .hero-title .line-2 {
+      display: block;
+      background: linear-gradient(135deg, var(--electric) 0%, var(--blue) 50%, var(--purple) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-subtitle {
+      font-size: clamp(1.1rem, 2vw, 1.4rem);
+      color: var(--gray);
+      max-width: 550px;
+      line-height: 1.7;
+      margin-bottom: 3rem;
+    }
+
+    .hero-cta {
+      display: flex;
+      gap: 1.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-hero {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 20px 40px;
+      font-family: var(--font-sans);
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      border-radius: 100px;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-primary {
+      background: var(--electric);
+      color: var(--black);
+    }
+
+    .btn-primary:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 40px rgba(0, 255, 136, 0.4);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--white);
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .btn-ghost:hover {
+      border-color: var(--white);
+      background: rgba(255,255,255,0.05);
+    }
+
+    .hero-stats {
+      position: absolute;
+      right: 4rem;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    @media (max-width: 1200px) {
+      .hero-stats {
+        position: relative;
+        right: auto;
+        top: auto;
+        transform: none;
+        flex-direction: row;
+        margin-top: 4rem;
+        flex-wrap: wrap;
+      }
+    }
+
+    .hero-stat {
+      text-align: right;
+      padding: 1.5rem;
+      border-right: 2px solid var(--electric);
+    }
+
+    @media (max-width: 1200px) {
+      .hero-stat {
+        text-align: left;
+        border-right: none;
+        border-left: 2px solid var(--electric);
+      }
+    }
+
+    .hero-stat-value {
+      font-family: var(--font-display);
+      font-size: 3.5rem;
+      font-weight: 700;
+      color: var(--white);
+      line-height: 1;
+    }
+
+    .hero-stat-label {
+      font-size: 13px;
+      color: var(--gray);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 0.5rem;
+    }
+
+    /* ===== MARQUEE ===== */
+    .marquee-section {
+      background: var(--electric);
+      padding: 1.25rem 0;
+      overflow: hidden;
+    }
+
+    .marquee-track {
+      display: flex;
+      animation: marquee 30s linear infinite;
+    }
+
+    .marquee-content {
+      display: flex;
+      align-items: center;
+      gap: 4rem;
+      padding-right: 4rem;
+      white-space: nowrap;
+    }
+
+    .marquee-item {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--black);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .marquee-item::before {
+      content: '◆';
+      font-size: 0.6rem;
+    }
+
+    @keyframes marquee {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    /* ===== SECTIONS ===== */
+    .section {
+      padding: 8rem 2rem;
+      position: relative;
+    }
+
+    .container {
+      max-width: 1300px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--electric);
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-label::before {
+      content: '';
+      width: 30px;
+      height: 2px;
+      background: var(--electric);
+    }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 700;
+      line-height: 1.1;
+      margin-bottom: 1.5rem;
+    }
+
+    .section-desc {
+      font-size: 1.2rem;
+      color: var(--gray);
+      max-width: 600px;
+      line-height: 1.7;
+    }
+
+    /* ===== MONEY SECTION ===== */
+    .money-section {
+      background: var(--dark);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .money-section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--electric), transparent);
+    }
+
+    .money-header {
+      text-align: center;
+      margin-bottom: 5rem;
+    }
+
+    .money-header .section-label {
+      justify-content: center;
+    }
+
+    .money-header .section-label::before {
+      display: none;
+    }
+
+    .money-header .section-title span {
+      background: linear-gradient(135deg, var(--electric) 0%, #00cc88 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .money-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+    }
+
+    @media (max-width: 900px) {
+      .money-grid { grid-template-columns: 1fr; }
+    }
+
+    .money-card {
+      background: var(--dark-2);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 24px;
+      padding: 3rem;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.4s ease;
+    }
+
+    .money-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--blue), var(--purple));
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .money-card:hover {
+      border-color: rgba(255,255,255,0.12);
+      transform: translateY(-8px);
+    }
+
+    .money-card:hover::before {
+      opacity: 1;
+    }
+
+    .money-card.featured {
+      background: linear-gradient(135deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 102, 255, 0.05) 100%);
+      border-color: rgba(0, 255, 136, 0.3);
+    }
+
+    .money-card.featured::before {
+      background: var(--electric);
+      opacity: 1;
+      height: 4px;
+    }
+
+    .money-icon {
+      font-size: 2.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .money-value {
+      font-family: var(--font-display);
+      font-size: 5rem;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 0.25rem;
+    }
+
+    .money-card.featured .money-value {
+      background: linear-gradient(135deg, var(--electric) 0%, #00ffaa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .money-metric {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--blue);
+      margin-bottom: 1rem;
+    }
+
+    .money-card.featured .money-metric {
+      color: var(--electric);
+    }
+
+    .money-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+
+    .money-desc {
+      font-size: 1rem;
+      color: var(--gray);
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+    }
+
+    .money-impact {
+      background: rgba(0, 255, 136, 0.08);
+      border: 1px solid rgba(0, 255, 136, 0.2);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      font-size: 0.95rem;
+      color: var(--light-gray);
+    }
+
+    .money-impact strong {
+      color: var(--electric);
+    }
+
+    .money-bottom {
+      margin-top: 4rem;
+      background: linear-gradient(135deg, var(--electric) 0%, var(--electric-dim) 100%);
+      border-radius: 20px;
+      padding: 3rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .money-bottom-text {
+      flex: 1;
+      min-width: 300px;
+    }
+
+    .money-bottom-title {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--black);
+      margin-bottom: 0.5rem;
+    }
+
+    .money-bottom-desc {
+      font-size: 1.1rem;
+      color: rgba(0, 0, 0, 0.7);
+    }
+
+    .money-bottom-stat {
+      text-align: right;
+    }
+
+    @media (max-width: 700px) {
+      .money-bottom-stat { text-align: left; }
+    }
+
+    .money-bottom-stat-value {
+      font-family: var(--font-display);
+      font-size: 4rem;
+      font-weight: 700;
+      color: var(--black);
+      line-height: 1;
+    }
+
+    .money-bottom-stat-label {
+      font-size: 1rem;
+      color: rgba(0, 0, 0, 0.6);
+      font-weight: 500;
+    }
+
+    /* ===== PROBLEM ===== */
+    .problem-section {
+      background: var(--black);
+    }
+
+    .problem-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: start;
+    }
+
+    @media (max-width: 900px) {
+      .problem-grid { grid-template-columns: 1fr; }
+    }
+
+    .problem-content {
+      position: sticky;
+      top: 4rem;
+    }
+
+    .problem-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .problem-item {
+      background: var(--dark-2);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 1.75rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 1.25rem;
+      transition: all 0.3s ease;
+    }
+
+    .problem-item:hover {
+      border-color: var(--orange);
+      transform: translateX(8px);
+    }
+
+    .problem-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, rgba(255, 107, 53, 0.2) 0%, rgba(255, 0, 128, 0.1) 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+
+    .problem-text h4 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+    }
+
+    .problem-text p {
+      font-size: 0.95rem;
+      color: var(--gray);
+      line-height: 1.5;
+    }
+
+    /* ===== IDD ===== */
+    .idd-section {
+      background: linear-gradient(180deg, var(--dark) 0%, var(--black) 100%);
+    }
+
+    .idd-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 4rem;
+      flex-wrap: wrap;
+      gap: 2rem;
+    }
+
+    .idd-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 900px) {
+      .idd-grid { grid-template-columns: 1fr; }
+    }
+
+    .idd-card {
+      background: var(--dark-2);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 20px;
+      padding: 2.5rem;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.4s ease;
+    }
+
+    .idd-card::before {
+      content: '';
+      position: absolute;
+      top: -100%;
+      left: -100%;
+      width: 300%;
+      height: 300%;
+      background: conic-gradient(from 0deg, transparent, rgba(0, 255, 136, 0.1), transparent, transparent);
+      animation: rotate 8s linear infinite;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .idd-card:hover::before {
+      opacity: 1;
+    }
+
+    @keyframes rotate {
+      100% { transform: rotate(360deg); }
+    }
+
+    .idd-card-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    .idd-card:hover {
+      border-color: rgba(255,255,255,0.15);
+      transform: translateY(-6px);
+    }
+
+    .idd-num {
+      font-family: var(--font-display);
+      font-size: 4rem;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 1rem;
+    }
+
+    .idd-card:nth-child(1) .idd-num { color: var(--purple); }
+    .idd-card:nth-child(2) .idd-num { color: var(--blue); }
+    .idd-card:nth-child(3) .idd-num { color: var(--electric); }
+
+    .idd-title {
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+
+    .idd-desc {
+      font-size: 1rem;
+      color: var(--gray);
+      line-height: 1.6;
+    }
+
+    .idd-callout {
+      margin-top: 3rem;
+      background: linear-gradient(135deg, rgba(0, 102, 255, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+      border: 1px solid rgba(0, 102, 255, 0.2);
+      border-radius: 16px;
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 600px) {
+      .idd-callout { flex-direction: column; text-align: center; }
+    }
+
+    .idd-callout-icon {
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, var(--blue) 0%, var(--purple) 100%);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.75rem;
+      flex-shrink: 0;
+    }
+
+    .idd-callout-text {
+      font-size: 1.2rem;
+      color: var(--light-gray);
+      line-height: 1.5;
+    }
+
+    .idd-callout-text strong {
+      color: var(--white);
+    }
+
+    /* ===== STEPS ===== */
+    .steps-section {
+      background: var(--black);
+    }
+
+    .steps-track {
+      display: flex;
+      gap: 0;
+      overflow-x: auto;
+      padding-bottom: 2rem;
+      scrollbar-width: none;
+    }
+
+    .steps-track::-webkit-scrollbar {
+      display: none;
+    }
+
+    .step-card {
+      flex: 0 0 260px;
+      padding: 2.5rem 2rem;
+      border-right: 1px solid rgba(255,255,255,0.06);
+      position: relative;
+      transition: all 0.3s ease;
+    }
+
+    .step-card:last-child {
+      border-right: none;
+    }
+
+    .step-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--electric);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.4s ease;
+    }
+
+    .step-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .step-card:hover {
+      background: var(--dark-2);
+    }
+
+    .step-num {
+      font-family: var(--font-display);
+      font-size: 3.5rem;
+      font-weight: 700;
+      color: var(--electric);
+      line-height: 1;
+      margin-bottom: 1.5rem;
+    }
+
+    .step-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+
+    .step-desc {
+      font-size: 0.95rem;
+      color: var(--gray);
+      line-height: 1.5;
+    }
+
+    /* ===== FEATURES ===== */
+    .features-section {
+      background: var(--dark);
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 4rem;
+    }
+
+    @media (max-width: 900px) {
+      .features-grid { grid-template-columns: 1fr; }
+    }
+
+    .features-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 600px) {
+      .features-list { grid-template-columns: 1fr; }
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1.25rem;
+      background: var(--dark-2);
+      border-radius: 12px;
+      transition: all 0.3s ease;
+    }
+
+    .feature-item:hover {
+      background: var(--dark-3);
+      transform: translateX(4px);
+    }
+
+    .feature-check {
+      width: 24px;
+      height: 24px;
+      background: var(--electric);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--black);
+      font-size: 12px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .feature-text {
+      font-size: 0.95rem;
+      color: var(--light-gray);
+      line-height: 1.4;
+    }
+
+    .features-panel {
+      background: linear-gradient(135deg, var(--purple) 0%, var(--blue) 100%);
+      border-radius: 24px;
+      padding: 3rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .features-panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M20 20h20v20H20zM0 0h20v20H0z'/%3E%3C/g%3E%3C/svg%3E");
+    }
+
+    .features-panel-content {
+      position: relative;
+    }
+
+    .features-panel h3 {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 2rem;
+    }
+
+    .panel-feature {
+      padding: 1.25rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.15);
+    }
+
+    .panel-feature:last-child {
+      border-bottom: none;
+    }
+
+    .panel-feature-title {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .panel-feature-desc {
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
+
+    /* ===== CTA ===== */
+    .cta-section {
+      background: var(--black);
+      padding: 10rem 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-section::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 800px;
+      height: 800px;
+      background: radial-gradient(circle, rgba(0, 255, 136, 0.1) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .cta-content {
+      position: relative;
+      max-width: 900px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .cta-title {
+      font-family: var(--font-display);
+      font-size: clamp(3rem, 7vw, 5rem);
+      font-weight: 700;
+      line-height: 1.1;
+      margin-bottom: 1.5rem;
+    }
+
+    .cta-title span {
+      background: linear-gradient(135deg, var(--electric) 0%, var(--blue) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .cta-desc {
+      font-size: 1.3rem;
+      color: var(--gray);
+      margin-bottom: 3rem;
+    }
+
+    .cta-steps {
+      display: flex;
+      justify-content: center;
+      gap: 4rem;
+      margin-bottom: 4rem;
+      flex-wrap: wrap;
+    }
+
+    .cta-step {
+      text-align: center;
+    }
+
+    .cta-step-num {
+      font-family: var(--font-display);
+      font-size: 3rem;
+      font-weight: 700;
+      color: var(--electric);
+      line-height: 1;
+    }
+
+    .cta-step-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-top: 0.5rem;
+    }
+
+    .cta-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 24px 48px;
+      background: var(--electric);
+      color: var(--black);
+      font-family: var(--font-sans);
+      font-size: 1.1rem;
+      font-weight: 700;
+      text-decoration: none;
+      border-radius: 100px;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .cta-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 60px rgba(0, 255, 136, 0.5);
+    }
+
+    .cta-footer {
+      margin-top: 5rem;
+      font-size: 0.9rem;
+      color: var(--gray);
+    }
+
+    .arrow {
+      transition: transform 0.3s ease;
+    }
+
+    .btn-hero:hover .arrow,
+    .cta-btn:hover .arrow {
+      transform: translateX(6px);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-grid"></div>
+    <div class="hero-content">
+      <div class="hero-eyebrow reveal">ProposalAI</div>
+      <h1 class="hero-title">
+        <span class="line-1 reveal reveal-delay-1">Win More.</span>
+        <span class="line-2 reveal reveal-delay-2">Faster.</span>
+      </h1>
+      <p class="hero-subtitle reveal reveal-delay-3">
+        AI-powered proposals in hours, not weeks. Turn your pipeline into revenue.
+      </p>
+      <div class="hero-cta reveal reveal-delay-4">
+        <a href="#money" class="btn-hero btn-primary">
+          See the Numbers <span class="arrow">→</span>
+        </a>
+        <a href="#how" class="btn-hero btn-ghost">How It Works</a>
+      </div>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat reveal reveal-delay-3">
+        <div class="hero-stat-value">90%</div>
+        <div class="hero-stat-label">Faster</div>
+      </div>
+      <div class="hero-stat reveal reveal-delay-4">
+        <div class="hero-stat-value">+25%</div>
+        <div class="hero-stat-label">Win Rate</div>
+      </div>
+      <div class="hero-stat reveal reveal-delay-5">
+        <div class="hero-stat-value">3x</div>
+        <div class="hero-stat-label">Pipeline</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MARQUEE -->
+  <section class="marquee-section">
+    <div class="marquee-track">
+      <div class="marquee-content">
+        <span class="marquee-item">Faster Proposals</span>
+        <span class="marquee-item">Higher Win Rates</span>
+        <span class="marquee-item">More Revenue</span>
+        <span class="marquee-item">Less Effort</span>
+        <span class="marquee-item">Verified Claims</span>
+        <span class="marquee-item">No Hallucinations</span>
+        <span class="marquee-item">Faster Proposals</span>
+        <span class="marquee-item">Higher Win Rates</span>
+        <span class="marquee-item">More Revenue</span>
+        <span class="marquee-item">Less Effort</span>
+        <span class="marquee-item">Verified Claims</span>
+        <span class="marquee-item">No Hallucinations</span>
+      </div>
+      <div class="marquee-content">
+        <span class="marquee-item">Faster Proposals</span>
+        <span class="marquee-item">Higher Win Rates</span>
+        <span class="marquee-item">More Revenue</span>
+        <span class="marquee-item">Less Effort</span>
+        <span class="marquee-item">Verified Claims</span>
+        <span class="marquee-item">No Hallucinations</span>
+        <span class="marquee-item">Faster Proposals</span>
+        <span class="marquee-item">Higher Win Rates</span>
+        <span class="marquee-item">More Revenue</span>
+        <span class="marquee-item">Less Effort</span>
+        <span class="marquee-item">Verified Claims</span>
+        <span class="marquee-item">No Hallucinations</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- MONEY SECTION -->
+  <section id="money" class="section money-section">
+    <div class="container">
+      <div class="money-header">
+        <div class="section-label reveal">Revenue Impact</div>
+        <h2 class="section-title reveal reveal-delay-1">The Numbers That <span>Drive Revenue</span></h2>
+        <p class="section-desc reveal reveal-delay-2" style="text-align: center; margin: 0 auto;">Every metric translates directly to your bottom line.</p>
+      </div>
+
+      <div class="money-grid">
+        <div class="money-card reveal">
+          <div class="money-icon">⚡</div>
+          <div class="money-value">90%</div>
+          <div class="money-metric">Faster Delivery</div>
+          <h3 class="money-title">Weeks → Hours</h3>
+          <p class="money-desc">First draft in minutes. Polished proposal in hours. Beat competitors to the punch.</p>
+          <div class="money-impact"><strong>Impact:</strong> Respond to 3x more RFPs with the same team</div>
+        </div>
+
+        <div class="money-card featured reveal reveal-delay-1">
+          <div class="money-icon">📈</div>
+          <div class="money-value">+25%</div>
+          <div class="money-metric">Win Rate Lift</div>
+          <h3 class="money-title">Close More Deals</h3>
+          <p class="money-desc">Better targeting. Consistent quality. Every proposal aligned to what wins.</p>
+          <div class="money-impact"><strong>Impact:</strong> $100M pipeline → $25M more in wins</div>
+        </div>
+
+        <div class="money-card reveal reveal-delay-2">
+          <div class="money-icon">🚀</div>
+          <div class="money-value">3x</div>
+          <div class="money-metric">Pipeline Capacity</div>
+          <h3 class="money-title">Scale Without Hiring</h3>
+          <p class="money-desc">Same team, triple the opportunities. No new headcount required.</p>
+          <div class="money-impact"><strong>Impact:</strong> Grow revenue without growing costs</div>
+        </div>
+      </div>
+
+      <div class="money-bottom reveal">
+        <div class="money-bottom-text">
+          <div class="money-bottom-title">The Math is Simple</div>
+          <div class="money-bottom-desc">More proposals × higher win rate = significant revenue growth</div>
+        </div>
+        <div class="money-bottom-stat">
+          <div class="money-bottom-stat-value">$$$</div>
+          <div class="money-bottom-stat-label">More Revenue</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROBLEM -->
+  <section class="section problem-section">
+    <div class="container">
+      <div class="problem-grid">
+        <div class="problem-content">
+          <div class="section-label reveal">The Problem</div>
+          <h2 class="section-title reveal reveal-delay-1">Why Proposals<br>Take Forever</h2>
+          <p class="section-desc reveal reveal-delay-2">These bottlenecks cost you deals every single quarter.</p>
+        </div>
+
+        <div class="problem-list">
+          <div class="problem-item reveal">
+            <div class="problem-icon">⏱️</div>
+            <div class="problem-text">
+              <h4>Weeks Per Proposal</h4>
+              <p>Competitors win while you're still writing.</p>
+            </div>
+          </div>
+          <div class="problem-item reveal reveal-delay-1">
+            <div class="problem-icon">🎲</div>
+            <div class="problem-text">
+              <h4>Quality Roulette</h4>
+              <p>Output varies by who's available.</p>
+            </div>
+          </div>
+          <div class="problem-item reveal reveal-delay-2">
+            <div class="problem-icon">🗂️</div>
+            <div class="problem-text">
+              <h4>Knowledge Silos</h4>
+              <p>Best content buried in random folders.</p>
+            </div>
+          </div>
+          <div class="problem-item reveal reveal-delay-3">
+            <div class="problem-icon">🧑‍💼</div>
+            <div class="problem-text">
+              <h4>Expert Bottlenecks</h4>
+              <p>Senior people stuck writing, not selling.</p>
+            </div>
+          </div>
+          <div class="problem-item reveal reveal-delay-4">
+            <div class="problem-icon">📉</div>
+            <div class="problem-text">
+              <h4>Missed Deals</h4>
+              <p>Can't pursue enough opportunities.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- IDD -->
+  <section class="section idd-section">
+    <div class="container">
+      <div class="idd-header">
+        <div>
+          <div class="section-label reveal">Our Approach</div>
+          <h2 class="section-title reveal reveal-delay-1">Intent-Driven Development</h2>
+        </div>
+        <p class="section-desc reveal reveal-delay-2">Every claim verified. Zero hallucinations.</p>
+      </div>
+
+      <div class="idd-grid">
+        <div class="idd-card reveal">
+          <div class="idd-card-inner">
+            <div class="idd-num">L1</div>
+            <h3 class="idd-title">Company Truth</h3>
+            <p class="idd-desc">Verified capabilities, real case studies, actual metrics. The source of truth.</p>
+          </div>
+        </div>
+        <div class="idd-card reveal reveal-delay-1">
+          <div class="idd-card-inner">
+            <div class="idd-num">L2</div>
+            <h3 class="idd-title">Proposal Intent</h3>
+            <p class="idd-desc">Client outcomes, win strategy, constraints. Human goals that guide AI.</p>
+          </div>
+        </div>
+        <div class="idd-card reveal reveal-delay-2">
+          <div class="idd-card-inner">
+            <div class="idd-num">L3</div>
+            <h3 class="idd-title">Generated Content</h3>
+            <p class="idd-desc">AI-created, human-reviewed. Every claim traces back to source.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="idd-callout reveal">
+        <div class="idd-callout-icon">✓</div>
+        <p class="idd-callout-text"><strong>No made-up statistics.</strong> No unverifiable claims. Every metric from real engagements. BMW 5,200+ apps. HMRC £245M. Real numbers.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEPS -->
+  <section id="how" class="section steps-section">
+    <div class="container">
+      <div class="section-label reveal">Process</div>
+      <h2 class="section-title reveal reveal-delay-1">Brief to Proposal in One Afternoon</h2>
+    </div>
+    <div class="steps-track" style="margin-top: 3rem;">
+      <div class="step-card reveal">
+        <div class="step-num">01</div>
+        <h3 class="step-title">Define</h3>
+        <p class="step-desc">Client, industry, opportunity type</p>
+      </div>
+      <div class="step-card reveal reveal-delay-1">
+        <div class="step-num">02</div>
+        <h3 class="step-title">Set Outcomes</h3>
+        <p class="step-desc">Win strategy & success metrics</p>
+      </div>
+      <div class="step-card reveal reveal-delay-2">
+        <div class="step-num">03</div>
+        <h3 class="step-title">Generate</h3>
+        <p class="step-desc">AI builds using verified content</p>
+      </div>
+      <div class="step-card reveal reveal-delay-3">
+        <div class="step-num">04</div>
+        <h3 class="step-title">Review</h3>
+        <p class="step-desc">Refine and collaborate</p>
+      </div>
+      <div class="step-card reveal reveal-delay-4">
+        <div class="step-num">05</div>
+        <h3 class="step-title">Export</h3>
+        <p class="step-desc">PPTX, DOCX, PDF, Web</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="section features-section">
+    <div class="container">
+      <div class="features-grid">
+        <div>
+          <div class="section-label reveal">Platform</div>
+          <h2 class="section-title reveal reveal-delay-1">Built for<br>Proposal Teams</h2>
+          <div class="features-list" style="margin-top: 2rem;">
+            <div class="feature-item reveal">
+              <span class="feature-check">✓</span>
+              <span class="feature-text">Step-by-step wizard</span>
+            </div>
+            <div class="feature-item reveal reveal-delay-1">
+              <span class="feature-check">✓</span>
+              <span class="feature-text">AI with source citations</span>
+            </div>
+            <div class="feature-item reveal reveal-delay-2">
+              <span class="feature-check">✓</span>
+              <span class="feature-text">Win strategy analysis</span>
+            </div>
+            <div class="feature-item reveal reveal-delay-3">
+              <span class="feature-check">✓</span>
+              <span class="feature-text">Version history</span>
+            </div>
+            <div class="feature-item reveal">
+              <span class="feature-check">✓</span>
+              <span class="feature-text">Team collaboration</span>
+            </div>
+            <div class="feature-item reveal reveal-delay-1">
+              <span class="feature-check">✓</span>
+              <span class="feature-text">Multi-format export</span>
+            </div>
+            <div class="feature-item reveal reveal-delay-2">
+              <span class="feature-check">✓</span>
+              <span class="feature-text">CCMF, ADMnext, eAPM</span>
+            </div>
+            <div class="feature-item reveal reveal-delay-3">
+              <span class="feature-check">✓</span>
+              <span class="feature-text">Knowledge base RAG</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="features-panel reveal">
+          <div class="features-panel-content">
+            <h3>Speed is Everything</h3>
+            <div class="panel-feature">
+              <div class="panel-feature-title">Real-Time Generation</div>
+              <div class="panel-feature-desc">Watch sections build live. No waiting.</div>
+            </div>
+            <div class="panel-feature">
+              <div class="panel-feature-title">Inline Editing</div>
+              <div class="panel-feature-desc">Edit without switching tools.</div>
+            </div>
+            <div class="panel-feature">
+              <div class="panel-feature-title">Source Transparency</div>
+              <div class="panel-feature-desc">See where every claim comes from.</div>
+            </div>
+            <div class="panel-feature">
+              <div class="panel-feature-title">One-Click Export</div>
+              <div class="panel-feature-desc">Ready for submission instantly.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <div class="cta-content">
+      <h2 class="cta-title reveal">Ready to <span>Win More?</span></h2>
+      <p class="cta-desc reveal reveal-delay-1">Join the pilot and see the impact on your pipeline.</p>
+
+      <div class="cta-steps reveal reveal-delay-2">
+        <div class="cta-step">
+          <div class="cta-step-num">1</div>
+          <div class="cta-step-title">Pilot</div>
+        </div>
+        <div class="cta-step">
+          <div class="cta-step-num">2</div>
+          <div class="cta-step-title">Train</div>
+        </div>
+        <div class="cta-step">
+          <div class="cta-step-num">3</div>
+          <div class="cta-step-title">Scale</div>
+        </div>
+      </div>
+
+      <a href="#" class="cta-btn reveal reveal-delay-3">
+        Start the Pilot <span class="arrow">→</span>
+      </a>
+
+      <p class="cta-footer reveal reveal-delay-4">ProposalAI · Capgemini</p>
+    </div>
+  </section>
+
+  <script>
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) entry.target.classList.add('revealed');
+        });
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+    );
+    document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+  </script>
+</body>
+</html>

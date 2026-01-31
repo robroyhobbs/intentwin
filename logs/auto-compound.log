@@ -1,0 +1,74 @@
+=== Auto-Compound Started: Thu Jan 29 23:00:04 PST 2026 ===
+From https://github.com/robroyhobbs/proposal-generator
+ * branch            main       -> FETCH_HEAD
+Already on 'main'
+M	.gitignore
+M	scripts/apply-migrations.ts
+M	src/app/(dashboard)/knowledge-base/page.tsx
+M	src/app/(dashboard)/knowledge-base/search/page.tsx
+M	src/app/(dashboard)/knowledge-base/upload/page.tsx
+M	src/app/(dashboard)/layout.tsx
+M	src/app/(dashboard)/proposals/[id]/export/page.tsx
+M	src/app/(dashboard)/proposals/[id]/page.tsx
+M	src/app/(dashboard)/proposals/new/page.tsx
+M	src/app/(dashboard)/proposals/page.tsx
+M	src/app/(dashboard)/settings/page.tsx
+M	src/app/api/proposals/[id]/export/route.ts
+M	src/app/globals.css
+M	src/components/layout/header.tsx
+M	src/components/mermaid-renderer.tsx
+M	src/components/proposal-content-renderer.tsx
+M	src/components/review/review-comments-panel.tsx
+M	src/components/review/review-summary-bar.tsx
+M	src/components/ui/breadcrumb.tsx
+M	src/components/ui/proposal-card.tsx
+M	src/components/ui/rich-text-editor.tsx
+M	src/components/ui/section-nav-sidebar.tsx
+M	src/components/ui/section-status-badge.tsx
+M	src/components/ui/skeleton.tsx
+M	src/lib/ai/pipeline.ts
+M	src/lib/documents/parsers/pdf.ts
+M	src/lib/export/pptx-generator.ts
+Your branch is ahead of 'origin/main' by 2 commits.
+  (use "git push" to publish your local commits)
+From https://github.com/robroyhobbs/proposal-generator
+ * branch            main       -> FETCH_HEAD
+Already up to date.
+Top Priority Found:
+### Priority 1: Multi-Tenancy Migration [CRITICAL]
+**Branch:** `feat/multi-tenancy`
+**Effort:** Large
+**Impact:** Blocker for everything else
+
+Tasks:
+- [ ] Create organizations table migration
+- [ ] Add organization_id to profiles table
+- [ ] Add organization_id to proposals table
+- [ ] Add organization_id to documents table
+- [ ] Update RLS policies for organization scoping
+- [ ] Fix company_context/evidence_library global access issue
+- [ ] Update all API routes with organization context
+
+### Priority 2: Stripe Integration [CRITICAL]
+**Branch:** `feat/stripe-billing`
+**Effort:** Large
+**Impact:** Required for revenue
+
+Tasks:
+- [ ] Install Stripe SDK
+Using branch: feat/multi-tenancy
+Switched to a new branch 'feat/multi-tenancy'
+Starting implementation loop...
+Starting implementation loop (max 15 iterations)...
+
+=== Iteration 1 of 15 ===
+remote: 
+remote: Create a pull request for 'feat/multi-tenancy' on GitHub by visiting:        
+remote:      https://github.com/robroyhobbs/proposal-generator/pull/new/feat/multi-tenancy        
+remote: 
+To https://github.com/robroyhobbs/proposal-generator.git
+ * [new branch]      feat/multi-tenancy -> feat/multi-tenancy
+branch 'feat/multi-tenancy' set up to track 'origin/feat/multi-tenancy'.
+Warning: 54 uncommitted changes
+https://github.com/robroyhobbs/proposal-generator/pull/1
+=== Auto-Compound Completed: Thu Jan 29 23:00:09 PST 2026 ===

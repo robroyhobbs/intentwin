@@ -49,9 +49,9 @@ export function RichTextEditor({
   if (!editor) return null;
 
   return (
-    <div className={cn("rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden", className)}>
+    <div className={cn("rounded-xl border border-[var(--border)] bg-[var(--card-bg)] shadow-sm overflow-hidden", className)}>
       {/* Toolbar */}
-      <div className="flex items-center gap-1 border-b border-gray-100 px-3 py-2 bg-gray-50/50">
+      <div className="flex items-center gap-1 border-b border-[var(--border)] px-3 py-2 bg-[var(--background-tertiary)]">
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBold().run()}
           active={editor.isActive("bold")}
@@ -67,7 +67,7 @@ export function RichTextEditor({
           <Italic className="h-4 w-4" />
         </ToolbarButton>
 
-        <div className="mx-1.5 h-5 w-px bg-gray-200" />
+        <div className="divider-vertical h-5" />
 
         <ToolbarButton
           onClick={() =>
@@ -88,7 +88,7 @@ export function RichTextEditor({
           <Heading3 className="h-4 w-4" />
         </ToolbarButton>
 
-        <div className="mx-1.5 h-5 w-px bg-gray-200" />
+        <div className="divider-vertical h-5" />
 
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBulletList().run()}
@@ -105,7 +105,7 @@ export function RichTextEditor({
           <ListOrdered className="h-4 w-4" />
         </ToolbarButton>
 
-        <div className="mx-1.5 h-5 w-px bg-gray-200" />
+        <div className="divider-vertical h-5" />
 
         <ToolbarButton
           onClick={() => editor.chain().focus().undo().run()}
@@ -149,9 +149,9 @@ function ToolbarButton({
       disabled={disabled}
       title={title}
       className={cn(
-        "rounded-lg p-1.5 text-gray-400 hover:bg-white hover:text-gray-700 hover:shadow-sm transition-all duration-150",
-        active && "bg-[#0070AD]/10 text-[#0070AD] shadow-sm",
-        disabled && "opacity-30 cursor-not-allowed hover:bg-transparent hover:text-gray-400 hover:shadow-none"
+        "rounded-md p-1.5 text-[var(--foreground-muted)] hover:bg-[var(--card-bg)] hover:text-[var(--foreground)] transition-colors",
+        active && "bg-[var(--accent-subtle)] text-[var(--accent)]",
+        disabled && "opacity-30 cursor-not-allowed hover:bg-transparent hover:text-[var(--foreground-muted)]"
       )}
     >
       {children}

@@ -1,0 +1,21 @@
+# ProposalAI Robots.txt
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://proposalai.com/sitemap.xml
+
+# Disallow admin and API routes
+Disallow: /api/
+Disallow: /proposals/
+Disallow: /settings/
+Disallow: /onboarding/
+
+# Allow public pages
+Allow: /
+Allow: /pricing
+Allow: /about
+Allow: /blog/
+Allow: /login
+Allow: /signup

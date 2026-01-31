@@ -10,6 +10,7 @@ interface ProposalSection {
 interface ProposalData {
   title: string;
   client_name: string;
+  company_name?: string;
   date: string;
   sections: ProposalSection[];
 }
@@ -126,6 +127,8 @@ function escapeHtml(text: string): string {
 const ACCENT_COLORS = ["#0070AD", "#12ABDB", "#1B365D", "#0070AD", "#12ABDB"];
 
 export async function generateHtml(data: ProposalData): Promise<string> {
+  const companyName = data.company_name || "ProposalAI";
+
   // Collect all mermaid blocks for batch SVG conversion
   const allMermaidCodes: string[] = [];
   for (const section of data.sections) {
@@ -185,9 +188,9 @@ export async function generateHtml(data: ProposalData): Promise<string> {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${escapeHtml(data.title)} | Capgemini</title>
+<title>${escapeHtml(data.title)} | ${escapeHtml(companyName)}</title>
 <meta name="description" content="Proposal for ${escapeHtml(data.client_name)} - ${escapeHtml(data.title)}">
-<meta property="og:title" content="${escapeHtml(data.title)} | Capgemini">
+<meta property="og:title" content="${escapeHtml(data.title)} | ${escapeHtml(companyName)}">
 <meta property="og:description" content="Proposal prepared for ${escapeHtml(data.client_name)}">
 <meta property="og:type" content="website">
 <meta name="theme-color" content="#0070AD">
@@ -644,7 +647,7 @@ export async function generateHtml(data: ProposalData): Promise<string> {
   <div class="hero-inner">
     <div class="hero-label">
       <span class="dot"></span>
-      Capgemini Proposal
+      ${escapeHtml(companyName)} Proposal
     </div>
     <h1>${escapeHtml(data.title)}</h1>
     <p class="subtitle">Prepared exclusively for ${escapeHtml(data.client_name)}</p>
@@ -690,7 +693,7 @@ export async function generateHtml(data: ProposalData): Promise<string> {
 
 <!-- Footer -->
 <footer class="footer">
-  <p class="footer-brand"><span>Capgemini</span> Proposal Generator</p>
+  <p class="footer-brand"><span>${escapeHtml(companyName)}</span> Proposal Generator</p>
   <div class="footer-divider"></div>
   <p>${escapeHtml(data.title)}</p>
   <p>Prepared for ${escapeHtml(data.client_name)} &middot; ${escapeHtml(data.date)}</p>

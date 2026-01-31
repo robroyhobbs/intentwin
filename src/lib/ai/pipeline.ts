@@ -10,9 +10,11 @@ import { buildCaseStudiesPrompt } from "./prompts/case-studies";
 import { buildTimelinePrompt } from "./prompts/timeline";
 import { buildPricingPrompt } from "./prompts/pricing";
 import { buildRiskMitigationPrompt } from "./prompts/risk-mitigation";
-import { buildWhyCapgeminiPrompt } from "./prompts/why-capgemini";
+import { buildWhyUsPrompt } from "./prompts/why-us";
+import { createProposalVersion } from "@/lib/versioning/create-version";
+import { loadSources, formatSourcesAsL1Context } from "@/lib/sources";
 import type { WinStrategyData } from "@/types/outcomes";
-import type { OutcomeContract, CompanyContext, ProductContext, EvidenceLibraryEntry } from "@/types/idd";
+import type { OutcomeContract, CompanyContext, ProductContext, EvidenceLibraryEntry, CompanyInfo } from "@/types/idd";
 
 // L1 Context: Company Truth
 interface L1Context {
@@ -29,7 +31,8 @@ interface SectionConfig {
     intakeData: Record<string, unknown>,
     analysis: string,
     retrievedContext: string,
-    winStrategy?: WinStrategyData | null
+    winStrategy?: WinStrategyData | null,
+    companyInfo?: CompanyInfo
   ) => string;
   searchQuery: (intakeData: Record<string, unknown>) => string;
 }
@@ -108,12 +111,12 @@ const SECTION_CONFIGS: SectionConfig[] = [
       `risk mitigation ${d.opportunity_type} challenges governance`,
   },
   {
-    type: "why_capgemini",
-    title: "Why Capgemini",
+    type: "why_us",
+    title: "Why Us",
     order: 10,
-    buildPrompt: buildWhyCapgeminiPrompt,
+    buildPrompt: buildWhyUsPrompt,
     searchQuery: (d) =>
-      `why capgemini differentiators partnerships ${d.client_industry} capabilities`,
+      `differentiators partnerships ${d.client_industry} capabilities unique value proposition`,
   },
 ];
 
@@ -306,10 +309,10 @@ export async function generateProposal(proposalId: string): Promise<void> {
     .eq("id", proposalId);
 
   try {
-    // Fetch proposal
+    // Fetch proposal with organization
     const { data: proposal, error: fetchError } = await supabase
       .from("proposals")
-      .select("*")
+      .select("*, organizations(name, settings)")
       .eq("id", proposalId)
       .single();
 
@@ -321,6 +324,14 @@ export async function generateProposal(proposalId: string): Promise<void> {
     const winStrategy = (proposal.win_strategy_data as WinStrategyData) || null;
     const outcomeContract = (proposal.outcome_contract as OutcomeContract) || null;
 
+    // Get company info from organization
+    const orgData = proposal.organizations as { name: string; settings?: Record<string, unknown> } | null;
+    const companyInfo: CompanyInfo = {
+      name: orgData?.name || "Our Company",
+      description: (orgData?.settings?.description as string) || undefined,
+      industry: (orgData?.settings?.industry as string) || undefined,
+    };
+
     // IDD Stage 0: Fetch L1 Context (Company Truth)
     const serviceLine = intakeData.opportunity_type as string || undefined;
     const industry = intakeData.client_industry as string || undefined;
@@ -328,9 +339,22 @@ export async function generateProposal(proposalId: string): Promise<void> {
 
     console.log(`[IDD] Fetched L1 context: ${l1Context.companyContext.length} company, ${l1Context.productContexts.length} products, ${l1Context.evidenceLibrary.length} evidence`);
 
+    // Load static sources from sources/ directory
+    let staticSourcesContext = "";
+    try {
+      const staticSources = await loadSources();
+      staticSourcesContext = formatSourcesAsL1Context(staticSources, {
+        opportunityType: serviceLine,
+        industry: industry,
+      });
+      console.log(`[IDD] Loaded static sources: ${staticSources.all.length} files (${staticSources.methodologies.length} methodologies, ${staticSources.caseStudies.length} case studies)`);
+    } catch (sourceError) {
+      console.warn("[IDD] Failed to load static sources, continuing with database context only:", sourceError);
+    }
+
     // Build context strings for prompts
     const outcomeContractContext = buildOutcomeContractContext(outcomeContract);
-    const l1ContextString = buildL1ContextString(l1Context);
+    const l1ContextString = buildL1ContextString(l1Context) + staticSourcesContext;
 
     // Stage 1: Strategic Analysis (incorporating win strategy and outcome contract)
     const analysis = await generateStructuredAnalysis(
@@ -379,8 +403,8 @@ export async function generateProposal(proposalId: string): Promise<void> {
           searchQuery
         );
 
-        // Build the prompt (with win strategy, outcome contract, and L1 context for IDD)
-        const prompt = config.buildPrompt(intakeData, enhancedAnalysis, context, winStrategy);
+        // Build the prompt (with win strategy, outcome contract, L1 context, and company info for IDD)
+        const prompt = config.buildPrompt(intakeData, enhancedAnalysis, context, winStrategy, companyInfo);
 
         // Generate the section content
         const generatedContent = await generateText(prompt);
@@ -428,6 +452,14 @@ export async function generateProposal(proposalId: string): Promise<void> {
         generation_completed_at: new Date().toISOString(),
       })
       .eq("id", proposalId);
+
+    // Create a version snapshot after generation completes
+    await createProposalVersion({
+      proposalId,
+      triggerEvent: "generation_complete",
+      changeSummary: "AI generation completed for all sections",
+      label: "Initial Generation",
+    });
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";

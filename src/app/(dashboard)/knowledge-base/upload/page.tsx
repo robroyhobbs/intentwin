@@ -110,10 +110,14 @@ export default function UploadPage() {
     }
   }
 
+  const fieldClass =
+    "mt-1 block w-full rounded-lg border border-[var(--border)] bg-[var(--card-bg)] px-3 py-2 text-sm text-[var(--foreground)] shadow-sm focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]";
+  const labelClass = "block text-sm font-medium text-[var(--foreground)]";
+
   return (
     <div className="max-w-2xl">
-      <h1 className="text-2xl font-bold text-gray-900">Upload Document</h1>
-      <p className="mt-1 text-sm text-gray-500">
+      <h1 className="text-2xl font-bold text-[var(--foreground)]">Upload Document</h1>
+      <p className="mt-1 text-sm text-[var(--foreground-muted)]">
         Add a document to the knowledge base for proposal generation
       </p>
 
@@ -123,19 +127,19 @@ export default function UploadPage() {
           {...getRootProps()}
           className={`rounded-lg border-2 border-dashed p-8 text-center cursor-pointer transition-colors ${
             isDragActive
-              ? "border-blue-400 bg-blue-50"
+              ? "border-[var(--accent)] bg-[var(--accent-subtle)]"
               : file
-              ? "border-green-400 bg-green-50"
-              : "border-gray-300 hover:border-gray-400"
+              ? "border-[var(--success)] bg-[var(--success-subtle)]"
+              : "border-[var(--border)] hover:border-[var(--foreground-subtle)]"
           }`}
         >
           <input {...getInputProps()} />
           {file ? (
             <div className="flex items-center justify-center gap-3">
-              <FileText className="h-8 w-8 text-green-500" />
+              <FileText className="h-8 w-8 text-[var(--success)]" />
               <div className="text-left">
-                <p className="text-sm font-medium text-gray-900">{file.name}</p>
-                <p className="text-xs text-gray-500">
+                <p className="text-sm font-medium text-[var(--foreground)]">{file.name}</p>
+                <p className="text-xs text-[var(--foreground-muted)]">
                   {(file.size / 1024 / 1024).toFixed(1)} MB
                 </p>
               </div>
@@ -145,20 +149,20 @@ export default function UploadPage() {
                   e.stopPropagation();
                   setFile(null);
                 }}
-                className="ml-2 rounded-full p-1 hover:bg-gray-200"
+                className="ml-2 rounded-full p-1 hover:bg-[var(--background-tertiary)]"
               >
-                <X className="h-4 w-4 text-gray-500" />
+                <X className="h-4 w-4 text-[var(--foreground-muted)]" />
               </button>
             </div>
           ) : (
             <>
-              <Upload className="mx-auto h-10 w-10 text-gray-400" />
-              <p className="mt-2 text-sm text-gray-600">
+              <Upload className="mx-auto h-10 w-10 text-[var(--foreground-subtle)]" />
+              <p className="mt-2 text-sm text-[var(--foreground-muted)]">
                 {isDragActive
                   ? "Drop the file here"
                   : "Drag and drop a file, or click to browse"}
               </p>
-              <p className="mt-1 text-xs text-gray-400">
+              <p className="mt-1 text-xs text-[var(--foreground-subtle)]">
                 DOCX, PDF, or PPTX (max 50MB)
               </p>
             </>
@@ -168,7 +172,7 @@ export default function UploadPage() {
         {/* Metadata fields */}
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className={labelClass}>
               Title *
             </label>
             <input
@@ -176,31 +180,31 @@ export default function UploadPage() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
-              className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className={fieldClass}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className={labelClass}>
               Description
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
-              className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className={fieldClass}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className={labelClass}>
                 Document Type
               </label>
               <select
                 value={documentType}
                 onChange={(e) => setDocumentType(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className={fieldClass}
               >
                 {DOCUMENT_TYPES.map((dt) => (
                   <option key={dt.value} value={dt.value}>
@@ -211,13 +215,13 @@ export default function UploadPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className={labelClass}>
                 Win Status
               </label>
               <select
                 value={winStatus}
                 onChange={(e) => setWinStatus(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className={fieldClass}
               >
                 <option value="unknown">Unknown</option>
                 <option value="won">Won</option>
@@ -229,13 +233,13 @@ export default function UploadPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className={labelClass}>
                 Industry
               </label>
               <select
                 value={industry}
                 onChange={(e) => setIndustry(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className={fieldClass}
               >
                 <option value="">Select industry...</option>
                 {INDUSTRIES.map((i) => (
@@ -247,13 +251,13 @@ export default function UploadPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className={labelClass}>
                 Service Line
               </label>
               <select
                 value={serviceLine}
                 onChange={(e) => setServiceLine(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className={fieldClass}
               >
                 <option value="">Select service line...</option>
                 {SERVICE_LINES.map((s) => (
@@ -266,14 +270,14 @@ export default function UploadPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className={labelClass}>
               Client Name (optional, will be anonymized)
             </label>
             <input
               type="text"
               value={clientName}
               onChange={(e) => setClientName(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className={fieldClass}
             />
           </div>
         </div>
@@ -281,7 +285,7 @@ export default function UploadPage() {
         <button
           type="submit"
           disabled={!file || !title || uploading}
-          className="w-full rounded-md bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {uploading ? (
             <>

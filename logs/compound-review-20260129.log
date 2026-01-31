@@ -1,0 +1,38 @@
+=== Compound Review Started: Thu Jan 29 22:30:02 PST 2026 ===
+From https://github.com/robroyhobbs/proposal-generator
+ * branch            main       -> FETCH_HEAD
+Already on 'main'
+M	.gitignore
+M	scripts/apply-migrations.ts
+M	src/app/(dashboard)/knowledge-base/page.tsx
+M	src/app/(dashboard)/knowledge-base/search/page.tsx
+M	src/app/(dashboard)/knowledge-base/upload/page.tsx
+M	src/app/(dashboard)/layout.tsx
+M	src/app/(dashboard)/proposals/[id]/export/page.tsx
+M	src/app/(dashboard)/proposals/[id]/page.tsx
+M	src/app/(dashboard)/proposals/new/page.tsx
+M	src/app/(dashboard)/proposals/page.tsx
+M	src/app/(dashboard)/settings/page.tsx
+M	src/app/api/proposals/[id]/export/route.ts
+M	src/app/globals.css
+M	src/components/layout/header.tsx
+M	src/components/mermaid-renderer.tsx
+M	src/components/proposal-content-renderer.tsx
+M	src/components/review/review-comments-panel.tsx
+M	src/components/review/review-summary-bar.tsx
+M	src/components/ui/breadcrumb.tsx
+M	src/components/ui/proposal-card.tsx
+M	src/components/ui/rich-text-editor.tsx
+M	src/components/ui/section-nav-sidebar.tsx
+M	src/components/ui/section-status-badge.tsx
+M	src/components/ui/skeleton.tsx
+M	src/lib/ai/pipeline.ts
+M	src/lib/documents/parsers/pdf.ts
+M	src/lib/export/pptx-generator.ts
+Your branch is ahead of 'origin/main' by 1 commit.
+  (use "git push" to publish your local commits)
+From https://github.com/robroyhobbs/proposal-generator
+ * branch            main       -> FETCH_HEAD
+Already up to date.
+/Users/robroyhobbs/projects/capgemini-proposal-generator/scripts/daily-compound-review.sh: line 23: claude: command not found
+=== Compound Review Completed: Thu Jan 29 22:30:03 PST 2026 ===

@@ -56,10 +56,13 @@ export default function SearchPage() {
     }
   }
 
+  const fieldClass =
+    "block w-full rounded-lg border border-[var(--border)] bg-[var(--card-bg)] px-4 py-2.5 text-sm text-[var(--foreground)] shadow-sm focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]";
+
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900">Search Knowledge Base</h1>
-      <p className="mt-1 text-sm text-gray-500">
+      <h1 className="text-2xl font-bold text-[var(--foreground)]">Search Knowledge Base</h1>
+      <p className="mt-1 text-sm text-[var(--foreground-muted)]">
         Search across all indexed documents using natural language
       </p>
 
@@ -71,13 +74,13 @@ export default function SearchPage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="e.g. AWS cloud migration strategy for financial services"
-              className="block w-full rounded-md border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className={fieldClass}
             />
           </div>
           <select
             value={documentType}
             onChange={(e) => setDocumentType(e.target.value)}
-            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+            className="rounded-lg border border-[var(--border)] bg-[var(--card-bg)] px-3 py-2 text-sm text-[var(--foreground)]"
           >
             <option value="">All types</option>
             <option value="proposal">Proposals</option>
@@ -88,7 +91,7 @@ export default function SearchPage() {
           <button
             type="submit"
             disabled={loading || !query.trim()}
-            className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className="btn-primary inline-flex items-center gap-2 disabled:opacity-50"
           >
             {loading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -104,14 +107,14 @@ export default function SearchPage() {
       <div className="mt-8">
         {loading && (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+            <Loader2 className="h-8 w-8 animate-spin text-[var(--accent)]" />
           </div>
         )}
 
         {!loading && searched && results.length === 0 && (
-          <div className="rounded-lg border border-gray-200 bg-white p-8 text-center">
-            <Search className="mx-auto h-10 w-10 text-gray-300" />
-            <p className="mt-3 text-sm text-gray-500">
+          <div className="card p-8 text-center">
+            <Search className="mx-auto h-10 w-10 text-[var(--foreground-subtle)]" />
+            <p className="mt-3 text-sm text-[var(--foreground-muted)]">
               No results found. Try different search terms.
             </p>
           </div>
@@ -119,40 +122,40 @@ export default function SearchPage() {
 
         {!loading && results.length > 0 && (
           <div className="space-y-4">
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-[var(--foreground-muted)]">
               {results.length} result{results.length !== 1 ? "s" : ""} found
             </p>
             {results.map((result) => (
               <div
                 key={result.id}
-                className="rounded-lg border border-gray-200 bg-white p-5"
+                className="card p-5"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm font-medium text-gray-900">
+                    <FileText className="h-4 w-4 text-[var(--foreground-subtle)]" />
+                    <span className="text-sm font-medium text-[var(--foreground)]">
                       {result.document_title}
                     </span>
                     {result.section_heading && (
-                      <span className="text-sm text-gray-400">
+                      <span className="text-sm text-[var(--foreground-subtle)]">
                         &middot; {result.section_heading}
                       </span>
                     )}
                   </div>
-                  <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                  <span className="badge badge-generating">
                     {(result.similarity * 100).toFixed(0)}% match
                   </span>
                 </div>
-                <p className="mt-3 text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
+                <p className="mt-3 text-sm text-[var(--foreground-muted)] leading-relaxed whitespace-pre-wrap">
                   {result.content.length > 500
                     ? result.content.slice(0, 500) + "..."
                     : result.content}
                 </p>
                 <div className="mt-2 flex gap-2">
-                  <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                  <span className="rounded bg-[var(--background-tertiary)] px-2 py-0.5 text-xs text-[var(--foreground-muted)]">
                     {result.document_type.replace("_", " ")}
                   </span>
-                  <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                  <span className="rounded bg-[var(--background-tertiary)] px-2 py-0.5 text-xs text-[var(--foreground-muted)]">
                     {result.file_name}
                   </span>
                 </div>

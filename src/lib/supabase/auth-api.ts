@@ -152,3 +152,49 @@ export async function incrementUsage(
     .update({ usage_current_period: currentUsage })
     .eq("id", organizationId);
 }
+
+/**
+ * Verify user has access to a resource (proposal or document) in their organization.
+ * Returns the resource if access is granted, null otherwise.
+ * IMPORTANT: Use this for all routes that access resources by ID with adminClient.
+ */
+export async function verifyProposalAccess(
+  context: UserContext,
+  proposalId: string
+): Promise<{ id: string; organization_id: string; [key: string]: unknown } | null> {
+  const adminClient = createAdminClient();
+  const { data: proposal, error } = await adminClient
+    .from("proposals")
+    .select("*")
+    .eq("id", proposalId)
+    .eq("organization_id", context.organizationId)
+    .single();
+
+  if (error || !proposal) {
+    return null;
+  }
+
+  return proposal;
+}
+
+/**
+ * Verify user has access to a document in their organization.
+ */
+export async function verifyDocumentAccess(
+  context: UserContext,
+  documentId: string
+): Promise<{ id: string; organization_id: string; [key: string]: unknown } | null> {
+  const adminClient = createAdminClient();
+  const { data: document, error } = await adminClient
+    .from("documents")
+    .select("*")
+    .eq("id", documentId)
+    .eq("organization_id", context.organizationId)
+    .single();
+
+  if (error || !document) {
+    return null;
+  }
+
+  return document;
+}

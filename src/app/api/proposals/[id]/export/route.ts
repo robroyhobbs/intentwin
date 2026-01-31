@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getAuthUser } from "@/lib/supabase/auth-api";
+import { getUserContext } from "@/lib/supabase/auth-api";
 import { generateDocx } from "@/lib/export/docx-generator";
 import { generatePptx } from "@/lib/export/pptx-generator";
 import { generateHtml } from "@/lib/export/html-generator";
+import { generateSlides } from "@/lib/export/slides-generator";
 import { generatePdf } from "@/lib/export/pdf-generator";
+import { createProposalVersion } from "@/lib/versioning/create-version";
 import { nanoid } from "nanoid";
 import { format } from "date-fns";
 
@@ -14,29 +16,33 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const user = await getAuthUser(request);
+    const context = await getUserContext(request);
 
-    if (!user) {
+    if (!context) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
-    const formatType = body.format as "docx" | "pptx" | "html" | "pdf";
+    const formatType = body.format as "docx" | "pptx" | "html" | "slides" | "pdf";
 
-    if (!["docx", "pptx", "html", "pdf"].includes(formatType)) {
+    if (!["docx", "pptx", "html", "slides", "pdf"].includes(formatType)) {
       return NextResponse.json(
-        { error: 'Format must be "docx", "pptx", "html", or "pdf"' },
+        { error: 'Format must be "docx", "pptx", "html", "slides", or "pdf"' },
         { status: 400 }
       );
     }
 
     const adminClient = createAdminClient();
 
-    // Fetch proposal with sections
+    // Fetch proposal with organization data for branding (with org verification)
     const { data: proposal } = await adminClient
       .from("proposals")
-      .select("*")
+      .select(`
+        *,
+        organization:organizations(id, name)
+      `)
       .eq("id", id)
+      .eq("organization_id", context.organizationId)
       .single();
 
     if (!proposal) {
@@ -45,6 +51,9 @@ export async function POST(
         { status: 404 }
       );
     }
+
+    // Get organization name for exports
+    const organizationName = proposal.organization?.name || "ProposalAI";
 
     const { data: sections } = await adminClient
       .from("proposal_sections")
@@ -60,10 +69,19 @@ export async function POST(
       );
     }
 
+    // Create a version snapshot before export
+    await createProposalVersion({
+      proposalId: id,
+      triggerEvent: "pre_export",
+      changeSummary: `Exported as ${formatType.toUpperCase()}`,
+      userId: context.user.id,
+    });
+
     const intakeData = proposal.intake_data as Record<string, string>;
     const proposalData = {
       title: proposal.title,
       client_name: intakeData.client_name || "Client",
+      company_name: organizationName,
       date: format(new Date(), "MMMM d, yyyy"),
       sections: sections.map((s) => ({
         title: s.title,
@@ -77,7 +95,12 @@ export async function POST(
     let mimeType: string;
     let extension: string;
 
-    if (formatType === "html") {
+    if (formatType === "slides") {
+      const html = await generateSlides(proposalData);
+      fileBuffer = Buffer.from(html, "utf-8");
+      mimeType = "text/html";
+      extension = "html";
+    } else if (formatType === "html") {
       const html = await generateHtml(proposalData);
       fileBuffer = Buffer.from(html, "utf-8");
       mimeType = "text/html";
@@ -98,9 +121,9 @@ export async function POST(
       extension = "pptx";
     }
 
-    // Upload to Supabase Storage
+    // Upload to Supabase Storage (org-scoped path)
     const fileName = `${proposal.title.replace(/[^a-zA-Z0-9]/g, "_")}_${nanoid(6)}.${extension}`;
-    const storagePath = `${user.id}/${id}/${fileName}`;
+    const storagePath = `${context.organizationId}/${id}/${fileName}`;
 
     const { error: uploadError } = await adminClient.storage
       .from("exported-proposals")

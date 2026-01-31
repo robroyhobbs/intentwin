@@ -8,6 +8,17 @@
  */
 
 // ===========================================
+// COMPANY INFO (for dynamic prompts)
+// ===========================================
+
+export interface CompanyInfo {
+  name: string;
+  description?: string;
+  tagline?: string;
+  industry?: string;
+}
+
+// ===========================================
 // L1: COMPANY TRUTH TYPES
 // ===========================================
 
@@ -113,7 +124,7 @@ export interface SuccessMetric {
 export interface OutcomeContract {
   current_state: string[];      // Pain points, challenges
   desired_state: string[];      // Desired outcomes
-  transformation: string;       // How Capgemini bridges the gap
+  transformation: string;       // How the company bridges the gap
   success_metrics: SuccessMetric[];
 }
 
@@ -336,7 +347,7 @@ export const INTENT_INTERVIEW_STEPS: IntentInterviewStep[] = [
   {
     step: 7,
     category: "win_strategy",
-    question: "What makes Capgemini uniquely qualified for this work?",
+    question: "What makes your company uniquely qualified for this work?",
     field: "win_strategy.differentiators",
     input_type: "textarea",
     required: true,

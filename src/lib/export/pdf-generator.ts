@@ -9,11 +9,14 @@ interface ProposalSection {
 interface ProposalData {
   title: string;
   client_name: string;
+  company_name?: string;
   date: string;
   sections: ProposalSection[];
 }
 
 export async function generatePdf(data: ProposalData): Promise<Buffer> {
+  const companyName = data.company_name || "ProposalAI";
+
   // Generate the full HTML first
   const html = await generateHtml(data);
 
@@ -40,7 +43,7 @@ export async function generatePdf(data: ProposalData): Promise<Buffer> {
       displayHeaderFooter: true,
       headerTemplate: `
         <div style="font-size:8px; color:#999; width:100%; text-align:center; padding:5px 0;">
-          ${data.title} | Capgemini | Confidential
+          ${data.title} | ${companyName} | Confidential
         </div>`,
       footerTemplate: `
         <div style="font-size:8px; color:#999; width:100%; text-align:center; padding:5px 0;">

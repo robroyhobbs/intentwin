@@ -30,10 +30,10 @@ export function SectionNavSidebar({
     : 0;
 
   return (
-    <div className="w-60 flex-shrink-0 bg-gradient-to-b from-[#1B365D] to-[#0F2440] shadow-inner">
+    <div className="w-60 flex-shrink-0 bg-[var(--card-bg)] border-r border-[var(--border)]">
       {/* Header */}
-      <div className="p-4 border-b border-white/10">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-blue-300/50">
+      <div className="p-4 border-b border-[var(--border)]">
+        <p className="tiny-label">
           Sections
         </p>
         <div className="mt-3 flex items-center gap-3">
@@ -45,7 +45,7 @@ export function SectionNavSidebar({
                 cy="18"
                 r="15"
                 fill="none"
-                stroke="rgba(255,255,255,0.1)"
+                stroke="var(--border)"
                 strokeWidth="3"
               />
               <circle
@@ -53,7 +53,7 @@ export function SectionNavSidebar({
                 cy="18"
                 r="15"
                 fill="none"
-                stroke="#12ABDB"
+                stroke="var(--accent)"
                 strokeWidth="3"
                 strokeLinecap="round"
                 strokeDasharray={`${progress * 0.94} 100`}
@@ -61,16 +61,16 @@ export function SectionNavSidebar({
               />
             </svg>
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-[10px] font-bold text-white">
+              <span className="text-[10px] font-semibold text-[var(--foreground)]">
                 {Math.round(progress)}%
               </span>
             </div>
           </div>
           <div>
-            <p className="text-xs font-medium text-white/90">
+            <p className="text-sm font-medium text-[var(--foreground)]">
               {completedCount} of {sections.length}
             </p>
-            <p className="text-[10px] text-blue-300/50">completed</p>
+            <p className="text-xs text-[var(--foreground-muted)]">completed</p>
           </div>
         </div>
       </div>
@@ -82,15 +82,15 @@ export function SectionNavSidebar({
             key={section.id}
             onClick={() => onSelect(section.id)}
             className={cn(
-              "group relative flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-xs transition-all duration-200",
+              "group relative flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm transition-colors",
               activeSection === section.id
-                ? "bg-white/10 text-white font-medium shadow-sm"
-                : "text-blue-100/60 hover:bg-white/5 hover:text-blue-100/90"
+                ? "bg-[var(--accent-subtle)] text-[var(--accent)] font-medium"
+                : "text-[var(--foreground-muted)] hover:bg-[var(--background-tertiary)] hover:text-[var(--foreground)]"
             )}
           >
             {/* Active indicator */}
             {activeSection === section.id && (
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[2px] rounded-r-full bg-[#12ABDB] shadow-[0_0_6px_rgba(18,171,219,0.5)]" />
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-[var(--accent)]" />
             )}
             <StatusDot status={section.generation_status} />
             <span className="truncate">
