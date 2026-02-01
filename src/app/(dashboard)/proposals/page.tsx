@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { PlusCircle, FileText, Sparkles, TrendingUp, CheckCircle2, Zap, Target } from "lucide-react";
+import { FileText, Sparkles, TrendingUp, CheckCircle2, Zap, Target } from "lucide-react";
 import { ProposalCard } from "@/components/ui/proposal-card";
+import { GettingStartedChecklist } from "@/components/dashboard/getting-started-checklist";
 
 export const dynamic = "force-dynamic";
 
@@ -121,6 +122,9 @@ export default async function ProposalsPage({
           </div>
         </div>
       </div>
+
+      {/* Getting Started Checklist */}
+      <GettingStartedChecklist />
 
       {/* Filter tabs */}
       <div className="mb-6 flex gap-1 rounded-xl bg-[var(--background-tertiary)] p-1.5 w-fit border border-[var(--border)]">

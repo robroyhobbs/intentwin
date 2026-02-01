@@ -337,7 +337,10 @@ export async function generateProposal(proposalId: string): Promise<void> {
     const industry = intakeData.client_industry as string || undefined;
     const l1Context = await fetchL1Context(supabase, serviceLine, industry);
 
-    console.log(`[IDD] Fetched L1 context: ${l1Context.companyContext.length} company, ${l1Context.productContexts.length} products, ${l1Context.evidenceLibrary.length} evidence`);
+    // Debug log for L1 context - only in development
+    if (process.env.NODE_ENV === "development") {
+      console.log(`[IDD] Fetched L1 context: ${l1Context.companyContext.length} company, ${l1Context.productContexts.length} products, ${l1Context.evidenceLibrary.length} evidence`);
+    }
 
     // Load static sources from sources/ directory
     let staticSourcesContext = "";
@@ -347,9 +350,14 @@ export async function generateProposal(proposalId: string): Promise<void> {
         opportunityType: serviceLine,
         industry: industry,
       });
-      console.log(`[IDD] Loaded static sources: ${staticSources.all.length} files (${staticSources.methodologies.length} methodologies, ${staticSources.caseStudies.length} case studies)`);
+      if (process.env.NODE_ENV === "development") {
+        console.log(`[IDD] Loaded static sources: ${staticSources.all.length} files (${staticSources.methodologies.length} methodologies, ${staticSources.caseStudies.length} case studies)`);
+      }
     } catch (sourceError) {
-      console.warn("[IDD] Failed to load static sources, continuing with database context only:", sourceError);
+      // Non-critical - static sources are supplementary
+      if (process.env.NODE_ENV === "development") {
+        console.warn("[IDD] Failed to load static sources, continuing with database context only:", sourceError);
+      }
     }
 
     // Build context strings for prompts

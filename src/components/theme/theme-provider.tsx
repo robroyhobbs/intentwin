@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useMemo } from "react";
 
 type Theme = "light" | "dark" | "system";
 
@@ -12,43 +12,53 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+function getResolvedTheme(theme: Theme): "light" | "dark" {
+  if (theme === "system") {
+    if (typeof window === "undefined") return "light";
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+  return theme;
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("system");
-  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
   const [mounted, setMounted] = useState(false);
+  const [theme, setThemeState] = useState<Theme>("system");
+  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
 
+  // Initialize theme from localStorage on mount
   useEffect(() => {
-    setMounted(true);
     const stored = localStorage.getItem("theme") as Theme | null;
-    if (stored) {
-      setTheme(stored);
-    }
-  }, []);
+    const initialTheme = stored || "system";
+    const resolved = getResolvedTheme(initialTheme);
 
-  useEffect(() => {
-    if (!mounted) return;
-
-    const root = document.documentElement;
-    let resolved: "light" | "dark";
-
-    if (theme === "system") {
-      resolved = window.matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light";
-    } else {
-      resolved = theme;
-    }
-
+    setThemeState(initialTheme);
     setResolvedTheme(resolved);
 
+    // Apply theme to DOM
     if (resolved === "dark") {
-      root.classList.add("dark");
+      document.documentElement.classList.add("dark");
     } else {
-      root.classList.remove("dark");
+      document.documentElement.classList.remove("dark");
     }
 
-    localStorage.setItem("theme", theme);
-  }, [theme, mounted]);
+    setMounted(true);
+  }, []);
+
+  // Handle theme changes after mount
+  const setTheme = useMemo(() => (newTheme: Theme) => {
+    setThemeState(newTheme);
+    const resolved = getResolvedTheme(newTheme);
+    setResolvedTheme(resolved);
+
+    // Apply to DOM
+    if (resolved === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+
+    localStorage.setItem("theme", newTheme);
+  }, []);
 
   // Listen for system theme changes
   useEffect(() => {

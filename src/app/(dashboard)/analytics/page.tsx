@@ -3,14 +3,11 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
-  TrendingUp,
   TrendingDown,
   Trophy,
   XCircle,
   Clock,
-  DollarSign,
   BarChart3,
-  PieChart,
   Target,
   Zap,
   ArrowUpRight,

@@ -6,17 +6,14 @@ import {
   TrendingUp,
   Shield,
   Users,
-  Zap,
   FileText,
   CheckCircle,
   ArrowRight,
-  Layers,
   Target,
   Sparkles,
   BarChart3,
   GitBranch,
   Building2,
-  Award,
   Rocket
 } from 'lucide-react';
 import Link from 'next/link';
@@ -135,7 +132,7 @@ export default function AboutPage() {
                 Introducing ProposalAI
               </h2>
               <p className="text-lg text-gray-600 mb-6">
-                ProposalAI is an intelligent platform that leverages your team's collective knowledge to generate winning proposals in hours, not weeks.
+                ProposalAI is an intelligent platform that leverages your team&apos;s collective knowledge to generate winning proposals in hours, not weeks.
               </p>
               <p className="text-gray-600 mb-8">
                 It combines our methodologies, case studies, and institutional expertise with advanced AI to create consistent, high-quality proposals at scale.
@@ -240,7 +237,7 @@ export default function AboutPage() {
             className="text-center mb-16"
           >
             <h2 className="text-3xl md:text-4xl font-bold text-[#1B365D] mb-4">
-              Why We're Different
+              Why We&apos;re Different
             </h2>
           </motion.div>
 
@@ -268,7 +265,7 @@ export default function AboutPage() {
           </div>
 
           <p className="text-center text-gray-600 italic">
-            This isn't generic AI - it's your team's institutional knowledge, made accessible
+            This isn&apos;t generic AI - it&apos;s your team&apos;s institutional knowledge, made accessible
           </p>
         </div>
       </section>

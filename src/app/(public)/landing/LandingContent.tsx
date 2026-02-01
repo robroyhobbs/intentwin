@@ -614,7 +614,7 @@ export default function LandingContent() {
             Win more deals with <em>AI-powered</em> proposals
           </h1>
           <p className="reveal reveal-delay-2 hero-subtitle">
-            Generate professional proposals in hours, not weeks. Our AI learns your company's voice and creates compelling, client-specific content that wins.
+            Generate professional proposals in hours, not weeks. Our AI learns your company&apos;s voice and creates compelling, client-specific content that wins.
           </p>
           <div className="reveal reveal-delay-3 hero-cta">
             <Link href="/signup" className="btn-primary">
@@ -659,7 +659,7 @@ export default function LandingContent() {
               </div>
               <h3 className="feature-title">AI Generation</h3>
               <p className="feature-desc">
-                Generate complete proposals grounded in your company's knowledge base. Every claim is verifiable.
+                Generate complete proposals grounded in your company&apos;s knowledge base. Every claim is verifiable.
               </p>
             </div>
             <div className="reveal reveal-delay-2 feature-card">
@@ -756,7 +756,7 @@ export default function LandingContent() {
             <p className="section-label">Pricing</p>
             <h2 className="section-title">Plans that scale with you</h2>
             <p className="section-subtitle">
-              Start free, upgrade when you're ready. All plans include a 14-day trial.
+              Start free, upgrade when you&apos;re ready. All plans include a 14-day trial.
             </p>
           </div>
           <div className="pricing-grid">

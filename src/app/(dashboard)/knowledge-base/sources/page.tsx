@@ -10,7 +10,6 @@ import {
   BookOpen,
   ChevronRight,
   CheckCircle2,
-  ExternalLink,
   Sparkles,
   Database,
   Shield,

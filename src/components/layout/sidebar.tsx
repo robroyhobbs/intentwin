@@ -3,17 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  FileText,
   Database,
   Settings,
   PlusCircle,
   Search,
   Upload,
   LayoutDashboard,
-  Sparkles,
   Zap,
   BookOpen,
   BarChart3,
+  Building2,
+  Palette,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
@@ -36,8 +36,12 @@ const navGroups = [
     ],
   },
   {
-    label: "System",
-    items: [{ name: "Settings", href: "/settings", icon: Settings }],
+    label: "Settings",
+    items: [
+      { name: "Company Profile", href: "/settings/company", icon: Building2 },
+      { name: "Branding", href: "/settings/branding", icon: Palette },
+      { name: "Billing & Plan", href: "/settings", icon: Settings },
+    ],
   },
 ];
 

@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import { LogOut, User, Moon, Sun } from "lucide-react";
+import { LogOut, User } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 export function Header() {

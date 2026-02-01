@@ -26,9 +26,9 @@ import {
   Lightbulb,
 } from "lucide-react";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
-import type { WinStrategyData, TargetOutcome } from "@/types/outcomes";
+import type { WinStrategyData } from "@/types/outcomes";
 import { OUTCOME_CATEGORIES } from "@/types/outcomes";
-import type { OutcomeContract, IntentConstraints, SuccessMetric } from "@/types/idd";
+import type { OutcomeContract, SuccessMetric } from "@/types/idd";
 import type { ExtractedIntake, ClientResearch } from "@/types/intake";
 import { FlexibleIntake } from "@/components/intake/flexible-intake";
 import { ExtractionReview } from "@/components/intake/extraction-review";
@@ -823,7 +823,7 @@ export default function NewProposalPage() {
                       </span>
                       <p className="text-sm text-[var(--foreground-muted)] mt-1">
                         AI will generate proposal content that delivers these specific outcomes,
-                        verified against your company's capabilities and case studies.
+                        verified against your company&apos;s capabilities and case studies.
                       </p>
                     </div>
                   </label>
@@ -834,7 +834,7 @@ export default function NewProposalPage() {
                     <CheckCircle2 className="h-6 w-6 text-[var(--success)]" />
                     <div>
                       <p className="font-semibold text-[var(--foreground)]">Ready to create your proposal</p>
-                      <p className="text-sm text-[var(--foreground-muted)]">Click "Create Proposal" to proceed</p>
+                      <p className="text-sm text-[var(--foreground-muted)]">Click &quot;Create Proposal&quot; to proceed</p>
                     </div>
                   </div>
                 )}

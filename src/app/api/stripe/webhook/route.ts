@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { stripe, PRICING_TIERS, type PricingTier } from "@/lib/stripe/client";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { logger } from "@/lib/utils/logger";
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest) {
     try {
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
     } catch (err) {
-      console.error("Webhook signature verification failed:", err);
+      logger.error("Webhook signature verification failed:", err);
       return NextResponse.json(
         { error: "Invalid signature" },
         { status: 400 }
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
         const tier = session.metadata?.tier as PricingTier;
 
         if (!organizationId) {
-          console.error("No organization_id in checkout session metadata");
+          logger.error("No organization_id in checkout session metadata");
           break;
         }
 
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
           })
           .eq("id", organizationId);
 
-        console.log(`Subscription activated for org ${organizationId}, tier: ${tier}`);
+        logger.event("subscription_activated", { organizationId, tier });
         break;
       }
 
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
         const organizationId = subscription.metadata?.organization_id;
 
         if (!organizationId) {
-          console.error("No organization_id in subscription metadata");
+          logger.error("No organization_id in subscription metadata");
           break;
         }
 
@@ -99,7 +100,7 @@ export async function POST(request: NextRequest) {
           })
           .eq("id", organizationId);
 
-        console.log(`Subscription updated for org ${organizationId}, tier: ${tier}`);
+        logger.event("subscription_updated", { organizationId, tier });
         break;
       }
 
@@ -108,7 +109,7 @@ export async function POST(request: NextRequest) {
         const organizationId = subscription.metadata?.organization_id;
 
         if (!organizationId) {
-          console.error("No organization_id in subscription metadata");
+          logger.error("No organization_id in subscription metadata");
           break;
         }
 
@@ -130,7 +131,7 @@ export async function POST(request: NextRequest) {
           })
           .eq("id", organizationId);
 
-        console.log(`Subscription canceled for org ${organizationId}`);
+        logger.event("subscription_canceled", { organizationId });
         break;
       }
 
@@ -146,8 +147,8 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (org) {
-          // You could send an email notification here
-          console.log(`Payment failed for org ${org.id}`);
+          // TODO: Send email notification for payment failure
+          logger.event("payment_failed", { organizationId: org.id });
 
           // Optionally add a "payment_failed" status or flag
           // await adminClient
@@ -164,7 +165,7 @@ export async function POST(request: NextRequest) {
         const subscriptionId = invoice.subscription as string | undefined;
 
         if (!subscriptionId) {
-          console.log("No subscription ID found in invoice");
+          logger.debug("No subscription ID found in invoice (one-time payment)");
           break;
         }
 
@@ -191,18 +192,18 @@ export async function POST(request: NextRequest) {
             })
             .eq("id", org.id);
 
-          console.log(`Usage reset for org ${org.id} after payment`);
+          logger.event("usage_reset", { organizationId: org.id });
         }
         break;
       }
 
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        logger.debug(`Unhandled Stripe event type: ${event.type}`);
     }
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error("Webhook error:", error);
+    logger.error("Webhook error:", error);
     return NextResponse.json(
       { error: "Webhook handler failed" },
       { status: 500 }

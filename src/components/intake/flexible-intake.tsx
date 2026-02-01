@@ -5,7 +5,6 @@ import {
   Upload,
   FileText,
   MessageSquare,
-  Mic,
   Edit3,
   Search,
   X,
