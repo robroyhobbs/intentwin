@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
         jsonStr = jsonMatch[1];
       }
       extracted = JSON.parse(jsonStr.trim());
-    } catch (parseError) {
+    } catch (_parseError) {
       console.error("Failed to parse extraction response:", response);
       return NextResponse.json(
         { error: "Failed to parse extraction results" },

@@ -165,7 +165,7 @@ export default function ProposalPage() {
     }
   }
 
-  async function handleSaveEdit(sectionId: string) {
+  async function handleSaveEdit(_sectionId: string) {
     try {
       await authFetch(`/api/proposals/${id}`, {
         method: "PATCH",

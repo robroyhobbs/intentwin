@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
         jsonStr = jsonMatch[1];
       }
       research = JSON.parse(jsonStr.trim());
-    } catch (parseError) {
+    } catch (_parseError) {
       console.error("Failed to parse research response:", response);
       return NextResponse.json(
         { error: "Failed to parse research results" },

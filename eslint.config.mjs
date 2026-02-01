@@ -12,7 +12,28 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Ignore logs and generated files
+    "logs/**",
+    "*.log",
   ]),
+  // Custom rules for code consistency
+  {
+    rules: {
+      // Allow unused vars that start with underscore (common pattern for ignored params)
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
+      // Prefer const over let when variable is never reassigned
+      "prefer-const": "warn",
+      // Consistent spacing
+      "no-multiple-empty-lines": ["warn", { max: 2, maxEOF: 1 }],
+    },
+  },
 ]);
 
 export default eslintConfig;

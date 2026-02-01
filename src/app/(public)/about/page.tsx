@@ -154,7 +154,7 @@ export default function AboutPage() {
                 { icon: Shield, title: 'Verified Content', desc: 'Real case studies with verified metrics and outcomes' },
                 { icon: Target, title: 'Intent-Driven', desc: 'Every proposal aligned to client outcomes and win strategy' },
                 { icon: Users, title: 'Human Quality', desc: 'AI generates, humans review and refine' },
-              ].map((item, i) => (
+              ].map((item) => (
                 <div key={item.title} className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
                   <div className="flex items-start gap-4">
                     <div className="p-2 bg-[#0070AD]/10 rounded-lg">
@@ -430,7 +430,7 @@ export default function AboutPage() {
                   { title: 'Real-Time Generation', desc: 'Watch AI create content with live progress updates' },
                   { title: 'Inline Editing', desc: 'Edit, refine, and perfect content directly in the interface' },
                   { title: 'Source Transparency', desc: 'See exactly which company sources informed each section' },
-                ].map((item, i) => (
+                ].map((item) => (
                   <div key={item.title} className="bg-white/10 rounded-lg p-4">
                     <h4 className="font-semibold text-[#12ABDB] mb-1">{item.title}</h4>
                     <p className="text-white/80 text-sm">{item.desc}</p>

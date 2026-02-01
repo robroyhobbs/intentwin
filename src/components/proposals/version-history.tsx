@@ -105,7 +105,7 @@ export function VersionHistory({ proposalId, onRestore }: VersionHistoryProps) {
         const error = await response.json();
         toast.error(error.error || "Failed to save version");
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to save version");
     } finally {
       setSaving(false);
@@ -134,7 +134,7 @@ export function VersionHistory({ proposalId, onRestore }: VersionHistoryProps) {
         const error = await response.json();
         toast.error(error.error || "Failed to restore version");
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to restore version");
     } finally {
       setRestoring(null);
@@ -158,7 +158,7 @@ export function VersionHistory({ proposalId, onRestore }: VersionHistoryProps) {
       } else {
         toast.error("Failed to update label");
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to update label");
     } finally {
       setEditingLabel(null);

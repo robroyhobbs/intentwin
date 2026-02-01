@@ -39,7 +39,7 @@ export async function POST(
     }
 
     // Call the restore function
-    const { data, error } = await supabase.rpc("restore_proposal_version", {
+    const { data: _data, error } = await supabase.rpc("restore_proposal_version", {
       p_version_id: versionId,
       p_user_id: context.user.id,
     });

@@ -79,12 +79,12 @@ export default function NewProposalPage() {
 
   // Advanced options (collapsed by default)
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [successMetrics, setSuccessMetrics] = useState<SuccessMetric[]>([]);
+  const [successMetrics, _setSuccessMetrics] = useState<SuccessMetric[]>([]);
   const [budgetRange, setBudgetRange] = useState("");
   const [timelineExpectation, setTimelineExpectation] = useState("");
   const [technicalEnvironment, setTechnicalEnvironment] = useState("");
   const [mustInclude, setMustInclude] = useState<string[]>([]);
-  const [mustAvoid, setMustAvoid] = useState<string[]>([]);
+  const [mustAvoid, _setMustAvoid] = useState<string[]>([]);
   const [complianceRequirements, setComplianceRequirements] = useState("");
 
   // Phase 2: Win Strategy
