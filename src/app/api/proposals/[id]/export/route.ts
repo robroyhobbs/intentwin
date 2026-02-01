@@ -39,7 +39,7 @@ export async function POST(
       .from("proposals")
       .select(`
         *,
-        organization:organizations(id, name)
+        organization:organizations(id, name, settings)
       `)
       .eq("id", id)
       .eq("organization_id", context.organizationId)
@@ -52,8 +52,18 @@ export async function POST(
       );
     }
 
-    // Get organization name for exports
+    // Get organization name and branding for exports
     const organizationName = proposal.organization?.name || "ProposalAI";
+    const orgSettings = proposal.organization?.settings || {};
+    const branding = {
+      logo_url: orgSettings.branding?.logo_url,
+      primary_color: orgSettings.branding?.primary_color || "#0070AD",
+      secondary_color: orgSettings.branding?.secondary_color || "#1B365D",
+      accent_color: orgSettings.branding?.accent_color || "#12ABDB",
+      font_family: orgSettings.branding?.font_family || "Arial",
+      header_text: orgSettings.branding?.header_text || organizationName,
+      footer_text: orgSettings.branding?.footer_text || "Confidential",
+    };
 
     const { data: sections } = await adminClient
       .from("proposal_sections")
@@ -88,6 +98,7 @@ export async function POST(
         content: s.edited_content || s.generated_content || "",
         section_type: s.section_type,
       })),
+      branding,
     };
 
     // Generate the document

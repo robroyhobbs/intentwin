@@ -6,24 +6,40 @@ interface ProposalSection {
   section_type: string;
 }
 
+interface BrandingSettings {
+  logo_url?: string;
+  primary_color: string;
+  secondary_color: string;
+  accent_color: string;
+  font_family: string;
+  header_text?: string;
+  footer_text?: string;
+}
+
 interface ProposalData {
   title: string;
   client_name: string;
   company_name?: string;
   date: string;
   sections: ProposalSection[];
+  branding?: BrandingSettings;
 }
 
-// Brand colors (default ProposalAI theme)
-const COLORS = {
-  primary: "0070AD", // Primary blue
-  dark: "1B365D", // Dark blue
-  accent: "12ABDB", // Light blue accent
+// Default brand colors
+const DEFAULT_COLORS = {
+  primary: "0070AD",
+  dark: "1B365D",
+  accent: "12ABDB",
   text: "333333",
   lightBg: "F5F7FA",
   white: "FFFFFF",
   muted: "64748B",
 };
+
+// Convert hex color to PPTX format (remove #)
+function toColorCode(hex: string): string {
+  return hex.replace("#", "").toUpperCase();
+}
 
 /**
  * Extracts key points from verbose content for concise slide bullets
@@ -84,13 +100,27 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
   const pptx = new pptxgen();
   const companyName = data.company_name || "ProposalAI";
 
+  // Use custom branding or defaults
+  const branding = data.branding;
+  const COLORS = {
+    primary: branding ? toColorCode(branding.primary_color) : DEFAULT_COLORS.primary,
+    dark: branding ? toColorCode(branding.secondary_color) : DEFAULT_COLORS.dark,
+    accent: branding ? toColorCode(branding.accent_color) : DEFAULT_COLORS.accent,
+    text: DEFAULT_COLORS.text,
+    lightBg: DEFAULT_COLORS.lightBg,
+    white: DEFAULT_COLORS.white,
+    muted: DEFAULT_COLORS.muted,
+  };
+  const fontFamily = branding?.font_family || "Arial";
+  const footerText = branding?.footer_text || "Confidential";
+
   pptx.author = `${companyName} Proposal Generator`;
   pptx.company = companyName;
   pptx.title = data.title;
 
   // Define master slide with minimal footer
   pptx.defineSlideMaster({
-    title: "CAPGEMINI_MASTER",
+    title: "BRANDED_MASTER",
     background: { color: COLORS.white },
     objects: [
       // Top accent bar
@@ -106,7 +136,7 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
       // Footer
       {
         text: {
-          text: `${companyName} | ${data.title} | Confidential`,
+          text: `${companyName} | ${data.title} | ${footerText}`,
           options: {
             x: 0.5,
             y: "93%",
@@ -121,7 +151,7 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
   });
 
   // Title slide
-  const titleSlide = pptx.addSlide({ masterName: "CAPGEMINI_MASTER" });
+  const titleSlide = pptx.addSlide({ masterName: "BRANDED_MASTER" });
   titleSlide.background = {
     color: COLORS.dark,
   };
@@ -143,7 +173,7 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
     fontSize: 36,
     bold: true,
     color: COLORS.white,
-    fontFace: "Arial",
+    fontFace: fontFamily,
   });
 
   titleSlide.addText(`Prepared for ${data.client_name}`, {
@@ -153,7 +183,7 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
     h: 0.5,
     fontSize: 20,
     color: COLORS.accent,
-    fontFace: "Arial",
+    fontFace: fontFamily,
   });
 
   titleSlide.addText(data.date, {
@@ -163,11 +193,11 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
     h: 0.4,
     fontSize: 14,
     color: "AAAAAA",
-    fontFace: "Arial",
+    fontFace: fontFamily,
   });
 
   // Agenda slide
-  const agendaSlide = pptx.addSlide({ masterName: "CAPGEMINI_MASTER" });
+  const agendaSlide = pptx.addSlide({ masterName: "BRANDED_MASTER" });
 
   agendaSlide.addText("Agenda", {
     x: 0.8,
@@ -177,7 +207,7 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
     fontSize: 28,
     bold: true,
     color: COLORS.dark,
-    fontFace: "Arial",
+    fontFace: fontFamily,
   });
 
   // Accent line under title
@@ -197,7 +227,7 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
       color: COLORS.text,
       bullet: false,
       breakLine: true,
-      fontFace: "Arial",
+      fontFace: fontFamily,
     },
   }));
 
@@ -217,7 +247,7 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
     const accentColor = accentColors[sectionIdx % accentColors.length];
 
     // Section intro slide (dark background)
-    const introSlide = pptx.addSlide({ masterName: "CAPGEMINI_MASTER" });
+    const introSlide = pptx.addSlide({ masterName: "BRANDED_MASTER" });
     introSlide.background = { color: COLORS.dark };
 
     // Large section number (watermark style)
@@ -230,7 +260,7 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
       bold: true,
       color: COLORS.primary,
       transparency: 80,
-      fontFace: "Arial",
+      fontFace: fontFamily,
     });
 
     // Section title
@@ -242,7 +272,7 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
       fontSize: 32,
       bold: true,
       color: COLORS.white,
-      fontFace: "Arial",
+      fontFace: fontFamily,
     });
 
     // Accent line
@@ -258,7 +288,7 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
     const bullets = extractKeyPoints(section.content, 4);
 
     if (bullets.length > 0) {
-      const contentSlide = pptx.addSlide({ masterName: "CAPGEMINI_MASTER" });
+      const contentSlide = pptx.addSlide({ masterName: "BRANDED_MASTER" });
 
       // Section number badge
       contentSlide.addText(String(sectionIdx + 1).padStart(2, "0"), {
@@ -269,7 +299,7 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
         fontSize: 10,
         bold: true,
         color: accentColor,
-        fontFace: "Arial",
+        fontFace: fontFamily,
       });
 
       // Section title
@@ -281,7 +311,7 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
         fontSize: 24,
         bold: true,
         color: COLORS.dark,
-        fontFace: "Arial",
+        fontFace: fontFamily,
       });
 
       // Accent line
@@ -305,7 +335,7 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
             color: accentColor,
           },
           breakLine: true,
-          fontFace: "Arial",
+          fontFace: fontFamily,
           indentLevel: 0,
         },
       }));
@@ -322,7 +352,7 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
   }
 
   // Thank you slide
-  const endSlide = pptx.addSlide({ masterName: "CAPGEMINI_MASTER" });
+  const endSlide = pptx.addSlide({ masterName: "BRANDED_MASTER" });
   endSlide.background = { color: COLORS.dark };
 
   // Decorative accent
@@ -343,7 +373,7 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
     bold: true,
     color: COLORS.white,
     align: "center",
-    fontFace: "Arial",
+    fontFace: fontFamily,
   });
 
   endSlide.addText("We look forward to partnering with you.", {
@@ -354,7 +384,7 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
     fontSize: 18,
     color: COLORS.accent,
     align: "center",
-    fontFace: "Arial",
+    fontFace: fontFamily,
   });
 
   // CTA
@@ -366,7 +396,7 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
     fontSize: 12,
     color: COLORS.white,
     align: "center",
-    fontFace: "Arial",
+    fontFace: fontFamily,
     fill: { color: COLORS.primary },
     shape: pptx.ShapeType.roundRect,
     rectRadius: 0.1,
