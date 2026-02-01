@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthUser } from "@/lib/supabase/auth-api";
+import { getUserContext } from "@/lib/supabase/auth-api";
 import { generateText } from "@/lib/ai/claude";
 import { buildOutcomesPrompt } from "@/lib/ai/prompts/outcomes";
 import type { WinStrategyData } from "@/types/outcomes";
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getAuthUser(request);
+    const context = await getUserContext(request);
 
-    if (!user) {
+    if (!context) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

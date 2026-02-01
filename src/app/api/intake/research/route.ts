@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthUser } from "@/lib/supabase/auth-api";
+import { getUserContext } from "@/lib/supabase/auth-api";
 import { generateText } from "@/lib/ai/claude";
 import { buildResearchPrompt } from "@/lib/ai/prompts/extract-intake";
 import type { ClientResearch } from "@/types/intake";
@@ -8,8 +8,8 @@ const RESEARCH_SYSTEM_PROMPT = `You are a business intelligence analyst with acc
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getAuthUser(request);
-    if (!user) {
+    const context = await getUserContext(request);
+    if (!context) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

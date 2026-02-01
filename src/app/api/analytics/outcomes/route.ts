@@ -1,18 +1,18 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { getAuthUser } from "@/lib/supabase/auth-api";
+import { NextRequest, NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getUserContext } from "@/lib/supabase/auth-api";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const user = await getAuthUser();
-    if (!user) {
+    const context = await getUserContext(request);
+    if (!context) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const supabase = await createClient();
+    const adminClient = createAdminClient();
 
-    // Get all proposals with outcomes
-    const { data: proposals, error } = await supabase
+    // Get all proposals with outcomes for this organization
+    const { data: proposals, error } = await adminClient
       .from("proposals")
       .select(`
         id,
@@ -26,6 +26,7 @@ export async function GET() {
         intake_data,
         created_at
       `)
+      .eq("organization_id", context.organizationId)
       .in("status", ["exported", "final", "review", "draft"])
       .order("created_at", { ascending: false });
 

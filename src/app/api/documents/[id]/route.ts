@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getAuthUser } from "@/lib/supabase/auth-api";
+import { getUserContext, verifyDocumentAccess } from "@/lib/supabase/auth-api";
 
 export async function GET(
   request: NextRequest,
@@ -8,24 +8,20 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const user = await getAuthUser(request);
+    const context = await getUserContext(request);
 
-    if (!user) {
+    if (!context) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const adminClient = createAdminClient();
-    const { data: document, error } = await adminClient
-      .from("documents")
-      .select("*")
-      .eq("id", id)
-      .single();
-
-    if (error || !document) {
+    // Verify document belongs to user's organization
+    const document = await verifyDocumentAccess(context, id);
+    if (!document) {
       return NextResponse.json({ error: "Document not found" }, { status: 404 });
     }
 
     // Fetch chunk count
+    const adminClient = createAdminClient();
     const { count } = await adminClient
       .from("document_chunks")
       .select("*", { count: "exact", head: true })
@@ -47,35 +43,33 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const user = await getAuthUser(request);
+    const context = await getUserContext(request);
 
-    if (!user) {
+    if (!context) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const adminClient = createAdminClient();
-
-    // Fetch document to get storage path
-    const { data: document } = await adminClient
-      .from("documents")
-      .select("storage_path, uploaded_by")
-      .eq("id", id)
-      .single();
-
+    // Verify document belongs to user's organization
+    const document = await verifyDocumentAccess(context, id);
     if (!document) {
       return NextResponse.json({ error: "Document not found" }, { status: 404 });
     }
 
+    const adminClient = createAdminClient();
+
     // Delete from Storage
-    await adminClient.storage
-      .from("knowledge-base-documents")
-      .remove([document.storage_path]);
+    if (document.storage_path) {
+      await adminClient.storage
+        .from("knowledge-base-documents")
+        .remove([document.storage_path as string]);
+    }
 
     // Delete from DB (chunks cascade)
     const { error } = await adminClient
       .from("documents")
       .delete()
-      .eq("id", id);
+      .eq("id", id)
+      .eq("organization_id", context.organizationId);
 
     if (error) {
       return NextResponse.json(

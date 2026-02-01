@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthUser } from "@/lib/supabase/auth-api";
+import { getUserContext, verifyDocumentAccess } from "@/lib/supabase/auth-api";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateText } from "@/lib/ai/claude";
 import { buildExtractionPrompt } from "@/lib/ai/prompts/extract-intake";
@@ -9,8 +9,8 @@ const EXTRACTION_SYSTEM_PROMPT = `You are an expert at analyzing business docume
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getAuthUser(request);
-    if (!user) {
+    const context = await getUserContext(request);
+    if (!context) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -26,16 +26,26 @@ export async function POST(request: NextRequest) {
 
     let combinedContent = content || "";
 
-    // If document IDs provided, fetch their content
+    // If document IDs provided, fetch their content (with org verification)
     if (document_ids && document_ids.length > 0) {
       const adminClient = createAdminClient();
 
       for (const docId of document_ids) {
+        // Verify document belongs to user's organization
+        const verifiedDoc = await verifyDocumentAccess(context, docId);
+        if (!verifiedDoc) {
+          return NextResponse.json(
+            { error: `Document ${docId} not found or access denied` },
+            { status: 404 }
+          );
+        }
+
         // First check document processing status
         const { data: doc } = await adminClient
           .from("documents")
           .select("processing_status, parsed_text_preview, file_name")
           .eq("id", docId)
+          .eq("organization_id", context.organizationId)
           .single();
 
         if (doc?.processing_status === "pending" || doc?.processing_status === "processing") {

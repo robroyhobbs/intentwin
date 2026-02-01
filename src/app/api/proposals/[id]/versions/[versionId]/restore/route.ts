@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getAuthUser } from "@/lib/supabase/auth-api";
+import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
 
 /**
  * POST /api/proposals/[id]/versions/[versionId]/restore
@@ -12,28 +12,19 @@ export async function POST(
 ) {
   try {
     const { id, versionId } = await params;
-    const user = await getAuthUser(request);
+    const context = await getUserContext(request);
 
-    if (!user) {
+    if (!context) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const supabase = createAdminClient();
-
-    // Verify user owns this proposal
-    const { data: proposal } = await supabase
-      .from("proposals")
-      .select("id, user_id")
-      .eq("id", id)
-      .single();
-
+    // Verify proposal belongs to user's organization
+    const proposal = await verifyProposalAccess(context, id);
     if (!proposal) {
       return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
     }
 
-    if (proposal.user_id !== user.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const supabase = createAdminClient();
 
     // Verify the version exists and belongs to this proposal
     const { data: version } = await supabase
@@ -50,7 +41,7 @@ export async function POST(
     // Call the restore function
     const { data, error } = await supabase.rpc("restore_proposal_version", {
       p_version_id: versionId,
-      p_user_id: user.id,
+      p_user_id: context.user.id,
     });
 
     if (error) {

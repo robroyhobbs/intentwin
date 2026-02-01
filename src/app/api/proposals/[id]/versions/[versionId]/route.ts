@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getAuthUser } from "@/lib/supabase/auth-api";
+import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
 
 /**
  * GET /api/proposals/[id]/versions/[versionId]
@@ -12,28 +12,19 @@ export async function GET(
 ) {
   try {
     const { id, versionId } = await params;
-    const user = await getAuthUser(request);
+    const context = await getUserContext(request);
 
-    if (!user) {
+    if (!context) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const supabase = createAdminClient();
-
-    // Verify user owns this proposal
-    const { data: proposal } = await supabase
-      .from("proposals")
-      .select("id, user_id")
-      .eq("id", id)
-      .single();
-
+    // Verify proposal belongs to user's organization
+    const proposal = await verifyProposalAccess(context, id);
     if (!proposal) {
       return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
     }
 
-    if (proposal.user_id !== user.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const supabase = createAdminClient();
 
     // Get the version
     const { data: version, error: versionError } = await supabase
@@ -79,31 +70,22 @@ export async function PATCH(
 ) {
   try {
     const { id, versionId } = await params;
-    const user = await getAuthUser(request);
+    const context = await getUserContext(request);
 
-    if (!user) {
+    if (!context) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Verify proposal belongs to user's organization
+    const proposal = await verifyProposalAccess(context, id);
+    if (!proposal) {
+      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
     }
 
     const body = await request.json();
     const { label, change_summary } = body;
 
     const supabase = createAdminClient();
-
-    // Verify user owns this proposal
-    const { data: proposal } = await supabase
-      .from("proposals")
-      .select("id, user_id")
-      .eq("id", id)
-      .single();
-
-    if (!proposal) {
-      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
-    }
-
-    if (proposal.user_id !== user.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
 
     // Update the version
     const updateData: Record<string, string | null> = {};

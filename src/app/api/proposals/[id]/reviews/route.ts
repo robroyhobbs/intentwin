@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getAuthUser } from "@/lib/supabase/auth-api";
+import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
 
 export async function GET(
   request: NextRequest,
@@ -8,10 +8,16 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const user = await getAuthUser(request);
+    const context = await getUserContext(request);
 
-    if (!user) {
+    if (!context) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Verify proposal belongs to user's organization
+    const proposal = await verifyProposalAccess(context, id);
+    if (!proposal) {
+      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
     }
 
     const adminClient = createAdminClient();
@@ -51,10 +57,16 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const user = await getAuthUser(request);
+    const context = await getUserContext(request);
 
-    if (!user) {
+    if (!context) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Verify proposal belongs to user's organization
+    const proposal = await verifyProposalAccess(context, id);
+    if (!proposal) {
+      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
     }
 
     const body = await request.json();
@@ -79,8 +91,8 @@ export async function POST(
       .insert({
         proposal_id: id,
         section_id: section_id || null,
-        reviewer_id: user.id,
-        reviewer_email: user.email,
+        reviewer_id: context.user.id,
+        reviewer_email: context.user.email,
         annotation_type,
         content,
         selector_data,
@@ -108,11 +120,17 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await params;
-    const user = await getAuthUser(request);
+    const { id } = await params;
+    const context = await getUserContext(request);
 
-    if (!user) {
+    if (!context) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Verify proposal belongs to user's organization
+    const proposal = await verifyProposalAccess(context, id);
+    if (!proposal) {
+      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
     }
 
     const body = await request.json();

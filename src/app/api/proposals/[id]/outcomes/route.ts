@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthUser } from "@/lib/supabase/auth-api";
+import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
 import { generateText } from "@/lib/ai/claude";
 import { buildOutcomesPrompt } from "@/lib/ai/prompts/outcomes";
 import type { WinStrategyData } from "@/types/outcomes";
@@ -9,11 +9,17 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await params; // validate route param exists
-    const user = await getAuthUser(request);
+    const { id } = await params;
+    const context = await getUserContext(request);
 
-    if (!user) {
+    if (!context) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Verify proposal belongs to user's organization
+    const proposal = await verifyProposalAccess(context, id);
+    if (!proposal) {
+      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
     }
 
     const body = await request.json();

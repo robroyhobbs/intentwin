@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { readFileSync, readdirSync, existsSync } from "fs";
 import { join, basename } from "path";
+import { getUserContext } from "@/lib/supabase/auth-api";
 
 const SOURCES_DIR = join(process.cwd(), "sources");
 
@@ -42,8 +43,14 @@ function extractTitle(content: string): string {
   return titleMatch ? titleMatch[1] : "";
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // Require authentication
+    const context = await getUserContext(request);
+    if (!context) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const categories = [];
 
     for (const category of CATEGORIES) {
