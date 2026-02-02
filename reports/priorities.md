@@ -63,6 +63,7 @@ Tasks:
 - [x] Fix all TypeScript strict mode errors (passed `tsc --noEmit`)
 - [x] Remove console.log statements (replace with proper logging) - created logger utility
 - [x] Fix unescaped entities in React components (JSX lint errors)
+- [x] Set up ESLint rules for code consistency (underscore prefix for unused vars)
 - [ ] Consolidate duplicate code into shared utilities
 - [ ] Add proper error boundaries to React components
 - [ ] Optimize database queries (add missing indexes, reduce N+1 queries)
@@ -71,7 +72,6 @@ Tasks:
 - [ ] Standardize API response formats
 - [ ] Clean up CSS (remove unused styles, consolidate variables)
 - [ ] Add JSDoc comments to key functions
-- [ ] Set up ESLint rules for code consistency
 
 ### Priority 5: Stripe Live Setup [CRITICAL]
 **Branch:** `main`
