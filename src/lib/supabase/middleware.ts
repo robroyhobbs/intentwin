@@ -30,13 +30,23 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Redirect unauthenticated users to login (except auth pages and API routes)
+  // Redirect unauthenticated users to login (except auth pages, API routes, and public pages)
+  const pathname = request.nextUrl.pathname;
+
   const isAuthPage =
-    request.nextUrl.pathname.startsWith("/login") ||
-    request.nextUrl.pathname.startsWith("/signup") ||
-    request.nextUrl.pathname.startsWith("/callback");
-  const isApiRoute = request.nextUrl.pathname.startsWith("/api");
-  const isPublicPage = request.nextUrl.pathname === "/";
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/signup") ||
+    pathname.startsWith("/callback");
+
+  const isApiRoute = pathname.startsWith("/api");
+
+  const isPublicPage =
+    pathname === "/" ||
+    pathname === "/landing" ||
+    pathname.startsWith("/blog") ||
+    pathname === "/about" ||
+    pathname === "/pricing" ||
+    pathname === "/demo-login";
 
   if (!user && !isAuthPage && !isApiRoute && !isPublicPage) {
     const url = request.nextUrl.clone();
