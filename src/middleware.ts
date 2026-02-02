@@ -1,60 +1,35 @@
-import { createServerClient } from "@supabase/ssr";
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { updateSession } from "@/lib/supabase/middleware";
+
+// Enable demo password protection (set to false to disable)
+const DEMO_PROTECTION_ENABLED = process.env.DEMO_PROTECTION !== "false";
 
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  });
+  const pathname = request.nextUrl.pathname;
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
-          supabaseResponse = NextResponse.next({
-            request,
-          });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
-        },
-      },
+  // Skip demo auth for static files, API routes (except demo-auth), and demo-login page
+  const skipDemoAuth =
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/api/demo-auth") ||
+    pathname === "/demo-login" ||
+    pathname.includes(".");
+
+  // Check demo authentication if enabled
+  if (DEMO_PROTECTION_ENABLED && !skipDemoAuth) {
+    const demoCookie = request.cookies.get("demo_auth");
+
+    if (!demoCookie || demoCookie.value !== "authenticated") {
+      return NextResponse.redirect(new URL("/demo-login", request.url));
     }
-  );
-
-  // Refresh session — this is critical for keeping the auth session alive
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  // Redirect unauthenticated users to login (except auth pages and API routes)
-  if (
-    !user &&
-    !request.nextUrl.pathname.startsWith("/login") &&
-    !request.nextUrl.pathname.startsWith("/signup") &&
-    !request.nextUrl.pathname.startsWith("/callback") &&
-    !request.nextUrl.pathname.startsWith("/api")
-  ) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
   }
 
-  return supabaseResponse;
+  // Continue with normal Supabase session handling
+  return updateSession(request);
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except static files and images
-     */
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
