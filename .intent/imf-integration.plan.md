@@ -132,48 +132,48 @@ Wire the persuasion module into the generation pipeline. Modify `pipeline.ts` to
 
 #### Happy Path
 
-- [ ] Pipeline extracts `brand_voice` from `organizations.settings` JSONB
-- [ ] Pipeline builds persuasion prompt per section type and appends to generation prompt
-- [ ] Pipeline passes brand voice to `generateText` system prompt
-- [ ] Pipeline runs quality checks after each section generation
-- [ ] Quality check results are logged (dev mode) but don't block generation
-- [ ] `buildSystemPrompt` with brand voice includes tone and terminology
-- [ ] Generated section prompts contain persuasion framework text
-- [ ] Generated section prompts contain win themes when present
-- [ ] Generated section prompts contain competitive positioning when differentiators exist
+- [x] Pipeline extracts `brand_voice` from `organizations.settings` JSONB
+- [x] Pipeline builds persuasion prompt per section type and appends to generation prompt
+- [x] Pipeline passes brand voice to `generateText` system prompt
+- [x] Pipeline runs quality checks after each section generation
+- [x] Quality check results are logged (dev mode) but don't block generation
+- [x] `buildSystemPrompt` with brand voice includes tone and terminology
+- [x] Generated section prompts contain persuasion framework text
+- [x] Generated section prompts contain win themes when present
+- [x] Generated section prompts contain competitive positioning when differentiators exist
 
 #### Bad Path
 
-- [ ] Pipeline handles missing `brand_voice` in org settings (null/undefined) — uses defaults
-- [ ] Pipeline handles org with no settings at all — uses defaults
-- [ ] Pipeline handles missing win strategy — skips win themes and competitive positioning
-- [ ] Quality check failure doesn't throw — logs warning, continues generation
-- [ ] Pipeline handles `brand_voice.terminology` with null use/avoid arrays
+- [x] Pipeline handles missing `brand_voice` in org settings (null/undefined) — uses defaults
+- [x] Pipeline handles org with no settings at all — uses defaults
+- [x] Pipeline handles missing win strategy — skips win themes and competitive positioning
+- [x] Quality check failure doesn't throw — logs warning, continues generation
+- [x] Pipeline handles `brand_voice.terminology` with null use/avoid arrays
 
 #### Edge Cases
 
-- [ ] Org with `brand_voice.tone` set but empty `terminology` — only tone injected
-- [ ] Proposal with win themes but no differentiators — win themes only, no competitive
-- [ ] All 10 sections generate successfully with full persuasion layers
-- [ ] Prompt length stays within Gemini's context window (measure token count)
+- [x] Org with `brand_voice.tone` set but empty `terminology` — only tone injected
+- [x] Proposal with win themes but no differentiators — win themes only, no competitive
+- [x] All 10 sections generate successfully with full persuasion layers
+- [x] Prompt length stays within Gemini's context window (measure token count)
 
 #### Security
 
-- [ ] Brand voice from org settings is sanitized before injection into system prompt
-- [ ] Win themes from intake data are sanitized before injection into prompts
-- [ ] Org settings access is scoped to the proposal's organization (no cross-org leak)
+- [x] Brand voice from org settings is sanitized before injection into system prompt
+- [x] Win themes from intake data are sanitized before injection into prompts
+- [x] Org settings access is scoped to the proposal's organization (no cross-org leak)
 
 #### Data Leak
 
-- [ ] Quality check logs don't include full generated content (only check results)
-- [ ] System prompt with brand voice doesn't appear in API responses to client
-- [ ] Persuasion framework metadata isn't stored in proposal_sections table
+- [x] Quality check logs don't include full generated content (only check results)
+- [x] System prompt with brand voice doesn't appear in API responses to client
+- [x] Persuasion framework metadata isn't stored in proposal_sections table
 
 #### Data Damage
 
-- [ ] Adding persuasion layers doesn't break existing section generation (backward compatible)
-- [ ] If persuasion module throws, section still generates with original prompt (graceful degradation)
-- [ ] Existing proposal re-generation still works (no schema changes required)
+- [x] Adding persuasion layers doesn't break existing section generation (backward compatible)
+- [x] If persuasion module throws, section still generates with original prompt (graceful degradation)
+- [x] Existing proposal re-generation still works (no schema changes required)
 
 ### E2E Gate
 
@@ -191,13 +191,13 @@ timeout 15 npx next dev -p 3099 2>&1 | head -20
 
 ### Acceptance Criteria
 
-- [ ] Pipeline fetches and uses brand_voice from org settings
-- [ ] Each section prompt includes persuasion framework + best practices + win themes
-- [ ] System prompt reflects brand voice when available
-- [ ] Quality checks run post-generation and log results
-- [ ] Graceful degradation: persuasion failures don't break generation
-- [ ] TypeScript compiles clean
-- [ ] All tests pass
+- [x] Pipeline fetches and uses brand_voice from org settings
+- [x] Each section prompt includes persuasion framework + best practices + win themes
+- [x] System prompt reflects brand voice when available
+- [x] Quality checks run post-generation and log results
+- [x] Graceful degradation: persuasion failures don't break generation
+- [x] TypeScript compiles clean
+- [x] All tests pass
 
 ---
 

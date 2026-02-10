@@ -1,5 +1,9 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { generateText, generateStructuredAnalysis } from "./claude";
+import {
+  generateText,
+  generateStructuredAnalysis,
+  buildSystemPrompt,
+} from "./claude";
 import { generateQueryEmbedding } from "./embeddings";
 import { buildExecutiveSummaryPrompt } from "./prompts/executive-summary";
 import { buildUnderstandingPrompt } from "./prompts/understanding";
@@ -13,8 +17,22 @@ import { buildRiskMitigationPrompt } from "./prompts/risk-mitigation";
 import { buildWhyUsPrompt } from "./prompts/why-us";
 import { createProposalVersion } from "@/lib/versioning/create-version";
 import { loadSources, formatSourcesAsL1Context } from "@/lib/sources";
+import {
+  getPersuasionPrompt,
+  getBestPracticesPrompt,
+  buildWinThemesPrompt,
+  buildCompetitivePrompt,
+  runQualityChecks,
+  type BrandVoice,
+} from "./persuasion";
 import type { WinStrategyData } from "@/types/outcomes";
-import type { OutcomeContract, CompanyContext, ProductContext, EvidenceLibraryEntry, CompanyInfo } from "@/types/idd";
+import type {
+  OutcomeContract,
+  CompanyContext,
+  ProductContext,
+  EvidenceLibraryEntry,
+  CompanyInfo,
+} from "@/types/idd";
 
 // L1 Context: Company Truth
 interface L1Context {
@@ -32,7 +50,7 @@ interface SectionConfig {
     analysis: string,
     retrievedContext: string,
     winStrategy?: WinStrategyData | null,
-    companyInfo?: CompanyInfo
+    companyInfo?: CompanyInfo,
   ) => string;
   searchQuery: (intakeData: Record<string, unknown>) => string;
 }
@@ -127,7 +145,7 @@ const SECTION_CONFIGS: SectionConfig[] = [
 async function fetchL1Context(
   supabase: ReturnType<typeof createAdminClient>,
   serviceLine?: string,
-  industry?: string
+  industry?: string,
 ): Promise<L1Context> {
   try {
     // Fetch company context (brand, values, certifications, legal)
@@ -152,7 +170,9 @@ async function fetchL1Context(
       evidenceQuery = evidenceQuery.eq("service_line", serviceLine);
     }
     if (industry) {
-      evidenceQuery = evidenceQuery.or(`client_industry.eq.${industry},client_industry.is.null`);
+      evidenceQuery = evidenceQuery.or(
+        `client_industry.eq.${industry},client_industry.is.null`,
+      );
     }
     const { data: evidenceLibrary } = await evidenceQuery.limit(10);
 
@@ -174,27 +194,38 @@ async function fetchL1Context(
 /**
  * Build the Outcome Contract context string for prompts
  */
-function buildOutcomeContractContext(outcomeContract: OutcomeContract | null): string {
+function buildOutcomeContractContext(
+  outcomeContract: OutcomeContract | null,
+): string {
   if (!outcomeContract) return "";
 
   const sections: string[] = [];
 
   if (outcomeContract.current_state?.length > 0) {
-    sections.push(`## Client Current State (Pain Points)\n${outcomeContract.current_state.map(p => `- ${p}`).join("\n")}`);
+    sections.push(
+      `## Client Current State (Pain Points)\n${outcomeContract.current_state.map((p) => `- ${p}`).join("\n")}`,
+    );
   }
 
   if (outcomeContract.desired_state?.length > 0) {
-    sections.push(`## Client Desired Outcomes\n${outcomeContract.desired_state.map(o => `- ${o}`).join("\n")}`);
+    sections.push(
+      `## Client Desired Outcomes\n${outcomeContract.desired_state.map((o) => `- ${o}`).join("\n")}`,
+    );
   }
 
   if (outcomeContract.transformation) {
-    sections.push(`## Transformation Promise\n${outcomeContract.transformation}`);
+    sections.push(
+      `## Transformation Promise\n${outcomeContract.transformation}`,
+    );
   }
 
   if (outcomeContract.success_metrics?.length > 0) {
     const metricsTable = outcomeContract.success_metrics
-      .filter(m => m.outcome)
-      .map(m => `- ${m.outcome}: ${m.metric} → Target: ${m.target} (Measured by: ${m.measurement_method})`)
+      .filter((m) => m.outcome)
+      .map(
+        (m) =>
+          `- ${m.outcome}: ${m.metric} → Target: ${m.target} (Measured by: ${m.measurement_method})`,
+      )
       .join("\n");
     sections.push(`## Success Metrics\n${metricsTable}`);
   }
@@ -211,23 +242,29 @@ function buildL1ContextString(l1Context: L1Context): string {
   const sections: string[] = [];
 
   // Company brand and values
-  const brandContext = l1Context.companyContext.filter(c => c.category === "brand" || c.category === "values");
+  const brandContext = l1Context.companyContext.filter(
+    (c) => c.category === "brand" || c.category === "values",
+  );
   if (brandContext.length > 0) {
-    const brandStr = brandContext.map(c => `- ${c.title}: ${c.content}`).join("\n");
+    const brandStr = brandContext
+      .map((c) => `- ${c.title}: ${c.content}`)
+      .join("\n");
     sections.push(`## Company Identity\n${brandStr}`);
   }
 
   // Certifications
-  const certs = l1Context.companyContext.filter(c => c.category === "certifications");
+  const certs = l1Context.companyContext.filter(
+    (c) => c.category === "certifications",
+  );
   if (certs.length > 0) {
-    const certsStr = certs.map(c => `- ${c.title}: ${c.content}`).join("\n");
+    const certsStr = certs.map((c) => `- ${c.title}: ${c.content}`).join("\n");
     sections.push(`## Certifications & Partnerships\n${certsStr}`);
   }
 
   // Product capabilities
   if (l1Context.productContexts.length > 0) {
     const prodStr = l1Context.productContexts
-      .map(p => {
+      .map((p) => {
         const caps = Array.isArray(p.capabilities)
           ? p.capabilities.map((c: { name: string }) => c.name).join(", ")
           : "";
@@ -240,9 +277,13 @@ function buildL1ContextString(l1Context: L1Context): string {
   // Evidence (case studies with metrics)
   if (l1Context.evidenceLibrary.length > 0) {
     const evidenceStr = l1Context.evidenceLibrary
-      .map(e => {
+      .map((e) => {
         const metrics = Array.isArray(e.metrics)
-          ? e.metrics.map((m: { name: string; value: string }) => `${m.name}: ${m.value}`).join(", ")
+          ? e.metrics
+              .map(
+                (m: { name: string; value: string }) => `${m.name}: ${m.value}`,
+              )
+              .join(", ")
           : "";
         return `- ${e.title} (${e.evidence_type}): ${e.summary}${metrics ? ` [Metrics: ${metrics}]` : ""}`;
       })
@@ -251,9 +292,9 @@ function buildL1ContextString(l1Context: L1Context): string {
   }
 
   // Legal constraints
-  const legal = l1Context.companyContext.filter(c => c.category === "legal");
+  const legal = l1Context.companyContext.filter((c) => c.category === "legal");
   if (legal.length > 0) {
-    const legalStr = legal.map(c => `- ${c.title}: ${c.content}`).join("\n");
+    const legalStr = legal.map((c) => `- ${c.title}: ${c.content}`).join("\n");
     sections.push(`## Content Guidelines (Must Follow)\n${legalStr}`);
   }
 
@@ -265,7 +306,7 @@ function buildL1ContextString(l1Context: L1Context): string {
 async function retrieveContext(
   supabase: ReturnType<typeof createAdminClient>,
   searchQuery: string,
-  limit: number = 5
+  limit: number = 5,
 ): Promise<{ context: string; chunkIds: string[] }> {
   try {
     const queryEmbedding = await generateQueryEmbedding(searchQuery);
@@ -282,8 +323,13 @@ async function retrieveContext(
 
     const context = results
       .map(
-        (r: { document_title: string; section_heading: string; content: string; similarity: number }) =>
-          `--- From "${r.document_title}" (${r.section_heading || "General"}) [Relevance: ${(r.similarity * 100).toFixed(0)}%] ---\n${r.content}`
+        (r: {
+          document_title: string;
+          section_heading: string;
+          content: string;
+          similarity: number;
+        }) =>
+          `--- From "${r.document_title}" (${r.section_heading || "General"}) [Relevance: ${(r.similarity * 100).toFixed(0)}%] ---\n${r.content}`,
       )
       .join("\n\n");
 
@@ -292,7 +338,10 @@ async function retrieveContext(
     return { context, chunkIds };
   } catch (error) {
     console.error("Context retrieval error:", error);
-    return { context: "Reference material temporarily unavailable.", chunkIds: [] };
+    return {
+      context: "Reference material temporarily unavailable.",
+      chunkIds: [],
+    };
   }
 }
 
@@ -322,24 +371,42 @@ export async function generateProposal(proposalId: string): Promise<void> {
 
     const intakeData = proposal.intake_data as Record<string, unknown>;
     const winStrategy = (proposal.win_strategy_data as WinStrategyData) || null;
-    const outcomeContract = (proposal.outcome_contract as OutcomeContract) || null;
+    const outcomeContract =
+      (proposal.outcome_contract as OutcomeContract) || null;
 
     // Get company info from organization
-    const orgData = proposal.organizations as { name: string; settings?: Record<string, unknown> } | null;
+    const orgData = proposal.organizations as {
+      name: string;
+      settings?: Record<string, unknown>;
+    } | null;
     const companyInfo: CompanyInfo = {
       name: orgData?.name || "Our Company",
       description: (orgData?.settings?.description as string) || undefined,
       industry: (orgData?.settings?.industry as string) || undefined,
     };
 
+    // Extract brand voice from org settings (L2 persuasion layer)
+    const brandVoice: BrandVoice | null = orgData?.settings?.brand_voice
+      ? (orgData.settings.brand_voice as BrandVoice)
+      : null;
+
+    // Build organization-aware system prompt with brand voice
+    const systemPrompt = buildSystemPrompt({
+      name: companyInfo.name,
+      description: companyInfo.description,
+      brandVoice,
+    });
+
     // IDD Stage 0: Fetch L1 Context (Company Truth)
-    const serviceLine = intakeData.opportunity_type as string || undefined;
-    const industry = intakeData.client_industry as string || undefined;
+    const serviceLine = (intakeData.opportunity_type as string) || undefined;
+    const industry = (intakeData.client_industry as string) || undefined;
     const l1Context = await fetchL1Context(supabase, serviceLine, industry);
 
     // Debug log for L1 context - only in development
     if (process.env.NODE_ENV === "development") {
-      console.log(`[IDD] Fetched L1 context: ${l1Context.companyContext.length} company, ${l1Context.productContexts.length} products, ${l1Context.evidenceLibrary.length} evidence`);
+      console.log(
+        `[IDD] Fetched L1 context: ${l1Context.companyContext.length} company, ${l1Context.productContexts.length} products, ${l1Context.evidenceLibrary.length} evidence`,
+      );
     }
 
     // Load static sources from sources/ directory
@@ -351,24 +418,32 @@ export async function generateProposal(proposalId: string): Promise<void> {
         industry: industry,
       });
       if (process.env.NODE_ENV === "development") {
-        console.log(`[IDD] Loaded static sources: ${staticSources.all.length} files (${staticSources.methodologies.length} methodologies, ${staticSources.caseStudies.length} case studies)`);
+        console.log(
+          `[IDD] Loaded static sources: ${staticSources.all.length} files (${staticSources.methodologies.length} methodologies, ${staticSources.caseStudies.length} case studies)`,
+        );
       }
     } catch (sourceError) {
       // Non-critical - static sources are supplementary
       if (process.env.NODE_ENV === "development") {
-        console.warn("[IDD] Failed to load static sources, continuing with database context only:", sourceError);
+        console.warn(
+          "[IDD] Failed to load static sources, continuing with database context only:",
+          sourceError,
+        );
       }
     }
 
     // Build context strings for prompts
     const outcomeContractContext = buildOutcomeContractContext(outcomeContract);
-    const l1ContextString = buildL1ContextString(l1Context) + staticSourcesContext;
+    const l1ContextString =
+      buildL1ContextString(l1Context) + staticSourcesContext;
 
     // Stage 1: Strategic Analysis (incorporating win strategy and outcome contract)
     const analysis = await generateStructuredAnalysis(
       intakeData,
-      proposal.rfp_extracted_requirements as Record<string, unknown> | undefined,
-      winStrategy
+      proposal.rfp_extracted_requirements as
+        | Record<string, unknown>
+        | undefined,
+      winStrategy,
     );
 
     // Enhanced analysis with IDD context
@@ -408,14 +483,71 @@ export async function generateProposal(proposalId: string): Promise<void> {
         const searchQuery = config.searchQuery(intakeData);
         const { context, chunkIds } = await retrieveContext(
           supabase,
-          searchQuery
+          searchQuery,
         );
 
-        // Build the prompt (with win strategy, outcome contract, L1 context, and company info for IDD)
-        const prompt = config.buildPrompt(intakeData, enhancedAnalysis, context, winStrategy, companyInfo);
+        // Build the base prompt (with win strategy, outcome contract, L1 context, and company info for IDD)
+        const basePrompt = config.buildPrompt(
+          intakeData,
+          enhancedAnalysis,
+          context,
+          winStrategy,
+          companyInfo,
+        );
 
-        // Generate the section content
-        const generatedContent = await generateText(prompt);
+        // Build persuasion layers for this section type
+        const persuasionFramework = getPersuasionPrompt(config.type);
+        const bestPractices = getBestPracticesPrompt(config.type);
+        const winThemesPrompt = winStrategy?.win_themes
+          ? buildWinThemesPrompt(winStrategy.win_themes)
+          : "";
+        const competitivePrompt = winStrategy?.differentiators
+          ? buildCompetitivePrompt(winStrategy.differentiators, [])
+          : "";
+
+        // Combine base prompt with persuasion context
+        const persuasionContext = [
+          persuasionFramework,
+          bestPractices,
+          winThemesPrompt,
+          competitivePrompt,
+        ]
+          .filter(Boolean)
+          .join("\n\n");
+
+        const prompt = persuasionContext
+          ? `${basePrompt}\n\n---\n\n## Persuasion & Quality Guidance\n\n${persuasionContext}`
+          : basePrompt;
+
+        // Generate the section content with organization-aware system prompt
+        const generatedContent = await generateText(prompt, {
+          systemPrompt,
+        });
+
+        // Run quality checks (advisory — log results, don't block generation)
+        try {
+          const avoidTerms = brandVoice?.terminology?.avoid ?? [];
+          const themes = winStrategy?.win_themes ?? [];
+          const qualityResult = runQualityChecks(
+            generatedContent,
+            config.type,
+            themes,
+            avoidTerms,
+          );
+          if (process.env.NODE_ENV === "development") {
+            console.log(
+              `[IMF] Quality check for ${config.type}:`,
+              JSON.stringify(qualityResult),
+            );
+          }
+        } catch (qcError) {
+          if (process.env.NODE_ENV === "development") {
+            console.warn(
+              `[IMF] Quality check failed for ${config.type}:`,
+              qcError,
+            );
+          }
+        }
 
         // Update section with generated content
         await supabase
@@ -430,11 +562,13 @@ export async function generateProposal(proposalId: string): Promise<void> {
 
         // Store source references
         if (chunkIds.length > 0) {
-          const sourceInserts = chunkIds.map((chunkId: string, idx: number) => ({
-            section_id: section.id,
-            chunk_id: chunkId,
-            relevance_score: 1 - idx * 0.1, // Approximate scoring by rank
-          }));
+          const sourceInserts = chunkIds.map(
+            (chunkId: string, idx: number) => ({
+              section_id: section.id,
+              chunk_id: chunkId,
+              relevance_score: 1 - idx * 0.1, // Approximate scoring by rank
+            }),
+          );
 
           await supabase.from("section_sources").insert(sourceInserts);
         }
@@ -471,7 +605,10 @@ export async function generateProposal(proposalId: string): Promise<void> {
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
-    console.error(`Proposal generation failed for ${proposalId}:`, errorMessage);
+    console.error(
+      `Proposal generation failed for ${proposalId}:`,
+      errorMessage,
+    );
 
     await supabase
       .from("proposals")
