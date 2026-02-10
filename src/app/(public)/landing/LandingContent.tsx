@@ -164,7 +164,7 @@ export default function LandingContent() {
         .hero-subtitle {
           font-size: clamp(18px, 2vw, 22px);
           color: var(--gray-400);
-          max-width: 600px;
+          max-width: 640px;
           line-height: 1.6;
           margin-bottom: 48px;
         }
@@ -298,7 +298,15 @@ export default function LandingContent() {
           max-width: 1200px;
           margin: 0 auto;
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+          grid-template-columns: repeat(2, 1fr);
+          gap: 24px;
+        }
+
+        .features-grid-secondary {
+          max-width: 1200px;
+          margin: 40px auto 0;
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
           gap: 24px;
         }
 
@@ -316,6 +324,16 @@ export default function LandingContent() {
           transform: translateY(-4px);
         }
 
+        .feature-card.feature-primary {
+          border-color: rgba(18, 171, 219, 0.2);
+          background: rgba(18, 171, 219, 0.03);
+        }
+
+        .feature-card.feature-primary:hover {
+          border-color: rgba(18, 171, 219, 0.5);
+          background: rgba(18, 171, 219, 0.06);
+        }
+
         .feature-icon {
           width: 48px;
           height: 48px;
@@ -326,6 +344,19 @@ export default function LandingContent() {
           justify-content: center;
           margin-bottom: 24px;
           color: var(--cyan);
+        }
+
+        .feature-tag {
+          display: inline-block;
+          padding: 4px 12px;
+          background: rgba(18, 171, 219, 0.15);
+          color: var(--cyan-glow);
+          font-size: 11px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          border-radius: 100px;
+          margin-bottom: 16px;
         }
 
         .feature-title {
@@ -370,81 +401,108 @@ export default function LandingContent() {
           line-height: 1.6;
         }
 
-        /* How it works */
-        .how-it-works {
+        /* Methodology Section (Intent Framework) */
+        .methodology {
           padding: 120px 24px;
           background: var(--navy-light);
         }
 
-        .steps {
-          max-width: 1000px;
-          margin: 0 auto;
-          display: grid;
-          gap: 60px;
-        }
-
-        .step {
-          display: grid;
-          grid-template-columns: 80px 1fr;
-          gap: 40px;
-          align-items: start;
-        }
-
-        .step-number {
-          width: 80px;
-          height: 80px;
-          background: rgba(18, 171, 219, 0.1);
-          border: 1px solid rgba(18, 171, 219, 0.3);
-          border-radius: 50%;
+        .layers-stack {
+          max-width: 800px;
+          margin: 0 auto 60px;
           display: flex;
+          flex-direction: column;
+          gap: 0;
+        }
+
+        .layer {
+          display: grid;
+          grid-template-columns: 40px 1fr;
+          gap: 20px;
           align-items: center;
-          justify-content: center;
+          padding: 20px 28px;
+          border: 1px solid rgba(18, 171, 219, 0.15);
+          border-bottom: none;
+          background: rgba(18, 171, 219, 0.02);
+          transition: all 0.3s ease;
+        }
+
+        .layer:first-child {
+          border-radius: 16px 16px 0 0;
+        }
+
+        .layer:last-child {
+          border-bottom: 1px solid rgba(18, 171, 219, 0.15);
+          border-radius: 0 0 16px 16px;
+        }
+
+        .layer:hover {
+          background: rgba(18, 171, 219, 0.06);
+        }
+
+        .layer-number {
           font-family: var(--font-display);
-          font-size: 32px;
+          font-size: 24px;
           font-style: italic;
           color: var(--cyan);
+          text-align: center;
         }
 
-        .step-content h3 {
-          font-size: 24px;
-          font-weight: 600;
-          margin-bottom: 12px;
+        .layer-content {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
         }
 
-        .step-content p {
-          color: var(--gray-400);
+        .layer-name {
           font-size: 16px;
+          font-weight: 600;
+          color: var(--white);
+        }
+
+        .layer-desc {
+          font-size: 14px;
+          color: var(--gray-400);
+          line-height: 1.5;
+        }
+
+        .methodology-closing {
+          max-width: 700px;
+          margin: 0 auto;
+          text-align: center;
+          color: var(--gray-400);
+          font-size: 17px;
           line-height: 1.7;
         }
 
-        /* Pricing Section */
-        .pricing {
+        /* Competitive Positioning Section */
+        .competitive {
           padding: 120px 24px;
           background: var(--navy);
         }
 
-        .pricing-grid {
+        .compare-grid {
           max-width: 1100px;
           margin: 0 auto;
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+          grid-template-columns: repeat(3, 1fr);
           gap: 24px;
         }
 
-        .pricing-card {
-          padding: 40px;
+        .compare-col {
+          padding: 36px 32px;
           background: rgba(255, 255, 255, 0.02);
           border: 1px solid rgba(255, 255, 255, 0.05);
           border-radius: 16px;
+        }
+
+        .compare-col.compare-highlight {
+          border-color: var(--cyan);
+          background: rgba(18, 171, 219, 0.05);
           position: relative;
         }
 
-        .pricing-card.featured {
-          border-color: var(--cyan);
-          background: rgba(18, 171, 219, 0.05);
-        }
-
-        .pricing-badge {
+        .compare-col-badge {
           position: absolute;
           top: -12px;
           left: 50%;
@@ -455,58 +513,131 @@ export default function LandingContent() {
           font-weight: 600;
           padding: 6px 16px;
           border-radius: 100px;
+          white-space: nowrap;
         }
 
-        .pricing-name {
-          font-size: 20px;
+        .compare-col-title {
+          font-size: 18px;
           font-weight: 600;
-          margin-bottom: 8px;
-        }
-
-        .pricing-desc {
-          color: var(--gray-400);
-          font-size: 14px;
           margin-bottom: 24px;
+          padding-bottom: 16px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
 
-        .pricing-price {
-          font-family: var(--font-display);
-          font-size: 48px;
-          margin-bottom: 24px;
-        }
-
-        .pricing-price span {
-          font-size: 16px;
-          color: var(--gray-400);
-        }
-
-        .pricing-features {
+        .compare-list {
           list-style: none;
-          margin-bottom: 32px;
         }
 
-        .pricing-features li {
-          padding: 8px 0;
-          color: var(--gray-200);
+        .compare-list li {
+          padding: 10px 0;
           font-size: 14px;
+          color: var(--gray-400);
           display: flex;
-          align-items: center;
-          gap: 12px;
+          align-items: flex-start;
+          gap: 10px;
+          line-height: 1.5;
         }
 
-        .pricing-features li::before {
-          content: "✓";
+        .compare-list li::before {
+          content: "x";
+          color: var(--gray-600);
+          font-weight: 600;
+          flex-shrink: 0;
+          margin-top: 1px;
+        }
+
+        .compare-highlight .compare-list li {
+          color: var(--gray-200);
+        }
+
+        .compare-highlight .compare-list li::before {
+          content: "\\2713";
           color: var(--cyan);
         }
 
-        /* CTA Section */
-        .cta {
+        /* Pricing Section */
+        .pricing {
           padding: 120px 24px;
           background: linear-gradient(
             180deg,
             var(--navy-light) 0%,
             var(--navy) 100%
           );
+        }
+
+        .pricing-single {
+          max-width: 540px;
+          margin: 0 auto;
+        }
+
+        .pricing-card {
+          padding: 48px;
+          background: rgba(18, 171, 219, 0.05);
+          border: 1px solid var(--cyan);
+          border-radius: 16px;
+          text-align: center;
+          position: relative;
+        }
+
+        .pricing-name {
+          font-size: 24px;
+          font-weight: 600;
+          margin-bottom: 8px;
+        }
+
+        .pricing-desc {
+          color: var(--gray-400);
+          font-size: 16px;
+          margin-bottom: 32px;
+        }
+
+        .pricing-price {
+          font-family: var(--font-display);
+          font-size: 64px;
+          margin-bottom: 32px;
+        }
+
+        .pricing-price span {
+          font-size: 18px;
+          color: var(--gray-400);
+        }
+
+        .pricing-features {
+          list-style: none;
+          margin-bottom: 40px;
+          text-align: left;
+          max-width: 360px;
+          margin-left: auto;
+          margin-right: auto;
+          margin-bottom: 40px;
+        }
+
+        .pricing-features li {
+          padding: 8px 0;
+          color: var(--gray-200);
+          font-size: 15px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .pricing-features li::before {
+          content: "\\2713";
+          color: var(--cyan);
+          font-weight: 600;
+        }
+
+        .pricing-note {
+          color: var(--gray-400);
+          font-size: 14px;
+          margin-top: 24px;
+          line-height: 1.6;
+        }
+
+        /* CTA Section */
+        .cta {
+          padding: 120px 24px;
+          background: var(--navy);
           text-align: center;
         }
 
@@ -531,6 +662,7 @@ export default function LandingContent() {
           color: var(--gray-400);
           font-size: 18px;
           margin-bottom: 40px;
+          line-height: 1.6;
         }
 
         /* Footer */
@@ -582,12 +714,21 @@ export default function LandingContent() {
           .nav-links {
             display: none;
           }
-          .step {
+          .features-grid {
             grid-template-columns: 1fr;
-            text-align: center;
           }
-          .step-number {
-            margin: 0 auto;
+          .features-grid-secondary {
+            grid-template-columns: 1fr;
+          }
+          .layer {
+            grid-template-columns: 32px 1fr;
+            padding: 16px 20px;
+          }
+          .compare-grid {
+            grid-template-columns: 1fr;
+          }
+          .compare-col.compare-highlight {
+            order: -1;
           }
           .footer-content {
             flex-direction: column;
@@ -621,7 +762,7 @@ export default function LandingContent() {
               <a href="#features">Features</a>
             </li>
             <li>
-              <a href="#how-it-works">How it Works</a>
+              <a href="#methodology">Intent Framework</a>
             </li>
             <li>
               <a href="#pricing">Pricing</a>
@@ -643,7 +784,7 @@ export default function LandingContent() {
               className="btn-primary"
               style={{ padding: "10px 20px" }}
             >
-              Start Free Trial
+              Request Access
             </Link>
           </div>
         </nav>
@@ -652,20 +793,29 @@ export default function LandingContent() {
         <section className="hero">
           <div className="hero-glow" />
           <div className="reveal hero-badge">
-            <span>✨</span>
-            Introducing Intent-Driven Development
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
+            Invite-Only Access
           </div>
           <h1 className="reveal reveal-delay-1 hero-title">
-            Win more deals with <em>AI-powered</em> proposals
+            The proposal engine built to <em>win</em>
           </h1>
           <p className="reveal reveal-delay-2 hero-subtitle">
-            Generate professional proposals in hours, not weeks. Our AI learns
-            your company&apos;s voice and creates compelling, client-specific
-            content that wins.
+            IntentWin applies proven persuasion science to every section of your
+            proposal. Not just AI — a systematic framework that turns good
+            proposals into winning ones.
           </p>
           <div className="reveal reveal-delay-3 hero-cta">
             <Link href="/signup" className="btn-primary">
-              Start Free Trial
+              Request Access
               <svg
                 width="20"
                 height="20"
@@ -677,8 +827,8 @@ export default function LandingContent() {
                 <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>
             </Link>
-            <a href="#how-it-works" className="btn-secondary">
-              See How It Works
+            <a href="#methodology" className="btn-secondary">
+              See the Intent Framework
             </a>
           </div>
         </section>
@@ -689,12 +839,14 @@ export default function LandingContent() {
             <p className="section-label">Features</p>
             <h2 className="section-title">Everything you need to win</h2>
             <p className="section-subtitle">
-              From intake to export, we handle the entire proposal lifecycle
-              with AI-powered automation
+              From RFP analysis to polished export, IntentWin handles the entire
+              proposal lifecycle with persuasion intelligence built in
             </p>
           </div>
+
+          {/* Primary Features (2x2 grid) */}
           <div className="features-grid">
-            <div className="reveal feature-card">
+            <div className="reveal feature-card feature-primary">
               <div className="feature-icon">
                 <svg
                   width="24"
@@ -704,16 +856,22 @@ export default function LandingContent() {
                   stroke="currentColor"
                   strokeWidth="2"
                 >
-                  <path d="M12 3v18M3 12h18" />
+                  <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                  <path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
                 </svg>
               </div>
-              <h3 className="feature-title">Smart Intake</h3>
+              <span className="feature-tag">Core Differentiator</span>
+              <h3 className="feature-title">
+                Intent Framework (6-Layer Persuasion Engine)
+              </h3>
               <p className="feature-desc">
-                Define client needs, outcomes, and constraints. Our AI extracts
-                key requirements automatically from RFPs.
+                Our proprietary persuasion system applies the right psychological
+                framework to every section. Executive summaries use AIDA. Case
+                studies use STAR. Pricing uses value framing. Every word is
+                engineered to persuade.
               </p>
             </div>
-            <div className="reveal reveal-delay-1 feature-card">
+            <div className="reveal reveal-delay-1 feature-card feature-primary">
               <div className="feature-icon">
                 <svg
                   width="24"
@@ -725,15 +883,43 @@ export default function LandingContent() {
                 >
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                   <polyline points="14 2 14 8 20 8" />
+                  <line x1="16" y1="13" x2="8" y2="13" />
+                  <line x1="16" y1="17" x2="8" y2="17" />
                 </svg>
               </div>
-              <h3 className="feature-title">AI Generation</h3>
+              <h3 className="feature-title">RFP Intelligence</h3>
               <p className="feature-desc">
-                Generate complete proposals grounded in your company&apos;s
-                knowledge base. Every claim is verifiable.
+                Upload any RFP and our AI extracts requirements, compliance
+                needs, evaluation criteria, and deadlines automatically. Never
+                miss a requirement again.
               </p>
             </div>
-            <div className="reveal reveal-delay-2 feature-card">
+            <div className="reveal reveal-delay-2 feature-card feature-primary">
+              <div className="feature-icon">
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  <line x1="11" y1="8" x2="11" y2="14" />
+                  <line x1="8" y1="11" x2="14" y2="11" />
+                </svg>
+              </div>
+              <h3 className="feature-title">
+                Knowledge Base (RAG-Powered)
+              </h3>
+              <p className="feature-desc">
+                Upload your past wins, case studies, certifications, and
+                methodologies. Our AI retrieves the most relevant evidence for
+                each section, grounding every claim in your actual capabilities.
+              </p>
+            </div>
+            <div className="reveal reveal-delay-3 feature-card feature-primary">
               <div className="feature-icon">
                 <svg
                   width="24"
@@ -747,13 +933,37 @@ export default function LandingContent() {
                   <path d="M3 9h18M9 21V9" />
                 </svg>
               </div>
-              <h3 className="feature-title">Rich Exports</h3>
+              <h3 className="feature-title">Professional Export Suite</h3>
               <p className="feature-desc">
-                Export to Word, PowerPoint, PDF with your branding. Generate
-                presentation slides automatically.
+                Export to Word, PowerPoint, PDF with your branding applied.
+                Generate presentation-ready slide decks automatically. Deliver
+                polished proposals every time.
               </p>
             </div>
-            <div className="reveal reveal-delay-3 feature-card">
+          </div>
+
+          {/* Secondary Features */}
+          <div className="features-grid-secondary">
+            <div className="reveal reveal-delay-4 feature-card">
+              <div className="feature-icon">
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M12 20V10M6 20V4M18 20v-6" />
+                </svg>
+              </div>
+              <h3 className="feature-title">Win Analytics</h3>
+              <p className="feature-desc">
+                Track proposal outcomes, learn what works, and continuously
+                improve your win rate with data-driven insights.
+              </p>
+            </div>
+            <div className="reveal reveal-delay-5 feature-card">
               <div className="feature-icon">
                 <svg
                   width="24"
@@ -770,92 +980,121 @@ export default function LandingContent() {
               </div>
               <h3 className="feature-title">Team Collaboration</h3>
               <p className="feature-desc">
-                Review, comment, and iterate together. Track changes and manage
-                approvals in one place.
-              </p>
-            </div>
-            <div className="reveal reveal-delay-4 feature-card">
-              <div className="feature-icon">
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                  <path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
-                </svg>
-              </div>
-              <h3 className="feature-title">Knowledge Base</h3>
-              <p className="feature-desc">
-                Upload past proposals, case studies, and capabilities. AI
-                retrieves relevant content automatically.
-              </p>
-            </div>
-            <div className="reveal reveal-delay-5 feature-card">
-              <div className="feature-icon">
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M12 20V10M6 20V4M18 20v-6" />
-                </svg>
-              </div>
-              <h3 className="feature-title">Win Analytics</h3>
-              <p className="feature-desc">
-                Track proposal performance. Learn what works and continuously
-                improve your win rate.
+                Review, comment, and iterate together. Version history and
+                approval workflows keep your team aligned.
               </p>
             </div>
           </div>
         </section>
 
-        {/* How it Works */}
-        <section id="how-it-works" className="how-it-works">
+        {/* Intent Framework Methodology */}
+        <section id="methodology" className="methodology">
           <div className="section-header reveal">
-            <p className="section-label">How It Works</p>
-            <h2 className="section-title">Three steps to winning proposals</h2>
+            <p className="section-label">The Intent Framework</p>
+            <h2 className="section-title">Six layers of persuasion science</h2>
           </div>
-          <div className="steps">
-            <div className="reveal step">
-              <div className="step-number">1</div>
-              <div className="step-content">
-                <h3>Define the Opportunity</h3>
-                <p>
-                  Enter client details, project scope, and desired outcomes.
-                  Upload the RFP and our AI will extract key requirements,
-                  compliance needs, and evaluation criteria automatically.
-                </p>
+          <div className="reveal layers-stack">
+            <div className="layer">
+              <span className="layer-number">1</span>
+              <div className="layer-content">
+                <span className="layer-name">Brand Voice</span>
+                <span className="layer-desc">
+                  Your tone, terminology, and personality in every word
+                </span>
               </div>
             </div>
-            <div className="reveal reveal-delay-1 step">
-              <div className="step-number">2</div>
-              <div className="step-content">
-                <h3>AI Generates Your Proposal</h3>
-                <p>
-                  Our AI creates a complete proposal tailored to the client.
-                  Every section draws from your knowledge base—case studies,
-                  methodologies, team credentials—ensuring accuracy and
-                  consistency.
-                </p>
+            <div className="layer">
+              <span className="layer-number">2</span>
+              <div className="layer-content">
+                <span className="layer-name">Section Best Practices</span>
+                <span className="layer-desc">
+                  Proven structure and length for each section type
+                </span>
               </div>
             </div>
-            <div className="reveal reveal-delay-2 step">
-              <div className="step-number">3</div>
-              <div className="step-content">
-                <h3>Review, Refine, and Win</h3>
-                <p>
-                  Collaborate with your team to polish the proposal. Export to
-                  professional formats, track client engagement, and close the
-                  deal. Learn from each win to improve future proposals.
-                </p>
+            <div className="layer">
+              <span className="layer-number">3</span>
+              <div className="layer-content">
+                <span className="layer-name">Persuasion Frameworks</span>
+                <span className="layer-desc">
+                  AIDA, PAS, FAB, STAR assigned per section
+                </span>
               </div>
+            </div>
+            <div className="layer">
+              <span className="layer-number">4</span>
+              <div className="layer-content">
+                <span className="layer-name">Win Themes</span>
+                <span className="layer-desc">
+                  Your key differentiators woven throughout
+                </span>
+              </div>
+            </div>
+            <div className="layer">
+              <span className="layer-number">5</span>
+              <div className="layer-content">
+                <span className="layer-name">Competitive Positioning</span>
+                <span className="layer-desc">
+                  Indirect framing that elevates without attacking
+                </span>
+              </div>
+            </div>
+            <div className="layer">
+              <span className="layer-number">6</span>
+              <div className="layer-content">
+                <span className="layer-name">Evidence &amp; Context</span>
+                <span className="layer-desc">
+                  RAG-powered claims backed by your actual capabilities
+                </span>
+              </div>
+            </div>
+          </div>
+          <p className="reveal methodology-closing">
+            Every other AI tool dumps your RFP into a generic prompt. IntentWin
+            applies a systematic, research-backed methodology to every section.
+            The result: proposals that don&apos;t just inform — they persuade.
+          </p>
+        </section>
+
+        {/* Competitive Positioning */}
+        <section className="competitive">
+          <div className="section-header reveal">
+            <p className="section-label">Why IntentWin</p>
+            <h2 className="section-title">Not another AI writing tool</h2>
+          </div>
+          <div className="compare-grid">
+            <div className="reveal compare-col">
+              <h3 className="compare-col-title">
+                Generic AI (ChatGPT, etc.)
+              </h3>
+              <ul className="compare-list">
+                <li>Paste and pray approach</li>
+                <li>No proposal-specific methodology</li>
+                <li>Generic output, no evidence grounding</li>
+                <li>Zero quality verification</li>
+              </ul>
+            </div>
+            <div className="reveal reveal-delay-1 compare-col">
+              <h3 className="compare-col-title">
+                Legacy Proposal Tools (Qvidian, RFPIO)
+              </h3>
+              <ul className="compare-list">
+                <li>Content library search (no AI generation)</li>
+                <li>Template-based, not adaptive</li>
+                <li>No persuasion intelligence</li>
+                <li>Expensive per-seat licensing</li>
+              </ul>
+            </div>
+            <div className="reveal reveal-delay-2 compare-col compare-highlight">
+              <span className="compare-col-badge">The IntentWin Difference</span>
+              <h3 className="compare-col-title">IntentWin</h3>
+              <ul className="compare-list">
+                <li>6-layer Intent Framework</li>
+                <li>Persuasion science per section</li>
+                <li>RAG-powered evidence grounding</li>
+                <li>Win theme integration throughout</li>
+                <li>Quality verification built in</li>
+              </ul>
             </div>
           </div>
         </section>
@@ -864,76 +1103,39 @@ export default function LandingContent() {
         <section id="pricing" className="pricing">
           <div className="section-header reveal">
             <p className="section-label">Pricing</p>
-            <h2 className="section-title">Plans that scale with you</h2>
-            <p className="section-subtitle">
-              Start free, upgrade when you&apos;re ready. All plans include a
-              14-day trial.
-            </p>
+            <h2 className="section-title">One plan. Everything included.</h2>
           </div>
-          <div className="pricing-grid">
+          <div className="pricing-single">
             <div className="reveal pricing-card">
-              <p className="pricing-name">Starter</p>
-              <p className="pricing-desc">For freelancers and solopreneurs</p>
+              <p className="pricing-name">IntentWin</p>
+              <p className="pricing-desc">
+                Everything you need to win. No limits, no surprises.
+              </p>
               <p className="pricing-price">
-                $29<span>/mo</span>
+                $999<span>/mo</span>
               </p>
               <ul className="pricing-features">
-                <li>5 proposals per month</li>
-                <li>1 user</li>
-                <li>10 knowledge base docs</li>
-                <li>Export to all formats</li>
-                <li>Email support</li>
-              </ul>
-              <Link
-                href="/signup"
-                className="btn-secondary"
-                style={{ width: "100%", justifyContent: "center" }}
-              >
-                Start Free Trial
-              </Link>
-            </div>
-            <div className="reveal reveal-delay-1 pricing-card featured">
-              <span className="pricing-badge">Most Popular</span>
-              <p className="pricing-name">Pro</p>
-              <p className="pricing-desc">For growing sales teams</p>
-              <p className="pricing-price">
-                $79<span>/mo</span>
-              </p>
-              <ul className="pricing-features">
-                <li>20 proposals per month</li>
-                <li>5 users</li>
-                <li>50 knowledge base docs</li>
-                <li>Team collaboration</li>
-                <li>Priority support</li>
+                <li>Unlimited proposals</li>
+                <li>Unlimited documents &amp; knowledge base</li>
+                <li>Intent Framework (6-layer persuasion engine)</li>
+                <li>RFP Intelligence (auto-extract)</li>
+                <li>All export formats (DOCX, PDF, PPTX)</li>
+                <li>Win Analytics &amp; outcome tracking</li>
+                <li>White-glove onboarding</li>
+                <li>Dedicated support</li>
+                <li>Quarterly strategy reviews</li>
               </ul>
               <Link
                 href="/signup"
                 className="btn-primary"
                 style={{ width: "100%", justifyContent: "center" }}
               >
-                Start Free Trial
+                Request Access
               </Link>
-            </div>
-            <div className="reveal reveal-delay-2 pricing-card">
-              <p className="pricing-name">Business</p>
-              <p className="pricing-desc">For established companies</p>
-              <p className="pricing-price">
-                $199<span>/mo</span>
+              <p className="pricing-note">
+                IntentWin is invite-only. Request access and we&apos;ll be in
+                touch within 24 hours.
               </p>
-              <ul className="pricing-features">
-                <li>Unlimited proposals</li>
-                <li>15 users</li>
-                <li>Unlimited documents</li>
-                <li>Custom templates</li>
-                <li>API access</li>
-              </ul>
-              <Link
-                href="/signup"
-                className="btn-secondary"
-                style={{ width: "100%", justifyContent: "center" }}
-              >
-                Start Free Trial
-              </Link>
             </div>
           </div>
         </section>
@@ -945,10 +1147,11 @@ export default function LandingContent() {
               Ready to <em>win more</em>?
             </h2>
             <p className="cta-subtitle">
-              Join hundreds of teams using IntentWin to close deals faster.
+              Join an exclusive group of teams using the Intent Framework to
+              close more deals.
             </p>
             <Link href="/signup" className="btn-primary">
-              Start Your Free Trial
+              Request Access
               <svg
                 width="20"
                 height="20"
@@ -975,14 +1178,14 @@ export default function LandingContent() {
                 <Link href="/blog">Blog</Link>
               </li>
               <li>
-                <Link href="/pricing">Pricing</Link>
+                <a href="#pricing">Pricing</a>
               </li>
               <li>
                 <a href="mailto:support@intentwin.com">Contact</a>
               </li>
             </ul>
             <p className="footer-copy">
-              © 2026 IntentWin. All rights reserved.
+              &copy; 2026 IntentWin. All rights reserved.
             </p>
           </div>
         </footer>

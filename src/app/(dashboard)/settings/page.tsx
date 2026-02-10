@@ -9,7 +9,6 @@ import {
   Zap,
   FileText,
   Check,
-  ArrowRight,
   ExternalLink,
   Loader2,
 } from "lucide-react";
@@ -33,49 +32,21 @@ interface Organization {
   stripe_subscription_id: string | null;
 }
 
-const PLAN_FEATURES: Record<string, string[]> = {
-  trial: ["3 proposals", "50K AI tokens", "1 user", "10 documents"],
-  starter: [
-    "5 proposals/mo",
-    "50K AI tokens",
-    "1 user",
-    "10 documents",
-    "All exports",
-  ],
-  pro: [
-    "20 proposals/mo",
-    "250K AI tokens",
-    "5 users",
-    "50 documents",
-    "Priority support",
-  ],
-  business: [
-    "Unlimited proposals",
-    "1M AI tokens",
-    "15 users",
-    "Unlimited docs",
-    "API access",
-  ],
-  enterprise: [
-    "Unlimited everything",
-    "Unlimited users",
-    "SSO/SAML",
-    "Dedicated support",
-  ],
-};
-
-const PLAN_PRICES: Record<string, number | null> = {
-  trial: 0,
-  starter: 29,
-  pro: 79,
-  business: 199,
-  enterprise: null,
-};
+const PLAN_FEATURES: string[] = [
+  "Unlimited proposals",
+  "Intent Framework (6-layer persuasion engine)",
+  "RFP Intelligence (auto-extract)",
+  "Unlimited knowledge base documents",
+  "All export formats (DOCX, PDF, PPTX)",
+  "Win Analytics & outcome tracking",
+  "White-glove onboarding",
+  "Dedicated support",
+  "Quarterly strategy reviews",
+];
 
 export default function SettingsPage() {
   const [org, setOrg] = useState<Organization | null>(null);
   const [loading, setLoading] = useState(true);
-  const [upgrading, setUpgrading] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
   const supabase = createClient();
 
@@ -106,29 +77,6 @@ export default function SettingsPage() {
 
     loadOrganization();
   }, [supabase]);
-
-  const handleUpgrade = async (tier: string) => {
-    setUpgrading(tier);
-    try {
-      const response = await fetch("/api/stripe/create-checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tier, interval: "monthly" }),
-      });
-
-      const data = await response.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        alert(data.error || "Failed to create checkout session");
-      }
-    } catch (error) {
-      console.error("Upgrade error:", error);
-      alert("Failed to start upgrade process");
-    } finally {
-      setUpgrading(null);
-    }
-  };
 
   const handleManageBilling = async () => {
     setPortalLoading(true);
@@ -309,107 +257,52 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Upgrade Plans */}
-      {(org?.plan_tier === "trial" ||
-        org?.plan_tier === "starter" ||
-        org?.plan_tier === "pro") && (
-        <div>
-          <h2 className="text-lg font-semibold text-[var(--foreground)] mb-4">
-            {isOnTrial ? "Choose a plan" : "Upgrade your plan"}
-          </h2>
-          <div className="grid md:grid-cols-3 gap-4">
-            {(["starter", "pro", "business"] as const).map((tier) => {
-              const isCurrentPlan = org?.plan_tier === tier;
-              const isDowngrade =
-                (org?.plan_tier === "business" && tier !== "business") ||
-                (org?.plan_tier === "pro" && tier === "starter");
-
-              if (isDowngrade) return null;
-
-              return (
-                <div
-                  key={tier}
-                  className={`card p-6 ${
-                    tier === "pro"
-                      ? "border-[var(--accent)] bg-[var(--accent-subtle)]"
-                      : ""
-                  }`}
-                >
-                  <div className="mb-4">
-                    <h3 className="text-lg font-semibold text-[var(--foreground)] capitalize">
-                      {tier}
-                    </h3>
-                    <div className="flex items-baseline gap-1 mt-1">
-                      <span className="text-3xl font-bold text-[var(--foreground)]">
-                        ${PLAN_PRICES[tier]}
-                      </span>
-                      <span className="text-[var(--foreground-muted)]">
-                        /mo
-                      </span>
-                    </div>
-                  </div>
-
-                  <ul className="space-y-2 mb-6">
-                    {PLAN_FEATURES[tier].map((feature) => (
-                      <li
-                        key={feature}
-                        className="flex items-center gap-2 text-sm text-[var(--foreground-muted)]"
-                      >
-                        <Check className="h-4 w-4 text-[var(--success)]" />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-
-                  <button
-                    onClick={() => handleUpgrade(tier)}
-                    disabled={isCurrentPlan || upgrading === tier}
-                    className={`w-full ${
-                      isCurrentPlan
-                        ? "btn-secondary opacity-50 cursor-not-allowed"
-                        : tier === "pro"
-                          ? "btn-primary"
-                          : "btn-secondary"
-                    }`}
-                  >
-                    {upgrading === tier ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : isCurrentPlan ? (
-                      "Current Plan"
-                    ) : (
-                      <>
-                        Upgrade
-                        <ArrowRight className="h-4 w-4" />
-                      </>
-                    )}
-                  </button>
-                </div>
-              );
-            })}
+      {/* Plan Features */}
+      <div className="card p-6 mb-8">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent-subtle)]">
+            <Check className="h-5 w-5 text-[var(--accent)]" />
           </div>
-
-          {/* Enterprise CTA */}
-          <div className="card p-6 mt-4 bg-gradient-to-r from-[var(--background-secondary)] to-[var(--background-tertiary)]">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-[var(--foreground)]">
-                  Need Enterprise?
-                </h3>
-                <p className="text-sm text-[var(--foreground-muted)]">
-                  Unlimited everything, SSO, dedicated support, and custom
-                  integrations
-                </p>
-              </div>
-              <a
-                href="mailto:sales@intentwin.com?subject=Enterprise%20Inquiry"
-                className="btn-secondary"
-              >
-                Contact Sales
-              </a>
-            </div>
+          <div>
+            <h2 className="text-lg font-semibold text-[var(--foreground)]">
+              Your Plan Includes
+            </h2>
+            <p className="text-sm text-[var(--foreground-muted)]">
+              $999/month — everything, no limits
+            </p>
           </div>
         </div>
-      )}
+        <ul className="grid md:grid-cols-2 gap-2">
+          {PLAN_FEATURES.map((feature) => (
+            <li
+              key={feature}
+              className="flex items-center gap-2 text-sm text-[var(--foreground-muted)]"
+            >
+              <Check className="h-4 w-4 text-[var(--success)] flex-shrink-0" />
+              {feature}
+            </li>
+          ))}
+        </ul>
+        {org?.stripe_subscription_id && (
+          <div className="mt-4 pt-4 border-t border-[var(--border)]">
+            <button
+              onClick={handleManageBilling}
+              disabled={portalLoading}
+              className="btn-secondary text-sm"
+            >
+              {portalLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  <CreditCard className="h-4 w-4" />
+                  Manage Billing
+                  <ExternalLink className="h-3 w-3" />
+                </>
+              )}
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

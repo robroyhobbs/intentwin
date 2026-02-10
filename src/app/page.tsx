@@ -6,31 +6,31 @@ import LandingContent from "./(public)/landing/LandingContent";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "IntentWin - AI-Powered Proposal Generation | Win More Deals",
+  title: "IntentWin - AI Proposal Intelligence Platform | Win More Deals",
   description:
-    "Generate winning proposals in hours, not weeks. IntentWin uses Intent-Driven Development to create professional, client-specific proposals that close deals. Start your free trial.",
+    "The proposal engine built to win. IntentWin applies the Intent Framework — 6 layers of persuasion science — to every section of your proposal. Invite-only access for serious teams.",
   keywords: [
-    "AI proposal generator",
+    "AI proposal intelligence",
     "proposal automation",
     "RFP response software",
-    "proposal writing tool",
+    "Intent Framework",
+    "proposal persuasion engine",
     "AI business proposals",
-    "sales proposal software",
-    "automated proposal generation",
+    "enterprise proposal platform",
   ],
   openGraph: {
-    title: "IntentWin - Generate Winning Proposals with AI",
+    title: "IntentWin - The Proposal Engine Built to Win",
     description:
-      "Transform your proposal process. Create professional proposals in hours using AI that learns your company's voice and expertise.",
+      "6 layers of persuasion science applied to every proposal section. Not just AI — a proven framework that turns good proposals into winning ones.",
     type: "website",
     url: "https://intentwin.com",
     siteName: "IntentWin",
   },
   twitter: {
     card: "summary_large_image",
-    title: "IntentWin - AI-Powered Proposal Generation",
+    title: "IntentWin - AI Proposal Intelligence Platform",
     description:
-      "Generate winning proposals in hours, not weeks. Start your free trial.",
+      "6 layers of persuasion science. Every section engineered to win. Invite-only access.",
   },
   alternates: {
     canonical: "https://intentwin.com",
