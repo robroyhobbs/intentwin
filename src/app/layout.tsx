@@ -15,13 +15,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ProposalAI - AI-Powered Proposal Generation",
-  description: "Generate winning proposals in hours, not weeks. AI-native proposal generation powered by Intent-Driven Development.",
+  title: "IntentWin - AI-Powered Proposals That Win",
+  description:
+    "Generate winning proposals in hours, not weeks. AI-native proposal generation powered by Intent-Driven Development.",
   icons: {
     icon: "/favicon.ico",
   },
   openGraph: {
-    title: "ProposalAI - AI-Powered Proposal Generation",
+    title: "IntentWin - AI-Powered Proposals That Win",
     description: "Generate winning proposals in hours, not weeks.",
     type: "website",
   },
@@ -51,7 +52,10 @@ export default function RootLayout({
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}
+        style={{
+          fontFamily:
+            "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        }}
       >
         <ThemeProvider>
           {children}

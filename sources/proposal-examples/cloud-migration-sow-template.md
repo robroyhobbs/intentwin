@@ -1,9 +1,9 @@
 # Cloud Migration Statement of Work (SOW) Template
 
-> source_url: Industry best practices, UK G-Cloud service descriptions
-> verified_date: 2026-01-28
+> source_url: Industry best practices
+> verified_date: [Date]
 > content_type: sow_template
-> status: [PARTIAL] - Template based on research, not official Capgemini document
+> status: [PARTIAL] - Generic template, customize for your company
 
 ## Statement of Work Structure
 
@@ -17,7 +17,7 @@
 | Version | [1.0] |
 | Date | [Date] |
 | Client | [Client Name] |
-| Capgemini Entity | Capgemini [Region] |
+| Your Entity | [Your Company Name] [Region] |
 
 ### Revision History
 | Version | Date | Author | Changes |
@@ -29,12 +29,12 @@
 ## 2. Introduction
 
 ### 2.1 Purpose
-This Statement of Work (SOW) defines the scope, deliverables, timeline, and commercial terms for cloud migration services to be provided by Capgemini to [Client Name].
+This Statement of Work (SOW) defines the scope, deliverables, timeline, and commercial terms for cloud migration services to be provided by [Your Company] to [Client Name].
 
 ### 2.2 Reference Documents
 - Master Services Agreement dated [Date]
 - Client RFP [Reference] dated [Date]
-- Capgemini Proposal [Reference] dated [Date]
+- Proposal [Reference] dated [Date]
 
 ---
 
@@ -43,9 +43,9 @@ This Statement of Work (SOW) defines the scope, deliverables, timeline, and comm
 ### 3.1 In Scope
 
 #### Phase 1: Assessment (X weeks)
-- Application portfolio analysis using eAPM methodology
+- Application portfolio analysis
 - Cloud readiness assessment for [X] applications
-- Migration strategy development (6 Rs analysis)
+- Migration strategy development
 - Business case and ROI modeling
 - Migration roadmap and wave planning
 
@@ -135,7 +135,7 @@ This Statement of Work (SOW) defines the scope, deliverables, timeline, and comm
 
 ## 6. Team Structure
 
-### 6.1 Capgemini Team
+### 6.1 Delivery Team
 
 | Role | Name | Allocation | Location |
 |------|------|------------|----------|
@@ -184,24 +184,24 @@ Changes to scope require:
 
 | Component | Type | Amount |
 |-----------|------|--------|
-| Phase 1: Assessment | Fixed Price | £[X] |
-| Phase 2: Foundation | Fixed Price | £[X] |
-| Phase 3: Migration | T&M / Fixed | £[X] |
-| **Total** | | **£[X]** |
+| Phase 1: Assessment | Fixed Price | [Amount] |
+| Phase 2: Foundation | Fixed Price | [Amount] |
+| Phase 3: Migration | T&M / Fixed | [Amount] |
+| **Total** | | **[Amount]** |
 
 ### 8.2 Rate Card (if T&M)
 
 | Role | Daily Rate |
 |------|------------|
-| Engagement Manager | £[X] |
-| Technical Lead | £[X] |
-| Cloud Architect | £[X] |
-| Migration Engineer | £[X] |
+| Engagement Manager | [Rate] |
+| Technical Lead | [Rate] |
+| Cloud Architect | [Rate] |
+| Migration Engineer | [Rate] |
 
 ### 8.3 Payment Terms
 - Invoicing: [Monthly / Milestone-based]
 - Payment: [30 days from invoice]
-- Currency: [GBP / USD / EUR]
+- Currency: [USD / EUR / GBP]
 
 ### 8.4 Expenses
 - Travel and expenses: [Included / Billed at cost / Capped at X%]
@@ -240,7 +240,7 @@ By signing below, [Client Name] accepts the terms of this Statement of Work.
 | Date | |
 | Signature | |
 
-### Capgemini Acceptance
+### Provider Acceptance
 
 | | |
 |---|---|

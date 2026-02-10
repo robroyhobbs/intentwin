@@ -1,4 +1,4 @@
-# Capgemini Proposal Generator - Source Materials
+# IntentWin - Source Materials
 
 > L1 Company Truth: The canonical source of verified claims, capabilities, and evidence for proposal generation.
 
@@ -6,47 +6,54 @@
 
 ```
 sources/
-├── company-context/       # Brand, values, certifications, legal, company overview
-├── methodologies/         # Cloud migration, app modernization frameworks
+├── company-context/       # Your company profile: brand, values, certifications, legal
+├── methodologies/         # Your delivery frameworks and methodologies
 ├── case-studies/          # Verified client success stories with metrics
 ├── service-catalog/       # Detailed service offerings, pricing, deliverables
 ├── proposal-examples/     # Reference proposals and templates
 └── evidence-library/      # Certifications, awards, analyst recognition
 ```
 
-## Usage
+## Getting Started
 
-These materials serve as the **source of truth** for the proposal generator's L1 context layer. All generated claims must be traceable to content in this directory.
+1. **Company Context** -- Start here. Upload your company overview, values, and brand guidelines.
+2. **Service Catalog** -- Add your service offerings with capabilities and pricing models.
+3. **Evidence Library** -- Add certifications, partnerships, and industry recognition.
+4. **Case Studies** -- Add past client success stories with quantified outcomes.
+5. **Methodologies** -- Document your delivery frameworks and assessment tools.
+6. **Proposal Examples** -- Add past proposals or templates as reference material.
 
-### Adding New Materials
+## Adding New Materials
 
 1. Place source documents in the appropriate subdirectory
 2. Use consistent naming: `{topic}-{type}.md` (e.g., `cloud-migration-methodology.md`)
 3. Include metadata header with:
-   - `source_url`: Original source link
+   - `source_url`: Original source link (if applicable)
    - `verified_date`: When the content was verified
    - `content_type`: methodology | case_study | service | pricing | certification
 
-### Verification Status
+## Verification Status
 
-Files in this directory should be marked with verification status:
-- `[VERIFIED]` - Content confirmed against official Capgemini sources
-- `[UNVERIFIED]` - Sourced from secondary sources, needs confirmation
+Mark files with verification status:
+- `[VERIFIED]` - Content confirmed against official company sources
+- `[UNVERIFIED]` - Needs confirmation before use in proposals
 - `[PARTIAL]` - Some content verified, some needs review
 
-## Source Links
+## How IntentWin Uses These Files
 
-### Official Capgemini Resources
-- [Capgemini US](https://www.capgemini.com/us-en/)
-- [Cloud Services](https://www.capgemini.com/us-en/services/cloud/)
-- [Application Modernization](https://www.capgemini.com/us-en/solutions/application-modernization/)
-- [Client Stories](https://www.capgemini.com/us-en/news/client-stories/)
+These materials serve as the **source of truth** for the proposal generator's L1 context layer. All generated claims must be traceable to content in this directory. When you generate a proposal, IntentWin will:
 
-### UK Digital Marketplace (G-Cloud)
-- [SAP Cloud Migration Service](https://www.applytosupply.digitalmarketplace.service.gov.uk/g-cloud/services/484895647421026)
-- [Cloud Strategy and Migration Planning](https://www.applytosupply.digitalmarketplace.service.gov.uk/g-cloud/services/555879090877325)
+1. Query relevant documents based on the proposal's industry, service line, and client needs
+2. Extract capabilities, metrics, and proof points
+3. Map claims to verified evidence
+4. Flag any generated claims that lack L1 backing
 
-### Whitepapers & Guides
-- [Mass Migration to AWS](https://pages.awscloud.com/rs/112-TZM-766/images/GLOBAL_PTNR_IPC-Migration-Capgemini-whitepaper_April%202021.pdf)
-- [Cloud Transformation Services Brochure](https://www.capgemini.com/wp-content/uploads/2020/09/Cloud-Transformation-Services-Brochure.pdf)
-- [Mainframe Modernization Case Study](https://www.capgemini.com/wp-content/uploads/2021/10/Mainframe-modernization-Case-Study-.pdf)
+## Refresh Schedule
+
+| Source Type | Recommended Refresh |
+|-------------|---------------------|
+| Company profile | Annually or on major changes |
+| Service catalog | Quarterly |
+| Case studies | As new ones are completed |
+| Certifications | When renewed or new ones obtained |
+| Methodologies | When frameworks are updated |

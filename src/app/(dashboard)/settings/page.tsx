@@ -35,10 +35,33 @@ interface Organization {
 
 const PLAN_FEATURES: Record<string, string[]> = {
   trial: ["3 proposals", "50K AI tokens", "1 user", "10 documents"],
-  starter: ["5 proposals/mo", "50K AI tokens", "1 user", "10 documents", "All exports"],
-  pro: ["20 proposals/mo", "250K AI tokens", "5 users", "50 documents", "Priority support"],
-  business: ["Unlimited proposals", "1M AI tokens", "15 users", "Unlimited docs", "API access"],
-  enterprise: ["Unlimited everything", "Unlimited users", "SSO/SAML", "Dedicated support"],
+  starter: [
+    "5 proposals/mo",
+    "50K AI tokens",
+    "1 user",
+    "10 documents",
+    "All exports",
+  ],
+  pro: [
+    "20 proposals/mo",
+    "250K AI tokens",
+    "5 users",
+    "50 documents",
+    "Priority support",
+  ],
+  business: [
+    "Unlimited proposals",
+    "1M AI tokens",
+    "15 users",
+    "Unlimited docs",
+    "API access",
+  ],
+  enterprise: [
+    "Unlimited everything",
+    "Unlimited users",
+    "SSO/SAML",
+    "Dedicated support",
+  ],
 };
 
 const PLAN_PRICES: Record<string, number | null> = {
@@ -58,7 +81,9 @@ export default function SettingsPage() {
 
   useEffect(() => {
     async function loadOrganization() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       const { data: profile } = await supabase
@@ -135,7 +160,13 @@ export default function SettingsPage() {
   }
 
   const trialDaysLeft = org?.trial_ends_at
-    ? Math.max(0, Math.ceil((new Date(org.trial_ends_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    ? Math.max(
+        0,
+        Math.ceil(
+          (new Date(org.trial_ends_at).getTime() - Date.now()) /
+            (1000 * 60 * 60 * 24),
+        ),
+      )
     : 0;
 
   const isOnTrial = org?.plan_tier === "trial" && trialDaysLeft > 0;
@@ -147,7 +178,9 @@ export default function SettingsPage() {
   return (
     <div className="max-w-5xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[var(--foreground)]">Settings</h1>
+        <h1 className="text-2xl font-bold text-[var(--foreground)]">
+          Settings
+        </h1>
         <p className="mt-1 text-sm text-[var(--foreground-muted)]">
           Manage your organization and subscription
         </p>
@@ -163,7 +196,9 @@ export default function SettingsPage() {
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-[var(--foreground)]">
-                  {org?.plan_tier === "trial" ? "Free Trial" : `${org?.plan_tier?.charAt(0).toUpperCase()}${org?.plan_tier?.slice(1)} Plan`}
+                  {org?.plan_tier === "trial"
+                    ? "Free Trial"
+                    : `${org?.plan_tier?.charAt(0).toUpperCase()}${org?.plan_tier?.slice(1)} Plan`}
                 </h2>
                 {isOnTrial && (
                   <p className="text-sm text-[var(--warning)]">
@@ -197,15 +232,22 @@ export default function SettingsPage() {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <FileText className="h-4 w-4 text-[var(--foreground-muted)]" />
-              <span className="text-sm text-[var(--foreground-muted)]">Proposals</span>
+              <span className="text-sm text-[var(--foreground-muted)]">
+                Proposals
+              </span>
             </div>
             <div className="text-2xl font-bold text-[var(--foreground)]">
-              {proposalUsage} <span className="text-sm font-normal text-[var(--foreground-muted)]">/ {proposalLimit >= 999999 ? "∞" : proposalLimit}</span>
+              {proposalUsage}{" "}
+              <span className="text-sm font-normal text-[var(--foreground-muted)]">
+                / {proposalLimit >= 999999 ? "∞" : proposalLimit}
+              </span>
             </div>
             <div className="mt-2 h-2 bg-[var(--background-tertiary)] rounded-full overflow-hidden">
               <div
                 className="h-full bg-[var(--accent)] rounded-full transition-all"
-                style={{ width: `${Math.min(100, (proposalUsage / proposalLimit) * 100)}%` }}
+                style={{
+                  width: `${Math.min(100, (proposalUsage / proposalLimit) * 100)}%`,
+                }}
               />
             </div>
           </div>
@@ -213,15 +255,22 @@ export default function SettingsPage() {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Zap className="h-4 w-4 text-[var(--foreground-muted)]" />
-              <span className="text-sm text-[var(--foreground-muted)]">AI Tokens</span>
+              <span className="text-sm text-[var(--foreground-muted)]">
+                AI Tokens
+              </span>
             </div>
             <div className="text-2xl font-bold text-[var(--foreground)]">
-              {Math.round(tokenUsage / 1000)}K <span className="text-sm font-normal text-[var(--foreground-muted)]">/ {tokenLimit >= 999999 ? "∞" : `${tokenLimit / 1000}K`}</span>
+              {Math.round(tokenUsage / 1000)}K{" "}
+              <span className="text-sm font-normal text-[var(--foreground-muted)]">
+                / {tokenLimit >= 999999 ? "∞" : `${tokenLimit / 1000}K`}
+              </span>
             </div>
             <div className="mt-2 h-2 bg-[var(--background-tertiary)] rounded-full overflow-hidden">
               <div
                 className="h-full bg-[var(--accent)] rounded-full transition-all"
-                style={{ width: `${Math.min(100, (tokenUsage / tokenLimit) * 100)}%` }}
+                style={{
+                  width: `${Math.min(100, (tokenUsage / tokenLimit) * 100)}%`,
+                }}
               />
             </div>
           </div>
@@ -229,10 +278,15 @@ export default function SettingsPage() {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Users className="h-4 w-4 text-[var(--foreground-muted)]" />
-              <span className="text-sm text-[var(--foreground-muted)]">Team Size</span>
+              <span className="text-sm text-[var(--foreground-muted)]">
+                Team Size
+              </span>
             </div>
             <div className="text-2xl font-bold text-[var(--foreground)]">
-              1 <span className="text-sm font-normal text-[var(--foreground-muted)]">/ {org?.plan_limits?.max_users || 1}</span>
+              1{" "}
+              <span className="text-sm font-normal text-[var(--foreground-muted)]">
+                / {org?.plan_limits?.max_users || 1}
+              </span>
             </div>
           </div>
         </div>
@@ -245,14 +299,20 @@ export default function SettingsPage() {
             <Building2 className="h-5 w-5 text-[var(--accent)]" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-[var(--foreground)]">Organization</h2>
-            <p className="text-sm text-[var(--foreground-muted)]">{org?.name}</p>
+            <h2 className="text-lg font-semibold text-[var(--foreground)]">
+              Organization
+            </h2>
+            <p className="text-sm text-[var(--foreground-muted)]">
+              {org?.name}
+            </p>
           </div>
         </div>
       </div>
 
       {/* Upgrade Plans */}
-      {(org?.plan_tier === "trial" || org?.plan_tier === "starter" || org?.plan_tier === "pro") && (
+      {(org?.plan_tier === "trial" ||
+        org?.plan_tier === "starter" ||
+        org?.plan_tier === "pro") && (
         <div>
           <h2 className="text-lg font-semibold text-[var(--foreground)] mb-4">
             {isOnTrial ? "Choose a plan" : "Upgrade your plan"}
@@ -270,7 +330,9 @@ export default function SettingsPage() {
                 <div
                   key={tier}
                   className={`card p-6 ${
-                    tier === "pro" ? "border-[var(--accent)] bg-[var(--accent-subtle)]" : ""
+                    tier === "pro"
+                      ? "border-[var(--accent)] bg-[var(--accent-subtle)]"
+                      : ""
                   }`}
                 >
                   <div className="mb-4">
@@ -281,13 +343,18 @@ export default function SettingsPage() {
                       <span className="text-3xl font-bold text-[var(--foreground)]">
                         ${PLAN_PRICES[tier]}
                       </span>
-                      <span className="text-[var(--foreground-muted)]">/mo</span>
+                      <span className="text-[var(--foreground-muted)]">
+                        /mo
+                      </span>
                     </div>
                   </div>
 
                   <ul className="space-y-2 mb-6">
                     {PLAN_FEATURES[tier].map((feature) => (
-                      <li key={feature} className="flex items-center gap-2 text-sm text-[var(--foreground-muted)]">
+                      <li
+                        key={feature}
+                        className="flex items-center gap-2 text-sm text-[var(--foreground-muted)]"
+                      >
                         <Check className="h-4 w-4 text-[var(--success)]" />
                         {feature}
                       </li>
@@ -301,8 +368,8 @@ export default function SettingsPage() {
                       isCurrentPlan
                         ? "btn-secondary opacity-50 cursor-not-allowed"
                         : tier === "pro"
-                        ? "btn-primary"
-                        : "btn-secondary"
+                          ? "btn-primary"
+                          : "btn-secondary"
                     }`}
                   >
                     {upgrading === tier ? (
@@ -329,11 +396,12 @@ export default function SettingsPage() {
                   Need Enterprise?
                 </h3>
                 <p className="text-sm text-[var(--foreground-muted)]">
-                  Unlimited everything, SSO, dedicated support, and custom integrations
+                  Unlimited everything, SSO, dedicated support, and custom
+                  integrations
                 </p>
               </div>
               <a
-                href="mailto:sales@proposalai.com?subject=Enterprise%20Inquiry"
+                href="mailto:sales@intentwin.com?subject=Enterprise%20Inquiry"
                 className="btn-secondary"
               >
                 Contact Sales

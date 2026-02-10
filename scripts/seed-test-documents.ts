@@ -39,7 +39,7 @@ const TEST_DOCUMENTS: TestDoc[] = [
     winStatus: "won",
     content: `EXECUTIVE SUMMARY
 
-Capgemini is pleased to present this proposal for Global Bank Corp's enterprise cloud migration initiative. Our approach leverages our proven Cloud Migration Factory methodology to migrate 200+ applications to AWS over an 18-month engagement.
+Acme Corp is pleased to present this proposal for Global Bank Corp's enterprise cloud migration initiative. Our approach leverages our proven Cloud Migration methodology to migrate 200+ applications to AWS over an 18-month engagement.
 
 UNDERSTANDING YOUR NEEDS
 
@@ -50,7 +50,7 @@ The current environment includes 200+ applications spanning core banking, paymen
 OUR APPROACH
 
 Phase 1 - Discovery & Planning (Months 1-3)
-We will conduct a comprehensive application portfolio assessment using our proprietary Cloud Readiness Assessment tool. Each application will be categorized using the 7Rs framework (Rehost, Replatform, Refactor, Repurchase, Retire, Retain, Relocate).
+We will conduct a comprehensive application portfolio assessment using our Cloud Readiness Assessment tool. Each application will be categorized using the 7Rs framework (Rehost, Replatform, Refactor, Repurchase, Retire, Retain, Relocate).
 
 Phase 2 - Foundation & Landing Zone (Months 2-4)
 Our certified AWS architects will design and implement a secure, compliant landing zone following AWS Well-Architected Framework principles. This includes network architecture, identity management, security controls, and governance guardrails.
@@ -63,7 +63,7 @@ Post-migration optimization including cost management, performance tuning, and k
 
 METHODOLOGY
 
-Capgemini's Cloud Migration Factory is a battle-tested methodology that has successfully delivered 500+ cloud migrations globally. Key differentiators include automated discovery tools, standardized migration runbooks, parallel execution capabilities, and built-in compliance controls for regulated industries.
+Our Cloud Migration methodology is a battle-tested approach that has successfully delivered 100+ cloud migrations. Key differentiators include automated discovery tools, standardized migration runbooks, parallel execution capabilities, and built-in compliance controls for regulated industries.
 
 TEAM STRUCTURE
 
@@ -80,9 +80,9 @@ Team size: 45 FTEs (peak)
 Investment: $12.5M - $15M
 Expected ROI: 40% infrastructure cost reduction within Year 1 post-migration
 
-WHY CAPGEMINI
+WHY ACME CORP
 
-With 340,000+ team members, Capgemini is one of the world's leading providers of consulting, technology services, and digital transformation. Our cloud practice includes 25,000+ cloud professionals and holds premier partnership status with AWS, Azure, and GCP.`,
+With 500+ team members, Acme Corp is a leading provider of cloud transformation and technology consulting services. Our cloud practice includes 200+ cloud professionals and holds advanced partnership status with AWS, Azure, and GCP.`,
   },
   {
     title: "RetailMax Application Modernization Proposal",
@@ -93,7 +93,7 @@ With 340,000+ team members, Capgemini is one of the world's leading providers of
     winStatus: "won",
     content: `EXECUTIVE SUMMARY
 
-Capgemini proposes a comprehensive application modernization program for RetailMax Inc, transforming legacy monolithic applications into cloud-native microservices architecture. This initiative will enable RetailMax to achieve faster release cycles, improved scalability during peak seasons, and reduced operational costs.
+Acme Corp proposes a comprehensive application modernization program for RetailMax Inc, transforming legacy monolithic applications into cloud-native microservices architecture. This initiative will enable RetailMax to achieve faster release cycles, improved scalability during peak seasons, and reduced operational costs.
 
 UNDERSTANDING YOUR NEEDS
 
@@ -138,9 +138,9 @@ Phase 3 (Advanced Services): 6 months - $4.2M
 Phase 4 (Optimization): 3 months - $1.4M
 Total: 18 months, $12.5M
 
-WHY CAPGEMINI
+WHY ACME CORP
 
-Capgemini has delivered 200+ application modernization programs globally. Our retail practice serves 8 of the top 10 global retailers, bringing deep domain expertise alongside technical excellence.`,
+Acme Corp has delivered 50+ application modernization programs. Our retail practice serves multiple top global retailers, bringing deep domain expertise alongside technical excellence.`,
   },
   {
     title: "MedTech Health Cloud Migration Case Study",
@@ -165,7 +165,7 @@ Key constraints:
 - Complex HL7/FHIR integration requirements
 
 SOLUTION
-Capgemini designed and executed a phased migration to AWS GovCloud, incorporating healthcare-specific security controls and compliance automation:
+Acme Corp designed and executed a phased migration to AWS GovCloud, incorporating healthcare-specific security controls and compliance automation:
 
 1. Compliance-First Architecture: Built a HIPAA-compliant landing zone with encryption at rest and in transit, VPC segmentation, CloudTrail auditing, and AWS Config rules for continuous compliance monitoring.
 
@@ -190,17 +190,17 @@ Investment: $9.2M
 Technologies: AWS GovCloud, ECS Fargate, RDS, DMS, API Gateway, CloudWatch, Config, CloudTrail`,
   },
   {
-    title: "Capgemini Cloud Migration Methodology Overview",
+    title: "Cloud Migration Methodology Overview",
     documentType: "methodology",
     industry: "",
     serviceLine: "cloud_migration",
     clientName: "",
     winStatus: "unknown",
-    content: `CAPGEMINI CLOUD MIGRATION FACTORY - METHODOLOGY OVERVIEW
+    content: `CLOUD MIGRATION METHODOLOGY OVERVIEW
 
 1. INTRODUCTION
 
-The Capgemini Cloud Migration Factory (CMF) is our industrialized approach to enterprise cloud migration. Developed over 10 years and refined through 500+ engagements, the CMF provides a repeatable, scalable framework for migrating complex IT estates to public cloud platforms.
+Our Cloud Migration methodology is an industrialized approach to enterprise cloud migration. Developed over 10 years and refined through 100+ engagements, it provides a repeatable, scalable framework for migrating complex IT estates to public cloud platforms.
 
 2. CORE PRINCIPLES
 
@@ -273,7 +273,7 @@ Average client outcomes:
     winStatus: "won",
     content: `EXECUTIVE SUMMARY
 
-Capgemini is excited to present our proposal for EnergyFirst Corp's Digital Transformation program, encompassing cloud migration, IoT platform modernization, and data analytics capabilities. This transformative engagement will position EnergyFirst as a digital leader in the energy and utilities sector.
+Acme Corp is excited to present our proposal for EnergyFirst Corp's Digital Transformation program, encompassing cloud migration, IoT platform modernization, and data analytics capabilities. This transformative engagement will position EnergyFirst as a digital leader in the energy and utilities sector.
 
 UNDERSTANDING YOUR NEEDS
 
@@ -302,7 +302,7 @@ Build a modern customer portal and mobile app with real-time usage insights, out
 
 APPROACH AND METHODOLOGY
 
-We will leverage Capgemini's Intelligent Industry framework, specifically designed for energy and utilities clients. Our approach combines cloud migration expertise with deep energy domain knowledge, ensuring that operational technology (OT) and information technology (IT) converge safely.
+We will leverage our Intelligent Industry framework, specifically designed for energy and utilities clients. Our approach combines cloud migration expertise with deep energy domain knowledge, ensuring that operational technology (OT) and information technology (IT) converge safely.
 
 Delivery follows SAFe Agile methodology with quarterly Program Increment planning, enabling alignment between the four parallel streams.
 
@@ -326,9 +326,9 @@ Expected benefits:
 - 25% improvement in customer satisfaction
 - Regulatory compliance for upcoming grid modernization mandates
 
-WHY CAPGEMINI
+WHY ACME CORP
 
-Capgemini serves 9 of the top 10 global energy companies. Our Intelligent Industry practice combines 15,000+ energy sector professionals with cutting-edge cloud, IoT, and AI capabilities. We have delivered 50+ digital transformation programs for utilities worldwide.`,
+Acme Corp serves leading energy companies across North America. Our energy practice combines deep sector knowledge with cutting-edge cloud, IoT, and AI capabilities. We have delivered 20+ digital transformation programs for utilities.`,
   },
 ];
 
@@ -455,7 +455,7 @@ async function main() {
         console.error(`   FAILED: ${err.error}`);
       } else {
         const result = await response.json();
-        console.log(`   OK — Document ID: ${result.documentId} (processing started)`);
+        console.log(`   OK -- Document ID: ${result.documentId} (processing started)`);
       }
     } catch (err) {
       console.error(`   ERROR:`, err);

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import BlogContent from "./BlogContent";
 
 export const metadata: Metadata = {
-  title: "Blog - ProposalAI | AI Proposal Writing Tips & Guides",
+  title: "Blog - IntentWin | AI Proposal Writing Tips & Guides",
   description:
     "Expert insights on proposal writing, RFP strategy, and AI-powered sales enablement. Learn best practices for winning more deals with AI proposal tools.",
   keywords: [
@@ -14,20 +14,20 @@ export const metadata: Metadata = {
     "proposal automation blog",
   ],
   openGraph: {
-    title: "ProposalAI Blog - Proposal Writing Tips & AI Insights",
+    title: "IntentWin Blog - Proposal Writing Tips & AI Insights",
     description:
       "Expert insights on proposal writing, RFP strategy, and AI-powered sales enablement. Learn how to win more deals.",
     type: "website",
-    url: "https://proposalai.com/blog",
+    url: "https://intentwin.com/blog",
   },
   twitter: {
     card: "summary_large_image",
-    title: "ProposalAI Blog",
+    title: "IntentWin Blog",
     description:
       "Expert insights on proposal writing and AI-powered sales enablement.",
   },
   alternates: {
-    canonical: "https://proposalai.com/blog",
+    canonical: "https://intentwin.com/blog",
   },
 };
 

@@ -1,10 +1,10 @@
-# ProposalAI Robots.txt
+# IntentWin Robots.txt
 
 User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://proposalai.com/sitemap.xml
+Sitemap: https://intentwin.com/sitemap.xml
 
 # Disallow admin and API routes
 Disallow: /api/

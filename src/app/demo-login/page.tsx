@@ -33,8 +33,10 @@ export default function DemoLoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800">
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-slate-900">ProposalAI Demo</h1>
-          <p className="text-slate-600 mt-2">Enter the demo password to continue</p>
+          <h1 className="text-2xl font-bold text-slate-900">IntentWin Demo</h1>
+          <p className="text-slate-600 mt-2">
+            Enter the demo password to continue
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -49,9 +51,7 @@ export default function DemoLoginPage() {
             />
           </div>
 
-          {error && (
-            <p className="text-red-500 text-sm text-center">{error}</p>
-          )}
+          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
           <button
             type="submit"

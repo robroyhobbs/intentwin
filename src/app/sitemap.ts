@@ -1,12 +1,12 @@
 import { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://proposalai.com";
+  const baseUrl = "https://intentwin.com";
 
   const blogPosts = [
     "ai-proposal-writing-guide",
     "rfp-response-best-practices",
-    "autogenai-vs-proposalai",
+    "autogenai-vs-intentwin",
   ];
 
   const staticPages = [

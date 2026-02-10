@@ -1,5 +1,5 @@
 /**
- * Seed L1 Company Context - The canonical source of truth for Capgemini
+ * Seed L1 Company Context - Sample data for Acme Corp (demo company)
  *
  * Usage:
  *   npx tsx scripts/seed-company-context.ts <user-email> <user-password>
@@ -8,6 +8,8 @@
  *   1. Company Context (brand, values, certifications, partnerships)
  *   2. Product Contexts (service line capabilities)
  *   3. Evidence Library (sample case studies with verified metrics)
+ *
+ * NOTE: Replace "Acme Corp" data with your own company information.
  */
 
 import { createClient } from "@supabase/supabase-js";
@@ -24,7 +26,7 @@ const COMPANY_CONTEXT = [
     category: "brand",
     key: "company_name",
     title: "Company Name",
-    content: "Capgemini",
+    content: "Acme Corp",
     is_locked: true,
     lock_reason: "Core brand identity",
   },
@@ -32,7 +34,7 @@ const COMPANY_CONTEXT = [
     category: "brand",
     key: "tagline",
     title: "Brand Tagline",
-    content: "Get the Future You Want",
+    content: "Engineering Tomorrow's Solutions",
     is_locked: true,
     lock_reason: "Official brand tagline",
   },
@@ -41,7 +43,7 @@ const COMPANY_CONTEXT = [
     key: "description",
     title: "Company Description",
     content:
-      "Capgemini is a global leader in partnering with companies to transform and manage their business by harnessing the power of technology. The Group is guided everyday by its purpose of unleashing human energy through technology for an inclusive and sustainable future. It is a responsible and diverse organization of over 340,000 team members in more than 50 countries.",
+      "Acme Corp is a technology consulting firm specializing in cloud transformation, application modernization, and data & AI solutions. We partner with organizations to accelerate their digital journey through proven methodologies and deep technical expertise.",
     is_locked: true,
     lock_reason: "Official company description",
   },
@@ -49,7 +51,7 @@ const COMPANY_CONTEXT = [
     category: "brand",
     key: "founding_year",
     title: "Year Founded",
-    content: "1967",
+    content: "2015",
     is_locked: true,
     lock_reason: "Historical fact",
   },
@@ -57,39 +59,39 @@ const COMPANY_CONTEXT = [
     category: "brand",
     key: "headquarters",
     title: "Global Headquarters",
-    content: "Paris, France",
+    content: "Austin, Texas",
     is_locked: true,
     lock_reason: "Company location",
   },
   {
     category: "brand",
     key: "employees",
-    title: "Global Workforce",
-    content: "Over 340,000 team members worldwide",
+    title: "Workforce",
+    content: "Over 500 team members",
     is_locked: false,
-    metadata: { last_updated: "2024", approximate: true },
+    metadata: { last_updated: "2025", approximate: true },
   },
   {
     category: "brand",
     key: "countries",
-    title: "Global Presence",
-    content: "Operations in more than 50 countries",
+    title: "Presence",
+    content: "Operations in the United States and Canada",
     is_locked: false,
   },
   {
     category: "brand",
     key: "revenue",
     title: "Annual Revenue",
-    content: "€22.5 billion (2023)",
+    content: "$75 million (2024)",
     is_locked: false,
-    metadata: { year: 2023, currency: "EUR" },
+    metadata: { year: 2024, currency: "USD" },
   },
 
   // Values
   {
     category: "values",
-    key: "honesty",
-    title: "Honesty",
+    key: "integrity",
+    title: "Integrity",
     content:
       "We are truthful and transparent in our dealings with clients, partners, and each other.",
     is_locked: true,
@@ -97,55 +99,37 @@ const COMPANY_CONTEXT = [
   },
   {
     category: "values",
-    key: "boldness",
-    title: "Boldness",
+    key: "innovation",
+    title: "Innovation",
     content:
-      "We are entrepreneurial and take calculated risks to drive innovation and create value.",
+      "We embrace new technologies and approaches to solve our clients' toughest challenges.",
     is_locked: true,
     lock_reason: "Core value",
   },
   {
     category: "values",
-    key: "trust",
-    title: "Trust",
+    key: "collaboration",
+    title: "Collaboration",
     content:
-      "We build lasting relationships based on reliability, integrity, and mutual respect.",
+      "We work as one team with our clients, building lasting partnerships based on mutual respect.",
     is_locked: true,
     lock_reason: "Core value",
   },
   {
     category: "values",
-    key: "freedom",
-    title: "Freedom",
+    key: "excellence",
+    title: "Excellence",
     content:
-      "We empower our people to make decisions and take ownership of their work.",
+      "We hold ourselves to the highest standards of quality in everything we deliver.",
     is_locked: true,
     lock_reason: "Core value",
   },
   {
     category: "values",
-    key: "team_spirit",
-    title: "Team Spirit",
+    key: "accountability",
+    title: "Accountability",
     content:
-      "We collaborate across boundaries to deliver the best outcomes for our clients.",
-    is_locked: true,
-    lock_reason: "Core value",
-  },
-  {
-    category: "values",
-    key: "modesty",
-    title: "Modesty",
-    content:
-      "We listen, learn, and recognize that our clients know their business best.",
-    is_locked: true,
-    lock_reason: "Core value",
-  },
-  {
-    category: "values",
-    key: "fun",
-    title: "Fun",
-    content:
-      "We create an enjoyable work environment where people can thrive and grow.",
+      "We take ownership of our commitments and deliver on our promises.",
     is_locked: true,
     lock_reason: "Core value",
   },
@@ -153,29 +137,29 @@ const COMPANY_CONTEXT = [
   // Certifications & Partnerships
   {
     category: "certifications",
-    key: "aws_premier",
-    title: "AWS Premier Consulting Partner",
+    key: "aws_advanced",
+    title: "AWS Advanced Consulting Partner",
     content:
-      "Capgemini is an AWS Premier Consulting Partner with competencies in Migration, DevOps, Data & Analytics, Machine Learning, and more. Over 25,000 AWS-certified practitioners.",
+      "Acme Corp is an AWS Advanced Consulting Partner with competencies in Migration and DevOps. Over 200 AWS-certified practitioners.",
     is_locked: true,
     lock_reason: "Verified partnership",
-    metadata: { certifications_count: 25000, tier: "Premier" },
+    metadata: { certifications_count: 200, tier: "Advanced" },
   },
   {
     category: "certifications",
-    key: "azure_global",
-    title: "Microsoft Azure Global SI Partner",
+    key: "azure_solutions",
+    title: "Microsoft Azure Solutions Partner",
     content:
-      "Capgemini is a Microsoft Azure Expert MSP and Global SI Partner with advanced specializations in Cloud Migration, Data & AI, and Modern Work.",
+      "Acme Corp is a Microsoft Azure Solutions Partner with specializations in Cloud Migration and Data & AI.",
     is_locked: true,
     lock_reason: "Verified partnership",
   },
   {
     category: "certifications",
-    key: "google_premier",
-    title: "Google Cloud Premier Partner",
+    key: "google_partner",
+    title: "Google Cloud Partner",
     content:
-      "Capgemini is a Google Cloud Premier Partner with specializations in Data Analytics, Machine Learning, and Infrastructure.",
+      "Acme Corp is a Google Cloud Partner with specializations in Infrastructure and Data Analytics.",
     is_locked: true,
     lock_reason: "Verified partnership",
   },
@@ -184,7 +168,7 @@ const COMPANY_CONTEXT = [
     key: "iso_27001",
     title: "ISO 27001 Certification",
     content:
-      "Capgemini maintains ISO 27001 certification for Information Security Management Systems across global delivery centers.",
+      "Acme Corp maintains ISO 27001 certification for Information Security Management Systems.",
     is_locked: true,
     lock_reason: "Security certification",
   },
@@ -193,18 +177,9 @@ const COMPANY_CONTEXT = [
     key: "soc2",
     title: "SOC 2 Type II Compliance",
     content:
-      "Capgemini's cloud and managed services operations are SOC 2 Type II compliant, demonstrating security, availability, and confidentiality controls.",
+      "Acme Corp's cloud and managed services operations are SOC 2 Type II compliant, demonstrating security, availability, and confidentiality controls.",
     is_locked: true,
     lock_reason: "Security certification",
-  },
-  {
-    category: "certifications",
-    key: "fedramp",
-    title: "FedRAMP Authorization",
-    content:
-      "Capgemini Government Solutions maintains FedRAMP Moderate authorization for cloud services to US federal agencies.",
-    is_locked: true,
-    lock_reason: "Government certification",
   },
 
   // Legal constraints
@@ -242,10 +217,10 @@ const COMPANY_CONTEXT = [
 // ===========================================
 const PRODUCT_CONTEXTS = [
   {
-    product_name: "Cloud Migration Factory",
+    product_name: "Cloud Migration Services",
     service_line: "cloud_migration",
     description:
-      "Capgemini's industrialized approach to cloud migration that combines proven methodologies, automation tools, and deep cloud expertise to accelerate enterprise cloud adoption.",
+      "Acme Corp's structured approach to cloud migration that combines proven methodologies, automation tools, and deep cloud expertise to accelerate enterprise cloud adoption.",
     capabilities: [
       {
         name: "Assessment & Planning",
@@ -256,7 +231,7 @@ const PRODUCT_CONTEXTS = [
       {
         name: "Migration Execution",
         description:
-          "Automated migration using Cloud Migration Factory tools supporting rehost, replatform, and refactor patterns.",
+          "Automated migration using industry-standard tools supporting rehost, replatform, and refactor patterns.",
         outcomes: ["speed_to_value", "cost_optimization"],
       },
       {
@@ -289,7 +264,6 @@ const PRODUCT_CONTEXTS = [
         "Retire",
       ],
       automation_tools: [
-        "CloudEndure",
         "AWS Migration Hub",
         "Azure Migrate",
         "Custom accelerators",
@@ -380,7 +354,6 @@ const PRODUCT_CONTEXTS = [
         ".NET",
         "Python",
         "Go",
-        "Legacy (COBOL, PL/1)",
       ],
       patterns: [
         "Strangler Fig",
@@ -492,8 +465,8 @@ const EVIDENCE_LIBRARY = [
 ## Client Challenge
 A Fortune 500 global bank needed to modernize its aging on-premises infrastructure while maintaining strict regulatory compliance (SOC 2, PCI-DSS). The existing environment of 200+ applications faced rising maintenance costs, limited scalability, and slow time-to-market for new features.
 
-## Capgemini Solution
-Capgemini deployed its Cloud Migration Factory methodology:
+## Our Solution
+Acme Corp deployed a structured cloud migration methodology:
 - Conducted comprehensive portfolio assessment using automated discovery tools
 - Designed AWS Landing Zone with security and compliance built-in
 - Executed phased migration over 18 months with zero critical incidents
@@ -536,7 +509,7 @@ Capgemini deployed its Cloud Migration Factory methodology:
 ## Client Challenge
 A regional healthcare system with 50+ hospitals needed to modernize its data infrastructure while maintaining HIPAA compliance. Legacy systems couldn't handle growing data volumes from IoT medical devices and EHR integrations.
 
-## Capgemini Solution
+## Our Solution
 - Designed HIPAA-compliant Azure architecture with encryption at rest and in transit
 - Migrated data warehouse to Azure Synapse for advanced analytics
 - Implemented real-time data streaming for IoT medical devices
@@ -577,7 +550,7 @@ A regional healthcare system with 50+ hospitals needed to modernize its data inf
 ## Client Challenge
 A major retailer's monolithic e-commerce platform couldn't scale for Black Friday traffic, causing lost sales. Releases took 3+ months due to tightly coupled architecture.
 
-## Capgemini Solution
+## Our Solution
 - Decomposed monolith into 45 microservices using Strangler Fig pattern
 - Deployed on Kubernetes with auto-scaling for demand spikes
 - Implemented event-driven architecture for order processing
@@ -611,18 +584,18 @@ A major retailer's monolithic e-commerce platform couldn't scale for Black Frida
   {
     evidence_type: "metric",
     title: "Cloud Migration Track Record",
-    summary: "Aggregate metrics from Capgemini's cloud migration practice.",
+    summary: "Aggregate metrics from Acme Corp's cloud migration practice.",
     full_content:
-      "Capgemini has successfully delivered 500+ cloud migration projects globally, with an average customer satisfaction score of 4.7/5.",
+      "Acme Corp has successfully delivered 100+ cloud migration projects, with an average customer satisfaction score of 4.7/5.",
     client_industry: null,
     service_line: "cloud_migration",
     outcomes_demonstrated: [
       { outcome: "quality_improvement", description: "High customer satisfaction" },
     ],
     metrics: [
-      { name: "Projects Delivered", value: "500+", context: "Global cloud migrations" },
+      { name: "Projects Delivered", value: "100+", context: "Cloud migrations" },
       { name: "Customer Satisfaction", value: "4.7/5", context: "Average CSAT score" },
-      { name: "Certified Engineers", value: "25,000+", context: "Cloud certifications" },
+      { name: "Certified Engineers", value: "200+", context: "Cloud certifications" },
     ],
     is_verified: true,
     verification_notes: "Internal metrics, verified annually.",
@@ -652,7 +625,7 @@ async function main() {
     if (error) {
       console.error(`   Error inserting ${ctx.key}:`, error.message);
     } else {
-      console.log(`   ✓ ${ctx.category}/${ctx.key}`);
+      console.log(`   + ${ctx.category}/${ctx.key}`);
     }
   }
 
@@ -665,7 +638,7 @@ async function main() {
     if (error) {
       console.error(`   Error inserting ${prod.product_name}:`, error.message);
     } else {
-      console.log(`   ✓ ${prod.product_name} (${prod.service_line})`);
+      console.log(`   + ${prod.product_name} (${prod.service_line})`);
     }
   }
 
@@ -676,11 +649,11 @@ async function main() {
     if (error && !error.message.includes("duplicate")) {
       console.error(`   Error inserting ${ev.title}:`, error.message);
     } else {
-      console.log(`   ✓ ${ev.evidence_type}: ${ev.title}`);
+      console.log(`   + ${ev.evidence_type}: ${ev.title}`);
     }
   }
 
-  console.log("\n✅ L1 Company Context seeded successfully!");
+  console.log("\nL1 Company Context seeded successfully!");
   console.log("\nSummary:");
   console.log(`   - ${COMPANY_CONTEXT.length} company context entries`);
   console.log(`   - ${PRODUCT_CONTEXTS.length} product contexts`);

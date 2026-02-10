@@ -1,96 +1,68 @@
-# Case Study: Aerospace Company Cloud Migration
+# Case Study: [Client/Project Name]
 
-> source_url: https://www.capgemini.com/us-en/news/client-stories/aerospace-company-reaches-new-heights-by-moving-web-apps-to-cloud/
-> verified_date: 2026-01-28
+> source_url: [URL to original source]
+> verified_date: [Date]
 > content_type: case_study
-> status: [VERIFIED]
+> status: [UNVERIFIED]
+
+Add your case studies to this directory. Each case study should follow this template.
 
 ## Client Profile
 
 | Attribute | Value |
 |-----------|-------|
-| **Industry** | Aerospace |
-| **Type** | Leading OEM (Original Equipment Manufacturer) |
-| **Challenge** | Web application cloud migration |
-| **Solution** | Cloud transformation for web applications |
+| **Industry** | [e.g., Aerospace, Healthcare, Financial Services] |
+| **Type** | [e.g., Enterprise, Mid-market, Government] |
+| **Challenge** | [Brief description of the challenge] |
+| **Solution** | [Brief description of the solution delivered] |
 
 ## Challenge
 
-The aerospace company needed to modernize its web application infrastructure by migrating to cloud services to achieve:
-- Improved scalability
-- Enhanced performance
-- Reduced operational costs
-- Modern development practices
+Describe the client's situation and pain points:
+- [Challenge 1]
+- [Challenge 2]
+- [Challenge 3]
 
 ## Solution
 
-Capgemini delivered a comprehensive cloud migration for the client's web applications, leveraging:
-- Cloud infrastructure modernization
-- Application re-architecture where needed
-- DevOps implementation
-- Cloud-native services adoption
+Describe the solution your company delivered:
+- [Solution component 1]
+- [Solution component 2]
+- [Solution component 3]
 
 ## Approach
 
-### Phase 1: Assessment
-- Application portfolio analysis
-- Cloud readiness evaluation
-- Migration strategy development
-- Business case creation
+### Phase 1: [Phase Name]
+- [Activity 1]
+- [Activity 2]
 
-### Phase 2: Migration
-- Infrastructure migration
-- Application optimization
-- Testing and validation
-- Cutover execution
+### Phase 2: [Phase Name]
+- [Activity 1]
+- [Activity 2]
 
-### Phase 3: Optimization
-- Performance tuning
-- Cost optimization
-- Operational handover
-- Continuous improvement setup
+### Phase 3: [Phase Name]
+- [Activity 1]
+- [Activity 2]
 
 ## Outcomes
 
 | Outcome | Description |
 |---------|-------------|
-| **Scalability** | Cloud-native infrastructure enabling dynamic scaling |
-| **Performance** | Improved application response times |
-| **Cost Efficiency** | Optimized infrastructure spending |
-| **Agility** | Faster deployment capabilities |
+| **[Outcome 1]** | [Quantified result] |
+| **[Outcome 2]** | [Quantified result] |
+| **[Outcome 3]** | [Quantified result] |
 
-## Industry: Aerospace
+## Metrics for Proposal Use
 
-### Sector Characteristics
-- High reliability requirements
-- Regulatory compliance (aviation standards)
-- Complex supply chain integration
-- Global operations
-- Security-sensitive data
+| Claim | Evidence |
+|-------|----------|
+| [Capability claim] | [Supporting metric or fact] |
+| [Capability claim] | [Supporting metric or fact] |
 
-### Capgemini Aerospace Expertise
-- Deep industry knowledge
-- Understanding of regulatory requirements
-- Experience with mission-critical systems
-- Global delivery capability
-
-## Applicability for Proposals
+## Applicability
 
 ### Proof Points
-- Web application cloud migration expertise
-- Aerospace/manufacturing industry experience
-- End-to-end transformation capability
-- Measurable outcome delivery
+- [What this case study proves about your capabilities]
 
 ### Relevant for Clients
-- Manufacturing and aerospace organizations
-- Web application modernization projects
-- Cloud-first digital transformation
-- Performance-critical applications
-
-## Related Capabilities
-
-- Cloud Migration Factory (CCMF)
-- ADMnext Application Modernization
-- DevOps implementation
-- Cloud-native development
+- [Types of clients/projects where this case study is most relevant]

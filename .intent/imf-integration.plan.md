@@ -303,7 +303,7 @@ npx vitest run src/lib/ai/__tests__/section-prompts.test.ts
 - [x] Backward compatibility maintained (no persuasion data = original behavior)
 - [x] All test suites pass (persuasion + pipeline + section prompts)
 - [x] TypeScript compiles clean
-- [ ] Full proposal generates successfully via the UI/API
+- [x] Full proposal generates successfully via the UI/API
 
 ---
 

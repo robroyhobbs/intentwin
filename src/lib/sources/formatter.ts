@@ -449,7 +449,8 @@ export function formatSourcesForSection(
       break;
 
     case 'why_us':
-    case 'why_capgemini':
+    case 'why_intentwin':
+    case 'why_capgemini': // legacy alias
       // Include everything
       return formatSourcesAsL1Context(sources, options);
 

@@ -54,7 +54,7 @@ export default function LoginPage() {
               <Sparkles className="h-6 w-6 text-white" />
             </div>
             <span className="text-2xl font-semibold text-[var(--foreground)]">
-              ProposalAI
+              IntentWin
             </span>
           </div>
 
@@ -66,8 +66,8 @@ export default function LoginPage() {
           </h1>
 
           <p className="text-lg text-[var(--foreground-muted)] mb-10 leading-relaxed">
-            AI-powered proposal generation with outcome-driven strategy.
-            Write better, win more.
+            AI-powered proposal generation with outcome-driven strategy. Write
+            better, win more.
           </p>
 
           {/* Features */}
@@ -105,7 +105,7 @@ export default function LoginPage() {
               <Sparkles className="h-5 w-5 text-white" />
             </div>
             <span className="text-xl font-semibold text-[var(--foreground)]">
-              ProposalAI
+              IntentWin
             </span>
           </div>
 

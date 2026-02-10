@@ -44,7 +44,7 @@ Modern AI proposal tools do more than basic text generation. They can:
 
 ### Types of AI Proposal Tools
 
-**1. Full-service platforms** (like ProposalAI, AutogenAI)
+**1. Full-service platforms** (like IntentWin, AutogenAI)
 These handle the entire proposal workflow from intake to export.
 
 **2. AI writing assistants** (like Jasper, Copy.ai)
@@ -201,7 +201,7 @@ Ready to see what AI-powered proposal writing can do for your team?
 
 ---
 
-**Try ProposalAI free for 14 days.** No credit card required. Generate your first proposal in under an hour.
+**Try IntentWin free for 14 days.** No credit card required. Generate your first proposal in under an hour.
     `,
   },
   "rfp-response-best-practices": {
@@ -330,30 +330,30 @@ Winning RFPs requires systematic processes, deep customer understanding, and com
 **Download our free RFP response template** to get started with a proven structure.
     `,
   },
-  "autogenai-vs-proposalai": {
-    slug: "autogenai-vs-proposalai",
-    title: "AutogenAI vs ProposalAI: Which AI Proposal Tool is Right for You?",
+  "autogenai-vs-intentwin": {
+    slug: "autogenai-vs-intentwin",
+    title: "AutogenAI vs IntentWin: Which AI Proposal Tool is Right for You?",
     description:
-      "An honest comparison of AutogenAI and ProposalAI. We break down features, pricing, and use cases to help you make the right choice.",
+      "An honest comparison of AutogenAI and IntentWin. We break down features, pricing, and use cases to help you make the right choice.",
     date: "2026-01-25",
     readTime: "8 min read",
     category: "Comparisons",
     content: `
 ## Introduction
 
-Choosing the right AI proposal tool is a significant decision. In this comparison, we'll honestly evaluate AutogenAI and ProposalAI to help you determine which is the better fit for your team.
+Choosing the right AI proposal tool is a significant decision. In this comparison, we'll honestly evaluate AutogenAI and IntentWin to help you determine which is the better fit for your team.
 
-*Disclosure: This article is published by ProposalAI. We've tried to be as objective as possible, but you should evaluate both tools yourself.*
+*Disclosure: This article is published by IntentWin. We've tried to be as objective as possible, but you should evaluate both tools yourself.*
 
 ## Overview
 
 **AutogenAI** is an enterprise-focused AI proposal platform, particularly strong in government and large enterprise RFPs. Founded in 2022, they've raised $22.3M in funding.
 
-**ProposalAI** is a mid-market AI proposal platform focused on combining enterprise-grade accuracy with accessible pricing. We use an Intent-Driven Development (IDD) methodology that focuses on outcomes first.
+**IntentWin** is a mid-market AI proposal platform focused on combining enterprise-grade accuracy with accessible pricing. We use an Intent-Driven Development (IDD) methodology that focuses on outcomes first.
 
 ## Feature Comparison
 
-| Feature | AutogenAI | ProposalAI |
+| Feature | AutogenAI | IntentWin |
 |---------|-----------|------------|
 | Narrative proposals | Excellent | Excellent |
 | Questionnaire responses | Good | Excellent |
@@ -367,7 +367,7 @@ Choosing the right AI proposal tool is a significant decision. In this compariso
 
 **AutogenAI:** Enterprise pricing only. Based on public information and reviews, expect $30,000+ annually for a small team.
 
-**ProposalAI:** Transparent pricing starting at $29/month for Starter, $79/month for Pro, and $199/month for Business. Enterprise plans available.
+**IntentWin:** Transparent pricing starting at $29/month for Starter, $79/month for Pro, and $199/month for Business. Enterprise plans available.
 
 ## Best For
 
@@ -376,7 +376,7 @@ Choosing the right AI proposal tool is a significant decision. In this compariso
 - Government contracting is your primary focus
 - Budget is not a constraint
 
-**Choose ProposalAI if:**
+**Choose IntentWin if:**
 - You're a mid-market company seeking enterprise features
 - You need transparent, predictable pricing
 - You want AI transparency (sources, confidence scores)
@@ -384,13 +384,13 @@ Choosing the right AI proposal tool is a significant decision. In this compariso
 
 ## Conclusion
 
-Both tools have their strengths. AutogenAI excels in the enterprise government market but comes with enterprise pricing. ProposalAI aims to bring similar capabilities to mid-market teams at a fraction of the cost.
+Both tools have their strengths. AutogenAI excels in the enterprise government market but comes with enterprise pricing. IntentWin aims to bring similar capabilities to mid-market teams at a fraction of the cost.
 
 We recommend trying both to see which fits your workflow and budget.
 
 ---
 
-**Try ProposalAI free for 14 days** and see how it works for your team.
+**Try IntentWin free for 14 days** and see how it works for your team.
     `,
   },
 };
@@ -426,7 +426,7 @@ export default function BlogPostPage() {
                 <Sparkles className="h-5 w-5 text-white" />
               </div>
               <span className="text-lg font-semibold text-[var(--foreground)]">
-                ProposalAI
+                IntentWin
               </span>
             </Link>
             <div className="flex items-center gap-6">
@@ -481,15 +481,39 @@ export default function BlogPostPage() {
               className="text-[var(--foreground)] leading-relaxed"
               dangerouslySetInnerHTML={{
                 __html: post.content
-                  .replace(/^## (.+)$/gm, '<h2 class="text-2xl font-bold mt-10 mb-4 text-[var(--foreground)]">$1</h2>')
-                  .replace(/^### (.+)$/gm, '<h3 class="text-xl font-semibold mt-8 mb-3 text-[var(--foreground)]">$1</h3>')
-                  .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold">$1</strong>')
-                  .replace(/\n\n/g, '</p><p class="mb-4 text-[var(--foreground-muted)]">')
-                  .replace(/^- (.+)$/gm, '<li class="ml-6 list-disc text-[var(--foreground-muted)]">$1</li>')
-                  .replace(/^(\d+)\. (.+)$/gm, '<li class="ml-6 list-decimal text-[var(--foreground-muted)]">$2</li>')
-                  .replace(/`(.+?)`/g, '<code class="px-1.5 py-0.5 bg-[var(--background-secondary)] rounded text-sm">$1</code>')
-                  .replace(/^> (.+)$/gm, '<blockquote class="border-l-4 border-[var(--accent)] pl-4 italic text-[var(--foreground-muted)]">$1</blockquote>')
-                  .replace(/---/g, '<hr class="my-8 border-[var(--border)]">')
+                  .replace(
+                    /^## (.+)$/gm,
+                    '<h2 class="text-2xl font-bold mt-10 mb-4 text-[var(--foreground)]">$1</h2>',
+                  )
+                  .replace(
+                    /^### (.+)$/gm,
+                    '<h3 class="text-xl font-semibold mt-8 mb-3 text-[var(--foreground)]">$1</h3>',
+                  )
+                  .replace(
+                    /\*\*(.+?)\*\*/g,
+                    '<strong class="font-semibold">$1</strong>',
+                  )
+                  .replace(
+                    /\n\n/g,
+                    '</p><p class="mb-4 text-[var(--foreground-muted)]">',
+                  )
+                  .replace(
+                    /^- (.+)$/gm,
+                    '<li class="ml-6 list-disc text-[var(--foreground-muted)]">$1</li>',
+                  )
+                  .replace(
+                    /^(\d+)\. (.+)$/gm,
+                    '<li class="ml-6 list-decimal text-[var(--foreground-muted)]">$2</li>',
+                  )
+                  .replace(
+                    /`(.+?)`/g,
+                    '<code class="px-1.5 py-0.5 bg-[var(--background-secondary)] rounded text-sm">$1</code>',
+                  )
+                  .replace(
+                    /^> (.+)$/gm,
+                    '<blockquote class="border-l-4 border-[var(--accent)] pl-4 italic text-[var(--foreground-muted)]">$1</blockquote>',
+                  )
+                  .replace(/---/g, '<hr class="my-8 border-[var(--border)]">'),
               }}
             />
           </div>
@@ -521,11 +545,11 @@ export default function BlogPostPage() {
                 <Sparkles className="h-4 w-4 text-white" />
               </div>
               <span className="text-sm font-medium text-[var(--foreground)]">
-                ProposalAI
+                IntentWin
               </span>
             </div>
             <p className="text-sm text-[var(--foreground-subtle)]">
-              2026 ProposalAI. All rights reserved.
+              2026 IntentWin. All rights reserved.
             </p>
           </div>
         </div>

@@ -12,7 +12,7 @@ import { format } from "date-fns";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
@@ -23,12 +23,17 @@ export async function POST(
     }
 
     const body = await request.json();
-    const formatType = body.format as "docx" | "pptx" | "html" | "slides" | "pdf";
+    const formatType = body.format as
+      | "docx"
+      | "pptx"
+      | "html"
+      | "slides"
+      | "pdf";
 
     if (!["docx", "pptx", "html", "slides", "pdf"].includes(formatType)) {
       return NextResponse.json(
         { error: 'Format must be "docx", "pptx", "html", "slides", or "pdf"' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -37,10 +42,12 @@ export async function POST(
     // Fetch proposal with organization data for branding (with org verification)
     const { data: proposal } = await adminClient
       .from("proposals")
-      .select(`
+      .select(
+        `
         *,
         organization:organizations(id, name, settings)
-      `)
+      `,
+      )
       .eq("id", id)
       .eq("organization_id", context.organizationId)
       .single();
@@ -48,12 +55,12 @@ export async function POST(
     if (!proposal) {
       return NextResponse.json(
         { error: "Proposal not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     // Get organization name and branding for exports
-    const organizationName = proposal.organization?.name || "ProposalAI";
+    const organizationName = proposal.organization?.name || "IntentWin";
     const orgSettings = proposal.organization?.settings || {};
     const branding = {
       logo_url: orgSettings.branding?.logo_url,
@@ -75,7 +82,7 @@ export async function POST(
     if (!sections || sections.length === 0) {
       return NextResponse.json(
         { error: "No completed sections to export" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -145,7 +152,7 @@ export async function POST(
     if (uploadError) {
       return NextResponse.json(
         { error: `Export upload failed: ${uploadError.message}` },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -169,7 +176,7 @@ export async function POST(
     console.error("Export error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

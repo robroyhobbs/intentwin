@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext } from "@/lib/supabase/auth-api";
-import { stripe, getOrCreateStripeCustomer, PRICING_TIERS, type PricingTier } from "@/lib/stripe/client";
+import {
+  stripe,
+  getOrCreateStripeCustomer,
+  PRICING_TIERS,
+  type PricingTier,
+} from "@/lib/stripe/client";
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,7 +20,7 @@ export async function POST(request: NextRequest) {
     if (context.role !== "admin") {
       return NextResponse.json(
         { error: "Only organization admins can manage billing" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -28,14 +33,14 @@ export async function POST(request: NextRequest) {
     if (!tier || !PRICING_TIERS[tier]) {
       return NextResponse.json(
         { error: "Invalid pricing tier" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (tier === "enterprise") {
       return NextResponse.json(
         { error: "Please contact sales for enterprise pricing" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -51,7 +56,7 @@ export async function POST(request: NextRequest) {
     if (orgError || !org) {
       return NextResponse.json(
         { error: "Organization not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -61,7 +66,7 @@ export async function POST(request: NextRequest) {
       customerId = await getOrCreateStripeCustomer(
         org.id,
         context.user.email || "",
-        org.name
+        org.name,
       );
 
       // Save customer ID to organization
@@ -73,14 +78,15 @@ export async function POST(request: NextRequest) {
 
     // Get the price from environment or create dynamically
     // In production, you'd have pre-created prices in Stripe
-    const priceAmount = interval === "annual"
-      ? PRICING_TIERS[tier].annualPrice
-      : PRICING_TIERS[tier].monthlyPrice;
+    const priceAmount =
+      interval === "annual"
+        ? PRICING_TIERS[tier].annualPrice
+        : PRICING_TIERS[tier].monthlyPrice;
 
     if (!priceAmount) {
       return NextResponse.json(
         { error: "Invalid price for selected tier" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -92,7 +98,7 @@ export async function POST(request: NextRequest) {
         interval: interval === "annual" ? "year" : "month",
       },
       product_data: {
-        name: `ProposalAI ${PRICING_TIERS[tier].name}`,
+        name: `IntentWin ${PRICING_TIERS[tier].name}`,
         metadata: {
           tier,
         },
@@ -133,7 +139,7 @@ export async function POST(request: NextRequest) {
     console.error("Checkout error:", error);
     return NextResponse.json(
       { error: "Failed to create checkout session" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

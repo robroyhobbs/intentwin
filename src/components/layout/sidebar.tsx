@@ -58,7 +58,7 @@ export function Sidebar() {
           </div>
           <div className="flex flex-col">
             <span className="text-[15px] font-bold text-[var(--sidebar-text)] tracking-tight">
-              ProposalAI
+              IntentWin
             </span>
             <span className="text-[10px] text-[var(--sidebar-text-muted)] font-medium uppercase tracking-wider">
               AI-Powered
@@ -71,14 +71,13 @@ export function Sidebar() {
       <nav className="flex-1 overflow-y-auto px-3 py-4 custom-scrollbar">
         {navGroups.map((group, gi) => (
           <div key={group.label} className={gi > 0 ? "mt-6" : ""}>
-            <p className="tiny-label px-3 mb-2">
-              {group.label}
-            </p>
+            <p className="tiny-label px-3 mb-2">{group.label}</p>
             <div className="space-y-1">
               {group.items.map((item) => {
                 const isActive =
                   pathname === item.href ||
-                  (item.href !== "/proposals" && pathname.startsWith(item.href));
+                  (item.href !== "/proposals" &&
+                    pathname.startsWith(item.href));
 
                 return (
                   <Link
@@ -88,7 +87,7 @@ export function Sidebar() {
                       "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
                       isActive
                         ? "bg-[var(--sidebar-active)] text-[var(--accent)] shadow-[var(--shadow-glow)]"
-                        : "text-[var(--sidebar-text-muted)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-text)]"
+                        : "text-[var(--sidebar-text-muted)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-text)]",
                     )}
                   >
                     {/* Active indicator */}
@@ -101,7 +100,7 @@ export function Sidebar() {
                         "h-[18px] w-[18px] flex-shrink-0 transition-colors",
                         isActive
                           ? "text-[var(--accent)]"
-                          : "text-[var(--foreground-subtle)] group-hover:text-[var(--foreground-muted)]"
+                          : "text-[var(--foreground-subtle)] group-hover:text-[var(--foreground-muted)]",
                       )}
                     />
 
@@ -125,7 +124,9 @@ export function Sidebar() {
       <div className="border-t border-[var(--sidebar-border)] p-4">
         <div className="flex items-center gap-2">
           <div className="status-dot status-dot-success" />
-          <span className="text-xs font-medium text-[var(--foreground-muted)]">AI Ready</span>
+          <span className="text-xs font-medium text-[var(--foreground-muted)]">
+            AI Ready
+          </span>
         </div>
         <p className="mt-2 text-[10px] text-[var(--foreground-subtle)] font-medium">
           Intent-Driven Development

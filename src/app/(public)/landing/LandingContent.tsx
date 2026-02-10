@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect, useRef } from 'react';
-import Link from 'next/link';
+import { useEffect, useRef } from "react";
+import Link from "next/link";
 
 export default function LandingContent() {
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -11,14 +11,14 @@ export default function LandingContent() {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            entry.target.classList.add('revealed');
+            entry.target.classList.add("revealed");
           }
         });
       },
-      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+      { threshold: 0.1, rootMargin: "0px 0px -50px 0px" },
     );
 
-    document.querySelectorAll('.reveal').forEach((el) => {
+    document.querySelectorAll(".reveal").forEach((el) => {
       observerRef.current?.observe(el);
     });
 
@@ -28,21 +28,21 @@ export default function LandingContent() {
   return (
     <>
       <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Syne:wght@400;500;600;700;800&display=swap');
+        @import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Syne:wght@400;500;600;700;800&display=swap");
 
         :root {
           --navy: #0a1628;
           --navy-light: #132039;
-          --blue: #0070AD;
-          --cyan: #12ABDB;
+          --blue: #0070ad;
+          --cyan: #12abdb;
           --cyan-glow: #40d9ff;
           --white: #ffffff;
           --gray-100: #f8fafc;
           --gray-200: #e2e8f0;
           --gray-400: #94a3b8;
           --gray-600: #475569;
-          --font-display: 'Instrument Serif', Georgia, serif;
-          --font-sans: 'Syne', system-ui, sans-serif;
+          --font-display: "Instrument Serif", Georgia, serif;
+          --font-sans: "Syne", system-ui, sans-serif;
         }
 
         * {
@@ -74,15 +74,25 @@ export default function LandingContent() {
           transform: translateY(0);
         }
 
-        .reveal-delay-1 { transition-delay: 0.1s; }
-        .reveal-delay-2 { transition-delay: 0.2s; }
-        .reveal-delay-3 { transition-delay: 0.3s; }
-        .reveal-delay-4 { transition-delay: 0.4s; }
-        .reveal-delay-5 { transition-delay: 0.5s; }
+        .reveal-delay-1 {
+          transition-delay: 0.1s;
+        }
+        .reveal-delay-2 {
+          transition-delay: 0.2s;
+        }
+        .reveal-delay-3 {
+          transition-delay: 0.3s;
+        }
+        .reveal-delay-4 {
+          transition-delay: 0.4s;
+        }
+        .reveal-delay-5 {
+          transition-delay: 0.5s;
+        }
 
         /* Noise texture overlay */
         .noise::before {
-          content: '';
+          content: "";
           position: fixed;
           top: 0;
           left: 0;
@@ -113,7 +123,11 @@ export default function LandingContent() {
           transform: translate(-50%, -50%);
           width: 800px;
           height: 800px;
-          background: radial-gradient(circle, rgba(18, 171, 219, 0.15) 0%, transparent 70%);
+          background: radial-gradient(
+            circle,
+            rgba(18, 171, 219, 0.15) 0%,
+            transparent 70%
+          );
           pointer-events: none;
         }
 
@@ -273,7 +287,11 @@ export default function LandingContent() {
         /* Features Section */
         .features {
           padding: 120px 24px;
-          background: linear-gradient(180deg, var(--navy) 0%, var(--navy-light) 100%);
+          background: linear-gradient(
+            180deg,
+            var(--navy) 0%,
+            var(--navy-light) 100%
+          );
         }
 
         .features-grid {
@@ -477,14 +495,18 @@ export default function LandingContent() {
         }
 
         .pricing-features li::before {
-          content: '✓';
+          content: "✓";
           color: var(--cyan);
         }
 
         /* CTA Section */
         .cta {
           padding: 120px 24px;
-          background: linear-gradient(180deg, var(--navy-light) 0%, var(--navy) 100%);
+          background: linear-gradient(
+            180deg,
+            var(--navy-light) 0%,
+            var(--navy) 100%
+          );
           text-align: center;
         }
 
@@ -579,25 +601,48 @@ export default function LandingContent() {
         <nav className="nav">
           <Link href="/landing" className="nav-logo">
             <div className="nav-logo-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <polygon points="12 2 2 7 12 12 22 7 12 2" />
                 <polyline points="2 17 12 22 22 17" />
                 <polyline points="2 12 12 17 22 12" />
               </svg>
             </div>
-            ProposalAI
+            IntentWin
           </Link>
           <ul className="nav-links">
-            <li><a href="#features">Features</a></li>
-            <li><a href="#how-it-works">How it Works</a></li>
-            <li><a href="#pricing">Pricing</a></li>
-            <li><Link href="/blog">Blog</Link></li>
+            <li>
+              <a href="#features">Features</a>
+            </li>
+            <li>
+              <a href="#how-it-works">How it Works</a>
+            </li>
+            <li>
+              <a href="#pricing">Pricing</a>
+            </li>
+            <li>
+              <Link href="/blog">Blog</Link>
+            </li>
           </ul>
           <div className="nav-cta">
-            <Link href="/login" className="btn-secondary" style={{ padding: '10px 20px' }}>
+            <Link
+              href="/login"
+              className="btn-secondary"
+              style={{ padding: "10px 20px" }}
+            >
               Sign In
             </Link>
-            <Link href="/signup" className="btn-primary" style={{ padding: '10px 20px' }}>
+            <Link
+              href="/signup"
+              className="btn-primary"
+              style={{ padding: "10px 20px" }}
+            >
               Start Free Trial
             </Link>
           </div>
@@ -614,12 +659,21 @@ export default function LandingContent() {
             Win more deals with <em>AI-powered</em> proposals
           </h1>
           <p className="reveal reveal-delay-2 hero-subtitle">
-            Generate professional proposals in hours, not weeks. Our AI learns your company&apos;s voice and creates compelling, client-specific content that wins.
+            Generate professional proposals in hours, not weeks. Our AI learns
+            your company&apos;s voice and creates compelling, client-specific
+            content that wins.
           </p>
           <div className="reveal reveal-delay-3 hero-cta">
             <Link href="/signup" className="btn-primary">
               Start Free Trial
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>
             </Link>
@@ -635,48 +689,80 @@ export default function LandingContent() {
             <p className="section-label">Features</p>
             <h2 className="section-title">Everything you need to win</h2>
             <p className="section-subtitle">
-              From intake to export, we handle the entire proposal lifecycle with AI-powered automation
+              From intake to export, we handle the entire proposal lifecycle
+              with AI-powered automation
             </p>
           </div>
           <div className="features-grid">
             <div className="reveal feature-card">
               <div className="feature-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <path d="M12 3v18M3 12h18" />
                 </svg>
               </div>
               <h3 className="feature-title">Smart Intake</h3>
               <p className="feature-desc">
-                Define client needs, outcomes, and constraints. Our AI extracts key requirements automatically from RFPs.
+                Define client needs, outcomes, and constraints. Our AI extracts
+                key requirements automatically from RFPs.
               </p>
             </div>
             <div className="reveal reveal-delay-1 feature-card">
               <div className="feature-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                   <polyline points="14 2 14 8 20 8" />
                 </svg>
               </div>
               <h3 className="feature-title">AI Generation</h3>
               <p className="feature-desc">
-                Generate complete proposals grounded in your company&apos;s knowledge base. Every claim is verifiable.
+                Generate complete proposals grounded in your company&apos;s
+                knowledge base. Every claim is verifiable.
               </p>
             </div>
             <div className="reveal reveal-delay-2 feature-card">
               <div className="feature-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <rect x="3" y="3" width="18" height="18" rx="2" />
                   <path d="M3 9h18M9 21V9" />
                 </svg>
               </div>
               <h3 className="feature-title">Rich Exports</h3>
               <p className="feature-desc">
-                Export to Word, PowerPoint, PDF with your branding. Generate presentation slides automatically.
+                Export to Word, PowerPoint, PDF with your branding. Generate
+                presentation slides automatically.
               </p>
             </div>
             <div className="reveal reveal-delay-3 feature-card">
               <div className="feature-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                   <circle cx="9" cy="7" r="4" />
                   <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
@@ -684,30 +770,47 @@ export default function LandingContent() {
               </div>
               <h3 className="feature-title">Team Collaboration</h3>
               <p className="feature-desc">
-                Review, comment, and iterate together. Track changes and manage approvals in one place.
+                Review, comment, and iterate together. Track changes and manage
+                approvals in one place.
               </p>
             </div>
             <div className="reveal reveal-delay-4 feature-card">
               <div className="feature-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <path d="M12 2L2 7l10 5 10-5-10-5z" />
                   <path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
                 </svg>
               </div>
               <h3 className="feature-title">Knowledge Base</h3>
               <p className="feature-desc">
-                Upload past proposals, case studies, and capabilities. AI retrieves relevant content automatically.
+                Upload past proposals, case studies, and capabilities. AI
+                retrieves relevant content automatically.
               </p>
             </div>
             <div className="reveal reveal-delay-5 feature-card">
               <div className="feature-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <path d="M12 20V10M6 20V4M18 20v-6" />
                 </svg>
               </div>
               <h3 className="feature-title">Win Analytics</h3>
               <p className="feature-desc">
-                Track proposal performance. Learn what works and continuously improve your win rate.
+                Track proposal performance. Learn what works and continuously
+                improve your win rate.
               </p>
             </div>
           </div>
@@ -725,7 +828,9 @@ export default function LandingContent() {
               <div className="step-content">
                 <h3>Define the Opportunity</h3>
                 <p>
-                  Enter client details, project scope, and desired outcomes. Upload the RFP and our AI will extract key requirements, compliance needs, and evaluation criteria automatically.
+                  Enter client details, project scope, and desired outcomes.
+                  Upload the RFP and our AI will extract key requirements,
+                  compliance needs, and evaluation criteria automatically.
                 </p>
               </div>
             </div>
@@ -734,7 +839,10 @@ export default function LandingContent() {
               <div className="step-content">
                 <h3>AI Generates Your Proposal</h3>
                 <p>
-                  Our AI creates a complete proposal tailored to the client. Every section draws from your knowledge base—case studies, methodologies, team credentials—ensuring accuracy and consistency.
+                  Our AI creates a complete proposal tailored to the client.
+                  Every section draws from your knowledge base—case studies,
+                  methodologies, team credentials—ensuring accuracy and
+                  consistency.
                 </p>
               </div>
             </div>
@@ -743,7 +851,9 @@ export default function LandingContent() {
               <div className="step-content">
                 <h3>Review, Refine, and Win</h3>
                 <p>
-                  Collaborate with your team to polish the proposal. Export to professional formats, track client engagement, and close the deal. Learn from each win to improve future proposals.
+                  Collaborate with your team to polish the proposal. Export to
+                  professional formats, track client engagement, and close the
+                  deal. Learn from each win to improve future proposals.
                 </p>
               </div>
             </div>
@@ -756,14 +866,17 @@ export default function LandingContent() {
             <p className="section-label">Pricing</p>
             <h2 className="section-title">Plans that scale with you</h2>
             <p className="section-subtitle">
-              Start free, upgrade when you&apos;re ready. All plans include a 14-day trial.
+              Start free, upgrade when you&apos;re ready. All plans include a
+              14-day trial.
             </p>
           </div>
           <div className="pricing-grid">
             <div className="reveal pricing-card">
               <p className="pricing-name">Starter</p>
               <p className="pricing-desc">For freelancers and solopreneurs</p>
-              <p className="pricing-price">$29<span>/mo</span></p>
+              <p className="pricing-price">
+                $29<span>/mo</span>
+              </p>
               <ul className="pricing-features">
                 <li>5 proposals per month</li>
                 <li>1 user</li>
@@ -771,7 +884,11 @@ export default function LandingContent() {
                 <li>Export to all formats</li>
                 <li>Email support</li>
               </ul>
-              <Link href="/signup" className="btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>
+              <Link
+                href="/signup"
+                className="btn-secondary"
+                style={{ width: "100%", justifyContent: "center" }}
+              >
                 Start Free Trial
               </Link>
             </div>
@@ -779,7 +896,9 @@ export default function LandingContent() {
               <span className="pricing-badge">Most Popular</span>
               <p className="pricing-name">Pro</p>
               <p className="pricing-desc">For growing sales teams</p>
-              <p className="pricing-price">$79<span>/mo</span></p>
+              <p className="pricing-price">
+                $79<span>/mo</span>
+              </p>
               <ul className="pricing-features">
                 <li>20 proposals per month</li>
                 <li>5 users</li>
@@ -787,14 +906,20 @@ export default function LandingContent() {
                 <li>Team collaboration</li>
                 <li>Priority support</li>
               </ul>
-              <Link href="/signup" className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+              <Link
+                href="/signup"
+                className="btn-primary"
+                style={{ width: "100%", justifyContent: "center" }}
+              >
                 Start Free Trial
               </Link>
             </div>
             <div className="reveal reveal-delay-2 pricing-card">
               <p className="pricing-name">Business</p>
               <p className="pricing-desc">For established companies</p>
-              <p className="pricing-price">$199<span>/mo</span></p>
+              <p className="pricing-price">
+                $199<span>/mo</span>
+              </p>
               <ul className="pricing-features">
                 <li>Unlimited proposals</li>
                 <li>15 users</li>
@@ -802,7 +927,11 @@ export default function LandingContent() {
                 <li>Custom templates</li>
                 <li>API access</li>
               </ul>
-              <Link href="/signup" className="btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>
+              <Link
+                href="/signup"
+                className="btn-secondary"
+                style={{ width: "100%", justifyContent: "center" }}
+              >
                 Start Free Trial
               </Link>
             </div>
@@ -812,13 +941,22 @@ export default function LandingContent() {
         {/* CTA */}
         <section className="cta">
           <div className="reveal cta-content">
-            <h2 className="cta-title">Ready to <em>win more</em>?</h2>
+            <h2 className="cta-title">
+              Ready to <em>win more</em>?
+            </h2>
             <p className="cta-subtitle">
-              Join hundreds of teams using ProposalAI to close deals faster.
+              Join hundreds of teams using IntentWin to close deals faster.
             </p>
             <Link href="/signup" className="btn-primary">
               Start Your Free Trial
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>
             </Link>
@@ -828,14 +966,24 @@ export default function LandingContent() {
         {/* Footer */}
         <footer className="footer">
           <div className="footer-content">
-            <p className="footer-logo">ProposalAI</p>
+            <p className="footer-logo">IntentWin</p>
             <ul className="footer-links">
-              <li><Link href="/about">About</Link></li>
-              <li><Link href="/blog">Blog</Link></li>
-              <li><Link href="/pricing">Pricing</Link></li>
-              <li><a href="mailto:support@proposalai.com">Contact</a></li>
+              <li>
+                <Link href="/about">About</Link>
+              </li>
+              <li>
+                <Link href="/blog">Blog</Link>
+              </li>
+              <li>
+                <Link href="/pricing">Pricing</Link>
+              </li>
+              <li>
+                <a href="mailto:support@intentwin.com">Contact</a>
+              </li>
             </ul>
-            <p className="footer-copy">© 2026 ProposalAI. All rights reserved.</p>
+            <p className="footer-copy">
+              © 2026 IntentWin. All rights reserved.
+            </p>
           </div>
         </footer>
       </div>

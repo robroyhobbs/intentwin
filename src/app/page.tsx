@@ -6,9 +6,9 @@ import LandingContent from "./(public)/landing/LandingContent";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "ProposalAI - AI-Powered Proposal Generation | Win More Deals",
+  title: "IntentWin - AI-Powered Proposal Generation | Win More Deals",
   description:
-    "Generate winning proposals in hours, not weeks. ProposalAI uses Intent-Driven Development to create professional, client-specific proposals that close deals. Start your free trial.",
+    "Generate winning proposals in hours, not weeks. IntentWin uses Intent-Driven Development to create professional, client-specific proposals that close deals. Start your free trial.",
   keywords: [
     "AI proposal generator",
     "proposal automation",
@@ -19,21 +19,21 @@ export const metadata: Metadata = {
     "automated proposal generation",
   ],
   openGraph: {
-    title: "ProposalAI - Generate Winning Proposals with AI",
+    title: "IntentWin - Generate Winning Proposals with AI",
     description:
       "Transform your proposal process. Create professional proposals in hours using AI that learns your company's voice and expertise.",
     type: "website",
-    url: "https://proposalai.com",
-    siteName: "ProposalAI",
+    url: "https://intentwin.com",
+    siteName: "IntentWin",
   },
   twitter: {
     card: "summary_large_image",
-    title: "ProposalAI - AI-Powered Proposal Generation",
+    title: "IntentWin - AI-Powered Proposal Generation",
     description:
       "Generate winning proposals in hours, not weeks. Start your free trial.",
   },
   alternates: {
-    canonical: "https://proposalai.com",
+    canonical: "https://intentwin.com",
   },
 };
 

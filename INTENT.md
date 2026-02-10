@@ -1,10 +1,10 @@
-# Capgemini Proposal Generator - Intent
+# IntentWin - Intent
 
 > AI-native proposal generation that starts with client outcomes and works backward through verified company capabilities.
 
 ## Vision
 
-Transform proposal creation from document assembly to **outcome engineering**. Every proposal answers one question: "How will Capgemini deliver the specific outcomes this client needs?"
+Transform proposal creation from document assembly to **outcome engineering**. Every proposal answers one question: "How will we deliver the specific outcomes this client needs?"
 
 ## Core Principle
 
@@ -60,19 +60,23 @@ Every proposal has an INTENT that defines its purpose before any content is gene
 ## Outcome Contract
 
 ### Client Current State
+
 - [Where the client is today - pain points, challenges, limitations]
 
 ### Client Desired State
+
 - [Where the client wants to be - specific, measurable outcomes]
 
 ### Transformation Promise
-- [How Capgemini will bridge the gap]
+
+- [How your company will bridge the gap]
 
 ### Success Metrics
-| Outcome | Metric | Target | Measurement Method |
-|---------|--------|--------|-------------------|
-| Cost reduction | Infrastructure spend | -40% | Cloud billing comparison |
-| Speed to market | Release cycle | 2 weeks → 2 days | Deployment frequency |
+
+| Outcome         | Metric               | Target           | Measurement Method       |
+| --------------- | -------------------- | ---------------- | ------------------------ |
+| Cost reduction  | Infrastructure spend | -40%             | Cloud billing comparison |
+| Speed to market | Release cycle        | 2 weeks → 2 days | Deployment frequency     |
 ```
 
 ### 2. Win Strategy (Required, Reviewed)
@@ -81,15 +85,19 @@ Every proposal has an INTENT that defines its purpose before any content is gene
 ## Win Strategy
 
 ### Win Themes
+
 - [2-3 themes that resonate with this client's priorities]
 
 ### Differentiators
-- [What makes Capgemini uniquely qualified vs competitors]
+
+- [What makes your company uniquely qualified vs competitors]
 
 ### Competitive Positioning
+
 - [How we position against likely competitors]
 
 ### Proof Points Required
+
 - [Which case studies, certifications, or metrics to emphasize]
 ```
 
@@ -99,15 +107,19 @@ Every proposal has an INTENT that defines its purpose before any content is gene
 ## Constraints
 
 ### Must Include
+
 - [Required elements: compliance, certifications, specific capabilities]
 
 ### Must Avoid
+
 - [Prohibited claims, competitors not to mention, sensitive topics]
 
 ### Budget Envelope
+
 - [Budget range and pricing model constraints]
 
 ### Timeline Constraints
+
 - [Delivery expectations, milestones, hard deadlines]
 ```
 
@@ -116,12 +128,12 @@ Every proposal has an INTENT that defines its purpose before any content is gene
 ```markdown
 ## Section Requirements
 
-| Section | Outcome Served | Key Points | Evidence Required |
-|---------|---------------|------------|-------------------|
-| Executive Summary | All | Outcome-first framing | Top 3 metrics |
-| Understanding | Trust | Prove we understand their pain | Industry knowledge |
-| Approach | Speed, Quality | Show clear path to outcomes | Methodology |
-| Case Studies | Trust, Risk | Prove we've done this before | Metrics from L1 |
+| Section           | Outcome Served | Key Points                     | Evidence Required  |
+| ----------------- | -------------- | ------------------------------ | ------------------ |
+| Executive Summary | All            | Outcome-first framing          | Top 3 metrics      |
+| Understanding     | Trust          | Prove we understand their pain | Industry knowledge |
+| Approach          | Speed, Quality | Show clear path to outcomes    | Methodology        |
+| Case Studies      | Trust, Risk    | Prove we've done this before   | Metrics from L1    |
 ```
 
 ---
@@ -273,6 +285,7 @@ Primary differentiator: Only vendor with FedRAMP High + healthcare experience...
 ```
 
 **Behavior:**
+
 - **LOCKED sections**: Cannot be changed without explicit unlock (protects client commitments)
 - **REVIEWED sections**: Changes trigger notification to reviewer
 - **DRAFT sections**: AI and humans can freely iterate
@@ -282,16 +295,19 @@ Primary differentiator: Only vendor with FedRAMP High + healthcare experience...
 ## Verification Agents
 
 ### proposal-validate
+
 - Intent completeness (outcomes defined? metrics specific?)
 - Constraint compliance (must-include present? must-avoid absent?)
 - Evidence coverage (% of claims with L1 sources)
 
 ### proposal-sync
+
 - Compare Intent vs generated content
 - Flag sections that don't serve any stated outcome
 - Detect claims that contradict L1 context
 
 ### proposal-audit
+
 - Overall health score
 - Outcome coverage (every outcome addressed?)
 - Evidence freshness (case studies current?)
@@ -310,12 +326,12 @@ Primary differentiator: Only vendor with FedRAMP High + healthcare experience...
 
 ## Success Metrics for This System
 
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| Proposal creation time | -60% vs manual | Time from intake to draft |
-| Win rate improvement | +15% | Track proposals through to award |
-| Claim accuracy | 100% verified | Zero unverified claims in final |
-| Outcome alignment | 100% | Every section maps to outcome |
+| Metric                 | Target         | Measurement                      |
+| ---------------------- | -------------- | -------------------------------- |
+| Proposal creation time | -60% vs manual | Time from intake to draft        |
+| Win rate improvement   | +15%           | Track proposals through to award |
+| Claim accuracy         | 100% verified  | Zero unverified claims in final  |
+| Outcome alignment      | 100%           | Every section maps to outcome    |
 
 ---
 
@@ -334,8 +350,8 @@ Primary differentiator: Only vendor with FedRAMP High + healthcare experience...
 
 ## Decisions Log
 
-| Decision | Options Considered | Choice | Rationale |
-|----------|-------------------|--------|-----------|
-| Context storage | Files vs DB | DB (Supabase) | Queryable, versionable, access control |
-| Claim verification | Manual vs automated | Hybrid | AI flags, human confirms |
-| Outcome structure | Free-form vs template | Template | Ensures completeness, enables validation |
+| Decision           | Options Considered    | Choice        | Rationale                                |
+| ------------------ | --------------------- | ------------- | ---------------------------------------- |
+| Context storage    | Files vs DB           | DB (Supabase) | Queryable, versionable, access control   |
+| Claim verification | Manual vs automated   | Hybrid        | AI flags, human confirms                 |
+| Outcome structure  | Free-form vs template | Template      | Ensures completeness, enables validation |

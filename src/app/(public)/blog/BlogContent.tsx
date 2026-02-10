@@ -34,10 +34,10 @@ const BLOG_POSTS: BlogPost[] = [
     category: "Guides",
   },
   {
-    slug: "autogenai-vs-proposalai",
-    title: "AutogenAI vs ProposalAI: Which AI Proposal Tool is Right for You?",
+    slug: "autogenai-vs-intentwin",
+    title: "AutogenAI vs IntentWin: Which AI Proposal Tool is Right for You?",
     description:
-      "An honest comparison of AutogenAI and ProposalAI. We break down features, pricing, and use cases to help you make the right choice.",
+      "An honest comparison of AutogenAI and IntentWin. We break down features, pricing, and use cases to help you make the right choice.",
     date: "2026-01-25",
     readTime: "8 min read",
     category: "Comparisons",
@@ -59,7 +59,7 @@ export default function BlogContent() {
                 <Sparkles className="h-5 w-5 text-white" />
               </div>
               <span className="text-lg font-semibold text-[var(--foreground)]">
-                ProposalAI
+                IntentWin
               </span>
             </Link>
             <div className="flex items-center gap-6">
@@ -87,7 +87,7 @@ export default function BlogContent() {
         {/* Hero */}
         <div className="text-center mb-16">
           <h1 className="text-4xl font-bold text-[var(--foreground)] mb-4">
-            ProposalAI Blog
+            IntentWin Blog
           </h1>
           <p className="text-lg text-[var(--foreground-muted)] max-w-2xl mx-auto">
             Expert insights on proposal writing, RFP strategy, and AI-powered
@@ -98,10 +98,7 @@ export default function BlogContent() {
         {/* Featured Post */}
         {featuredPost && (
           <div className="mb-16">
-            <Link
-              href={`/blog/${featuredPost.slug}`}
-              className="block group"
-            >
+            <Link href={`/blog/${featuredPost.slug}`} className="block group">
               <div className="card p-8 hover:border-[var(--accent)] transition-colors">
                 <div className="flex items-center gap-2 mb-4">
                   <span className="px-3 py-1 bg-[var(--accent-subtle)] text-[var(--accent)] text-xs font-medium rounded-full">
@@ -191,11 +188,11 @@ export default function BlogContent() {
                 <Sparkles className="h-4 w-4 text-white" />
               </div>
               <span className="text-sm font-medium text-[var(--foreground)]">
-                ProposalAI
+                IntentWin
               </span>
             </div>
             <p className="text-sm text-[var(--foreground-subtle)]">
-              2026 ProposalAI. All rights reserved.
+              2026 IntentWin. All rights reserved.
             </p>
           </div>
         </div>

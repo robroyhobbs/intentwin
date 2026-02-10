@@ -15,7 +15,7 @@ interface ProposalData {
 }
 
 export async function generatePdf(data: ProposalData): Promise<Buffer> {
-  const companyName = data.company_name || "ProposalAI";
+  const companyName = data.company_name || "IntentWin";
 
   // Generate the full HTML first
   const html = await generateHtml(data);

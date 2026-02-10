@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const DEMO_PASSWORD = process.env.DEMO_PASSWORD || "capgemini2024";
+const DEMO_PASSWORD = process.env.DEMO_PASSWORD || "intentwin2026";
 
 export async function POST(request: NextRequest) {
   const { password } = await request.json();

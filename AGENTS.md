@@ -1,13 +1,14 @@
-# ProposalAI Agent Instructions
+# IntentWin Agent Instructions
 
-> This file is the source of truth for all automated agents working on ProposalAI.
+> This file is the source of truth for all automated agents working on IntentWin.
 > It's updated nightly by the compound review process with learnings from each session.
 
 ## Product Overview
 
-ProposalAI is an AI-powered proposal generation SaaS using Intent-Driven Development (IDD).
+IntentWin is an AI-powered proposal generation SaaS using Intent-Driven Development (IDD).
 
 **Tech Stack:**
+
 - Next.js 16 with React 19
 - Supabase (PostgreSQL + Auth + Storage)
 - Claude AI (Anthropic) for proposal generation
@@ -19,17 +20,21 @@ ProposalAI is an AI-powered proposal generation SaaS using Intent-Driven Develop
 ## Core Patterns
 
 ### IDD 3-Layer Model
+
 Always respect the Intent-Driven Development architecture:
+
 - **L1 (Company Truth)**: Canonical data - brand, capabilities, case studies. Locked, admin-only updates.
 - **L2 (Proposal Intent)**: Client outcomes, win strategy, constraints. Human-reviewed.
 - **L3 (Generated Content)**: AI-generated sections with claim traceability. AI executes, human verifies.
 
 ### Multi-Tenancy (Critical)
+
 - All queries MUST scope by `organization_id`
 - Never expose data across organizations
 - RLS policies enforce isolation at database level
 
 ### Usage Tracking
+
 - Track proposals created per billing period
 - Track AI tokens consumed
 - Enforce plan limits before generation
@@ -72,12 +77,13 @@ if (!proposal) {
 
 // For new queries, always filter by organization_id
 const { data } = await adminClient
-  .from('proposals')
-  .select('*')
-  .eq('organization_id', context.organizationId);
+  .from("proposals")
+  .select("*")
+  .eq("organization_id", context.organizationId);
 ```
 
 **Available helpers in `@/lib/supabase/auth-api`:**
+
 - `getUserContext(request)` - Returns user + organizationId + role
 - `verifyProposalAccess(context, id)` - Checks proposal belongs to user's org
 - `verifyDocumentAccess(context, id)` - Checks document belongs to user's org
@@ -87,6 +93,7 @@ const { data } = await adminClient
 ## Database Schema Notes
 
 **Key Tables:**
+
 - `organizations` - Billing, plan limits, usage tracking
 - `profiles` - User profiles linked to organizations
 - `proposals` - Main proposal documents
@@ -96,6 +103,7 @@ const { data } = await adminClient
 
 **Organization Scoping (COMPLETED):**
 All tables now have `organization_id` columns with RLS policies:
+
 - `organizations` - Main billing/plan entity
 - `profiles` - Linked to organizations
 - `proposals`, `documents` - Scoped by organization_id
@@ -114,6 +122,7 @@ All tables now have `organization_id` columns with RLS policies:
 <!-- Updated nightly by compound review -->
 
 ### 2026-01-30 - Security & Multi-Tenancy
+
 - **CRITICAL**: `adminClient` bypasses RLS! Always add `.eq('organization_id', context.organizationId)` to queries
 - Use `getUserContext()` not `getAuthUser()` in API routes - it returns organization context
 - Use `verifyProposalAccess()` / `verifyDocumentAccess()` for ID-based routes
@@ -123,9 +132,10 @@ All tables now have `organization_id` columns with RLS policies:
 - Export storage paths should use `organizationId` not `userId` for proper isolation
 
 ### 2025-01-29 - Initial Setup
+
 - Project uses Next.js 16 with App Router (not Pages Router)
 - Supabase RLS policies use team_id but need organization_id (FIXED in 00014, 00015)
-- Landing page rebranded to ProposalAI, served at root URL
+- Landing page rebranded to IntentWin, served at root URL
 - Stripe integration complete (checkout, webhooks, portal)
 - No tests exist - need Playwright setup
 

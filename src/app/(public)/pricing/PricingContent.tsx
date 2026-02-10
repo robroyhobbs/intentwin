@@ -99,8 +99,8 @@ export default function PricingContent() {
             Simple, Transparent Pricing
           </h1>
           <p className="text-xl text-slate-300 max-w-2xl mx-auto">
-            Start with a 14-day free trial. No credit card required.
-            Cancel anytime.
+            Start with a 14-day free trial. No credit card required. Cancel
+            anytime.
           </p>
 
           {/* Billing Toggle */}
@@ -159,7 +159,10 @@ export default function PricingContent() {
 
               <div className="mb-6">
                 <span className="text-4xl font-bold text-white">
-                  ${isAnnual ? Math.round(tier.annualPrice / 12) : tier.monthlyPrice}
+                  $
+                  {isAnnual
+                    ? Math.round(tier.annualPrice / 12)
+                    : tier.monthlyPrice}
                 </span>
                 <span className="text-slate-400">/month</span>
                 {isAnnual && (
@@ -214,7 +217,7 @@ export default function PricingContent() {
             integrations, and SLA guarantees.
           </p>
           <Link
-            href="mailto:sales@proposalai.com?subject=Enterprise%20Inquiry"
+            href="mailto:sales@intentwin.com?subject=Enterprise%20Inquiry"
             className="inline-block bg-white text-slate-900 px-8 py-3 rounded-lg font-medium hover:bg-slate-100 transition-colors"
           >
             Contact Sales
@@ -273,7 +276,7 @@ export default function PricingContent() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-slate-400 text-sm">
-              &copy; {new Date().getFullYear()} ProposalAI. All rights reserved.
+              &copy; {new Date().getFullYear()} IntentWin. All rights reserved.
             </p>
             <div className="flex gap-6">
               <Link
@@ -289,7 +292,7 @@ export default function PricingContent() {
                 Privacy
               </Link>
               <Link
-                href="mailto:support@proposalai.com"
+                href="mailto:support@intentwin.com"
                 className="text-slate-400 hover:text-white text-sm"
               >
                 Contact

@@ -1,76 +1,66 @@
-# Capgemini Company Overview
+# Company Overview
 
-> source_url: https://www.capgemini.com/about-us/
-> verified_date: 2026-01-28
+> Upload your company overview to this file.
+> source_url: [Your company website URL]
+> verified_date: [Date verified]
 > content_type: company_profile
-> status: [VERIFIED]
+> status: [UNVERIFIED]
 
 ## Company Profile
 
-**Capgemini** is a global leader in consulting, technology services, and digital transformation.
+**[Your Company Name]** -- Add a brief description of your company.
 
-### Key Facts (2024)
-- **Employees**: ~340,000 professionals
-- **Countries**: 50+ countries
-- **Revenue**: €22.1 billion (2024)
-- **Headquarters**: Paris, France
+### Key Facts
+
+- **Employees**: [Number]
+- **Countries**: [Number of countries]
+- **Revenue**: [Annual revenue]
+- **Headquarters**: [City, Country]
+- **Founded**: [Year]
 
 ### Service Lines
 
-1. **Strategy & Transformation**
-2. **Applications & Technology**
-3. **Operations & Engineering**
-4. **Insights & Data**
+1. [Service Line 1]
+2. [Service Line 2]
+3. [Service Line 3]
+4. [Service Line 4]
 
 ### Core Values
 
-- **Honesty**
-- **Boldness**
-- **Trust**
-- **Freedom**
-- **Fun**
-- **Modesty**
-- **Team Spirit**
+- [Value 1]
+- [Value 2]
+- [Value 3]
 
 ## Market Position
 
-### Industry Recognition (2025)
-- **Forrester Wave Leader**: Application Modernization and Multicloud Managed Services, Q1 2025
-- **Google Cloud Partner of the Year**: Industry Solution Services - Government (2023)
-- **Google Cloud Breakthrough Partner**: Global (2023)
+### Industry Recognition
+
+| Recognition | Source | Date |
+|-------------|--------|------|
+| [Award/recognition] | [Source] | [Year] |
 
 ### Key Partnerships
-- Amazon Web Services (AWS) Premier Partner
-- Microsoft Azure Expert MSP
-- Google Cloud Premier Partner
-- SAP Global Strategic Partner
-- Oracle Cloud Partner
+
+- [Partnership 1]
+- [Partnership 2]
+- [Partnership 3]
 
 ## Contact Information
 
-### US Public Sector
-- **Email**: publicsector.opps.uk@capgemini.com
-- **Phone**: +44(0)370 904 4858
+### Headquarters
 
-### US Headquarters
-- Capgemini America, Inc.
-- 623 Fifth Avenue
-- New York, NY 10022
+- [Company Name]
+- [Address]
+- [City, State ZIP]
 
-## Government Contract Vehicles (US)
+## Contract Vehicles (if applicable)
 
 | Vehicle | Description |
 |---------|-------------|
-| **Alliant 2** | GSA GWAC for IT solutions |
-| **OASIS+** | Professional services IDIQ |
-| **CIO-SP3** | NIH IT services |
-| **EITSI BPA** | Defense Health Agency IT transformation |
+| [Vehicle name] | [Description] |
 
 ## Certifications & Compliance
 
-- ISO 27001 (Information Security)
-- ISO 9001 (Quality Management)
-- SOC 2 Type II
-- FedRAMP (via cloud partners)
-- HIPAA Compliant
-- PCI DSS
+- [Certification 1]
+- [Certification 2]
+- [Certification 3]

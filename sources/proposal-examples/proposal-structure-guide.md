@@ -1,13 +1,13 @@
-# Capgemini Proposal Structure Guide
+# Proposal Structure Guide
 
-> source_url: Multiple sources (Scribd, industry best practices)
-> verified_date: 2026-01-28
+> source_url: Industry best practices
+> verified_date: [Date]
 > content_type: proposal_template
-> status: [PARTIAL] - Synthesized from available sources
+> status: [PARTIAL] - Generic template, customize for your company
 
 ## Standard Proposal Structure
 
-Based on industry research and available Capgemini materials, a typical cloud migration/modernization proposal follows this structure:
+A typical cloud migration/modernization proposal follows this structure:
 
 ---
 
@@ -19,7 +19,7 @@ Outcome-first framing of the entire proposal. Should answer: "What will the clie
 ### Key Elements
 - Client's current challenge (brief)
 - Desired outcomes and business impact
-- Capgemini's approach summary
+- Your approach summary
 - Key differentiators
 - Investment overview
 - Timeline highlights
@@ -35,7 +35,7 @@ Outcome-first framing of the entire proposal. Should answer: "What will the clie
 ## 2. Understanding of Requirements (3-5 pages)
 
 ### Purpose
-Demonstrate deep understanding of client's situation and prove we've listened.
+Demonstrate deep understanding of client's situation and prove you have listened.
 
 ### Key Elements
 - Current state assessment
@@ -48,7 +48,7 @@ Demonstrate deep understanding of client's situation and prove we've listened.
 ### Writing Guidelines
 - Mirror client's RFP language
 - Show industry expertise
-- Reference similar situations we've addressed
+- Reference similar situations you have addressed
 - Validate understanding without repetition
 
 ---
@@ -56,7 +56,7 @@ Demonstrate deep understanding of client's situation and prove we've listened.
 ## 3. Proposed Solution / Approach (5-10 pages)
 
 ### Purpose
-Detail HOW Capgemini will achieve the client's outcomes.
+Detail HOW your company will achieve the client's outcomes.
 
 ### Key Elements
 
@@ -87,7 +87,7 @@ Detail HOW Capgemini will achieve the client's outcomes.
 - Connect every element back to client outcomes
 - Be specific about deliverables
 - Include visual diagrams
-- Reference methodology (CCMF, ADMnext, etc.)
+- Reference your methodology
 
 ---
 
@@ -114,7 +114,7 @@ Build confidence in delivery capability through people.
 ## 5. Case Studies / References (2-4 pages)
 
 ### Purpose
-Prove we've done this before with measurable results.
+Prove you have done this before with measurable results.
 
 ### Key Elements
 - 2-3 relevant case studies
@@ -126,7 +126,7 @@ Prove we've done this before with measurable results.
 ```
 Client: [Industry, size, geography]
 Challenge: [Similar to prospect's situation]
-Solution: [What we delivered]
+Solution: [What you delivered]
 Results: [Specific metrics]
 Relevance: [Why this matters to this proposal]
 ```

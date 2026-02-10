@@ -29,8 +29,14 @@ function markdownToHtml(md: string): string {
     if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
       if (/^\|[\s\-:|]+\|$/.test(trimmed)) continue;
       if (!inTable) {
-        if (inList) { htmlLines.push("</ul>"); inList = false; }
-        if (inOrderedList) { htmlLines.push("</ol>"); inOrderedList = false; }
+        if (inList) {
+          htmlLines.push("</ul>");
+          inList = false;
+        }
+        if (inOrderedList) {
+          htmlLines.push("</ol>");
+          inOrderedList = false;
+        }
         htmlLines.push('<table class="content-table">');
         inTable = true;
       }
@@ -38,9 +44,10 @@ function markdownToHtml(md: string): string {
         .slice(1, -1)
         .split("|")
         .map((c) => c.trim());
-      const cellTag = htmlLines.filter((l) => l.includes("<tr>")).length === 0 ? "th" : "td";
+      const cellTag =
+        htmlLines.filter((l) => l.includes("<tr>")).length === 0 ? "th" : "td";
       htmlLines.push(
-        `<tr>${cells.map((c) => `<${cellTag}>${inlineFormat(c)}</${cellTag}>`).join("")}</tr>`
+        `<tr>${cells.map((c) => `<${cellTag}>${inlineFormat(c)}</${cellTag}>`).join("")}</tr>`,
       );
       continue;
     } else if (inTable) {
@@ -50,45 +57,89 @@ function markdownToHtml(md: string): string {
 
     // Headings
     if (trimmed.startsWith("### ")) {
-      if (inList) { htmlLines.push("</ul>"); inList = false; }
-      if (inOrderedList) { htmlLines.push("</ol>"); inOrderedList = false; }
+      if (inList) {
+        htmlLines.push("</ul>");
+        inList = false;
+      }
+      if (inOrderedList) {
+        htmlLines.push("</ol>");
+        inOrderedList = false;
+      }
       htmlLines.push(`<h4>${inlineFormat(trimmed.slice(4))}</h4>`);
       continue;
     }
     if (trimmed.startsWith("## ")) {
-      if (inList) { htmlLines.push("</ul>"); inList = false; }
-      if (inOrderedList) { htmlLines.push("</ol>"); inOrderedList = false; }
+      if (inList) {
+        htmlLines.push("</ul>");
+        inList = false;
+      }
+      if (inOrderedList) {
+        htmlLines.push("</ol>");
+        inOrderedList = false;
+      }
       htmlLines.push(`<h3>${inlineFormat(trimmed.slice(3))}</h3>`);
       continue;
     }
     if (trimmed.startsWith("# ")) {
-      if (inList) { htmlLines.push("</ul>"); inList = false; }
-      if (inOrderedList) { htmlLines.push("</ol>"); inOrderedList = false; }
+      if (inList) {
+        htmlLines.push("</ul>");
+        inList = false;
+      }
+      if (inOrderedList) {
+        htmlLines.push("</ol>");
+        inOrderedList = false;
+      }
       htmlLines.push(`<h2>${inlineFormat(trimmed.slice(2))}</h2>`);
       continue;
     }
 
     // Unordered lists
     if (/^[-*]\s/.test(trimmed)) {
-      if (inOrderedList) { htmlLines.push("</ol>"); inOrderedList = false; }
-      if (!inList) { htmlLines.push("<ul>"); inList = true; }
+      if (inOrderedList) {
+        htmlLines.push("</ol>");
+        inOrderedList = false;
+      }
+      if (!inList) {
+        htmlLines.push("<ul>");
+        inList = true;
+      }
       htmlLines.push(`<li>${inlineFormat(trimmed.slice(2))}</li>`);
       continue;
     }
     // Ordered lists
     if (/^\d+\.\s/.test(trimmed)) {
-      if (inList) { htmlLines.push("</ul>"); inList = false; }
-      if (!inOrderedList) { htmlLines.push("<ol>"); inOrderedList = true; }
-      htmlLines.push(`<li>${inlineFormat(trimmed.replace(/^\d+\.\s/, ""))}</li>`);
+      if (inList) {
+        htmlLines.push("</ul>");
+        inList = false;
+      }
+      if (!inOrderedList) {
+        htmlLines.push("<ol>");
+        inOrderedList = true;
+      }
+      htmlLines.push(
+        `<li>${inlineFormat(trimmed.replace(/^\d+\.\s/, ""))}</li>`,
+      );
       continue;
     }
 
-    if (inList && trimmed) { htmlLines.push("</ul>"); inList = false; }
-    if (inOrderedList && trimmed) { htmlLines.push("</ol>"); inOrderedList = false; }
+    if (inList && trimmed) {
+      htmlLines.push("</ul>");
+      inList = false;
+    }
+    if (inOrderedList && trimmed) {
+      htmlLines.push("</ol>");
+      inOrderedList = false;
+    }
 
     if (!trimmed) {
-      if (inList) { htmlLines.push("</ul>"); inList = false; }
-      if (inOrderedList) { htmlLines.push("</ol>"); inOrderedList = false; }
+      if (inList) {
+        htmlLines.push("</ul>");
+        inList = false;
+      }
+      if (inOrderedList) {
+        htmlLines.push("</ol>");
+        inOrderedList = false;
+      }
       continue;
     }
 
@@ -127,7 +178,7 @@ function escapeHtml(text: string): string {
 const ACCENT_COLORS = ["#0070AD", "#12ABDB", "#1B365D", "#0070AD", "#12ABDB"];
 
 export async function generateHtml(data: ProposalData): Promise<string> {
-  const companyName = data.company_name || "ProposalAI";
+  const companyName = data.company_name || "IntentWin";
 
   // Collect all mermaid blocks for batch SVG conversion
   const allMermaidCodes: string[] = [];
@@ -669,11 +720,11 @@ export async function generateHtml(data: ProposalData): Promise<string> {
       <div class="stat-label">Sections</div>
     </div>
     <div class="stat-card">
-      <div class="stat-value">${escapeHtml(data.client_name.split(' ')[0] || 'Client')}</div>
+      <div class="stat-value">${escapeHtml(data.client_name.split(" ")[0] || "Client")}</div>
       <div class="stat-label">Prepared For</div>
     </div>
     <div class="stat-card">
-      <div class="stat-value">${escapeHtml(data.date.split(',')[0] || data.date)}</div>
+      <div class="stat-value">${escapeHtml(data.date.split(",")[0] || data.date)}</div>
       <div class="stat-label">Date</div>
     </div>
   </div>

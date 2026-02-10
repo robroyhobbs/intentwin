@@ -46,32 +46,38 @@ function toColorCode(hex: string): string {
  * Following the "slides are for discussion, not details" principle
  */
 function extractKeyPoints(content: string, maxPoints: number = 4): string[] {
-  const lines = content.split('\n').map(l => l.trim()).filter(Boolean);
+  const lines = content
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
   const bullets: string[] = [];
 
   for (const line of lines) {
     // Skip markdown headers
-    if (line.startsWith('#')) continue;
+    if (line.startsWith("#")) continue;
 
     // Extract bullet points
-    if (line.startsWith('-') || line.startsWith('*') || /^\d+\./.test(line)) {
-      const text = line.replace(/^[-*]\s*/, '').replace(/^\d+\.\s*/, '').trim();
+    if (line.startsWith("-") || line.startsWith("*") || /^\d+\./.test(line)) {
+      const text = line
+        .replace(/^[-*]\s*/, "")
+        .replace(/^\d+\.\s*/, "")
+        .trim();
       // Keep bullets concise - max 60 chars for PPTX readability
       if (text && text.length > 0) {
-        bullets.push(text.length > 60 ? text.substring(0, 57) + '...' : text);
+        bullets.push(text.length > 60 ? text.substring(0, 57) + "..." : text);
       }
     }
     // Extract key value proposition sentences
     else if (
-      line.includes('will') ||
-      line.includes('deliver') ||
-      line.includes('enable') ||
-      line.includes('reduce') ||
-      line.includes('increase') ||
-      line.includes('improve') ||
-      line.includes('%')
+      line.includes("will") ||
+      line.includes("deliver") ||
+      line.includes("enable") ||
+      line.includes("reduce") ||
+      line.includes("increase") ||
+      line.includes("improve") ||
+      line.includes("%")
     ) {
-      const shortened = line.length > 60 ? line.substring(0, 57) + '...' : line;
+      const shortened = line.length > 60 ? line.substring(0, 57) + "..." : line;
       if (!bullets.includes(shortened)) {
         bullets.push(shortened);
       }
@@ -84,9 +90,10 @@ function extractKeyPoints(content: string, maxPoints: number = 4): string[] {
   if (bullets.length < 2) {
     const sentences = content.match(/[^.!?]+[.!?]+/g) || [];
     for (const sentence of sentences) {
-      const clean = sentence.trim().replace(/^[-*#\d.]\s*/, '');
+      const clean = sentence.trim().replace(/^[-*#\d.]\s*/, "");
       if (clean.length > 15 && clean.length < 80 && !bullets.includes(clean)) {
-        const shortened = clean.length > 60 ? clean.substring(0, 57) + '...' : clean;
+        const shortened =
+          clean.length > 60 ? clean.substring(0, 57) + "..." : clean;
         bullets.push(shortened);
         if (bullets.length >= maxPoints) break;
       }
@@ -98,14 +105,20 @@ function extractKeyPoints(content: string, maxPoints: number = 4): string[] {
 
 export async function generatePptx(data: ProposalData): Promise<Buffer> {
   const pptx = new pptxgen();
-  const companyName = data.company_name || "ProposalAI";
+  const companyName = data.company_name || "IntentWin";
 
   // Use custom branding or defaults
   const branding = data.branding;
   const COLORS = {
-    primary: branding ? toColorCode(branding.primary_color) : DEFAULT_COLORS.primary,
-    dark: branding ? toColorCode(branding.secondary_color) : DEFAULT_COLORS.dark,
-    accent: branding ? toColorCode(branding.accent_color) : DEFAULT_COLORS.accent,
+    primary: branding
+      ? toColorCode(branding.primary_color)
+      : DEFAULT_COLORS.primary,
+    dark: branding
+      ? toColorCode(branding.secondary_color)
+      : DEFAULT_COLORS.dark,
+    accent: branding
+      ? toColorCode(branding.accent_color)
+      : DEFAULT_COLORS.accent,
     text: DEFAULT_COLORS.text,
     lightBg: DEFAULT_COLORS.lightBg,
     white: DEFAULT_COLORS.white,
@@ -403,6 +416,8 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
   });
 
   // Generate buffer
-  const arrayBuffer = (await pptx.write({ outputType: "arraybuffer" })) as ArrayBuffer;
+  const arrayBuffer = (await pptx.write({
+    outputType: "arraybuffer",
+  })) as ArrayBuffer;
   return Buffer.from(arrayBuffer);
 }
