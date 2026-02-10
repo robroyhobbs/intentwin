@@ -7,7 +7,7 @@ export function buildTeamPrompt(
   analysis: string,
   retrievedContext: string,
   winStrategy?: WinStrategyData | null,
-  companyInfo?: CompanyInfo
+  companyInfo?: CompanyInfo,
 ): string {
   const companyName = companyInfo?.name || "Our Company";
 
@@ -23,13 +23,19 @@ ${analysis}
 ${retrievedContext}
 ${buildWinStrategySection(winStrategy)}
 ## Instructions
-Write a section (400-600 words) that:
-1. Proposes a team structure appropriate for the engagement size and type
-2. Describes key roles (Engagement Lead, Solution Architect, Cloud Architects, DevOps Engineers, etc.)
-3. Highlights relevant certifications (AWS, Azure, GCP partnerships)
-4. Mentions the depth of ${companyName}'s talent pool
-5. Describes the governance model and escalation paths
-${winStrategy ? `6. Map team capabilities to each key differentiator — show why this specific team is uniquely positioned to deliver the defined outcomes` : ""}
+Write a section (400-600 words) using the Social Proof + Authority framework:
+
+1. **CREDENTIALS**: Lead with relevant certifications, years of experience, and domain expertise — establish authority
+2. **RELEVANCE**: Connect each team member's background directly to this engagement's challenges — show why this team, for this client
+3. **SOCIAL PROOF**: Include evidence of past success — similar projects delivered, client outcomes achieved, industry recognition
+
+Within this framework:
+- Propose a team structure appropriate for the engagement size and type
+- Describe key roles (Engagement Lead, Solution Architect, Cloud Architects, DevOps Engineers, etc.)
+- Highlight relevant certifications (AWS, Azure, GCP partnerships)
+- Mention the depth of ${companyName}'s talent pool
+- Describe the governance model and escalation paths
+${winStrategy ? `- Map team capabilities to each key differentiator — show why this specific team is uniquely positioned to deliver the defined outcomes` : ""}
 
 Use placeholder names like [Engagement Lead Name] for specific individuals.
 

@@ -7,7 +7,7 @@ export function buildTimelinePrompt(
   analysis: string,
   retrievedContext: string,
   winStrategy?: WinStrategyData | null,
-  companyInfo?: CompanyInfo
+  companyInfo?: CompanyInfo,
 ): string {
   const companyName = companyInfo?.name || "Our Company";
 
@@ -23,13 +23,13 @@ ${analysis}
 ${retrievedContext}
 ${buildWinStrategySection(winStrategy)}
 ## Instructions
-Write a section (400-600 words) that:
-1. Proposes a realistic project timeline with phases
-2. Includes key milestones and deliverables per phase
-3. Accounts for discovery/assessment, planning, execution, and transition phases
-4. Addresses any timeline constraints mentioned in the intake data
-5. Includes governance checkpoints and go/no-go decision points
-${winStrategy ? "6. Map milestones to specific target outcomes — show when each success metric will begin to be realized, with early wins for high-priority outcomes" : ""}
+Write a section (400-600 words) using the Certainty Framework to build confidence through specificity:
+
+1. **PHASES**: Break the engagement into clear, manageable phases with defined boundaries — discovery/assessment, planning, execution, and transition
+2. **MILESTONES**: Identify specific checkpoints where progress is measurable and demonstrable — key deliverables per phase
+3. **RISK MITIGATION**: Show what could go wrong at each phase and how you'll prevent/handle it — governance checkpoints and go/no-go decision points
+4. **CONFIDENCE**: Build confidence through specificity — dates, deliverables, dependencies all mapped
+${winStrategy ? "5. Map milestones to specific target outcomes — show when each success metric will begin to be realized, with early wins for high-priority outcomes" : ""}
 
 Present as a clear, structured timeline. Use bullet points or a table format.
 

@@ -7,7 +7,7 @@ export function buildApproachPrompt(
   analysis: string,
   retrievedContext: string,
   winStrategy?: WinStrategyData | null,
-  companyInfo?: CompanyInfo
+  companyInfo?: CompanyInfo,
 ): string {
   const companyName = companyInfo?.name || "Our Company";
 
@@ -23,15 +23,20 @@ ${analysis}
 ${retrievedContext}
 ${buildWinStrategySection(winStrategy)}
 ## Instructions
-Write a detailed approach section (800-1200 words) that:
-1. Describes the phased approach ${companyName} will take
+Write a detailed approach section (800-1200 words) using the Feature-Advantage-Benefit (FAB) framework:
+
+For each phase of the approach:
+- **FEATURE**: Describe what ${companyName} will do — the specific activities, tools, and methods
+- **ADVANTAGE**: Explain why this approach is superior to alternatives — what makes it smarter, faster, or more reliable
+- **BENEFIT**: Connect every feature to a tangible client outcome — reduced cost, faster time-to-market, lower risk
+
+Additionally:
+1. Describe the phased approach ${companyName} will take
 2. For cloud migration: reference the 6R framework (Rehost, Replatform, Repurchase, Refactor, Retire, Retain) where appropriate
 3. For app modernization: reference patterns like strangler fig, lift-and-shift, re-platform as appropriate
-4. Includes specific activities for each phase
-5. Describes key deliverables at each stage
-6. Explains how risks will be mitigated during execution
-7. Shows how ${companyName}'s methodology addresses the client's specific needs
-${winStrategy ? "8. Show how each phase delivers against the target outcomes — reference specific metrics and map deliverables to defined success criteria" : ""}
+4. Include key deliverables at each stage
+5. Explain how risks will be mitigated during execution
+${winStrategy ? "6. Show how each phase delivers against the target outcomes — reference specific metrics and map deliverables to defined success criteria" : ""}
 
 Be concrete and specific. Use the reference material to inform realistic timelines and approaches.
 

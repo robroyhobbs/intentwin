@@ -2,7 +2,7 @@
 
 ## Overview
 
-Transform ProposalAI's generation pipeline from ad-hoc AI prompting to a layered persuasion system. Each of the 10 proposal sections gets a specific persuasion framework (AIDA, PAS, FAB, etc.), win themes woven throughout, competitive positioning via indirect framing, brand voice enforcement, and automated quality checks — all without adding new database tables.
+Transform IntentWin's generation pipeline from ad-hoc AI prompting to a layered persuasion system. Each of the 10 proposal sections gets a specific persuasion framework (AIDA, PAS, FAB, etc.), win themes woven throughout, competitive positioning via indirect framing, brand voice enforcement, and automated quality checks — all without adding new database tables.
 
 ## Prerequisites
 
@@ -234,49 +234,49 @@ Update all 10 section prompt builders to incorporate their assigned persuasion f
 
 #### Happy Path
 
-- [ ] Executive Summary prompt includes AIDA structure (Attention/Interest/Desire/Action markers)
-- [ ] Understanding prompt includes PAS structure (Problem/Agitate/Solve markers)
-- [ ] Approach prompt includes FAB structure (Feature/Advantage/Benefit markers)
-- [ ] Methodology prompt includes Before-After-Bridge structure
-- [ ] Team prompt includes Social Proof + Authority guidance
-- [ ] Case Studies prompt includes STAR structure
-- [ ] Timeline prompt includes Certainty Framework guidance
-- [ ] Pricing prompt includes Value Framing guidance
-- [ ] Risk Mitigation prompt includes Acknowledge-Address-Assure structure
-- [ ] Why Us prompt includes Competitive Differentiation guidance
-- [ ] All 10 prompts include persuasion context when persuasion data provided
-- [ ] All 10 prompts include best practices section with length guidance
-- [ ] All 10 prompts still include intake data, analysis, and retrieved context
+- [x] Executive Summary prompt includes AIDA structure (Attention/Interest/Desire/Action markers)
+- [x] Understanding prompt includes PAS structure (Problem/Agitate/Solve markers)
+- [x] Approach prompt includes FAB structure (Feature/Advantage/Benefit markers)
+- [x] Methodology prompt includes Before-After-Bridge structure
+- [x] Team prompt includes Social Proof + Authority guidance
+- [x] Case Studies prompt includes STAR structure
+- [x] Timeline prompt includes Certainty Framework guidance
+- [x] Pricing prompt includes Value Framing guidance
+- [x] Risk Mitigation prompt includes Acknowledge-Address-Assure structure
+- [x] Why Us prompt includes Competitive Differentiation guidance
+- [x] All 10 prompts include persuasion context when persuasion data provided
+- [x] All 10 prompts include best practices section with length guidance
+- [x] All 10 prompts still include intake data, analysis, and retrieved context
 
 #### Bad Path
 
-- [ ] Each prompt works without persuasion data (backward compatible — no persuasion = original behavior)
-- [ ] Each prompt works without win strategy (no win themes section)
-- [ ] Each prompt works without company info (falls back to "Our Company")
-- [ ] Prompt builder doesn't throw when persuasion prompt returns empty string
+- [x] Each prompt works without persuasion data (backward compatible — no persuasion = original behavior)
+- [x] Each prompt works without win strategy (no win themes section)
+- [x] Each prompt works without company info (falls back to "Our Company")
+- [x] Prompt builder doesn't throw when persuasion prompt returns empty string
 
 #### Edge Cases
 
-- [ ] Prompt with maximum context (large intake data + long analysis + many retrieved chunks + full persuasion) stays coherent
-- [ ] Prompt with minimal context (tiny intake, no analysis, no retrieved) still generates valid output
-- [ ] Section type names match exactly between pipeline SECTION_CONFIGS and persuasion module
+- [x] Prompt with maximum context (large intake data + long analysis + many retrieved chunks + full persuasion) stays coherent
+- [x] Prompt with minimal context (tiny intake, no analysis, no retrieved) still generates valid output
+- [x] Section type names match exactly between pipeline SECTION_CONFIGS and persuasion module
 
 #### Security
 
-- [ ] User-provided intake data in prompts doesn't enable prompt injection
-- [ ] Win themes embedded in prompts are properly quoted/contextualized
-- [ ] Retrieved context from RAG doesn't override framework instructions
+- [x] User-provided intake data in prompts doesn't enable prompt injection
+- [x] Win themes embedded in prompts are properly quoted/contextualized
+- [x] Retrieved context from RAG doesn't override framework instructions
 
 #### Data Leak
 
-- [ ] Prompts don't expose internal section ordering or generation strategy
-- [ ] Debug prompt stored in DB (generation_prompt) is truncated and doesn't leak full brand voice
+- [x] Prompts don't expose internal section ordering or generation strategy
+- [x] Debug prompt stored in DB (generation_prompt) is truncated and doesn't leak full brand voice
 
 #### Data Damage
 
-- [ ] Updated prompt builders maintain same function signature (no breaking changes)
-- [ ] Existing proposals can still be viewed after code change (no migration needed)
-- [ ] Re-generation of existing proposal works with new prompts
+- [x] Updated prompt builders maintain same function signature (no breaking changes)
+- [x] Existing proposals can still be viewed after code change (no migration needed)
+- [x] Re-generation of existing proposal works with new prompts
 
 ### E2E Gate
 
@@ -298,11 +298,11 @@ npx vitest run src/lib/ai/__tests__/section-prompts.test.ts
 
 ### Acceptance Criteria
 
-- [ ] All 10 section prompt builders updated with persuasion frameworks
-- [ ] Each prompt follows its assigned framework structure
-- [ ] Backward compatibility maintained (no persuasion data = original behavior)
-- [ ] All test suites pass (persuasion + pipeline + section prompts)
-- [ ] TypeScript compiles clean
+- [x] All 10 section prompt builders updated with persuasion frameworks
+- [x] Each prompt follows its assigned framework structure
+- [x] Backward compatibility maintained (no persuasion data = original behavior)
+- [x] All test suites pass (persuasion + pipeline + section prompts)
+- [x] TypeScript compiles clean
 - [ ] Full proposal generates successfully via the UI/API
 
 ---

@@ -7,7 +7,7 @@ export function buildRiskMitigationPrompt(
   analysis: string,
   retrievedContext: string,
   winStrategy?: WinStrategyData | null,
-  companyInfo?: CompanyInfo
+  companyInfo?: CompanyInfo,
 ): string {
   const companyName = companyInfo?.name || "Our Company";
 
@@ -23,13 +23,18 @@ ${analysis}
 ${retrievedContext}
 ${buildWinStrategySection(winStrategy)}
 ## Instructions
-Write a section (400-600 words) that:
-1. Identifies 4-6 key risks specific to this engagement
-2. For each risk, provides: description, likelihood, impact, and mitigation strategy
-3. Addresses common risks in cloud migration / app modernization projects
-4. Describes ${companyName}'s risk governance framework
-5. Shows proactive thinking about potential challenges
-${winStrategy ? "6. Map risks directly to the target outcomes they could jeopardize — show mitigation strategies as safeguards for achieving defined success metrics" : ""}
+Write a section (400-600 words) using the Acknowledge-Address-Assure framework:
+
+For each of the 4-6 key risks specific to this engagement:
+1. **ACKNOWLEDGE**: Name the risk directly and honestly — show you've thought about what could go wrong
+2. **ADDRESS**: Describe ${companyName}'s specific mitigation strategy — processes, tools, escalation paths
+3. **ASSURE**: Provide evidence that these mitigations work — reference past projects where similar risks were managed
+
+Additionally:
+- Address common risks in cloud migration / app modernization projects
+- Describe ${companyName}'s risk governance framework
+- Show proactive thinking about potential challenges
+${winStrategy ? "- Map risks directly to the target outcomes they could jeopardize — show mitigation strategies as safeguards for achieving defined success metrics" : ""}
 
 Present in a structured format (table or risk cards).
 
