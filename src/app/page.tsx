@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import LandingContent from "./(public)/landing/LandingContent";
+import { getJsonLd } from "./(public)/landing/json-ld";
 
 export const dynamic = "force-dynamic";
 
@@ -49,5 +50,13 @@ export default async function Home() {
   }
 
   // Unauthenticated users see the landing page (better for SEO than redirect)
-  return <LandingContent />;
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(getJsonLd()) }}
+      />
+      <LandingContent />
+    </>
+  );
 }

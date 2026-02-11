@@ -15,16 +15,59 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "IntentWin - AI-Powered Proposals That Win",
+  metadataBase: new URL("https://intentwin.com"),
+  title: {
+    default: "IntentWin - AI Proposal Intelligence Platform",
+    template: "%s | IntentWin",
+  },
   description:
-    "Generate winning proposals in hours, not weeks. AI-native proposal generation powered by Intent-Driven Development.",
+    "Generate winning proposals, RFPs, RFIs, and SOWs in hours. AI-powered persuasion intelligence with a 6-layer Intent Framework. Built for consulting firms, government contractors, and sales teams.",
+  keywords: [
+    "AI proposal generator",
+    "RFP response software",
+    "proposal automation",
+    "RFI response tool",
+    "SOW generator",
+    "Intent Framework",
+    "proposal intelligence",
+    "AI persuasion engine",
+    "government contractor proposals",
+    "consulting proposal software",
+    "sales proposal platform",
+    "enterprise proposal automation",
+    "winning proposals AI",
+    "proposal writing software",
+    "bid management tool",
+  ],
+  authors: [{ name: "IntentWin" }],
+  creator: "IntentWin",
   icons: {
     icon: "/favicon.ico",
   },
   openGraph: {
-    title: "IntentWin - AI-Powered Proposals That Win",
-    description: "Generate winning proposals in hours, not weeks.",
+    title: "IntentWin - AI Proposal Intelligence Platform",
+    description:
+      "Generate winning proposals, RFPs, RFIs, and SOWs in hours. AI-powered persuasion intelligence with a 6-layer Intent Framework. Built for consulting firms, government contractors, and sales teams.",
+    url: "https://intentwin.com",
+    siteName: "IntentWin",
+    locale: "en_US",
     type: "website",
+    images: ["/opengraph-image"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "IntentWin - AI Proposal Intelligence Platform",
+    description:
+      "Generate winning proposals, RFPs, RFIs, and SOWs in hours. AI-powered persuasion intelligence with a 6-layer Intent Framework.",
+    creator: "@intentwin",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+    },
   },
 };
 

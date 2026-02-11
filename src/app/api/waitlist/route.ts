@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendWaitlistConfirmation } from "@/lib/email/send-waitlist-email";
 
 export async function POST(request: NextRequest) {
   try {
@@ -71,6 +72,13 @@ export async function POST(request: NextRequest) {
       company: company.trim(),
       company_size: company_size || null,
       timestamp: new Date().toISOString(),
+    });
+
+    // Fire-and-forget: send confirmation email (never blocks the response)
+    void sendWaitlistConfirmation({
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
+      company: company.trim(),
     });
 
     return NextResponse.json({ success: true });
