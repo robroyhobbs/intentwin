@@ -8,17 +8,11 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!name || typeof name !== "string" || !name.trim()) {
-      return NextResponse.json(
-        { error: "Name is required" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Name is required" }, { status: 400 });
     }
 
     if (!email || typeof email !== "string" || !email.trim()) {
-      return NextResponse.json(
-        { error: "Email is required" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
     // Basic email format check
@@ -69,6 +63,15 @@ export async function POST(request: NextRequest) {
         { status: 500 },
       );
     }
+
+    // Log for Vercel log monitoring
+    console.log("[WAITLIST]", {
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
+      company: company.trim(),
+      company_size: company_size || null,
+      timestamp: new Date().toISOString(),
+    });
 
     return NextResponse.json({ success: true });
   } catch {

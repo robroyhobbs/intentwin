@@ -33,10 +33,17 @@ export async function processDocument(documentId: string): Promise<void> {
       throw new Error(`Failed to download file: ${downloadError?.message}`);
     }
 
-    const buffer = Buffer.from(await fileData.arrayBuffer());
+    const arrayBuffer = await fileData.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
 
     // Parse document into sections
     const sections = await parseDocument(buffer, doc.file_type);
+
+    if (sections.length === 0) {
+      console.warn(
+        `[Pipeline] Document ${documentId} parsed but produced 0 sections (file type: ${doc.file_type})`,
+      );
+    }
 
     // Chunk sections
     const chunks = chunkSections(sections);
