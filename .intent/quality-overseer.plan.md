@@ -340,47 +340,47 @@ Build the Quality Report panel component and integrate it into the proposal edit
 
 #### Happy Path
 
-- [ ] Panel renders in "Not run" state with "Run Quality Review" button
-- [ ] Clicking button triggers POST and switches to "Reviewing" state with spinner
-- [ ] Polls GET endpoint every 3 seconds during review
-- [ ] Displays overall score (large number) when completed
-- [ ] Shows green badge for pass (>= 9.0), amber for fail (< 9.0)
-- [ ] Lists all sections with individual scores
-- [ ] Expanding a section shows 4 dimension scores + feedback
-- [ ] Shows remediation log (before/after scores) for auto-improved sections
-- [ ] "Re-evaluate" button triggers new review
+- [x] Panel renders in "Not run" state with "Run Quality Review" button
+- [x] Clicking button triggers POST and switches to "Reviewing" state with spinner
+- [x] Polls GET endpoint every 3 seconds during review
+- [x] Displays overall score (large number) when completed
+- [x] Shows green badge for pass (>= 9.0), amber for fail (< 9.0)
+- [x] Lists all sections with individual scores
+- [x] Expanding a section shows 4 dimension scores + feedback
+- [x] Shows remediation log (before/after scores) for auto-improved sections
+- [x] "Re-evaluate" button triggers new review
 
 #### Bad Path
 
-- [ ] Handles review failure (shows error state with retry button)
-- [ ] Handles network error during polling (shows error, allows retry)
-- [ ] Handles 409 conflict (shows "review already in progress")
-- [ ] Handles empty sections array (shows "no sections to review" message)
+- [x] Handles review failure (shows error state with retry button)
+- [x] Handles network error during polling (shows error, allows retry)
+- [x] Handles 409 conflict (shows "review already in progress")
+- [x] Handles empty sections array (shows "no sections to review" message)
 
 #### Edge Cases
 
-- [ ] Panel collapsed by default (doesn't overwhelm page)
-- [ ] Toggling collapse preserves review state
-- [ ] Navigating away and back preserves latest review results
-- [ ] Review completes while panel is collapsed (badge updates)
-- [ ] Very long feedback text (truncated with "show more")
-- [ ] Score display rounds to 1 decimal place
+- [x] Panel collapsed by default (doesn't overwhelm page)
+- [x] Toggling collapse preserves review state
+- [x] Navigating away and back preserves latest review results
+- [x] Review completes while panel is collapsed (badge updates)
+- [x] Very long feedback text (truncated with "show more")
+- [x] Score display rounds to 1 decimal place
 
 #### Security
 
-- [ ] Button only visible to users who can edit the proposal
-- [ ] Polling respects auth (doesn't leak to logged-out state)
+- [x] Button only visible to users who can edit the proposal
+- [x] Polling respects auth (doesn't leak to logged-out state)
 
 #### Data Leak
 
-- [ ] No sensitive scoring logic exposed in frontend code
-- [ ] Error states don't show internal API details
+- [x] No sensitive scoring logic exposed in frontend code
+- [x] Error states don't show internal API details
 
 #### Data Damage
 
-- [ ] Re-evaluate button shows confirmation if previous review exists
-- [ ] Polling cleanup on unmount (no memory leaks)
-- [ ] Concurrent UI actions don't cause duplicate triggers
+- [x] Re-evaluate button shows confirmation if previous review exists
+- [x] Polling cleanup on unmount (no memory leaks)
+- [x] Concurrent UI actions don't cause duplicate triggers
 
 ### E2E Gate
 
@@ -398,15 +398,15 @@ pnpm test -- --grep "quality-report"
 
 ### Acceptance Criteria
 
-- [ ] `src/components/proposals/quality-report.tsx` — full panel component
-- [ ] Integrated into proposal edit page (`proposals/[id]/page.tsx`)
-- [ ] 4 states: not-run, reviewing, completed-pass, completed-fail
-- [ ] Polling during active review
-- [ ] Collapsible panel with section breakdown
-- [ ] Remediation log display
-- [ ] Manual trigger + re-evaluate buttons
-- [ ] All tests pass
-- [ ] Code committed
+- [x] `src/components/proposals/quality-report.tsx` — full panel component
+- [x] Integrated into proposal edit page (`proposals/[id]/page.tsx`)
+- [x] 4 states: not-run, reviewing, completed-pass, completed-fail
+- [x] Polling during active review
+- [x] Collapsible panel with section breakdown
+- [x] Remediation log display
+- [x] Manual trigger + re-evaluate buttons
+- [x] All tests pass
+- [x] Code committed
 
 ---
 

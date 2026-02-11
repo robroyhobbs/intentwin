@@ -45,6 +45,7 @@ import { AgentationWrapper } from "@/components/review/agentation-wrapper";
 import { ReviewCommentsPanel } from "@/components/review/review-comments-panel";
 import { ReviewSummaryBar } from "@/components/review/review-summary-bar";
 import { VersionHistory } from "@/components/proposals/version-history";
+import { QualityReport } from "@/components/proposals/quality-report";
 import { DealOutcomeSetter } from "@/components/ui/deal-outcome-setter";
 import { ComplianceBoard } from "@/components/compliance/compliance-board";
 import type { ProposalReview, ReviewSummary } from "@/types/review";
@@ -594,6 +595,11 @@ export default function ProposalPage() {
 
           {/* Content pane */}
           <div className="flex-1 overflow-y-auto bg-[var(--background-secondary)]">
+            {/* Quality Report */}
+            <div className="px-8 pt-6 max-w-4xl mx-auto">
+              <QualityReport proposalId={id} />
+            </div>
+
             {currentSection ? (
               <div className="p-8 max-w-4xl mx-auto">
                 {/* Section header */}
