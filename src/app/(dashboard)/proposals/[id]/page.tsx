@@ -17,6 +17,7 @@ import {
   ArrowRight,
   ChevronRight,
   History,
+  ShieldCheck,
 } from "lucide-react";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
 import { ProposalContentRenderer } from "@/components/proposal-content-renderer";
@@ -30,6 +31,7 @@ import { ReviewCommentsPanel } from "@/components/review/review-comments-panel";
 import { ReviewSummaryBar } from "@/components/review/review-summary-bar";
 import { VersionHistory } from "@/components/proposals/version-history";
 import { DealOutcomeSetter } from "@/components/ui/deal-outcome-setter";
+import { ComplianceBoard } from "@/components/compliance/compliance-board";
 import type { ProposalReview, ReviewSummary } from "@/types/review";
 import { exportAnnotationsAsMarkdown } from "@/lib/review/export-annotations";
 
@@ -79,6 +81,9 @@ export default function ProposalPage() {
   const [showReviewPanel, setShowReviewPanel] = useState(false);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [applyingFixes, setApplyingFixes] = useState(false);
+  const [activeTab, setActiveTab] = useState<"sections" | "compliance">(
+    "sections",
+  );
   const authFetch = useAuthFetch();
 
   const fetchProposal = useCallback(async () => {
@@ -91,7 +96,7 @@ export default function ProposalPage() {
 
       if (!activeSection) {
         const firstCompleted = data.sections?.find(
-          (s: Section) => s.generation_status === "completed"
+          (s: Section) => s.generation_status === "completed",
         );
         if (firstCompleted) setActiveSection(firstCompleted.id);
         else if (data.sections?.length > 0)
@@ -118,7 +123,7 @@ export default function ProposalPage() {
             resolved: 0,
             dismissed: 0,
             approvals: 0,
-          }
+          },
         );
       }
     } catch {
@@ -153,13 +158,9 @@ export default function ProposalPage() {
         throw new Error(error.error || "Generation failed");
       }
       toast.success("Proposal generation started");
-      setProposal((prev) =>
-        prev ? { ...prev, status: "generating" } : null
-      );
+      setProposal((prev) => (prev ? { ...prev, status: "generating" } : null));
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Generation failed"
-      );
+      toast.error(error instanceof Error ? error.message : "Generation failed");
     } finally {
       setGenerating(false);
     }
@@ -197,9 +198,7 @@ export default function ProposalPage() {
       fetchProposal();
       fetchReviews();
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Auto-fix failed"
-      );
+      toast.error(error instanceof Error ? error.message : "Auto-fix failed");
     } finally {
       setApplyingFixes(false);
     }
@@ -236,7 +235,7 @@ export default function ProposalPage() {
     const md = exportAnnotationsAsMarkdown(
       proposal.title,
       reviews,
-      sections.map((s) => ({ id: s.id, title: s.title }))
+      sections.map((s) => ({ id: s.id, title: s.title })),
     );
     const blob = new Blob([md], { type: "text/markdown" });
     const url = URL.createObjectURL(blob);
@@ -251,13 +250,9 @@ export default function ProposalPage() {
   const isReviewMode =
     proposal?.status === "review" || proposal?.status === "exported";
   const sectionReviews = currentSection
-    ? reviews.filter(
-        (r) => r.section_id === currentSection.id || !r.section_id
-      )
+    ? reviews.filter((r) => r.section_id === currentSection.id || !r.section_id)
     : reviews;
-  const openSectionReviews = sectionReviews.filter(
-    (r) => r.status === "open"
-  );
+  const openSectionReviews = sectionReviews.filter((r) => r.status === "open");
 
   if (loading) {
     return (
@@ -275,13 +270,15 @@ export default function ProposalPage() {
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--background-tertiary)] mb-4">
           <Sparkles className="h-8 w-8" />
         </div>
-        <p className="text-lg font-medium text-[var(--foreground)]">Proposal not found</p>
+        <p className="text-lg font-medium text-[var(--foreground)]">
+          Proposal not found
+        </p>
       </div>
     );
   }
 
   const completedCount = sections.filter(
-    (s) => s.generation_status === "completed"
+    (s) => s.generation_status === "completed",
   ).length;
 
   return (
@@ -298,8 +295,8 @@ export default function ProposalPage() {
             />
             <div className="mt-1.5 flex items-center gap-2">
               <span className="text-xs text-[var(--foreground-muted)]">
-                {(proposal.intake_data as Record<string, string>)?.client_name ||
-                  "Client"}
+                {(proposal.intake_data as Record<string, string>)
+                  ?.client_name || "Client"}
               </span>
               <ChevronRight className="h-3 w-3 text-[var(--foreground-subtle)]" />
               <SectionStatusBadge
@@ -338,8 +335,7 @@ export default function ProposalPage() {
               <span className="hidden sm:inline">Versions</span>
             </button>
 
-            {(proposal.status === "intake" ||
-              proposal.status === "draft") && (
+            {(proposal.status === "intake" || proposal.status === "draft") && (
               <button
                 onClick={handleGenerate}
                 disabled={generating}
@@ -411,7 +407,8 @@ export default function ProposalPage() {
                   Generating proposal sections...
                 </p>
                 <p className="text-xs text-[var(--foreground-muted)]">
-                  {completedCount} of {sections.length || "..."} sections complete
+                  {completedCount} of {sections.length || "..."} sections
+                  complete
                 </p>
               </div>
               <span className="text-lg font-bold text-[var(--accent)]">
@@ -434,12 +431,52 @@ export default function ProposalPage() {
         )}
       </div>
 
-      {/* Split-pane layout */}
-      {sections.length > 0 ? (
+      {/* Tab bar */}
+      {sections.length > 0 && (
+        <div className="border-b border-[var(--border)] bg-[var(--card-bg)] px-6 flex gap-1">
+          <button
+            onClick={() => setActiveTab("sections")}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === "sections"
+                ? "border-[var(--accent)] text-[var(--accent)]"
+                : "border-transparent text-[var(--foreground-muted)] hover:text-[var(--foreground)]"
+            }`}
+          >
+            <Edit3 className="h-3.5 w-3.5 inline mr-1.5 -mt-0.5" />
+            Sections
+          </button>
+          <button
+            onClick={() => setActiveTab("compliance")}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === "compliance"
+                ? "border-[var(--accent)] text-[var(--accent)]"
+                : "border-transparent text-[var(--foreground-muted)] hover:text-[var(--foreground)]"
+            }`}
+          >
+            <ShieldCheck className="h-3.5 w-3.5 inline mr-1.5 -mt-0.5" />
+            Compliance
+          </button>
+        </div>
+      )}
+
+      {/* Compliance tab content */}
+      {sections.length > 0 && activeTab === "compliance" ? (
         <div
-          className="flex"
-          style={{ minHeight: "calc(100vh - 180px)" }}
+          style={{ minHeight: "calc(100vh - 220px)" }}
+          className="bg-[var(--background-secondary)]"
         >
+          <ComplianceBoard
+            proposalId={id}
+            sections={sections.map((s) => ({
+              id: s.id,
+              title: s.title,
+              section_type: s.section_type,
+            }))}
+          />
+        </div>
+      ) : /* Split-pane layout */
+      sections.length > 0 ? (
+        <div className="flex" style={{ minHeight: "calc(100vh - 180px)" }}>
           {/* Section nav sidebar */}
           <SectionNavSidebar
             sections={sections}
@@ -470,9 +507,7 @@ export default function ProposalPage() {
                       }
                     />
                     {currentSection.is_edited && (
-                      <span className="badge badge-warning">
-                        Edited
-                      </span>
+                      <span className="badge badge-warning">Edited</span>
                     )}
                   </div>
                   <div className="flex gap-2">
@@ -481,9 +516,7 @@ export default function ProposalPage() {
                       openSectionReviews.length > 0 &&
                       editingSection !== currentSection.id && (
                         <button
-                          onClick={() =>
-                            handleApplyAIFixes(currentSection.id)
-                          }
+                          onClick={() => handleApplyAIFixes(currentSection.id)}
                           disabled={applyingFixes}
                           className="inline-flex items-center gap-2 rounded-lg border border-[var(--info)] bg-[var(--info-subtle)] px-3 py-1.5 text-xs font-medium text-[var(--info)] hover:opacity-80 transition-all disabled:opacity-50"
                         >
@@ -507,7 +540,7 @@ export default function ProposalPage() {
                             setEditContent(
                               currentSection.edited_content ||
                                 currentSection.generated_content ||
-                                ""
+                                "",
                             );
                           }}
                           className="btn-secondary text-xs py-1.5"
@@ -553,9 +586,7 @@ export default function ProposalPage() {
                       />
                       <div className="mt-4 flex gap-2">
                         <button
-                          onClick={() =>
-                            handleSaveEdit(currentSection.id)
-                          }
+                          onClick={() => handleSaveEdit(currentSection.id)}
                           className="btn-primary"
                         >
                           Save Changes
@@ -605,16 +636,24 @@ export default function ProposalPage() {
                         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--accent-subtle)] mb-4">
                           <Loader2 className="h-6 w-6 animate-spin text-[var(--accent)]" />
                         </div>
-                        <p className="text-sm font-medium text-[var(--foreground)]">Generating this section...</p>
-                        <p className="mt-1 text-xs text-[var(--foreground-muted)]">AI is crafting your content</p>
+                        <p className="text-sm font-medium text-[var(--foreground)]">
+                          Generating this section...
+                        </p>
+                        <p className="mt-1 text-xs text-[var(--foreground-muted)]">
+                          AI is crafting your content
+                        </p>
                       </>
                     ) : (
                       <>
                         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--background-tertiary)] mb-4">
                           <Clock className="h-6 w-6 text-[var(--foreground-muted)]" />
                         </div>
-                        <p className="text-sm font-medium text-[var(--foreground)]">Not yet generated</p>
-                        <p className="mt-1 text-xs text-[var(--foreground-muted)]">Click Generate to create this section</p>
+                        <p className="text-sm font-medium text-[var(--foreground)]">
+                          Not yet generated
+                        </p>
+                        <p className="mt-1 text-xs text-[var(--foreground-muted)]">
+                          Click Generate to create this section
+                        </p>
                       </>
                     )}
                   </div>
@@ -676,7 +715,8 @@ export default function ProposalPage() {
               Ready to generate
             </h3>
             <p className="mt-2 text-sm text-[var(--foreground-muted)] max-w-md text-center">
-              Your proposal is configured. Click Generate to start creating all sections with AI-powered content.
+              Your proposal is configured. Click Generate to start creating all
+              sections with AI-powered content.
             </p>
             <button
               onClick={handleGenerate}

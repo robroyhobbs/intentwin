@@ -288,14 +288,14 @@ timeout 15 bash -c 'npx next dev -p 3099 2>&1 | head -20' || true
 
 ### Acceptance Criteria
 
-- [ ] @dnd-kit/core installed and working
-- [ ] Kanban board renders with 4 columns and drag-and-drop
-- [ ] Cards show category badges, mapped section, truncated text
-- [ ] Compliance score header with count, percentage, mandatory gaps
-- [ ] Manual add/edit/delete working
-- [ ] Proposal view page has "Compliance" tab
-- [ ] TypeScript compiles clean
-- [ ] All tests pass
+- [x] @dnd-kit/core installed and working
+- [x] Kanban board renders with 4 columns and drag-and-drop
+- [x] Cards show category badges, mapped section, truncated text
+- [x] Compliance score header with count, percentage, mandatory gaps
+- [x] Manual add/edit/delete working with confirmation dialog
+- [x] Proposal view page has "Compliance" tab (Sections/Compliance toggle)
+- [x] TypeScript compiles clean
+- [x] All tests pass (143 total)
 
 ---
 
