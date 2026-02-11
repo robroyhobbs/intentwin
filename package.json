@@ -37,6 +37,7 @@
     "nanoid": "^5.1.6",
     "next": "16.1.5",
     "officeparser": "^6.0.4",
+    "openai": "^6.21.0",
     "pdf-parse": "^1.1.1",
     "pdf-parse-new": "^2.0.0",
     "pizzip": "^3.2.0",
