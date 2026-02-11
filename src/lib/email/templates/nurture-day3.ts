@@ -1,9 +1,11 @@
+import { escapeHtml } from "../escape-html";
+
 export function nurtureDay3Email(params: {
   name: string;
   company: string;
 }): string {
   const { name } = params;
-  const firstName = name.split(" ")[0];
+  const firstName = escapeHtml(name.split(" ")[0]);
 
   return `<!DOCTYPE html>
 <html lang="en">

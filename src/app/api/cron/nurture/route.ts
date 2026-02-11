@@ -16,14 +16,16 @@ const NURTURE_STEPS = [
 export async function GET(request: NextRequest) {
   // Verify cron secret
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret) {
-    const authHeader = request.headers.get("authorization");
-    if (authHeader !== `Bearer ${cronSecret}`) {
-      console.error(
-        "[NURTURE-CRON] Unauthorized request — invalid cron secret",
-      );
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  if (!cronSecret) {
+    return NextResponse.json(
+      { error: "CRON_SECRET not configured" },
+      { status: 503 },
+    );
+  }
+  const authHeader = request.headers.get("authorization");
+  if (authHeader !== `Bearer ${cronSecret}`) {
+    console.error("[NURTURE-CRON] Unauthorized request — invalid cron secret");
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const supabase = createAdminClient();

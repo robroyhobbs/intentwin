@@ -1,9 +1,12 @@
+import { escapeHtml } from "../escape-html";
+
 export function waitlistConfirmationEmail(params: {
   name: string;
   company: string;
 }): string {
   const { name, company } = params;
-  const firstName = name.split(" ")[0];
+  const firstName = escapeHtml(name.split(" ")[0]);
+  const safeCompany = escapeHtml(company);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -35,7 +38,7 @@ export function waitlistConfirmationEmail(params: {
               </h2>
 
               <p style="margin:0 0 20px 0;font-size:16px;line-height:1.6;color:#d4d4d8;">
-                Thank you for requesting access to IntentWin on behalf of <strong style="color:#ffffff;">${company}</strong>. We're excited to have you on board.
+                Thank you for requesting access to IntentWin on behalf of <strong style="color:#ffffff;">${safeCompany}</strong>. We're excited to have you on board.
               </p>
 
               <!-- Value Prop -->

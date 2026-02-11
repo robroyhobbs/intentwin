@@ -1,3 +1,5 @@
+import { escapeHtml } from "../escape-html";
+
 export function adminWaitlistNotificationEmail(params: {
   name: string;
   email: string;
@@ -6,6 +8,13 @@ export function adminWaitlistNotificationEmail(params: {
   timestamp: string;
 }): { subject: string; html: string } {
   const { name, email, company, company_size, timestamp } = params;
+  const safeName = escapeHtml(name);
+  const safeEmail = escapeHtml(email);
+  const safeCompany = escapeHtml(company);
+  const safeCompanySize = company_size
+    ? escapeHtml(company_size)
+    : "Not provided";
+  const safeTimestamp = escapeHtml(timestamp);
 
   const subject = `New waitlist signup: ${name} from ${company}`;
 
@@ -14,7 +23,7 @@ export function adminWaitlistNotificationEmail(params: {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${subject}</title>
+  <title>New waitlist signup: ${safeName} from ${safeCompany}</title>
 </head>
 <body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;">
@@ -35,28 +44,28 @@ export function adminWaitlistNotificationEmail(params: {
                 New Waitlist Signup
               </h2>
               <p style="margin:0 0 24px 0;font-size:13px;color:#71717a;">
-                ${timestamp}
+                ${safeTimestamp}
               </p>
 
               <!-- Details Table -->
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
                 <tr>
                   <td style="padding:10px 12px;font-size:13px;color:#71717a;border-bottom:1px solid #f4f4f5;width:110px;">Name</td>
-                  <td style="padding:10px 12px;font-size:14px;color:#18181b;border-bottom:1px solid #f4f4f5;font-weight:500;">${name}</td>
+                  <td style="padding:10px 12px;font-size:14px;color:#18181b;border-bottom:1px solid #f4f4f5;font-weight:500;">${safeName}</td>
                 </tr>
                 <tr>
                   <td style="padding:10px 12px;font-size:13px;color:#71717a;border-bottom:1px solid #f4f4f5;">Email</td>
                   <td style="padding:10px 12px;font-size:14px;border-bottom:1px solid #f4f4f5;">
-                    <a href="mailto:${email}" style="color:#7c3aed;text-decoration:none;">${email}</a>
+                    <a href="mailto:${safeEmail}" style="color:#7c3aed;text-decoration:none;">${safeEmail}</a>
                   </td>
                 </tr>
                 <tr>
                   <td style="padding:10px 12px;font-size:13px;color:#71717a;border-bottom:1px solid #f4f4f5;">Company</td>
-                  <td style="padding:10px 12px;font-size:14px;color:#18181b;border-bottom:1px solid #f4f4f5;font-weight:500;">${company}</td>
+                  <td style="padding:10px 12px;font-size:14px;color:#18181b;border-bottom:1px solid #f4f4f5;font-weight:500;">${safeCompany}</td>
                 </tr>
                 <tr>
                   <td style="padding:10px 12px;font-size:13px;color:#71717a;">Company Size</td>
-                  <td style="padding:10px 12px;font-size:14px;color:#18181b;">${company_size || "Not provided"}</td>
+                  <td style="padding:10px 12px;font-size:14px;color:#18181b;">${safeCompanySize}</td>
                 </tr>
               </table>
             </td>

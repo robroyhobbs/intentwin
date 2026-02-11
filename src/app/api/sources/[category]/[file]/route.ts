@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readFileSync, existsSync } from "fs";
-import { join } from "path";
+import { join, resolve } from "path";
 import { getUserContext } from "@/lib/supabase/auth-api";
 
 const SOURCES_DIR = join(process.cwd(), "sources");
@@ -36,7 +36,7 @@ function extractTitle(content: string): string {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ category: string; file: string }> }
+  { params }: { params: Promise<{ category: string; file: string }> },
 ) {
   try {
     // Require authentication
@@ -46,7 +46,19 @@ export async function GET(
     }
 
     const { category, file } = await params;
-    const filePath = join(SOURCES_DIR, category, `${file}.md`);
+
+    // Validate path segments to prevent traversal
+    const safePattern = /^[a-zA-Z0-9_-]+$/;
+    if (!safePattern.test(category) || !safePattern.test(file)) {
+      return NextResponse.json({ error: "Invalid path" }, { status: 400 });
+    }
+
+    const filePath = resolve(SOURCES_DIR, category, `${file}.md`);
+
+    // Ensure resolved path is within SOURCES_DIR
+    if (!filePath.startsWith(SOURCES_DIR)) {
+      return NextResponse.json({ error: "Invalid path" }, { status: 400 });
+    }
 
     if (!existsSync(filePath)) {
       return NextResponse.json({ error: "Source not found" }, { status: 404 });
@@ -65,6 +77,9 @@ export async function GET(
     });
   } catch (error) {
     console.error("Failed to load source:", error);
-    return NextResponse.json({ error: "Failed to load source" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to load source" },
+      { status: 500 },
+    );
   }
 }

@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const DEMO_PASSWORD = process.env.DEMO_PASSWORD || "intentwin2026";
+const DEMO_PASSWORD = process.env.DEMO_PASSWORD;
 
 export async function POST(request: NextRequest) {
+  if (!DEMO_PASSWORD) {
+    return NextResponse.json(
+      { error: "Demo auth not configured" },
+      { status: 503 },
+    );
+  }
+
   const { password } = await request.json();
 
   if (password === DEMO_PASSWORD) {
