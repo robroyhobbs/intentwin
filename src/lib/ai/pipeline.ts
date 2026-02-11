@@ -618,3 +618,192 @@ export async function generateProposal(proposalId: string): Promise<void> {
     throw error;
   }
 }
+
+/**
+ * Regenerate a single section of a proposal.
+ * Reuses the same pipeline context (analysis, L1, persuasion) as full generation.
+ */
+export async function regenerateSection(
+  proposalId: string,
+  sectionId: string,
+): Promise<void> {
+  const supabase = createAdminClient();
+
+  // Fetch the section to get its type
+  const { data: section, error: secErr } = await supabase
+    .from("proposal_sections")
+    .select("*")
+    .eq("id", sectionId)
+    .eq("proposal_id", proposalId)
+    .single();
+
+  if (secErr || !section) {
+    throw new Error("Section not found");
+  }
+
+  const config = SECTION_CONFIGS.find((c) => c.type === section.section_type);
+  if (!config) {
+    throw new Error(`Unknown section type: ${section.section_type}`);
+  }
+
+  // Mark as generating
+  await supabase
+    .from("proposal_sections")
+    .update({ generation_status: "generating", generation_error: null })
+    .eq("id", sectionId);
+
+  try {
+    // Fetch proposal with organization
+    const { data: proposal, error: fetchError } = await supabase
+      .from("proposals")
+      .select("*, organizations(name, settings)")
+      .eq("id", proposalId)
+      .single();
+
+    if (fetchError || !proposal) {
+      throw new Error(`Proposal not found: ${proposalId}`);
+    }
+
+    const intakeData = proposal.intake_data as Record<string, unknown>;
+    const winStrategy = (proposal.win_strategy_data as WinStrategyData) || null;
+    const outcomeContract =
+      (proposal.outcome_contract as OutcomeContract) || null;
+
+    const orgData = proposal.organizations as {
+      name: string;
+      settings?: Record<string, unknown>;
+    } | null;
+    const companyInfo: CompanyInfo = {
+      name: orgData?.name || "Our Company",
+      description: (orgData?.settings?.description as string) || undefined,
+      industry: (orgData?.settings?.industry as string) || undefined,
+    };
+
+    const brandVoice: BrandVoice | null = orgData?.settings?.brand_voice
+      ? (orgData.settings.brand_voice as BrandVoice)
+      : null;
+
+    const systemPrompt = buildSystemPrompt({
+      name: companyInfo.name,
+      description: companyInfo.description,
+      brandVoice,
+    });
+
+    // Fetch L1 context
+    const serviceLine = (intakeData.opportunity_type as string) || undefined;
+    const industry = (intakeData.client_industry as string) || undefined;
+    const l1Context = await fetchL1Context(supabase, serviceLine, industry);
+
+    let staticSourcesContext = "";
+    try {
+      const staticSources = await loadSources();
+      staticSourcesContext = formatSourcesAsL1Context(staticSources, {
+        opportunityType: serviceLine,
+        industry,
+      });
+    } catch {
+      // Non-critical
+    }
+
+    const outcomeContractContext = buildOutcomeContractContext(outcomeContract);
+    const l1ContextString =
+      buildL1ContextString(l1Context) + staticSourcesContext;
+
+    const analysis = await generateStructuredAnalysis(
+      intakeData,
+      proposal.rfp_extracted_requirements as
+        | Record<string, unknown>
+        | undefined,
+      winStrategy,
+    );
+    const enhancedAnalysis = `${analysis}\n${outcomeContractContext}\n${l1ContextString}`;
+
+    // Generate section content
+    const searchQuery = config.searchQuery(intakeData);
+    const { context, chunkIds } = await retrieveContext(supabase, searchQuery);
+
+    const basePrompt = config.buildPrompt(
+      intakeData,
+      enhancedAnalysis,
+      context,
+      winStrategy,
+      companyInfo,
+    );
+
+    const persuasionFramework = getPersuasionPrompt(config.type);
+    const bestPractices = getBestPracticesPrompt(config.type);
+    const winThemesPrompt = winStrategy?.win_themes
+      ? buildWinThemesPrompt(winStrategy.win_themes)
+      : "";
+    const competitivePrompt = winStrategy?.differentiators
+      ? buildCompetitivePrompt(winStrategy.differentiators, [])
+      : "";
+
+    const persuasionContext = [
+      persuasionFramework,
+      bestPractices,
+      winThemesPrompt,
+      competitivePrompt,
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+
+    const prompt = persuasionContext
+      ? `${basePrompt}\n\n---\n\n## Persuasion & Quality Guidance\n\n${persuasionContext}`
+      : basePrompt;
+
+    const generatedContent = await generateText(prompt, { systemPrompt });
+
+    // Quality checks (advisory)
+    try {
+      const avoidTerms = brandVoice?.terminology?.avoid ?? [];
+      const themes = winStrategy?.win_themes ?? [];
+      runQualityChecks(generatedContent, config.type, themes, avoidTerms);
+    } catch {
+      // Non-critical
+    }
+
+    // Update section
+    await supabase
+      .from("proposal_sections")
+      .update({
+        generated_content: generatedContent,
+        edited_content: null,
+        is_edited: false,
+        generation_status: "completed",
+        generation_prompt: prompt.slice(0, 2000),
+        retrieved_context_ids: chunkIds,
+        generation_error: null,
+      })
+      .eq("id", sectionId);
+
+    // Store source references
+    if (chunkIds.length > 0) {
+      // Clear old sources first
+      await supabase
+        .from("section_sources")
+        .delete()
+        .eq("section_id", sectionId);
+
+      const sourceInserts = chunkIds.map((chunkId: string, idx: number) => ({
+        section_id: sectionId,
+        chunk_id: chunkId,
+        relevance_score: 1 - idx * 0.1,
+      }));
+      await supabase.from("section_sources").insert(sourceInserts);
+    }
+  } catch (sectionErr) {
+    const errorMessage =
+      sectionErr instanceof Error ? sectionErr.message : "Unknown error";
+
+    await supabase
+      .from("proposal_sections")
+      .update({
+        generation_status: "failed",
+        generation_error: errorMessage,
+      })
+      .eq("id", sectionId);
+
+    throw sectionErr;
+  }
+}

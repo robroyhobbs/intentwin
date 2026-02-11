@@ -100,6 +100,9 @@ export default function ProposalPage() {
   const [showReviewPanel, setShowReviewPanel] = useState(false);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [applyingFixes, setApplyingFixes] = useState(false);
+  const [regeneratingSection, setRegeneratingSection] = useState<string | null>(
+    null,
+  );
   const [activeTab, setActiveTab] = useState<"sections" | "compliance">(
     initialTab,
   );
@@ -185,18 +188,53 @@ export default function ProposalPage() {
     }
   }
 
-  async function handleSaveEdit(_sectionId: string) {
+  async function handleSaveEdit(sectionId: string) {
     try {
-      await authFetch(`/api/proposals/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
+      const response = await authFetch(
+        `/api/proposals/${id}/sections/${sectionId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ edited_content: editContent }),
+        },
+      );
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || "Save failed");
+      }
       toast.success("Changes saved");
       setEditingSection(null);
       fetchProposal();
-    } catch {
-      toast.error("Failed to save changes");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save changes",
+      );
+    }
+  }
+
+  async function handleRegenerate(sectionId: string) {
+    setRegeneratingSection(sectionId);
+    try {
+      const response = await authFetch(
+        `/api/proposals/${id}/sections/${sectionId}/regenerate`,
+        { method: "POST" },
+      );
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || "Regeneration failed");
+      }
+      toast.success("Regenerating section...");
+      // Poll for updates
+      setTimeout(() => fetchProposal(), 2000);
+      setTimeout(() => fetchProposal(), 5000);
+      setTimeout(() => fetchProposal(), 10000);
+      setTimeout(() => fetchProposal(), 20000);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Regeneration failed",
+      );
+    } finally {
+      setRegeneratingSection(null);
     }
   }
 
@@ -577,9 +615,19 @@ export default function ProposalPage() {
                         Preview
                       </button>
                     )}
-                    <button className="btn-secondary text-xs py-1.5">
-                      <RefreshCw className="h-3.5 w-3.5" />
-                      Regenerate
+                    <button
+                      onClick={() => handleRegenerate(currentSection.id)}
+                      disabled={regeneratingSection === currentSection.id}
+                      className="btn-secondary text-xs py-1.5"
+                    >
+                      {regeneratingSection === currentSection.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-3.5 w-3.5" />
+                      )}
+                      {regeneratingSection === currentSection.id
+                        ? "Regenerating..."
+                        : "Regenerate"}
                     </button>
                   </div>
                 </div>
@@ -587,10 +635,26 @@ export default function ProposalPage() {
                 {/* Error */}
                 {currentSection.generation_status === "failed" && (
                   <div className="mb-6 rounded-lg border border-[var(--danger-muted)] bg-[var(--danger-subtle)] p-4 text-sm text-[var(--danger)]">
-                    <p className="font-semibold">Generation Failed</p>
-                    <p className="mt-1 text-xs opacity-80">
-                      {currentSection.generation_error}
-                    </p>
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-semibold">Generation Failed</p>
+                        <p className="mt-1 text-xs opacity-80">
+                          {currentSection.generation_error}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleRegenerate(currentSection.id)}
+                        disabled={regeneratingSection === currentSection.id}
+                        className="btn-secondary text-xs py-1.5 shrink-0"
+                      >
+                        {regeneratingSection === currentSection.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-3.5 w-3.5" />
+                        )}
+                        Retry
+                      </button>
+                    </div>
                   </div>
                 )}
 
