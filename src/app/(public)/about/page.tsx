@@ -18,96 +18,6 @@ import Link from "next/link";
 export default function AboutPage() {
   return (
     <div className="min-h-screen bg-white">
-      <style jsx global>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-
-        @keyframes fadeInScale {
-          from {
-            opacity: 0;
-            transform: scale(0.95);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-
-        @keyframes slideInLeft {
-          from {
-            opacity: 0;
-            transform: translateX(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-
-        @keyframes slideInRight {
-          from {
-            opacity: 0;
-            transform: translateX(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-
-        .animate-fadeInUp {
-          animation: fadeInUp 0.5s ease-out both;
-        }
-
-        .animate-fadeIn {
-          animation: fadeIn 0.5s ease-out both;
-        }
-
-        .animate-fadeInScale {
-          animation: fadeInScale 0.5s ease-out both;
-        }
-
-        .animate-slideInLeft {
-          animation: slideInLeft 0.5s ease-out both;
-        }
-
-        .animate-slideInRight {
-          animation: slideInRight 0.5s ease-out both;
-        }
-
-        .animate-hero {
-          animation: fadeInUp 0.6s ease-out both;
-        }
-
-        .animate-delay-100 { animation-delay: 0.1s; }
-        .animate-delay-150 { animation-delay: 0.15s; }
-        .animate-delay-200 { animation-delay: 0.2s; }
-        .animate-delay-250 { animation-delay: 0.25s; }
-        .animate-delay-300 { animation-delay: 0.3s; }
-        .animate-delay-350 { animation-delay: 0.35s; }
-        .animate-delay-400 { animation-delay: 0.4s; }
-        .animate-delay-450 { animation-delay: 0.45s; }
-        .animate-delay-500 { animation-delay: 0.5s; }
-        .animate-delay-50 { animation-delay: 0.05s; }
-      `}</style>
-
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-[#1B365D] via-[#0070AD] to-[#12ABDB] text-white overflow-hidden">
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
@@ -195,11 +105,17 @@ export default function AboutPage() {
               <div
                 key={item.label}
                 className={`bg-gray-50 rounded-xl p-6 border-l-4 border-[#0070AD] animate-fadeInUp ${
-                  i === 1 ? "animate-delay-100" :
-                  i === 2 ? "animate-delay-200" :
-                  i === 3 ? "animate-delay-300" :
-                  i === 4 ? "animate-delay-400" :
-                  i === 5 ? "animate-delay-500" : ""
+                  i === 1
+                    ? "animate-delay-100"
+                    : i === 2
+                      ? "animate-delay-200"
+                      : i === 3
+                        ? "animate-delay-300"
+                        : i === 4
+                          ? "animate-delay-400"
+                          : i === 5
+                            ? "animate-delay-500"
+                            : ""
                 }`}
               >
                 <div className="flex items-center gap-3 mb-3">
@@ -327,8 +243,11 @@ export default function AboutPage() {
               <div
                 key={item.layer}
                 className={`bg-gradient-to-br ${item.color} rounded-2xl p-6 text-white animate-fadeInUp ${
-                  i === 1 ? "animate-delay-150" :
-                  i === 2 ? "animate-delay-300" : ""
+                  i === 1
+                    ? "animate-delay-150"
+                    : i === 2
+                      ? "animate-delay-300"
+                      : ""
                 }`}
               >
                 <div className="text-sm font-medium text-white/70 mb-2">
@@ -396,11 +315,17 @@ export default function AboutPage() {
               <div
                 key={item.title}
                 className={`bg-white rounded-xl p-6 border-t-4 border-[#0070AD] shadow-sm animate-fadeInUp ${
-                  i === 1 ? "animate-delay-100" :
-                  i === 2 ? "animate-delay-200" :
-                  i === 3 ? "animate-delay-300" :
-                  i === 4 ? "animate-delay-400" :
-                  i === 5 ? "animate-delay-500" : ""
+                  i === 1
+                    ? "animate-delay-100"
+                    : i === 2
+                      ? "animate-delay-200"
+                      : i === 3
+                        ? "animate-delay-300"
+                        : i === 4
+                          ? "animate-delay-400"
+                          : i === 5
+                            ? "animate-delay-500"
+                            : ""
                 }`}
               >
                 <h3 className="font-semibold text-[#1B365D] mb-2">
@@ -458,10 +383,15 @@ export default function AboutPage() {
               <div
                 key={step.num}
                 className={`flex-1 text-center animate-fadeInUp ${
-                  i === 1 ? "animate-delay-100" :
-                  i === 2 ? "animate-delay-200" :
-                  i === 3 ? "animate-delay-300" :
-                  i === 4 ? "animate-delay-400" : ""
+                  i === 1
+                    ? "animate-delay-100"
+                    : i === 2
+                      ? "animate-delay-200"
+                      : i === 3
+                        ? "animate-delay-300"
+                        : i === 4
+                          ? "animate-delay-400"
+                          : ""
                 }`}
               >
                 <div className="w-16 h-16 bg-[#0070AD] rounded-full flex items-center justify-center mx-auto mb-4">
@@ -551,10 +481,15 @@ export default function AboutPage() {
                     ? "bg-cyan-50 border-[#12ABDB]"
                     : "bg-white border-[#0070AD]"
                 } animate-fadeInUp ${
-                  i === 1 ? "animate-delay-100" :
-                  i === 2 ? "animate-delay-200" :
-                  i === 3 ? "animate-delay-300" :
-                  i === 4 ? "animate-delay-400" : ""
+                  i === 1
+                    ? "animate-delay-100"
+                    : i === 2
+                      ? "animate-delay-200"
+                      : i === 3
+                        ? "animate-delay-300"
+                        : i === 4
+                          ? "animate-delay-400"
+                          : ""
                 }`}
               >
                 <p
@@ -602,13 +537,21 @@ export default function AboutPage() {
                   <li
                     key={i}
                     className={`flex items-center gap-3 text-gray-700 animate-slideInLeft ${
-                      i === 1 ? "animate-delay-50" :
-                      i === 2 ? "animate-delay-100" :
-                      i === 3 ? "animate-delay-150" :
-                      i === 4 ? "animate-delay-200" :
-                      i === 5 ? "animate-delay-250" :
-                      i === 6 ? "animate-delay-300" :
-                      i === 7 ? "animate-delay-350" : ""
+                      i === 1
+                        ? "animate-delay-50"
+                        : i === 2
+                          ? "animate-delay-100"
+                          : i === 3
+                            ? "animate-delay-150"
+                            : i === 4
+                              ? "animate-delay-200"
+                              : i === 5
+                                ? "animate-delay-250"
+                                : i === 6
+                                  ? "animate-delay-300"
+                                  : i === 7
+                                    ? "animate-delay-350"
+                                    : ""
                     }`}
                   >
                     <CheckCircle className="w-5 h-5 text-[#12ABDB] flex-shrink-0" />
@@ -724,10 +667,15 @@ export default function AboutPage() {
               <div
                 key={phase.phase}
                 className={`bg-white rounded-xl overflow-hidden shadow-sm animate-fadeInUp ${
-                  i === 1 ? "animate-delay-100" :
-                  i === 2 ? "animate-delay-200" :
-                  i === 3 ? "animate-delay-300" :
-                  i === 4 ? "animate-delay-400" : ""
+                  i === 1
+                    ? "animate-delay-100"
+                    : i === 2
+                      ? "animate-delay-200"
+                      : i === 3
+                        ? "animate-delay-300"
+                        : i === 4
+                          ? "animate-delay-400"
+                          : ""
                 }`}
               >
                 <div

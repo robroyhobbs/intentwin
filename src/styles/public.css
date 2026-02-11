@@ -437,6 +437,104 @@
   }
 }
 
+/* ─── About page animations ─── */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.animate-fadeInUp {
+  animation: fadeInUp 0.5s ease-out both;
+}
+.animate-fadeIn {
+  animation: fadeIn 0.5s ease-out both;
+}
+.animate-fadeInScale {
+  animation: fadeInScale 0.5s ease-out both;
+}
+.animate-slideInLeft {
+  animation: slideInLeft 0.5s ease-out both;
+}
+.animate-slideInRight {
+  animation: slideInRight 0.5s ease-out both;
+}
+.animate-hero {
+  animation: fadeInUp 0.6s ease-out both;
+}
+.animate-delay-50 {
+  animation-delay: 0.05s;
+}
+.animate-delay-100 {
+  animation-delay: 0.1s;
+}
+.animate-delay-150 {
+  animation-delay: 0.15s;
+}
+.animate-delay-200 {
+  animation-delay: 0.2s;
+}
+.animate-delay-250 {
+  animation-delay: 0.25s;
+}
+.animate-delay-300 {
+  animation-delay: 0.3s;
+}
+.animate-delay-350 {
+  animation-delay: 0.35s;
+}
+.animate-delay-400 {
+  animation-delay: 0.4s;
+}
+.animate-delay-450 {
+  animation-delay: 0.45s;
+}
+.animate-delay-500 {
+  animation-delay: 0.5s;
+}
+
 /* Legal pages responsive */
 @media (max-width: 768px) {
   .legal-main {
