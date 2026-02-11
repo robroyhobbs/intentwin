@@ -2,263 +2,372 @@
 
 import Link from "next/link";
 
-const FEATURES = {
-  "Proposal Generation": [
-    "Unlimited proposals",
-    "Intent Framework (6-layer persuasion engine)",
-    "RFP Intelligence (auto-extract requirements)",
-    "10 specialized section types with targeted frameworks",
-  ],
-  "Knowledge & Evidence": [
-    "Unlimited knowledge base documents",
-    "RAG-powered evidence retrieval",
-    "Case study, methodology & certification library",
-    "Win theme integration",
-  ],
-  "Export & Delivery": [
-    "Word (DOCX) export with branding",
-    "PowerPoint (PPTX) slide generation",
-    "PDF export",
-    "HTML export",
-  ],
-  "Support & Success": [
-    "White-glove onboarding",
-    "Dedicated support",
-    "Quarterly strategy reviews",
-    "Priority feature requests",
-  ],
-};
-
-const FAQS = [
-  {
-    question: "Why $999/month?",
-    answer:
-      "IntentWin isn\u2019t a template tool or a ChatGPT wrapper. It\u2019s a complete proposal intelligence platform with proprietary persuasion methodology, white-glove support, and unlimited usage. Teams using IntentWin typically see ROI within their first winning proposal.",
-  },
-  {
-    question: "Why is it invite-only?",
-    answer:
-      "We provide white-glove onboarding and dedicated support to every customer. To maintain quality, we limit new accounts to referrals and approved applicants.",
-  },
-  {
-    question: "What\u2019s included in white-glove onboarding?",
-    answer:
-      "A dedicated success manager helps you set up your knowledge base, configure your brand voice, and optimize your first proposals. We\u2019re hands-on until you\u2019re winning.",
-  },
-  {
-    question: "Can I cancel anytime?",
-    answer:
-      "Yes. No long-term contracts. Cancel anytime with 30 days notice.",
-  },
-  {
-    question: "What makes this different from using ChatGPT?",
-    answer:
-      "ChatGPT gives you generic text. IntentWin applies the Intent Framework \u2014 6 layers of persuasion science calibrated per proposal section. Executive summaries use AIDA, case studies use STAR, pricing uses value framing. Every section is engineered to persuade evaluators.",
-  },
-];
-
-function CheckIcon() {
-  return (
-    <svg
-      className="w-5 h-5 text-cyan-400 flex-shrink-0 mt-0.5"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M5 13l4 4L19 7"
-      />
-    </svg>
-  );
-}
-
 export default function PricingContent() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800">
-      {/* Header */}
-      <header className="border-b border-slate-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <Link href="/" className="text-2xl font-bold text-white">
-              Intent<span className="text-cyan-400">Win</span>
+    <>
+      <div className="vf-page">
+        {/* Navigation */}
+        <nav className="vf-nav">
+          <div className="vf-nav-inner">
+            <Link href="/" className="vf-logo">
+              IntentWin
             </Link>
-            <div className="flex gap-4">
-              <Link
-                href="/login"
-                className="text-slate-300 hover:text-white transition-colors"
-              >
-                Sign In
-              </Link>
-              <Link
-                href="/signup"
-                className="bg-cyan-500 text-white px-4 py-2 rounded-lg hover:bg-cyan-600 transition-colors"
-              >
+            <div className="vf-nav-links">
+              <Link href="/">Home</Link>
+              <Link href="/request-access" className="vf-nav-cta">
                 Request Access
               </Link>
             </div>
           </div>
-        </div>
-      </header>
+        </nav>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        {/* Hero */}
-        <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            One plan. Everything included.
-          </h1>
-          <p className="text-xl text-slate-300 max-w-3xl mx-auto">
-            IntentWin is built for teams serious about winning. $999/month gets
-            you unlimited access to our complete proposal intelligence platform.
-          </p>
-        </div>
+        {/* Pricing Section */}
+        <section className="vf-pricing-page">
+          <div className="vf-section-inner">
+            <span className="vf-label" style={{ textAlign: "center" }}>
+              Pricing
+            </span>
+            <h1 className="vf-pricing-headline">
+              One plan. Everything included.
+            </h1>
+            <p className="vf-pricing-sub">
+              IntentWin is built for teams serious about winning. $999/month
+              gets you unlimited access to our complete proposal intelligence
+              platform.
+            </p>
 
-        {/* Single Plan Card */}
-        <div className="max-w-3xl mx-auto mb-20">
-          <div className="relative rounded-2xl p-8 md:p-10 bg-gradient-to-b from-cyan-900/50 to-slate-800 border-2 border-cyan-500">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-white mb-2">IntentWin</h2>
-              <div className="mb-2">
-                <span className="text-5xl font-bold text-white">$999</span>
-                <span className="text-slate-400 text-lg">/month</span>
-              </div>
-              <p className="text-cyan-400 font-medium">
-                Unlimited proposals. Unlimited intelligence.
+            <div className="vf-price-card">
+              <h2 className="vf-price-amount">
+                $999<span className="vf-price-period">/month</span>
+              </h2>
+              <p className="vf-price-tagline">
+                Everything included. No tiers. No upsells.
               </p>
-            </div>
 
-            <div className="grid sm:grid-cols-2 gap-x-8 gap-y-6 mb-8">
-              {Object.entries(FEATURES).map(([category, features]) => (
-                <div key={category}>
-                  <h3 className="text-sm font-semibold text-cyan-400 uppercase tracking-wider mb-3">
-                    {category}
+              <div className="vf-price-features">
+                <div className="vf-price-feature-group">
+                  <h3 className="vf-price-group-title">
+                    Proposal Generation
                   </h3>
-                  <ul className="space-y-2.5">
-                    {features.map((feature, idx) => (
-                      <li key={idx} className="flex items-start gap-3">
-                        <CheckIcon />
-                        <span className="text-slate-300 text-sm">
-                          {feature}
-                        </span>
-                      </li>
-                    ))}
+                  <ul className="vf-price-list">
+                    <li>Unlimited proposal generation</li>
+                    <li>All 6 Intent Framework layers</li>
+                    <li>Ingest PDF, DOCX, PPTX, TXT, MD, CSV</li>
+                    <li>Brand voice calibration</li>
+                    <li>10 specialized section types</li>
                   </ul>
                 </div>
-              ))}
-            </div>
 
-            <Link
-              href="/signup"
-              className="block w-full text-center py-4 rounded-lg font-medium text-lg bg-cyan-500 text-white hover:bg-cyan-600 transition-colors"
-            >
-              Request Access
-            </Link>
-          </div>
+                <div className="vf-price-feature-group">
+                  <h3 className="vf-price-group-title">
+                    Knowledge &amp; Evidence
+                  </h3>
+                  <ul className="vf-price-list">
+                    <li>Unlimited knowledge base documents</li>
+                    <li>RAG-powered evidence retrieval</li>
+                    <li>Case study &amp; methodology library</li>
+                    <li>Win theme &amp; differentiator engine</li>
+                  </ul>
+                </div>
 
-          <p className="text-center text-slate-400 mt-6 text-sm">
-            IntentWin is invite-only. Request access and we&apos;ll be in touch
-            within 24 hours.
-          </p>
-        </div>
+                <div className="vf-price-feature-group">
+                  <h3 className="vf-price-group-title">
+                    Intelligence &amp; Learning
+                  </h3>
+                  <ul className="vf-price-list">
+                    <li>Outcome tracking &amp; continuous learning</li>
+                    <li>Growing organizational knowledge base</li>
+                    <li>Win analytics &amp; insights</li>
+                    <li>Competitive positioning engine</li>
+                  </ul>
+                </div>
 
-        {/* ROI Calculator Section */}
-        <div className="mb-20">
-          <div className="bg-gradient-to-r from-slate-800 to-slate-700 rounded-2xl p-8 md:p-12 max-w-3xl mx-auto">
-            <h2 className="text-2xl md:text-3xl font-bold text-white text-center mb-10">
-              The math is simple.
-            </h2>
-            <div className="space-y-8">
-              <div className="flex items-center gap-4">
-                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center">
-                  <span className="text-cyan-400 font-bold text-lg">1</span>
+                <div className="vf-price-feature-group">
+                  <h3 className="vf-price-group-title">
+                    Support &amp; Success
+                  </h3>
+                  <ul className="vf-price-list">
+                    <li>White-glove onboarding</li>
+                    <li>Priority support</li>
+                    <li>Quarterly strategy reviews</li>
+                    <li>Priority feature requests</li>
+                  </ul>
                 </div>
-                <p className="text-lg text-slate-200">
-                  If your average deal is worth{" "}
-                  <span className="text-white font-semibold">$50,000</span>...
-                </p>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center">
-                  <span className="text-cyan-400 font-bold text-lg">2</span>
-                </div>
-                <p className="text-lg text-slate-200">
-                  And IntentWin helps you win just{" "}
-                  <span className="text-white font-semibold">
-                    ONE more deal per quarter
-                  </span>
-                  ...
-                </p>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-cyan-900/50 border border-cyan-500/30 flex items-center justify-center">
-                  <span className="text-cyan-400 font-bold text-lg">3</span>
-                </div>
-                <p className="text-lg text-white font-semibold">
-                  That&apos;s a{" "}
-                  <span className="text-cyan-400 text-2xl">12x</span> return on
-                  your investment.
-                </p>
-              </div>
-            </div>
-            <div className="text-center mt-10">
-              <p className="text-slate-400 text-sm">
-                $999/mo x 3 months = $2,997 invested. One $50,000 deal won =
-                16.7x ROI.
+
+              <Link
+                href="/request-access"
+                className="vf-btn-primary vf-btn-full"
+              >
+                Request Access
+              </Link>
+              <p className="vf-price-note">
+                Invite-only. Limited availability.
               </p>
             </div>
-          </div>
-        </div>
 
-        {/* FAQ */}
-        <div className="mt-20">
-          <h2 className="text-2xl font-bold text-white text-center mb-12">
-            Frequently Asked Questions
-          </h2>
-          <div className="max-w-3xl mx-auto space-y-8">
-            {FAQS.map((faq, idx) => (
-              <div key={idx}>
-                <h3 className="text-lg font-medium text-white mb-2">
-                  {faq.question}
-                </h3>
-                <p className="text-slate-400">{faq.answer}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-slate-700 mt-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-slate-400 text-sm">
-              &copy; {new Date().getFullYear()} IntentWin. All rights reserved.
-            </p>
-            <div className="flex gap-6">
-              <Link
-                href="/terms"
-                className="text-slate-400 hover:text-white text-sm"
-              >
-                Terms
-              </Link>
-              <Link
-                href="/privacy"
-                className="text-slate-400 hover:text-white text-sm"
-              >
-                Privacy
-              </Link>
-              <Link
-                href="mailto:support@intentwin.com"
-                className="text-slate-400 hover:text-white text-sm"
-              >
-                Contact
+            <div className="vf-back-link">
+              <Link href="/" className="vf-btn-ghost">
+                &larr; Back to Home
               </Link>
             </div>
           </div>
-        </div>
-      </footer>
-    </div>
+        </section>
+      </div>
+
+      <style jsx global>{`
+        @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
+
+        .vf-page {
+          background: #09090b;
+          color: #a1a1aa;
+          font-family:
+            "Inter",
+            -apple-system,
+            BlinkMacSystemFont,
+            sans-serif;
+          font-weight: 400;
+          line-height: 1.7;
+          -webkit-font-smoothing: antialiased;
+          min-height: 100vh;
+        }
+
+        /* Nav */
+        .vf-nav {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          z-index: 100;
+          background: rgba(9, 9, 11, 0.85);
+          backdrop-filter: blur(20px);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .vf-nav-inner {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 18px 48px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .vf-logo {
+          font-size: 17px;
+          font-weight: 700;
+          color: #fff;
+          text-decoration: none;
+          letter-spacing: -0.03em;
+        }
+        .vf-nav-links {
+          display: flex;
+          align-items: center;
+          gap: 32px;
+        }
+        .vf-nav-links a {
+          color: #71717a;
+          text-decoration: none;
+          font-size: 13px;
+          transition: color 0.2s;
+        }
+        .vf-nav-links a:hover {
+          color: #fff;
+        }
+        .vf-nav-cta {
+          background: linear-gradient(135deg, #7c3aed, #6366f1) !important;
+          color: #fff !important;
+          padding: 8px 22px;
+          border-radius: 8px;
+          font-weight: 600 !important;
+          font-size: 13px !important;
+          transition: all 0.2s;
+        }
+        .vf-nav-cta:hover {
+          opacity: 0.9;
+        }
+
+        /* Pricing Page */
+        .vf-pricing-page {
+          padding: 160px 0 120px;
+          text-align: center;
+        }
+        .vf-section-inner {
+          max-width: 960px;
+          margin: 0 auto;
+          padding: 0 48px;
+        }
+        .vf-label {
+          display: block;
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 0.15em;
+          text-transform: uppercase;
+          background: linear-gradient(90deg, #a78bfa, #818cf8);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          margin-bottom: 16px;
+        }
+        .vf-pricing-headline {
+          font-size: clamp(32px, 5vw, 52px);
+          font-weight: 900;
+          line-height: 1.1;
+          color: #fafafa;
+          letter-spacing: -0.03em;
+          margin: 0 0 20px;
+        }
+        .vf-pricing-sub {
+          font-size: 17px;
+          color: #71717a;
+          max-width: 560px;
+          margin: 0 auto 56px;
+          line-height: 1.7;
+          font-weight: 300;
+        }
+
+        /* Price Card */
+        .vf-price-card {
+          max-width: 640px;
+          margin: 0 auto;
+          border-radius: 20px;
+          padding: 48px 40px;
+          border: 1px solid rgba(124, 58, 237, 0.15);
+          background: rgba(255, 255, 255, 0.02);
+          backdrop-filter: blur(12px);
+        }
+        .vf-price-amount {
+          font-size: clamp(48px, 8vw, 72px);
+          font-weight: 900;
+          color: #fafafa;
+          letter-spacing: -0.04em;
+          margin: 0;
+          line-height: 1;
+        }
+        .vf-price-period {
+          font-size: 20px;
+          color: #52525b;
+          font-weight: 400;
+          margin-left: 2px;
+        }
+        .vf-price-tagline {
+          font-size: 16px;
+          color: #71717a;
+          margin: 16px 0 36px;
+        }
+
+        /* Feature Groups */
+        .vf-price-features {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 32px 24px;
+          text-align: left;
+          margin-bottom: 36px;
+        }
+        .vf-price-feature-group {
+          display: flex;
+          flex-direction: column;
+          gap: 0;
+        }
+        .vf-price-group-title {
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: #a78bfa;
+          margin: 0 0 12px;
+        }
+        .vf-price-list {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+        }
+        .vf-price-list li {
+          padding: 10px 0;
+          font-size: 14px;
+          color: #a1a1aa;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+          padding-left: 20px;
+          position: relative;
+        }
+        .vf-price-list li::before {
+          content: "";
+          position: absolute;
+          left: 0;
+          top: 50%;
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #7c3aed, #6366f1);
+          transform: translateY(-50%);
+        }
+        .vf-price-list li:last-child {
+          border-bottom: none;
+        }
+        .vf-price-note {
+          margin-top: 16px;
+          font-size: 13px;
+          color: #52525b;
+        }
+
+        /* Buttons */
+        .vf-btn-primary {
+          display: inline-block;
+          padding: 14px 36px;
+          background: linear-gradient(135deg, #7c3aed, #6366f1);
+          color: #fff;
+          font-size: 15px;
+          font-weight: 600;
+          text-decoration: none;
+          border-radius: 10px;
+          transition: all 0.25s ease;
+          box-shadow: 0 4px 24px rgba(124, 58, 237, 0.2);
+        }
+        .vf-btn-primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 32px rgba(124, 58, 237, 0.3);
+        }
+        .vf-btn-full {
+          width: 100%;
+          text-align: center;
+        }
+        .vf-btn-ghost {
+          display: inline-block;
+          padding: 14px 36px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          color: #a1a1aa;
+          font-size: 15px;
+          font-weight: 500;
+          text-decoration: none;
+          border-radius: 10px;
+          transition: all 0.2s;
+        }
+        .vf-btn-ghost:hover {
+          border-color: rgba(255, 255, 255, 0.25);
+          color: #fff;
+        }
+
+        /* Back link */
+        .vf-back-link {
+          margin-top: 48px;
+          text-align: center;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+          .vf-pricing-page {
+            padding: 140px 0 80px;
+          }
+          .vf-section-inner {
+            padding: 0 24px;
+          }
+          .vf-price-card {
+            padding: 36px 24px;
+          }
+          .vf-price-features {
+            grid-template-columns: 1fr;
+            gap: 24px;
+          }
+        }
+      `}</style>
+    </>
   );
 }

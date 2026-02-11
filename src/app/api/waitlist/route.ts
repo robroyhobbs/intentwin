@@ -3,31 +3,69 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, full_name, company } = await request.json();
+    const body = await request.json();
+    const { name, email, company, company_size } = body;
 
-    if (!email || typeof email !== "string") {
+    // Validate required fields
+    if (!name || typeof name !== "string" || !name.trim()) {
+      return NextResponse.json(
+        { error: "Name is required" },
+        { status: 400 },
+      );
+    }
+
+    if (!email || typeof email !== "string" || !email.trim()) {
       return NextResponse.json(
         { error: "Email is required" },
         { status: 400 },
       );
     }
 
-    const normalizedEmail = email.toLowerCase().trim();
-    const adminClient = createAdminClient();
+    // Basic email format check
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      return NextResponse.json(
+        { error: "Please enter a valid email address" },
+        { status: 400 },
+      );
+    }
 
-    const { error } = await adminClient.from("waitlist_signups").upsert(
-      {
-        email: normalizedEmail,
-        full_name: full_name?.trim() || null,
-        company: company?.trim() || null,
-      },
-      { onConflict: "email" },
-    );
+    if (!company || typeof company !== "string" || !company.trim()) {
+      return NextResponse.json(
+        { error: "Company is required" },
+        { status: 400 },
+      );
+    }
+
+    // Validate company_size if provided
+    const validSizes = ["1-10", "11-50", "51-200", "201-500", "500+"];
+    if (company_size && !validSizes.includes(company_size)) {
+      return NextResponse.json(
+        { error: "Invalid company size" },
+        { status: 400 },
+      );
+    }
+
+    const supabase = createAdminClient();
+
+    const { error } = await supabase.from("waitlist").insert({
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
+      company: company.trim(),
+      company_size: company_size || null,
+    });
 
     if (error) {
-      console.error("Waitlist error:", error);
+      // Unique constraint violation on email
+      if (error.code === "23505") {
+        return NextResponse.json(
+          { error: "This email is already on our waitlist" },
+          { status: 409 },
+        );
+      }
+      console.error("Waitlist insert error:", error);
       return NextResponse.json(
-        { error: "Failed to join waitlist" },
+        { error: "Something went wrong. Please try again." },
         { status: 500 },
       );
     }

@@ -13,6 +13,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api/demo-auth") ||
     pathname === "/demo-login" ||
+    pathname === "/request-access" ||
     pathname.includes(".");
 
   // Check demo authentication if enabled
@@ -20,16 +21,28 @@ export async function middleware(request: NextRequest) {
     const demoCookie = request.cookies.get("demo_auth");
 
     if (!demoCookie || demoCookie.value !== "authenticated") {
-      return NextResponse.redirect(new URL("/demo-login", request.url));
+      const redirectUrl = new URL("/demo-login", request.url);
+      const response = NextResponse.redirect(redirectUrl);
+      response.headers.set("x-demo-redirect", "true");
+      return response;
     }
   }
 
   // Continue with normal Supabase session handling
-  return updateSession(request);
+  const response = await updateSession(request);
+  response.headers.set("x-middleware-ran", "true");
+  return response;
 }
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    /*
+     * Match all request paths except:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico, sitemap.xml (metadata files)
+     * - public folder files (images, etc)
+     */
+    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml).*)",
   ],
 };
