@@ -48,3 +48,6 @@ next-env.d.ts
 
 # Source PDFs (downloaded reference materials - too large for git)
 sources/pdfs/
+
+# Operational logs (auto-compound, cron reviews)
+logs/
