@@ -19,8 +19,7 @@ export async function sendWaitlistConfirmation(params: {
       company: params.company,
     });
 
-    const from =
-      process.env.EMAIL_FROM || "IntentWin <noreply@intentwin.com>";
+    const from = process.env.EMAIL_FROM || "IntentWin <onboarding@resend.dev>";
 
     const { error } = await resend.emails.send({
       from,
@@ -36,6 +35,9 @@ export async function sendWaitlistConfirmation(params: {
 
     console.log("[EMAIL] Waitlist confirmation sent to", params.email);
   } catch (err) {
-    console.error("[EMAIL] Unexpected error sending waitlist confirmation:", err);
+    console.error(
+      "[EMAIL] Unexpected error sending waitlist confirmation:",
+      err,
+    );
   }
 }

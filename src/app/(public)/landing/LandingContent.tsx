@@ -775,6 +775,15 @@ export default function LandingContent() {
             <p className="vf-footer-tag">
               IntentWin — Proposal intelligence, engineered to win.
             </p>
+            <div className="vf-footer-legal">
+              <a href="/privacy" className="vf-footer-legal-link">
+                Privacy Policy
+              </a>
+              <span className="vf-footer-legal-sep">|</span>
+              <a href="/terms" className="vf-footer-legal-link">
+                Terms of Service
+              </a>
+            </div>
           </div>
         </footer>
       </div>
@@ -1798,6 +1807,26 @@ export default function LandingContent() {
           font-size: 13px;
           color: #3f3f46;
           letter-spacing: 0.05em;
+        }
+        .vf-footer-legal {
+          margin-top: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+        }
+        .vf-footer-legal-link {
+          font-size: 13px;
+          color: #3f3f46;
+          text-decoration: none;
+          transition: color 0.2s;
+        }
+        .vf-footer-legal-link:hover {
+          color: #52525b;
+        }
+        .vf-footer-legal-sep {
+          font-size: 13px;
+          color: #3f3f46;
         }
 
         /* Responsive */

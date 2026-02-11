@@ -46,9 +46,7 @@ export default function PricingContent() {
 
               <div className="vf-price-features">
                 <div className="vf-price-feature-group">
-                  <h3 className="vf-price-group-title">
-                    Proposal Generation
-                  </h3>
+                  <h3 className="vf-price-group-title">Proposal Generation</h3>
                   <ul className="vf-price-list">
                     <li>Unlimited proposal generation</li>
                     <li>All 6 Intent Framework layers</li>
@@ -110,6 +108,15 @@ export default function PricingContent() {
               <Link href="/" className="vf-btn-ghost">
                 &larr; Back to Home
               </Link>
+            </div>
+            <div className="vf-footer-legal">
+              <a href="/privacy" className="vf-footer-legal-link">
+                Privacy Policy
+              </a>
+              <span className="vf-footer-legal-sep">|</span>
+              <a href="/terms" className="vf-footer-legal-link">
+                Terms of Service
+              </a>
             </div>
           </div>
         </section>
@@ -349,6 +356,28 @@ export default function PricingContent() {
         .vf-back-link {
           margin-top: 48px;
           text-align: center;
+        }
+
+        /* Legal links */
+        .vf-footer-legal {
+          margin-top: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+        }
+        .vf-footer-legal-link {
+          font-size: 13px;
+          color: #3f3f46;
+          text-decoration: none;
+          transition: color 0.2s;
+        }
+        .vf-footer-legal-link:hover {
+          color: #52525b;
+        }
+        .vf-footer-legal-sep {
+          font-size: 13px;
+          color: #3f3f46;
         }
 
         /* Responsive */
