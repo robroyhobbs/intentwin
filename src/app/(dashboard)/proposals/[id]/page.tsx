@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -103,10 +103,13 @@ export default function ProposalPage() {
   const [regeneratingSection, setRegeneratingSection] = useState<string | null>(
     null,
   );
+  const [savingSection, setSavingSection] = useState(false);
   const [activeTab, setActiveTab] = useState<"sections" | "compliance">(
     initialTab,
   );
   const authFetch = useAuthFetch();
+  const initialSectionSet = useRef(false);
+  const regenIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchProposal = useCallback(async () => {
     try {
@@ -116,13 +119,13 @@ export default function ProposalPage() {
       setProposal(data.proposal);
       setSections(data.sections || []);
 
-      if (!activeSection) {
+      // Only set initial active section once
+      if (!initialSectionSet.current && data.sections?.length > 0) {
         const firstCompleted = data.sections?.find(
           (s: Section) => s.generation_status === "completed",
         );
-        if (firstCompleted) setActiveSection(firstCompleted.id);
-        else if (data.sections?.length > 0)
-          setActiveSection(data.sections[0].id);
+        setActiveSection(firstCompleted?.id || data.sections[0].id);
+        initialSectionSet.current = true;
       }
     } catch (error) {
       console.error("Fetch error:", error);
@@ -130,7 +133,8 @@ export default function ProposalPage() {
     } finally {
       setLoading(false);
     }
-  }, [id, activeSection]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   const fetchReviews = useCallback(async () => {
     try {
@@ -189,6 +193,7 @@ export default function ProposalPage() {
   }
 
   async function handleSaveEdit(sectionId: string) {
+    setSavingSection(true);
     try {
       const response = await authFetch(
         `/api/proposals/${id}/sections/${sectionId}`,
@@ -209,6 +214,8 @@ export default function ProposalPage() {
       toast.error(
         error instanceof Error ? error.message : "Failed to save changes",
       );
+    } finally {
+      setSavingSection(false);
     }
   }
 
@@ -224,19 +231,48 @@ export default function ProposalPage() {
         throw new Error(err.error || "Regeneration failed");
       }
       toast.success("Regenerating section...");
-      // Poll for updates
-      setTimeout(() => fetchProposal(), 2000);
-      setTimeout(() => fetchProposal(), 5000);
-      setTimeout(() => fetchProposal(), 10000);
-      setTimeout(() => fetchProposal(), 20000);
+      // Poll until section is no longer generating
+      if (regenIntervalRef.current) clearInterval(regenIntervalRef.current);
+      regenIntervalRef.current = setInterval(async () => {
+        try {
+          const res = await authFetch(`/api/proposals/${id}`);
+          if (!res.ok) return;
+          const data = await res.json();
+          setProposal(data.proposal);
+          setSections(data.sections || []);
+          const section = data.sections?.find(
+            (s: Section) => s.id === sectionId,
+          );
+          if (section && section.generation_status !== "generating") {
+            setRegeneratingSection(null);
+            if (regenIntervalRef.current) {
+              clearInterval(regenIntervalRef.current);
+              regenIntervalRef.current = null;
+            }
+            if (section.generation_status === "completed") {
+              toast.success("Section regenerated successfully");
+            } else if (section.generation_status === "failed") {
+              toast.error("Section regeneration failed");
+            }
+          }
+        } catch {
+          // Polling error, will retry
+        }
+      }, 3000);
     } catch (error) {
+      setRegeneratingSection(null);
       toast.error(
         error instanceof Error ? error.message : "Regeneration failed",
       );
-    } finally {
-      setRegeneratingSection(null);
     }
   }
+
+  // Cleanup regen polling on unmount
+  useEffect(() => {
+    return () => {
+      if (regenIntervalRef.current) clearInterval(regenIntervalRef.current);
+    };
+  }, []);
 
   async function handleApplyAIFixes(sectionId: string) {
     setApplyingFixes(true);
@@ -539,6 +575,12 @@ export default function ProposalPage() {
             sections={sections}
             activeSection={activeSection}
             onSelect={(sectionId) => {
+              if (editingSection) {
+                const discard = window.confirm(
+                  "You have unsaved edits. Discard changes?",
+                );
+                if (!discard) return;
+              }
               setActiveSection(sectionId);
               setEditingSection(null);
             }}
@@ -670,12 +712,21 @@ export default function ProposalPage() {
                       <div className="mt-4 flex gap-2">
                         <button
                           onClick={() => handleSaveEdit(currentSection.id)}
+                          disabled={savingSection}
                           className="btn-primary"
                         >
-                          Save Changes
+                          {savingSection ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Saving...
+                            </>
+                          ) : (
+                            "Save Changes"
+                          )}
                         </button>
                         <button
                           onClick={() => setEditingSection(null)}
+                          disabled={savingSection}
                           className="btn-secondary"
                         >
                           Cancel

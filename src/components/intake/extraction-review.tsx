@@ -136,53 +136,54 @@ export function ExtractionReview({
   // Initialize editable state from extracted data
   const [editedData, setEditedData] = useState<Record<string, string | string[]>>(() => {
     const data: Record<string, string | string[]> = {};
+    const ext = extracted.extracted || {};
 
-    // Populate from extracted fields
-    if (extracted.extracted.client_name?.value) {
-      data.client_name = extracted.extracted.client_name.value;
+    // Populate from extracted fields (with null checks)
+    if (ext.client_name?.value) {
+      data.client_name = ext.client_name.value;
     }
-    if (extracted.extracted.client_industry?.value) {
-      data.client_industry = extracted.extracted.client_industry.value;
+    if (ext.client_industry?.value) {
+      data.client_industry = ext.client_industry.value;
     }
-    if (extracted.extracted.client_size?.value) {
-      data.client_size = extracted.extracted.client_size.value;
+    if (ext.client_size?.value) {
+      data.client_size = ext.client_size.value;
     }
-    if (extracted.extracted.opportunity_type?.value) {
-      data.opportunity_type = extracted.extracted.opportunity_type.value;
+    if (ext.opportunity_type?.value) {
+      data.opportunity_type = ext.opportunity_type.value;
     }
-    if (extracted.extracted.scope_description?.value) {
-      data.scope_description = extracted.extracted.scope_description.value;
+    if (ext.scope_description?.value) {
+      data.scope_description = ext.scope_description.value;
     }
-    if (extracted.extracted.key_requirements?.value) {
-      data.key_requirements = extracted.extracted.key_requirements.value;
+    if (ext.key_requirements?.value) {
+      data.key_requirements = ext.key_requirements.value;
     }
-    if (extracted.extracted.budget_range?.value) {
-      data.budget_range = extracted.extracted.budget_range.value;
+    if (ext.budget_range?.value) {
+      data.budget_range = ext.budget_range.value;
     }
-    if (extracted.extracted.timeline?.value) {
-      data.timeline_expectation = extracted.extracted.timeline.value;
+    if (ext.timeline?.value) {
+      data.timeline_expectation = ext.timeline.value;
     }
-    if (extracted.extracted.current_state_pains?.value) {
-      data.current_state_pains = extracted.extracted.current_state_pains.value;
+    if (ext.current_state_pains?.value) {
+      data.current_state_pains = ext.current_state_pains.value;
     }
-    if (extracted.extracted.desired_outcomes?.value) {
-      data.desired_outcomes = extracted.extracted.desired_outcomes.value;
+    if (ext.desired_outcomes?.value) {
+      data.desired_outcomes = ext.desired_outcomes.value;
     }
-    if (extracted.extracted.compliance_requirements?.value) {
-      data.compliance_requirements = extracted.extracted.compliance_requirements.value;
+    if (ext.compliance_requirements?.value) {
+      data.compliance_requirements = ext.compliance_requirements.value;
     }
-    if (extracted.extracted.technical_environment?.value) {
-      data.technical_environment = extracted.extracted.technical_environment.value;
+    if (ext.technical_environment?.value) {
+      data.technical_environment = ext.technical_environment.value;
     }
 
-    // Add inferred fields
-    if (extracted.inferred.industry?.value && !data.client_industry) {
+    // Add inferred fields (with null checks)
+    if (extracted.inferred?.industry?.value && !data.client_industry) {
       data.client_industry = extracted.inferred.industry.value;
     }
-    if (extracted.inferred.client_size?.value && !data.client_size) {
+    if (extracted.inferred?.client_size?.value && !data.client_size) {
       data.client_size = extracted.inferred.client_size.value;
     }
-    if (extracted.inferred.opportunity_type?.value && !data.opportunity_type) {
+    if (extracted.inferred?.opportunity_type?.value && !data.opportunity_type) {
       data.opportunity_type = extracted.inferred.opportunity_type.value;
     }
 
@@ -302,25 +303,25 @@ export function ExtractionReview({
       <div className="grid grid-cols-2 gap-4">
         <EditableField
           label="Client Name"
-          field={extracted.extracted.client_name}
+          field={extracted.extracted?.client_name}
           value={editedData.client_name || ""}
           onChange={(v) => updateField("client_name", v)}
         />
         <EditableField
           label="Industry"
-          field={extracted.extracted.client_industry}
+          field={extracted.extracted?.client_industry}
           value={editedData.client_industry || ""}
           onChange={(v) => updateField("client_industry", v)}
         />
         <EditableField
           label="Company Size"
-          field={extracted.extracted.client_size}
+          field={extracted.extracted?.client_size}
           value={editedData.client_size || ""}
           onChange={(v) => updateField("client_size", v)}
         />
         <EditableField
           label="Opportunity Type"
-          field={extracted.extracted.opportunity_type}
+          field={extracted.extracted?.opportunity_type}
           value={editedData.opportunity_type || ""}
           onChange={(v) => updateField("opportunity_type", v)}
         />
@@ -328,7 +329,7 @@ export function ExtractionReview({
 
       <EditableField
         label="Scope Description"
-        field={extracted.extracted.scope_description}
+        field={extracted.extracted?.scope_description}
         value={editedData.scope_description || ""}
         onChange={(v) => updateField("scope_description", v)}
       />
@@ -336,13 +337,13 @@ export function ExtractionReview({
       <div className="grid grid-cols-2 gap-4">
         <EditableField
           label="Budget Range"
-          field={extracted.extracted.budget_range}
+          field={extracted.extracted?.budget_range}
           value={editedData.budget_range || ""}
           onChange={(v) => updateField("budget_range", v)}
         />
         <EditableField
           label="Timeline"
-          field={extracted.extracted.timeline}
+          field={extracted.extracted?.timeline}
           value={editedData.timeline_expectation || ""}
           onChange={(v) => updateField("timeline_expectation", v)}
         />
@@ -350,7 +351,7 @@ export function ExtractionReview({
 
       <EditableField
         label="Current Challenges / Pain Points"
-        field={extracted.extracted.current_state_pains}
+        field={extracted.extracted?.current_state_pains}
         value={editedData.current_state_pains || []}
         onChange={(v) => updateField("current_state_pains", v)}
         isArray
@@ -358,7 +359,7 @@ export function ExtractionReview({
 
       <EditableField
         label="Desired Outcomes"
-        field={extracted.extracted.desired_outcomes}
+        field={extracted.extracted?.desired_outcomes}
         value={editedData.desired_outcomes || []}
         onChange={(v) => updateField("desired_outcomes", v)}
         isArray
@@ -366,7 +367,7 @@ export function ExtractionReview({
 
       <EditableField
         label="Key Requirements"
-        field={extracted.extracted.key_requirements}
+        field={extracted.extracted?.key_requirements}
         value={editedData.key_requirements || []}
         onChange={(v) => updateField("key_requirements", v)}
         isArray
@@ -410,7 +411,7 @@ export function ExtractionReview({
       )}
 
       {/* Inferred Fields Notice */}
-      {Object.keys(extracted.inferred).length > 0 && (
+      {extracted.inferred && Object.keys(extracted.inferred).length > 0 && (
         <div className="p-4 rounded-xl bg-[var(--info-subtle)] border border-[var(--info-muted)]">
           <div className="flex items-start gap-3">
             <HelpCircle className="h-5 w-5 text-[var(--info)] mt-0.5" />

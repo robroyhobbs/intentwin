@@ -15,6 +15,7 @@ import {
   Building2,
   Palette,
   MessageSquare,
+  Library,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
@@ -31,6 +32,7 @@ const navGroups = [
     label: "Knowledge",
     items: [
       { name: "L1 Sources", href: "/knowledge-base/sources", icon: BookOpen },
+      { name: "Evidence Library", href: "/evidence-library", icon: Library },
       { name: "Uploaded Docs", href: "/knowledge-base", icon: Database },
       { name: "Upload", href: "/knowledge-base/upload", icon: Upload },
       { name: "Search", href: "/knowledge-base/search", icon: Search },

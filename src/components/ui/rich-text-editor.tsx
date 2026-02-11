@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -30,10 +31,7 @@ export function RichTextEditor({
 }: RichTextEditorProps) {
   const editor = useEditor({
     immediatelyRender: false,
-    extensions: [
-      StarterKit,
-      Placeholder.configure({ placeholder }),
-    ],
+    extensions: [StarterKit, Placeholder.configure({ placeholder })],
     content,
     editorProps: {
       attributes: {
@@ -46,10 +44,22 @@ export function RichTextEditor({
     },
   });
 
+  // Sync editor content when the content prop changes externally
+  useEffect(() => {
+    if (editor && content !== editor.getHTML()) {
+      editor.commands.setContent(content, false);
+    }
+  }, [content, editor]);
+
   if (!editor) return null;
 
   return (
-    <div className={cn("rounded-xl border border-[var(--border)] bg-[var(--card-bg)] shadow-sm overflow-hidden", className)}>
+    <div
+      className={cn(
+        "rounded-xl border border-[var(--border)] bg-[var(--card-bg)] shadow-sm overflow-hidden",
+        className,
+      )}
+    >
       {/* Toolbar */}
       <div className="flex items-center gap-1 border-b border-[var(--border)] px-3 py-2 bg-[var(--background-tertiary)]">
         <ToolbarButton
@@ -151,7 +161,8 @@ function ToolbarButton({
       className={cn(
         "rounded-md p-1.5 text-[var(--foreground-muted)] hover:bg-[var(--card-bg)] hover:text-[var(--foreground)] transition-colors",
         active && "bg-[var(--accent-subtle)] text-[var(--accent)]",
-        disabled && "opacity-30 cursor-not-allowed hover:bg-transparent hover:text-[var(--foreground-muted)]"
+        disabled &&
+          "opacity-30 cursor-not-allowed hover:bg-transparent hover:text-[var(--foreground-muted)]",
       )}
     >
       {children}

@@ -64,8 +64,12 @@ export default function NewProposalPage() {
   const [submitting, setSubmitting] = useState(false);
 
   // Intake mode
-  const [intakeMode, setIntakeMode] = useState<"select" | "extracting" | "review" | "form">("select");
-  const [extractedData, setExtractedData] = useState<ExtractedIntake | null>(null);
+  const [intakeMode, setIntakeMode] = useState<
+    "select" | "extracting" | "review" | "form"
+  >("select");
+  const [extractedData, setExtractedData] = useState<ExtractedIntake | null>(
+    null,
+  );
   const [researchData, setResearchData] = useState<ClientResearch | null>(null);
 
   // Phase 1: Context (combined from original steps 0-3)
@@ -105,14 +109,14 @@ export default function NewProposalPage() {
   function updateArrayItem(
     setter: React.Dispatch<React.SetStateAction<string[]>>,
     index: number,
-    value: string
+    value: string,
   ) {
     setter((prev) => prev.map((item, i) => (i === index ? value : item)));
   }
 
   function removeFromArray(
     setter: React.Dispatch<React.SetStateAction<string[]>>,
-    index: number
+    index: number,
   ) {
     setter((prev) => prev.filter((_, i) => i !== index));
   }
@@ -129,7 +133,9 @@ export default function NewProposalPage() {
       budget_range: budgetRange,
       timeline_expectation: timelineExpectation,
       technical_environment: technicalEnvironment,
-      compliance_requirements: complianceRequirements.split("\n").filter((r) => r.trim()),
+      compliance_requirements: complianceRequirements
+        .split("\n")
+        .filter((r) => r.trim()),
       competitive_intel: competitiveIntel,
       current_state_pains: currentStatePains.filter((p) => p.trim()),
       desired_outcomes: desiredOutcomes.filter((o) => o.trim()),
@@ -144,7 +150,9 @@ export default function NewProposalPage() {
       current_state: currentStatePains.filter((p) => p.trim()),
       desired_state: desiredOutcomes.filter((o) => o.trim()),
       transformation: `We will partner with ${clientName} to transform their ${opportunityType.replace(/_/g, " ")} capabilities.`,
-      success_metrics: successMetrics.filter((m) => m.outcome.trim() || m.metric.trim()),
+      success_metrics: successMetrics.filter(
+        (m) => m.outcome.trim() || m.metric.trim(),
+      ),
     };
   }
 
@@ -174,7 +182,11 @@ export default function NewProposalPage() {
       console.error("Strategy generation error:", error);
       toast.error("Failed to generate strategy. You can add items manually.");
       setWinStrategy({
-        win_themes: ["Value-driven transformation", "Proven methodology", "Accelerated delivery"],
+        win_themes: [
+          "Value-driven transformation",
+          "Proven methodology",
+          "Accelerated delivery",
+        ],
         success_metrics: [],
         differentiators: [],
         target_outcomes: [],
@@ -186,7 +198,10 @@ export default function NewProposalPage() {
   }
 
   // Handle extraction completion
-  function handleExtracted(data: ExtractedIntake, research: ClientResearch | null) {
+  function handleExtracted(
+    data: ExtractedIntake,
+    research: ClientResearch | null,
+  ) {
     setExtractedData(data);
     setResearchData(research);
     setIntakeMode("review");
@@ -195,21 +210,36 @@ export default function NewProposalPage() {
   // Handle extraction confirmation
   function handleExtractionConfirmed(intakeData: Record<string, unknown>) {
     if (intakeData.client_name) setClientName(intakeData.client_name as string);
-    if (intakeData.client_industry) setClientIndustry(intakeData.client_industry as string);
+    if (intakeData.client_industry)
+      setClientIndustry(intakeData.client_industry as string);
     if (intakeData.client_size) setClientSize(intakeData.client_size as string);
-    if (intakeData.opportunity_type) setOpportunityType(intakeData.opportunity_type as string);
-    if (intakeData.scope_description) setScopeDescription(intakeData.scope_description as string);
-    if (intakeData.budget_range) setBudgetRange(intakeData.budget_range as string);
-    if (intakeData.timeline_expectation) setTimelineExpectation(intakeData.timeline_expectation as string);
-    if (intakeData.technical_environment) setTechnicalEnvironment(intakeData.technical_environment as string);
+    if (intakeData.opportunity_type)
+      setOpportunityType(intakeData.opportunity_type as string);
+    if (intakeData.scope_description)
+      setScopeDescription(intakeData.scope_description as string);
+    if (intakeData.budget_range)
+      setBudgetRange(intakeData.budget_range as string);
+    if (intakeData.timeline_expectation)
+      setTimelineExpectation(intakeData.timeline_expectation as string);
+    if (intakeData.technical_environment)
+      setTechnicalEnvironment(intakeData.technical_environment as string);
 
-    if (Array.isArray(intakeData.current_state_pains) && intakeData.current_state_pains.length > 0) {
+    if (
+      Array.isArray(intakeData.current_state_pains) &&
+      intakeData.current_state_pains.length > 0
+    ) {
       setCurrentStatePains(intakeData.current_state_pains as string[]);
     }
-    if (Array.isArray(intakeData.desired_outcomes) && intakeData.desired_outcomes.length > 0) {
+    if (
+      Array.isArray(intakeData.desired_outcomes) &&
+      intakeData.desired_outcomes.length > 0
+    ) {
       setDesiredOutcomes(intakeData.desired_outcomes as string[]);
     }
-    if (Array.isArray(intakeData.key_requirements) && intakeData.key_requirements.length > 0) {
+    if (
+      Array.isArray(intakeData.key_requirements) &&
+      intakeData.key_requirements.length > 0
+    ) {
       setMustInclude(intakeData.key_requirements as string[]);
     }
 
@@ -250,21 +280,28 @@ export default function NewProposalPage() {
       toast.success("Proposal created successfully!");
       router.push(`/proposals/${proposal.id}`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to create proposal");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to create proposal",
+      );
     } finally {
       setSubmitting(false);
     }
   }
 
   // Validate current phase
-  const canProceed = phase === 0
-    ? clientName.trim() && currentStatePains.some(p => p.trim()) && desiredOutcomes.some(o => o.trim())
-    : phase === 1
-    ? winStrategy !== null
-    : intentApproved;
+  const canProceed =
+    phase === 0
+      ? clientName.trim() &&
+        currentStatePains.some((p) => p.trim()) &&
+        desiredOutcomes.some((o) => o.trim())
+      : phase === 1
+        ? winStrategy !== null
+        : intentApproved;
 
-  const fieldClass = "w-full rounded-xl border border-[var(--border)] bg-[var(--input-bg)] px-4 py-3 text-sm text-[var(--foreground)] transition-all focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20 hover:border-[var(--border-focus)]";
-  const labelClass = "block text-sm font-semibold text-[var(--foreground)] mb-2";
+  const fieldClass =
+    "w-full rounded-xl border border-[var(--border)] bg-[var(--input-bg)] px-4 py-3 text-sm text-[var(--foreground)] transition-all focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20 hover:border-[var(--border-focus)]";
+  const labelClass =
+    "block text-sm font-semibold text-[var(--foreground)] mb-2";
 
   // Intake selection screen
   if (intakeMode === "select") {
@@ -305,7 +342,8 @@ export default function NewProposalPage() {
             Review Extracted Data
           </h1>
           <p className="mt-2 text-[var(--foreground-muted)]">
-            We found the following information. Confirm or edit before proceeding.
+            We found the following information. Confirm or edit before
+            proceeding.
           </p>
         </div>
         <div className="flex-1 overflow-auto">
@@ -338,7 +376,9 @@ export default function NewProposalPage() {
           </div>
           <div className="flex items-center gap-3 px-4 py-2 rounded-full bg-[var(--accent-subtle)] border border-[var(--accent-muted)]">
             <Zap className="h-4 w-4 text-[var(--accent)]" />
-            <span className="text-sm font-semibold text-[var(--accent)]">Intent-Driven</span>
+            <span className="text-sm font-semibold text-[var(--accent)]">
+              Intent-Driven
+            </span>
           </div>
         </div>
 
@@ -358,8 +398,8 @@ export default function NewProposalPage() {
                   isActive
                     ? "bg-[var(--background-elevated)] border-2 border-[var(--accent)] shadow-lg"
                     : isComplete
-                    ? "bg-[var(--background-tertiary)] border border-[var(--success-muted)] hover:bg-[var(--background-secondary)] cursor-pointer"
-                    : "bg-[var(--background-tertiary)] border border-[var(--border)] opacity-50 cursor-not-allowed"
+                      ? "bg-[var(--background-tertiary)] border border-[var(--success-muted)] hover:bg-[var(--background-secondary)] cursor-pointer"
+                      : "bg-[var(--background-tertiary)] border border-[var(--border)] opacity-50 cursor-not-allowed"
                 }`}
               >
                 <div
@@ -367,14 +407,20 @@ export default function NewProposalPage() {
                     isActive
                       ? "bg-[var(--accent)] text-white"
                       : isComplete
-                      ? "bg-[var(--success)] text-white"
-                      : "bg-[var(--background-secondary)] text-[var(--foreground-muted)]"
+                        ? "bg-[var(--success)] text-white"
+                        : "bg-[var(--background-secondary)] text-[var(--foreground-muted)]"
                   }`}
                 >
-                  {isComplete ? <Check className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
+                  {isComplete ? (
+                    <Check className="h-5 w-5" />
+                  ) : (
+                    <Icon className="h-5 w-5" />
+                  )}
                 </div>
                 <div className="text-left">
-                  <p className={`text-sm font-semibold ${isActive ? "text-[var(--foreground)]" : "text-[var(--foreground-muted)]"}`}>
+                  <p
+                    className={`text-sm font-semibold ${isActive ? "text-[var(--foreground)]" : "text-[var(--foreground-muted)]"}`}
+                  >
                     {p.name}
                   </p>
                   <p className="text-xs text-[var(--foreground-subtle)] hidden lg:block">
@@ -404,7 +450,8 @@ export default function NewProposalPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="col-span-2">
                       <label className={labelClass}>
-                        Client Name <span className="text-[var(--danger)]">*</span>
+                        Client Name{" "}
+                        <span className="text-[var(--danger)]">*</span>
                       </label>
                       <input
                         type="text"
@@ -422,7 +469,9 @@ export default function NewProposalPage() {
                         className={fieldClass}
                       >
                         <option value="">Select industry...</option>
-                        <option value="financial_services">Financial Services</option>
+                        <option value="financial_services">
+                          Financial Services
+                        </option>
                         <option value="healthcare">Healthcare</option>
                         <option value="manufacturing">Manufacturing</option>
                         <option value="retail">Retail</option>
@@ -441,7 +490,9 @@ export default function NewProposalPage() {
                         className={fieldClass}
                       >
                         <option value="cloud_migration">Cloud Migration</option>
-                        <option value="app_modernization">App Modernization</option>
+                        <option value="app_modernization">
+                          App Modernization
+                        </option>
                         <option value="data_analytics">Data & Analytics</option>
                         <option value="ai_ml">AI / Machine Learning</option>
                         <option value="both">Migration + Modernization</option>
@@ -459,7 +510,8 @@ export default function NewProposalPage() {
                     <span className="text-[var(--danger)]">*</span>
                   </h3>
                   <p className="text-sm text-[var(--foreground-muted)] mb-4">
-                    Describe the pain points. These drive the proposal narrative.
+                    Describe the pain points. These drive the proposal
+                    narrative.
                   </p>
                   <div className="space-y-3">
                     {currentStatePains.map((pain, idx) => (
@@ -470,13 +522,21 @@ export default function NewProposalPage() {
                         <input
                           type="text"
                           value={pain}
-                          onChange={(e) => updateArrayItem(setCurrentStatePains, idx, e.target.value)}
+                          onChange={(e) =>
+                            updateArrayItem(
+                              setCurrentStatePains,
+                              idx,
+                              e.target.value,
+                            )
+                          }
                           className={`${fieldClass} flex-1`}
                           placeholder="e.g. Legacy systems causing $2M/year in downtime"
                         />
                         {currentStatePains.length > 1 && (
                           <button
-                            onClick={() => removeFromArray(setCurrentStatePains, idx)}
+                            onClick={() =>
+                              removeFromArray(setCurrentStatePains, idx)
+                            }
                             className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-[var(--danger)] hover:bg-[var(--danger-subtle)] transition-colors"
                           >
                             <X className="h-4 w-4" />
@@ -512,13 +572,21 @@ export default function NewProposalPage() {
                         <input
                           type="text"
                           value={outcome}
-                          onChange={(e) => updateArrayItem(setDesiredOutcomes, idx, e.target.value)}
+                          onChange={(e) =>
+                            updateArrayItem(
+                              setDesiredOutcomes,
+                              idx,
+                              e.target.value,
+                            )
+                          }
                           className={`${fieldClass} flex-1`}
                           placeholder="e.g. Reduce infrastructure costs by 40% in 12 months"
                         />
                         {desiredOutcomes.length > 1 && (
                           <button
-                            onClick={() => removeFromArray(setDesiredOutcomes, idx)}
+                            onClick={() =>
+                              removeFromArray(setDesiredOutcomes, idx)
+                            }
                             className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-[var(--danger)] hover:bg-[var(--danger-subtle)] transition-colors"
                           >
                             <X className="h-4 w-4" />
@@ -539,7 +607,9 @@ export default function NewProposalPage() {
                 <section>
                   <label className={labelClass}>
                     Scope Description
-                    <span className="font-normal text-[var(--foreground-muted)] ml-2">(Optional)</span>
+                    <span className="font-normal text-[var(--foreground-muted)] ml-2">
+                      (Optional)
+                    </span>
                   </label>
                   <textarea
                     value={scopeDescription}
@@ -556,16 +626,24 @@ export default function NewProposalPage() {
                     onClick={() => setShowAdvanced(!showAdvanced)}
                     className="flex items-center gap-2 text-sm font-medium text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors"
                   >
-                    {showAdvanced ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    {showAdvanced ? (
+                      <ChevronUp className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
+                    )}
                     Advanced Options
-                    <span className="text-xs text-[var(--foreground-subtle)]">(budget, timeline, constraints)</span>
+                    <span className="text-xs text-[var(--foreground-subtle)]">
+                      (budget, timeline, constraints)
+                    </span>
                   </button>
 
                   {showAdvanced && (
                     <div className="mt-4 p-4 rounded-xl bg-[var(--background-tertiary)] space-y-4 animate-fade-in">
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="text-sm font-medium text-[var(--foreground-muted)] mb-1 block">Budget Range</label>
+                          <label className="text-sm font-medium text-[var(--foreground-muted)] mb-1 block">
+                            Budget Range
+                          </label>
                           <input
                             type="text"
                             value={budgetRange}
@@ -575,32 +653,44 @@ export default function NewProposalPage() {
                           />
                         </div>
                         <div>
-                          <label className="text-sm font-medium text-[var(--foreground-muted)] mb-1 block">Timeline</label>
+                          <label className="text-sm font-medium text-[var(--foreground-muted)] mb-1 block">
+                            Timeline
+                          </label>
                           <input
                             type="text"
                             value={timelineExpectation}
-                            onChange={(e) => setTimelineExpectation(e.target.value)}
+                            onChange={(e) =>
+                              setTimelineExpectation(e.target.value)
+                            }
                             className={fieldClass}
                             placeholder="e.g. 6-12 months"
                           />
                         </div>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-[var(--foreground-muted)] mb-1 block">Technical Environment</label>
+                        <label className="text-sm font-medium text-[var(--foreground-muted)] mb-1 block">
+                          Technical Environment
+                        </label>
                         <textarea
                           value={technicalEnvironment}
-                          onChange={(e) => setTechnicalEnvironment(e.target.value)}
+                          onChange={(e) =>
+                            setTechnicalEnvironment(e.target.value)
+                          }
                           rows={2}
                           className={fieldClass}
                           placeholder="Current tech stack, cloud providers..."
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-[var(--foreground-muted)] mb-1 block">Compliance Requirements</label>
+                        <label className="text-sm font-medium text-[var(--foreground-muted)] mb-1 block">
+                          Compliance Requirements
+                        </label>
                         <input
                           type="text"
                           value={complianceRequirements}
-                          onChange={(e) => setComplianceRequirements(e.target.value)}
+                          onChange={(e) =>
+                            setComplianceRequirements(e.target.value)
+                          }
                           className={fieldClass}
                           placeholder="HIPAA, SOC 2, GDPR..."
                         />
@@ -620,7 +710,9 @@ export default function NewProposalPage() {
                       <Sparkles className="h-10 w-10 text-white" />
                     </div>
                     <div className="text-center">
-                      <p className="text-xl font-bold text-[var(--foreground)]">Generating Win Strategy</p>
+                      <p className="text-xl font-bold text-[var(--foreground)]">
+                        Generating Win Strategy
+                      </p>
                       <p className="text-[var(--foreground-muted)] mt-2">
                         AI is analyzing your context and creating themes...
                       </p>
@@ -632,16 +724,21 @@ export default function NewProposalPage() {
                     <div className="flex items-start gap-4 p-4 rounded-xl bg-[var(--info-subtle)] border border-[var(--info-muted)]">
                       <Lightbulb className="h-6 w-6 text-[var(--info)] mt-0.5" />
                       <div>
-                        <p className="font-semibold text-[var(--foreground)]">AI-Generated Strategy</p>
+                        <p className="font-semibold text-[var(--foreground)]">
+                          AI-Generated Strategy
+                        </p>
                         <p className="text-sm text-[var(--foreground-muted)] mt-1">
-                          Based on your context, we suggest these win themes. Edit as needed.
+                          Based on your context, we suggest these win themes.
+                          Edit as needed.
                         </p>
                       </div>
                     </div>
 
                     {/* Win Themes */}
                     <section>
-                      <h3 className="text-lg font-bold text-[var(--foreground)] mb-4">Win Themes</h3>
+                      <h3 className="text-lg font-bold text-[var(--foreground)] mb-4">
+                        Win Themes
+                      </h3>
                       <div className="flex flex-wrap gap-2">
                         {winStrategy.win_themes.map((theme, idx) => (
                           <span
@@ -653,7 +750,9 @@ export default function NewProposalPage() {
                               onClick={() => {
                                 setWinStrategy({
                                   ...winStrategy,
-                                  win_themes: winStrategy.win_themes.filter((_, i) => i !== idx),
+                                  win_themes: winStrategy.win_themes.filter(
+                                    (_, i) => i !== idx,
+                                  ),
                                 });
                               }}
                               className="hover:text-[var(--danger)]"
@@ -667,7 +766,9 @@ export default function NewProposalPage() {
 
                     {/* Target Outcomes */}
                     <section>
-                      <h3 className="text-lg font-bold text-[var(--foreground)] mb-4">Target Outcomes</h3>
+                      <h3 className="text-lg font-bold text-[var(--foreground)] mb-4">
+                        Target Outcomes
+                      </h3>
                       <div className="space-y-3">
                         {winStrategy.target_outcomes.map((outcome) => (
                           <div
@@ -675,9 +776,13 @@ export default function NewProposalPage() {
                             className="flex items-center gap-4 p-4 rounded-xl border border-[var(--border)] bg-[var(--background-tertiary)]"
                           >
                             <div className="flex-1">
-                              <p className="text-sm text-[var(--foreground)]">{outcome.outcome}</p>
+                              <p className="text-sm text-[var(--foreground)]">
+                                {outcome.outcome}
+                              </p>
                               <span className="inline-block mt-1 text-xs text-[var(--foreground-subtle)] bg-[var(--background-secondary)] px-2 py-0.5 rounded">
-                                {OUTCOME_CATEGORIES.find((c) => c.value === outcome.category)?.label || outcome.category}
+                                {OUTCOME_CATEGORIES.find(
+                                  (c) => c.value === outcome.category,
+                                )?.label || outcome.category}
                               </span>
                             </div>
                             <select
@@ -685,17 +790,26 @@ export default function NewProposalPage() {
                               onChange={(e) => {
                                 setWinStrategy({
                                   ...winStrategy,
-                                  target_outcomes: winStrategy.target_outcomes.map((o) =>
-                                    o.id === outcome.id ? { ...o, priority: e.target.value as "high" | "medium" | "low" } : o
-                                  ),
+                                  target_outcomes:
+                                    winStrategy.target_outcomes.map((o) =>
+                                      o.id === outcome.id
+                                        ? {
+                                            ...o,
+                                            priority: e.target.value as
+                                              | "high"
+                                              | "medium"
+                                              | "low",
+                                          }
+                                        : o,
+                                    ),
                                 });
                               }}
                               className={`text-xs font-semibold rounded-lg px-3 py-1.5 ${
                                 outcome.priority === "high"
                                   ? "bg-[var(--danger-subtle)] text-[var(--danger)]"
                                   : outcome.priority === "medium"
-                                  ? "bg-[var(--warning-subtle)] text-[var(--warning)]"
-                                  : "bg-[var(--success-subtle)] text-[var(--success)]"
+                                    ? "bg-[var(--warning-subtle)] text-[var(--warning)]"
+                                    : "bg-[var(--success-subtle)] text-[var(--success)]"
                               }`}
                             >
                               <option value="high">High</option>
@@ -709,12 +823,19 @@ export default function NewProposalPage() {
 
                     {/* Differentiators */}
                     <section>
-                      <h3 className="text-lg font-bold text-[var(--foreground)] mb-4">Key Differentiators</h3>
+                      <h3 className="text-lg font-bold text-[var(--foreground)] mb-4">
+                        Key Differentiators
+                      </h3>
                       <div className="grid grid-cols-2 gap-3">
                         {winStrategy.differentiators.map((diff, idx) => (
-                          <div key={idx} className="flex items-center gap-3 p-3 rounded-lg bg-[var(--background-tertiary)]">
+                          <div
+                            key={idx}
+                            className="flex items-center gap-3 p-3 rounded-lg bg-[var(--background-tertiary)]"
+                          >
                             <span className="h-2 w-2 rounded-full bg-[var(--accent)]" />
-                            <span className="flex-1 text-sm text-[var(--foreground-muted)]">{diff}</span>
+                            <span className="flex-1 text-sm text-[var(--foreground-muted)]">
+                              {diff}
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -722,7 +843,9 @@ export default function NewProposalPage() {
 
                     {/* Competitive Intel */}
                     <section>
-                      <label className={labelClass}>Competitive Intelligence (Optional)</label>
+                      <label className={labelClass}>
+                        Competitive Intelligence (Optional)
+                      </label>
                       <textarea
                         value={competitiveIntel}
                         onChange={(e) => setCompetitiveIntel(e.target.value)}
@@ -735,11 +858,18 @@ export default function NewProposalPage() {
                     <button
                       onClick={() => {
                         setWinStrategy(null);
+                        setLoadingStrategy(false);
                         generateWinStrategy();
                       }}
-                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[var(--foreground-muted)] hover:text-[var(--accent)] transition-colors"
+                      disabled={loadingStrategy}
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[var(--foreground-muted)] hover:text-[var(--accent)] transition-colors disabled:opacity-50"
                     >
-                      <Sparkles className="h-4 w-4" /> Regenerate Strategy
+                      {loadingStrategy ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-4 w-4" />
+                      )}
+                      Regenerate Strategy
                     </button>
                   </div>
                 ) : null}
@@ -753,9 +883,12 @@ export default function NewProposalPage() {
                   <div className="flex items-start gap-3">
                     <Shield className="h-5 w-5 text-[var(--warning)] mt-0.5" />
                     <div>
-                      <p className="font-semibold text-[var(--foreground)]">Intent Approval Required</p>
+                      <p className="font-semibold text-[var(--foreground)]">
+                        Intent Approval Required
+                      </p>
                       <p className="text-sm text-[var(--foreground-muted)] mt-1">
-                        Review the summary below. Once approved, AI will generate your proposal.
+                        Review the summary below. Once approved, AI will
+                        generate your proposal.
                       </p>
                     </div>
                   </div>
@@ -768,12 +901,17 @@ export default function NewProposalPage() {
                       <AlertTriangle className="h-4 w-4" /> Pain Points
                     </h4>
                     <ul className="space-y-1">
-                      {currentStatePains.filter(p => p.trim()).map((p, i) => (
-                        <li key={i} className="text-sm text-[var(--foreground-muted)] flex items-start gap-2">
-                          <span className="h-1.5 w-1.5 rounded-full bg-[var(--warning)] mt-2" />
-                          {p}
-                        </li>
-                      ))}
+                      {currentStatePains
+                        .filter((p) => p.trim())
+                        .map((p, i) => (
+                          <li
+                            key={i}
+                            className="text-sm text-[var(--foreground-muted)] flex items-start gap-2"
+                          >
+                            <span className="h-1.5 w-1.5 rounded-full bg-[var(--warning)] mt-2" />
+                            {p}
+                          </li>
+                        ))}
                     </ul>
                   </div>
 
@@ -782,28 +920,39 @@ export default function NewProposalPage() {
                       <Target className="h-4 w-4" /> Desired Outcomes
                     </h4>
                     <ul className="space-y-1">
-                      {desiredOutcomes.filter(o => o.trim()).map((o, i) => (
-                        <li key={i} className="text-sm text-[var(--foreground-muted)] flex items-start gap-2">
-                          <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)] mt-2" />
-                          {o}
-                        </li>
-                      ))}
+                      {desiredOutcomes
+                        .filter((o) => o.trim())
+                        .map((o, i) => (
+                          <li
+                            key={i}
+                            className="text-sm text-[var(--foreground-muted)] flex items-start gap-2"
+                          >
+                            <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)] mt-2" />
+                            {o}
+                          </li>
+                        ))}
                     </ul>
                   </div>
                 </div>
 
                 {winStrategy && (
                   <div className="p-4 rounded-xl border border-[var(--border)]">
-                    <h4 className="text-sm font-semibold text-[var(--foreground)] mb-3">Win Strategy</h4>
+                    <h4 className="text-sm font-semibold text-[var(--foreground)] mb-3">
+                      Win Strategy
+                    </h4>
                     <div className="flex flex-wrap gap-2 mb-2">
                       {winStrategy.win_themes.map((theme, i) => (
-                        <span key={i} className="px-3 py-1 text-xs font-medium bg-[var(--accent-subtle)] text-[var(--accent)] rounded-full">
+                        <span
+                          key={i}
+                          className="px-3 py-1 text-xs font-medium bg-[var(--accent-subtle)] text-[var(--accent)] rounded-full"
+                        >
                           {theme}
                         </span>
                       ))}
                     </div>
                     <p className="text-xs text-[var(--foreground-subtle)]">
-                      {winStrategy.target_outcomes.length} outcomes • {winStrategy.differentiators.length} differentiators
+                      {winStrategy.target_outcomes.length} outcomes •{" "}
+                      {winStrategy.differentiators.length} differentiators
                     </p>
                   </div>
                 )}
@@ -822,8 +971,9 @@ export default function NewProposalPage() {
                         I approve this Intent
                       </span>
                       <p className="text-sm text-[var(--foreground-muted)] mt-1">
-                        AI will generate proposal content that delivers these specific outcomes,
-                        verified against your company&apos;s capabilities and case studies.
+                        AI will generate proposal content that delivers these
+                        specific outcomes, verified against your company&apos;s
+                        capabilities and case studies.
                       </p>
                     </div>
                   </label>
@@ -833,8 +983,12 @@ export default function NewProposalPage() {
                   <div className="flex items-center gap-3 p-4 rounded-xl bg-[var(--success-subtle)] border border-[var(--success-muted)] animate-fade-in">
                     <CheckCircle2 className="h-6 w-6 text-[var(--success)]" />
                     <div>
-                      <p className="font-semibold text-[var(--foreground)]">Ready to create your proposal</p>
-                      <p className="text-sm text-[var(--foreground-muted)]">Click &quot;Create Proposal&quot; to proceed</p>
+                      <p className="font-semibold text-[var(--foreground)]">
+                        Ready to create your proposal
+                      </p>
+                      <p className="text-sm text-[var(--foreground-muted)]">
+                        Click &quot;Create Proposal&quot; to proceed
+                      </p>
                     </div>
                   </div>
                 )}
@@ -848,32 +1002,47 @@ export default function NewProposalPage() {
           {/* Context summary */}
           {clientName && (
             <div className="card p-4">
-              <p className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide mb-3">Summary</p>
+              <p className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide mb-3">
+                Summary
+              </p>
               <div className="space-y-3 text-sm">
                 <div>
                   <p className="text-[var(--foreground-subtle)]">Client</p>
-                  <p className="font-medium text-[var(--foreground)]">{clientName}</p>
+                  <p className="font-medium text-[var(--foreground)]">
+                    {clientName}
+                  </p>
                 </div>
                 {clientIndustry && (
                   <div>
                     <p className="text-[var(--foreground-subtle)]">Industry</p>
-                    <p className="text-[var(--foreground-muted)]">{clientIndustry.replace(/_/g, " ")}</p>
+                    <p className="text-[var(--foreground-muted)]">
+                      {clientIndustry.replace(/_/g, " ")}
+                    </p>
                   </div>
                 )}
                 <div>
                   <p className="text-[var(--foreground-subtle)]">Opportunity</p>
-                  <p className="text-[var(--foreground-muted)]">{opportunityType.replace(/_/g, " ")}</p>
+                  <p className="text-[var(--foreground-muted)]">
+                    {opportunityType.replace(/_/g, " ")}
+                  </p>
                 </div>
-                {currentStatePains.some(p => p.trim()) && (
+                {currentStatePains.some((p) => p.trim()) && (
                   <div>
-                    <p className="text-[var(--foreground-subtle)]">Pain Points</p>
-                    <p className="text-[var(--warning)]">{currentStatePains.filter(p => p.trim()).length} identified</p>
+                    <p className="text-[var(--foreground-subtle)]">
+                      Pain Points
+                    </p>
+                    <p className="text-[var(--warning)]">
+                      {currentStatePains.filter((p) => p.trim()).length}{" "}
+                      identified
+                    </p>
                   </div>
                 )}
-                {desiredOutcomes.some(o => o.trim()) && (
+                {desiredOutcomes.some((o) => o.trim()) && (
                   <div>
                     <p className="text-[var(--foreground-subtle)]">Outcomes</p>
-                    <p className="text-[var(--accent)]">{desiredOutcomes.filter(o => o.trim()).length} defined</p>
+                    <p className="text-[var(--accent)]">
+                      {desiredOutcomes.filter((o) => o.trim()).length} defined
+                    </p>
                   </div>
                 )}
               </div>
@@ -884,7 +1053,9 @@ export default function NewProposalPage() {
           <div className="card p-4 bg-[var(--background-tertiary)] border-dashed">
             <div className="flex items-center gap-2 mb-3">
               <HelpCircle className="h-4 w-4 text-[var(--accent)]" />
-              <p className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide">Tips</p>
+              <p className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide">
+                Tips
+              </p>
             </div>
             <ul className="space-y-2 text-xs text-[var(--foreground-muted)]">
               {phase === 0 && (
@@ -943,7 +1114,9 @@ export default function NewProposalPage() {
       {/* Navigation footer */}
       <div className="flex-shrink-0 mt-6 pt-6 border-t border-[var(--border)] flex justify-between items-center">
         <button
-          onClick={() => phase > 0 ? setPhase(phase - 1) : setIntakeMode("select")}
+          onClick={() =>
+            phase > 0 ? setPhase(phase - 1) : setIntakeMode("select")
+          }
           className="btn-secondary inline-flex items-center gap-2"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -955,20 +1128,31 @@ export default function NewProposalPage() {
         </div>
 
         {phase < 2 ? (
-          <button
-            onClick={() => setPhase(phase + 1)}
-            disabled={!canProceed || (phase === 1 && loadingStrategy)}
-            className="btn-primary inline-flex items-center gap-2 disabled:opacity-40"
-          >
-            {phase === 1 && loadingStrategy ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <>
-                Continue
-                <ArrowRight className="h-4 w-4" />
-              </>
+          <div className="flex items-center gap-3">
+            {!canProceed && phase === 0 && (
+              <p className="text-xs text-[var(--danger)]">
+                {!clientName.trim()
+                  ? "Client name is required"
+                  : !currentStatePains.some((p) => p.trim())
+                    ? "Add at least one pain point"
+                    : "Add at least one desired outcome"}
+              </p>
             )}
-          </button>
+            <button
+              onClick={() => setPhase(phase + 1)}
+              disabled={!canProceed || (phase === 1 && loadingStrategy)}
+              className="btn-primary inline-flex items-center gap-2 disabled:opacity-40"
+            >
+              {phase === 1 && loadingStrategy ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  Continue
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
+            </button>
+          </div>
         ) : (
           <button
             onClick={handleSubmit}
