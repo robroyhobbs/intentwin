@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { ExportGateModal } from "@/components/compliance/export-gate-modal";
 
 type ExportFormat = "slides" | "pptx" | "html" | "docx" | "pdf";
 
@@ -40,7 +41,8 @@ const EXPORT_OPTIONS: {
     icon: Play,
     gradient: "from-[var(--brand-primary)] to-[var(--brand-accent)]",
     iconBg: "bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]",
-    description: "Modern, interactive slides for sales discussions. Keyboard/touch navigation, fullscreen mode, concise bullets.",
+    description:
+      "Modern, interactive slides for sales discussions. Keyboard/touch navigation, fullscreen mode, concise bullets.",
     recommended: true,
   },
   {
@@ -49,8 +51,10 @@ const EXPORT_OPTIONS: {
     sublabel: ".pptx",
     icon: Presentation,
     gradient: "from-orange-500 to-amber-500",
-    iconBg: "bg-orange-500/10 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400",
-    description: "Classic PowerPoint for team editing and enterprise compatibility.",
+    iconBg:
+      "bg-orange-500/10 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400",
+    description:
+      "Classic PowerPoint for team editing and enterprise compatibility.",
   },
   {
     format: "html",
@@ -58,8 +62,10 @@ const EXPORT_OPTIONS: {
     sublabel: ".html",
     icon: Globe,
     gradient: "from-emerald-500 to-teal-500",
-    iconBg: "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400",
-    description: "Premium branded page with scroll animations for detailed proposals.",
+    iconBg:
+      "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400",
+    description:
+      "Premium branded page with scroll animations for detailed proposals.",
   },
   {
     format: "docx",
@@ -67,7 +73,8 @@ const EXPORT_OPTIONS: {
     sublabel: ".docx",
     icon: FileText,
     gradient: "from-blue-500 to-indigo-500",
-    iconBg: "bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400",
+    iconBg:
+      "bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400",
     description: "Editable document for team collaboration and revisions.",
   },
   {
@@ -81,39 +88,80 @@ const EXPORT_OPTIONS: {
   },
 ];
 
+interface UnaddressedRequirement {
+  id: string;
+  requirement_text: string;
+  category: "mandatory" | "desirable" | "informational";
+  compliance_status: string;
+  suggested_section?: string | null;
+}
+
 export default function ExportPage() {
   const params = useParams();
   const id = params.id as string;
   const [exporting, setExporting] = useState<string | null>(null);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [lastFormat, setLastFormat] = useState<ExportFormat | null>(null);
+  const [gateRequirements, setGateRequirements] = useState<
+    UnaddressedRequirement[] | null
+  >(null);
+  const [pendingFormat, setPendingFormat] = useState<ExportFormat | null>(null);
 
   const authFetch = useAuthFetch();
 
-  async function handleExport(format: ExportFormat) {
-    setExporting(format);
-    setDownloadUrl(null);
-    try {
-      const response = await authFetch(`/api/proposals/${id}/export`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ format }),
-      });
+  const doExport = useCallback(
+    async (format: ExportFormat) => {
+      setExporting(format);
+      setDownloadUrl(null);
+      try {
+        const response = await authFetch(`/api/proposals/${id}/export`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ format }),
+        });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Export failed");
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Export failed");
+        }
+
+        const data = await response.json();
+        setDownloadUrl(data.downloadUrl);
+        setLastFormat(format);
+        toast.success(
+          `${format === "slides" ? "Presentation" : format.toUpperCase()} exported successfully`,
+        );
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Export failed");
+      } finally {
+        setExporting(null);
       }
+    },
+    [authFetch, id],
+  );
 
-      const data = await response.json();
-      setDownloadUrl(data.downloadUrl);
-      setLastFormat(format);
-      toast.success(`${format === "slides" ? "Presentation" : format.toUpperCase()} exported successfully`);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Export failed");
-    } finally {
-      setExporting(null);
+  async function handleExport(format: ExportFormat) {
+    // Check for unaddressed requirements (fail-open: if check fails, proceed with export)
+    try {
+      const res = await authFetch(`/api/proposals/${id}/requirements`);
+      if (res.ok) {
+        const data = await res.json();
+        const requirements = data.requirements || [];
+        const unaddressed = requirements.filter(
+          (r: UnaddressedRequirement) =>
+            r.compliance_status === "not_addressed" ||
+            r.compliance_status === "partially_met",
+        );
+        if (unaddressed.length > 0) {
+          setGateRequirements(unaddressed);
+          setPendingFormat(format);
+          return;
+        }
+      }
+    } catch {
+      // Fail-open: proceed with export if gate check fails
     }
+    doExport(format);
   }
 
   return (
@@ -131,10 +179,13 @@ export default function ExportPage() {
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-accent)] shadow-lg">
             <Monitor className="h-5 w-5 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-[var(--foreground)]">Export Proposal</h1>
+          <h1 className="text-2xl font-bold text-[var(--foreground)]">
+            Export Proposal
+          </h1>
         </div>
         <p className="text-sm text-[var(--foreground-muted)] ml-[52px]">
-          Choose a format to export your proposal. Web presentations are recommended for sales discussions.
+          Choose a format to export your proposal. Web presentations are
+          recommended for sales discussions.
         </p>
       </div>
 
@@ -171,10 +222,14 @@ export default function ExportPage() {
               )}
 
               {/* Top gradient bar */}
-              <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${opt.gradient} opacity-0 group-hover:opacity-100 transition-opacity rounded-t-2xl`} />
+              <div
+                className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${opt.gradient} opacity-0 group-hover:opacity-100 transition-opacity rounded-t-2xl`}
+              />
 
               <div className="flex items-start gap-4">
-                <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${opt.iconBg} transition-all duration-200`}>
+                <div
+                  className={`flex h-11 w-11 items-center justify-center rounded-xl ${opt.iconBg} transition-all duration-200`}
+                >
                   {isExporting ? (
                     <Loader2 className="h-5 w-5 animate-spin" />
                   ) : (
@@ -215,7 +270,11 @@ export default function ExportPage() {
                   Export Ready
                 </h3>
                 <p className="mt-1 text-xs text-emerald-700/70 dark:text-emerald-300/70">
-                  Your {lastFormat === "slides" ? "presentation" : lastFormat?.toUpperCase()} has been generated successfully.
+                  Your{" "}
+                  {lastFormat === "slides"
+                    ? "presentation"
+                    : lastFormat?.toUpperCase()}{" "}
+                  has been generated successfully.
                 </p>
                 <a
                   href={downloadUrl}
@@ -234,7 +293,10 @@ export default function ExportPage() {
 
       {/* Deploy Instructions for slides/html */}
       {(lastFormat === "slides" || lastFormat === "html") && downloadUrl && (
-        <div className="mt-6 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
+        <div
+          className="mt-6 animate-fade-in-up"
+          style={{ animationDelay: "0.1s" }}
+        >
           <div className="rounded-2xl border border-[var(--brand-primary)]/20 bg-gradient-to-br from-[var(--brand-primary)]/5 to-[var(--brand-accent)]/5 p-6 shadow-sm">
             <div className="flex items-start gap-4">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--brand-primary)]/10">
@@ -242,7 +304,8 @@ export default function ExportPage() {
               </div>
               <div className="flex-1">
                 <h3 className="text-sm font-bold text-[var(--foreground)]">
-                  Deploy as Live {lastFormat === "slides" ? "Presentation" : "Landing Page"}
+                  Deploy as Live{" "}
+                  {lastFormat === "slides" ? "Presentation" : "Landing Page"}
                 </h3>
                 <p className="mt-1 text-xs text-[var(--foreground-muted)]">
                   {lastFormat === "slides"
@@ -252,22 +315,38 @@ export default function ExportPage() {
 
                 <div className="mt-4 space-y-3">
                   <div className="flex items-start gap-3">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--brand-primary)]/10 text-[10px] font-bold text-[var(--brand-primary)] flex-shrink-0">1</div>
-                    <p className="text-xs text-[var(--foreground-muted)]">Download the file using the button above</p>
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--brand-primary)]/10 text-[10px] font-bold text-[var(--brand-primary)] flex-shrink-0">
+                      1
+                    </div>
+                    <p className="text-xs text-[var(--foreground-muted)]">
+                      Download the file using the button above
+                    </p>
                   </div>
                   <div className="flex items-start gap-3">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--brand-primary)]/10 text-[10px] font-bold text-[var(--brand-primary)] flex-shrink-0">2</div>
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--brand-primary)]/10 text-[10px] font-bold text-[var(--brand-primary)] flex-shrink-0">
+                      2
+                    </div>
                     <div>
-                      <p className="text-xs text-[var(--foreground-muted)]">Run the deploy command in Claude Code:</p>
+                      <p className="text-xs text-[var(--foreground-muted)]">
+                        Run the deploy command in Claude Code:
+                      </p>
                       <div className="mt-1.5 flex items-center gap-2 rounded-lg bg-[var(--background-secondary)] border border-[var(--border)] px-3 py-2">
                         <Terminal className="h-3.5 w-3.5 text-[var(--brand-accent)]" />
-                        <code className="text-xs text-[var(--brand-primary)] font-mono">/myvibe:publish</code>
+                        <code className="text-xs text-[var(--brand-primary)] font-mono">
+                          /myvibe:publish
+                        </code>
                       </div>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--brand-primary)]/10 text-[10px] font-bold text-[var(--brand-primary)] flex-shrink-0">3</div>
-                    <p className="text-xs text-[var(--foreground-muted)]">Your {lastFormat === "slides" ? "presentation" : "proposal"} is live and shareable!</p>
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--brand-primary)]/10 text-[10px] font-bold text-[var(--brand-primary)] flex-shrink-0">
+                      3
+                    </div>
+                    <p className="text-xs text-[var(--foreground-muted)]">
+                      Your{" "}
+                      {lastFormat === "slides" ? "presentation" : "proposal"} is
+                      live and shareable!
+                    </p>
                   </div>
                 </div>
               </div>
@@ -278,9 +357,14 @@ export default function ExportPage() {
 
       {/* Tips for slides */}
       {lastFormat === "slides" && downloadUrl && (
-        <div className="mt-6 animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
+        <div
+          className="mt-6 animate-fade-in-up"
+          style={{ animationDelay: "0.2s" }}
+        >
           <div className="rounded-2xl border border-[var(--border)] bg-[var(--card-bg)] p-6">
-            <h4 className="text-sm font-semibold text-[var(--foreground)] mb-3">Presentation Tips</h4>
+            <h4 className="text-sm font-semibold text-[var(--foreground)] mb-3">
+              Presentation Tips
+            </h4>
             <ul className="space-y-2 text-xs text-[var(--foreground-muted)]">
               <li className="flex items-center gap-2">
                 <span className="text-[var(--brand-accent)]">→</span>
@@ -301,6 +385,25 @@ export default function ExportPage() {
             </ul>
           </div>
         </div>
+      )}
+
+      {/* Export Gate Modal */}
+      {gateRequirements && pendingFormat && (
+        <ExportGateModal
+          proposalId={id}
+          requirements={gateRequirements}
+          format={pendingFormat}
+          onExportAnyway={() => {
+            const format = pendingFormat;
+            setGateRequirements(null);
+            setPendingFormat(null);
+            doExport(format);
+          }}
+          onCancel={() => {
+            setGateRequirements(null);
+            setPendingFormat(null);
+          }}
+        />
       )}
     </div>
   );

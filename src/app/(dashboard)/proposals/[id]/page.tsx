@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
   Loader2,
@@ -61,7 +61,11 @@ interface Proposal {
 export default function ProposalPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const id = params.id as string;
+
+  const initialTab =
+    searchParams.get("tab") === "compliance" ? "compliance" : "sections";
 
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [sections, setSections] = useState<Section[]>([]);
@@ -82,7 +86,7 @@ export default function ProposalPage() {
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [applyingFixes, setApplyingFixes] = useState(false);
   const [activeTab, setActiveTab] = useState<"sections" | "compliance">(
-    "sections",
+    initialTab,
   );
   const authFetch = useAuthFetch();
 

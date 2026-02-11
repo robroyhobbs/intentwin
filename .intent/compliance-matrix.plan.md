@@ -325,45 +325,45 @@ Build the soft export gate modal that warns about unaddressed requirements on ex
 
 #### Happy Path
 
-- [ ] Export gate modal appears when exporting with unaddressed requirements
-- [ ] Modal lists unaddressed requirements grouped by category (mandatory first)
-- [ ] Modal shows suggested section for each requirement
-- [ ] "Export Anyway" proceeds with export normally
-- [ ] "Cancel" closes modal without exporting
-- [ ] "Address Now" navigates to compliance tab
-- [ ] "Address" button on kanban card navigates to the mapped section in section editor
-- [ ] Export with all requirements met/N/A skips the modal entirely
-- [ ] Toast notification appears after extraction completes: "X requirements extracted"
+- [x] Export gate modal appears when exporting with unaddressed requirements
+- [x] Modal lists unaddressed requirements grouped by category (mandatory first)
+- [x] Modal shows suggested section for each requirement
+- [x] "Export Anyway" proceeds with export normally
+- [x] "Cancel" closes modal without exporting
+- [x] "Address Now" navigates to compliance tab
+- [x] "Address" button on kanban card navigates to the mapped section in section editor
+- [x] Export with all requirements met/N/A skips the modal entirely
+- [x] Toast notification appears after extraction completes: "X requirements extracted"
 
 #### Bad Path
 
-- [ ] Export gate handles proposal with 0 requirements gracefully (no modal)
-- [ ] "Address" on card with no mapped section shows "Select a section first" prompt
-- [ ] Extraction fails silently — no toast, no blocking, extraction can be retried from compliance tab
-- [ ] Export gate API call fails — falls through to export (fail-open, not fail-closed)
+- [x] Export gate handles proposal with 0 requirements gracefully (no modal)
+- [x] "Address" on card with no mapped section shows "Select a section first" prompt
+- [x] Extraction fails silently — no toast, no blocking, extraction can be retried from compliance tab
+- [x] Export gate API call fails — falls through to export (fail-open, not fail-closed)
 
 #### Edge Cases
 
-- [ ] Modal with 20+ unaddressed requirements scrolls without breaking layout
-- [ ] All requirements are "not_applicable" — no modal (N/A counts as addressed)
-- [ ] Modal appears correctly for all export formats (DOCX, PDF, PPTX)
-- [ ] "Address Now" preserves current export format state for when user returns
+- [x] Modal with 20+ unaddressed requirements scrolls without breaking layout
+- [x] All requirements are "not_applicable" — no modal (N/A counts as addressed)
+- [x] Modal appears correctly for all export formats (DOCX, PDF, PPTX)
+- [x] "Address Now" preserves current export format state for when user returns
 
 #### Security
 
-- [ ] Export gate checks requirements for current proposal only (no cross-proposal leakage)
-- [ ] "Address" navigation validates section belongs to current proposal
+- [x] Export gate checks requirements for current proposal only (no cross-proposal leakage)
+- [x] "Address" navigation validates section belongs to current proposal
 
 #### Data Leak
 
-- [ ] Export gate modal doesn't include internal requirement IDs in DOM
-- [ ] "Export Anyway" action doesn't log which requirements were skipped
+- [x] Export gate modal doesn't include internal requirement IDs in DOM
+- [x] "Export Anyway" action doesn't log which requirements were skipped
 
 #### Data Damage
 
-- [ ] Export gate is read-only — doesn't modify any requirement data
-- [ ] Rapid "Export Anyway" clicks don't trigger multiple exports
-- [ ] "Address Now" → back to export doesn't duplicate the gate check
+- [x] Export gate is read-only — doesn't modify any requirement data
+- [x] Rapid "Export Anyway" clicks don't trigger multiple exports
+- [x] "Address Now" → back to export doesn't duplicate the gate check
 
 ### E2E Gate
 
@@ -385,14 +385,14 @@ curl -s http://localhost:3001/api/health | jq .status
 
 ### Acceptance Criteria
 
-- [ ] Export gate modal shows unaddressed requirements on export
-- [ ] "Export Anyway" / "Cancel" / "Address Now" all work correctly
-- [ ] "Address" button on kanban navigates to section editor
-- [ ] Extraction triggered from document upload with toast notification
-- [ ] Full end-to-end flow works: upload → extract → generate → compliance tab → export gate
-- [ ] All tests pass
-- [ ] TypeScript compiles clean
-- [ ] Production build succeeds
+- [x] Export gate modal shows unaddressed requirements on export
+- [x] "Export Anyway" / "Cancel" / "Address Now" all work correctly
+- [x] "Address" button on kanban navigates to section editor
+- [x] Extraction triggered from document upload with toast notification
+- [x] Full end-to-end flow works: upload → extract → generate → compliance tab → export gate
+- [x] All tests pass
+- [x] TypeScript compiles clean
+- [x] Production build succeeds
 
 ---
 
