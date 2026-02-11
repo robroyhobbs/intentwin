@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
+import { toast } from "sonner";
 import { Agentation } from "agentation";
 import type { ProposalReview } from "@/types/review";
 
@@ -49,18 +50,23 @@ export function AgentationWrapper({
               },
               selected_text: annotation.selectedText,
             }),
-          }
+          },
         );
 
         if (response.ok) {
           const data = await response.json();
           onAnnotationAdded?.(data.review);
+          toast.success("Comment added");
+        } else {
+          const err = await response.json().catch(() => ({}));
+          toast.error(err.error || "Failed to save comment");
         }
       } catch (error) {
         console.error("Failed to save annotation:", error);
+        toast.error("Failed to save comment — check your connection");
       }
     },
-    [proposalId, sectionId, authFetch, onAnnotationAdded]
+    [proposalId, sectionId, authFetch, onAnnotationAdded],
   );
 
   return (

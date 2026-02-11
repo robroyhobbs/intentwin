@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import {
   MessageSquare,
@@ -25,7 +26,9 @@ export default function BrandVoiceSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [orgId, setOrgId] = useState<string | null>(null);
-  const [existingSettings, setExistingSettings] = useState<Record<string, unknown>>({});
+  const [existingSettings, setExistingSettings] = useState<
+    Record<string, unknown>
+  >({});
 
   // Form state
   const [tone, setTone] = useState("");
@@ -40,7 +43,9 @@ export default function BrandVoiceSettingsPage() {
 
   async function loadData() {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       const { data: profile } = await supabase
@@ -61,18 +66,20 @@ export default function BrandVoiceSettingsPage() {
           const settings = (org.settings || {}) as Record<string, unknown>;
           setExistingSettings(settings);
 
-          const brandVoice = settings.brand_voice as BrandVoiceSettings | undefined;
+          const brandVoice = settings.brand_voice as
+            | BrandVoiceSettings
+            | undefined;
           if (brandVoice) {
             setTone(brandVoice.tone || "");
             setUseTerms(
               brandVoice.terminology?.use?.length > 0
                 ? brandVoice.terminology.use
-                : [""]
+                : [""],
             );
             setAvoidTerms(
               brandVoice.terminology?.avoid?.length > 0
                 ? brandVoice.terminology.avoid
-                : [""]
+                : [""],
             );
           }
         }
@@ -93,8 +100,8 @@ export default function BrandVoiceSettingsPage() {
       const brandVoice: BrandVoiceSettings = {
         tone: tone.trim(),
         terminology: {
-          use: useTerms.filter(t => t.trim()).map(t => t.trim()),
-          avoid: avoidTerms.filter(t => t.trim()).map(t => t.trim()),
+          use: useTerms.filter((t) => t.trim()).map((t) => t.trim()),
+          avoid: avoidTerms.filter((t) => t.trim()).map((t) => t.trim()),
         },
       };
 
@@ -115,7 +122,7 @@ export default function BrandVoiceSettingsPage() {
       await loadData();
     } catch (error) {
       console.error("Error saving brand voice:", error);
-      alert("Failed to save brand voice settings");
+      toast.error("Failed to save brand voice settings");
     } finally {
       setSaving(false);
     }
@@ -156,9 +163,12 @@ export default function BrandVoiceSettingsPage() {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[var(--foreground)]">Brand Voice</h1>
+        <h1 className="text-2xl font-bold text-[var(--foreground)]">
+          Brand Voice
+        </h1>
         <p className="mt-1 text-sm text-[var(--foreground-muted)]">
-          Define how your proposals should sound — tone, preferred terminology, and words to avoid
+          Define how your proposals should sound — tone, preferred terminology,
+          and words to avoid
         </p>
       </div>
 
@@ -168,9 +178,10 @@ export default function BrandVoiceSettingsPage() {
           <AlertCircle className="h-5 w-5 text-[var(--accent)] flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-sm text-[var(--foreground)]">
-              <strong>Why this matters:</strong> Brand voice settings are injected into every AI-generated
-              proposal section. The tone shapes how the AI writes, and terminology constraints are
-              validated after each section is generated.
+              <strong>Why this matters:</strong> Brand voice settings are
+              injected into every AI-generated proposal section. The tone shapes
+              how the AI writes, and terminology constraints are validated after
+              each section is generated.
             </p>
           </div>
         </div>
@@ -180,10 +191,13 @@ export default function BrandVoiceSettingsPage() {
       <div className="card p-6 mb-6">
         <div className="flex items-center gap-2 mb-4">
           <MessageSquare className="h-5 w-5 text-[var(--accent)]" />
-          <h3 className="text-lg font-medium text-[var(--foreground)]">Tone & Voice</h3>
+          <h3 className="text-lg font-medium text-[var(--foreground)]">
+            Tone & Voice
+          </h3>
         </div>
         <p className="text-sm text-[var(--foreground-muted)] mb-4">
-          Describe how your proposals should sound. This is injected into the AI system prompt for every section.
+          Describe how your proposals should sound. This is injected into the AI
+          system prompt for every section.
         </p>
         <textarea
           value={tone}
@@ -193,14 +207,17 @@ export default function BrandVoiceSettingsPage() {
           placeholder="e.g., confident, collaborative, outcomes-focused. Write in active voice. Be specific but not jargon-heavy."
         />
         <p className="mt-1 text-xs text-[var(--foreground-muted)]">
-          Tip: Include perspective (first person plural), formality level, and emotional register.
+          Tip: Include perspective (first person plural), formality level, and
+          emotional register.
         </p>
       </div>
 
       {/* Preferred Terminology */}
       <div className="card p-6 mb-6">
         <div className="mb-4">
-          <h3 className="text-lg font-medium text-[var(--foreground)]">Preferred Terminology</h3>
+          <h3 className="text-lg font-medium text-[var(--foreground)]">
+            Preferred Terminology
+          </h3>
           <p className="text-sm text-[var(--foreground-muted)]">
             Terms and phrases the AI should use in your proposals.
           </p>
@@ -240,9 +257,12 @@ export default function BrandVoiceSettingsPage() {
       {/* Avoided Terminology */}
       <div className="card p-6 mb-6">
         <div className="mb-4">
-          <h3 className="text-lg font-medium text-[var(--foreground)]">Terminology to Avoid</h3>
+          <h3 className="text-lg font-medium text-[var(--foreground)]">
+            Terminology to Avoid
+          </h3>
           <p className="text-sm text-[var(--foreground-muted)]">
-            Words and phrases the AI should never use. These are checked after each section is generated.
+            Words and phrases the AI should never use. These are checked after
+            each section is generated.
           </p>
         </div>
 
@@ -279,11 +299,7 @@ export default function BrandVoiceSettingsPage() {
 
       {/* Save */}
       <div className="flex justify-end mb-8">
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="btn-primary"
-        >
+        <button onClick={handleSave} disabled={saving} className="btn-primary">
           {saving ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : saved ? (

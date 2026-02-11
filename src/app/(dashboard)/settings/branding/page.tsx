@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
+import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import {
   Palette,
@@ -121,7 +122,7 @@ export default function BrandingSettingsPage() {
       setTimeout(() => setSaved(false), 2000);
     } catch (error) {
       console.error("Error saving branding:", error);
-      alert("Failed to save branding settings");
+      toast.error("Failed to save branding settings");
     } finally {
       setSaving(false);
     }
@@ -133,12 +134,12 @@ export default function BrandingSettingsPage() {
 
     // Validate file
     if (!file.type.startsWith("image/")) {
-      alert("Please upload an image file");
+      toast.error("Please upload an image file");
       return;
     }
 
     if (file.size > 2 * 1024 * 1024) {
-      alert("Logo must be less than 2MB");
+      toast.error("Logo must be less than 2MB");
       return;
     }
 
@@ -167,7 +168,7 @@ export default function BrandingSettingsPage() {
       setBranding({ ...branding, logo_url: urlData.publicUrl });
     } catch (error) {
       console.error("Error uploading logo:", error);
-      alert(
+      toast.error(
         "Failed to upload logo. Make sure the organization-assets bucket exists in Supabase Storage.",
       );
     } finally {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
 import {
@@ -240,7 +241,7 @@ export default function CompanySettingsPage() {
       await loadData();
     } catch (error) {
       console.error("Error saving:", error);
-      alert("Failed to save changes");
+      toast.error("Failed to save changes");
     } finally {
       setSaving(false);
     }
@@ -337,7 +338,7 @@ export default function CompanySettingsPage() {
         });
         if (!res.ok) {
           const err = await res.json();
-          alert(err.error || "Failed to update product");
+          toast.error(err.error || "Failed to update product");
           return;
         }
       } else {
@@ -348,7 +349,7 @@ export default function CompanySettingsPage() {
         });
         if (!res.ok) {
           const err = await res.json();
-          alert(err.error || "Failed to create product");
+          toast.error(err.error || "Failed to create product");
           return;
         }
       }
@@ -356,7 +357,7 @@ export default function CompanySettingsPage() {
       await loadProducts();
     } catch (error) {
       console.error("Error saving product:", error);
-      alert("Failed to save product");
+      toast.error("Failed to save product");
     } finally {
       setProductSaving(false);
     }

@@ -448,14 +448,20 @@ export default function ProposalPage() {
                   onClick={() => setShowReviewPanel(!showReviewPanel)}
                   className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-all ${
                     showReviewPanel
-                      ? "border-[var(--accent)] bg-[var(--accent-subtle)] text-[var(--accent)]"
+                      ? "border-[var(--accent)] bg-[var(--accent)] text-white shadow-md"
                       : "border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-tertiary)]"
                   }`}
                 >
                   <MessageSquare className="h-4 w-4" />
                   Review
                   {reviewSummary.open > 0 && (
-                    <span className="badge badge-warning text-[10px]">
+                    <span
+                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                        showReviewPanel
+                          ? "bg-white/20 text-white"
+                          : "bg-[var(--warning-subtle)] text-[var(--warning)]"
+                      }`}
+                    >
                       {reviewSummary.open}
                     </span>
                   )}

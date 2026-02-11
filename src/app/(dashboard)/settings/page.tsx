@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import {
   CreditCard,
@@ -89,11 +90,11 @@ export default function SettingsPage() {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        alert(data.error || "Failed to open billing portal");
+        toast.error(data.error || "Failed to open billing portal");
       }
     } catch (error) {
       console.error("Portal error:", error);
-      alert("Failed to open billing portal");
+      toast.error("Failed to open billing portal");
     } finally {
       setPortalLoading(false);
     }
