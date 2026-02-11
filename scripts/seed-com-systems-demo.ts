@@ -37,9 +37,9 @@ const supabase = createClient(
   },
 );
 
-const DEMO_EMAIL = "demo@thecomsystems.com";
+const DEMO_EMAIL = "som@thecomsystems.com";
 const DEMO_PASSWORD = "COMSystems2026!";
-const DEMO_NAME = "COM Systems Demo";
+const DEMO_NAME = "Som Sengmany";
 const ORG_NAME = "COM Systems Inc";
 
 // ===========================================
