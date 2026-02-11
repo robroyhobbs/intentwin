@@ -25,9 +25,9 @@ export async function generatePdf(data: ProposalData): Promise<Buffer> {
   // Use @sparticuz/chromium for serverless (Vercel) compatibility
   const browser = await puppeteerCore.launch({
     args: chromium.args,
-    defaultViewport: chromium.defaultViewport,
+    defaultViewport: { width: 1280, height: 720 },
     executablePath: await chromium.executablePath(),
-    headless: chromium.headless,
+    headless: true,
   });
 
   try {
