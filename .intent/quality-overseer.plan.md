@@ -165,54 +165,54 @@ Build the full review pipeline: review all sections, identify weak ones (< 8.5 a
 
 #### Happy Path
 
-- [ ] Reviews all sections in a proposal sequentially
-- [ ] Identifies sections scoring below 8.5 threshold
-- [ ] Regenerates weak sections with Gemini, injecting GPT-4o feedback as context
-- [ ] Re-reviews regenerated sections with GPT-4o (Round 2)
-- [ ] Calculates overall score as average of all section averages
-- [ ] Determines pass/fail based on 9.0 threshold
-- [ ] Stores complete quality_review JSONB with correct structure
-- [ ] Logs remediation entries (original score, issues, new score)
-- [ ] Sets status to "completed" when done
+- [x] Reviews all sections in a proposal sequentially
+- [x] Identifies sections scoring below 8.5 threshold
+- [x] Regenerates weak sections with Gemini, injecting GPT-4o feedback as context
+- [x] Re-reviews regenerated sections with GPT-4o (Round 2)
+- [x] Calculates overall score as average of all section averages
+- [x] Determines pass/fail based on 9.0 threshold
+- [x] Stores complete quality_review JSONB with correct structure
+- [x] Logs remediation entries (original score, issues, new score)
+- [x] Sets status to "completed" when done
 
 #### Bad Path
 
-- [ ] Handles proposal with 0 sections (sets status "completed" with empty sections array)
-- [ ] Handles GPT-4o failure mid-review (marks status "failed", stores partial results)
-- [ ] Handles Gemini regeneration failure (keeps original content, logs error in remediation)
-- [ ] Handles proposal not found (throws, caller handles)
-- [ ] Handles database write failure (retries once, then fails)
-- [ ] Handles all sections failing review (still completes, all in remediation log)
+- [x] Handles proposal with 0 sections (sets status "completed" with empty sections array)
+- [x] Handles GPT-4o failure mid-review (marks status "failed", stores partial results)
+- [x] Handles Gemini regeneration failure (keeps original content, logs error in remediation)
+- [x] Handles proposal not found (throws, caller handles)
+- [x] Handles database write failure (retries once, then fails)
+- [x] Handles all sections failing review (still completes, all in remediation log)
 
 #### Edge Cases
 
-- [ ] Proposal with exactly 1 section
-- [ ] All sections pass first review (no remediation needed, 0 entries)
-- [ ] All sections fail first review (all regenerated)
-- [ ] Regenerated section scores worse than original (keeps new score, logs regression)
-- [ ] Section barely below threshold (8.4 → triggers regen)
-- [ ] Section exactly at threshold (8.5 → no regen)
-- [ ] Overall score exactly 9.0 (pass = true)
+- [x] Proposal with exactly 1 section
+- [x] All sections pass first review (no remediation needed, 0 entries)
+- [x] All sections fail first review (all regenerated)
+- [x] Regenerated section scores worse than original (keeps new score, logs regression)
+- [x] Section barely below threshold (8.4 → triggers regen)
+- [x] Section exactly at threshold (8.5 → no regen)
+- [x] Overall score exactly 9.0 (pass = true)
 
 #### Security
 
-- [ ] Only processes sections belonging to the specified proposal
-- [ ] Regeneration uses same auth context as original generation
-- [ ] Cannot trigger review on another org's proposal
+- [x] Only processes sections belonging to the specified proposal
+- [x] Regeneration uses same auth context as original generation
+- [x] Cannot trigger review on another org's proposal
 
 #### Data Leak
 
-- [ ] Quality review JSONB doesn't contain raw GPT-4o prompts
-- [ ] Remediation log doesn't expose internal scoring rubric
-- [ ] Failed review status doesn't leak error details to frontend
+- [x] Quality review JSONB doesn't contain raw GPT-4o prompts
+- [x] Remediation log doesn't expose internal scoring rubric
+- [x] Failed review status doesn't leak error details to frontend
 
 #### Data Damage
 
-- [ ] Regenerated content properly updates the section's `generated_content`
-- [ ] Original content is preserved if regeneration fails
-- [ ] Concurrent review requests on same proposal are prevented (status check)
-- [ ] Partial completion stores what was reviewed (doesn't lose progress)
-- [ ] Version snapshot created after remediation (tracks changes)
+- [x] Regenerated content properly updates the section's `generated_content`
+- [x] Original content is preserved if regeneration fails
+- [x] Concurrent review requests on same proposal are prevented (status check)
+- [x] Partial completion stores what was reviewed (doesn't lose progress)
+- [x] Version snapshot created after remediation (tracks changes)
 
 ### E2E Gate
 
@@ -251,51 +251,51 @@ Create the two API endpoints: POST to trigger async quality review, GET to poll 
 
 #### Happy Path
 
-- [ ] POST `/api/proposals/[id]/quality-review` triggers review and returns `{ status: "reviewing" }`
-- [ ] POST accepts `{ trigger: "manual" }` and `{ trigger: "auto_post_generation" }`
-- [ ] Background process runs quality review to completion
-- [ ] GET `/api/proposals/[id]/quality-review` returns current quality_review JSONB
-- [ ] GET returns null/empty when no review has been run
-- [ ] GET returns partial results while review is in progress (status: "reviewing")
+- [x] POST `/api/proposals/[id]/quality-review` triggers review and returns `{ status: "reviewing" }`
+- [x] POST accepts `{ trigger: "manual" }` and `{ trigger: "auto_post_generation" }`
+- [x] Background process runs quality review to completion
+- [x] GET `/api/proposals/[id]/quality-review` returns current quality_review JSONB
+- [x] GET returns null/empty when no review has been run
+- [x] GET returns partial results while review is in progress (status: "reviewing")
 
 #### Bad Path
 
-- [ ] POST returns 404 when proposal doesn't exist
-- [ ] POST returns 401 when user is not authenticated
-- [ ] POST returns 403 when user doesn't own the proposal
-- [ ] POST returns 409 when review is already in progress
-- [ ] POST returns 400 with invalid trigger value
-- [ ] GET returns 404 when proposal doesn't exist
-- [ ] GET returns 401/403 for unauthorized access
-- [ ] Background process failure sets status to "failed" (not stuck on "reviewing")
+- [x] POST returns 404 when proposal doesn't exist
+- [x] POST returns 401 when user is not authenticated
+- [x] POST returns 403 when user doesn't own the proposal
+- [x] POST returns 409 when review is already in progress
+- [x] POST returns 400 with invalid trigger value
+- [x] GET returns 404 when proposal doesn't exist
+- [x] GET returns 401/403 for unauthorized access
+- [x] Background process failure sets status to "failed" (not stuck on "reviewing")
 
 #### Edge Cases
 
-- [ ] POST on proposal with no sections (completes immediately)
-- [ ] Rapid POST requests (second request gets 409)
-- [ ] GET during transition from reviewing → completed (returns latest state)
-- [ ] POST after a previous review exists (overwrites with new review)
-- [ ] Very long review process (Vercel timeout handling with maxDuration)
+- [x] POST on proposal with no sections (completes immediately)
+- [x] Rapid POST requests (second request gets 409)
+- [x] GET during transition from reviewing → completed (returns latest state)
+- [x] POST after a previous review exists (overwrites with new review)
+- [x] Very long review process (Vercel timeout handling with maxDuration)
 
 #### Security
 
-- [ ] Auth check on both endpoints (Supabase session)
-- [ ] Organization-scoped access (user can only review their org's proposals)
-- [ ] Rate limiting consideration (manual trigger shouldn't be spammable)
-- [ ] POST body validated with Zod schema
-- [ ] No SQL injection via proposal ID parameter
+- [x] Auth check on both endpoints (Supabase session)
+- [x] Organization-scoped access (user can only review their org's proposals)
+- [x] Rate limiting consideration (manual trigger shouldn't be spammable)
+- [x] POST body validated with Zod schema
+- [x] No SQL injection via proposal ID parameter
 
 #### Data Leak
 
-- [ ] 404 response doesn't reveal whether proposal exists for other orgs
-- [ ] Error responses don't expose internal architecture
-- [ ] API responses don't include server-side-only fields
+- [x] 404 response doesn't reveal whether proposal exists for other orgs
+- [x] Error responses don't expose internal architecture
+- [x] API responses don't include server-side-only fields
 
 #### Data Damage
 
-- [ ] POST is idempotent when review is already running (409, doesn't start second)
-- [ ] Background failure doesn't leave proposal in permanent "reviewing" state
-- [ ] GET is read-only (no side effects)
+- [x] POST is idempotent when review is already running (409, doesn't start second)
+- [x] Background failure doesn't leave proposal in permanent "reviewing" state
+- [x] GET is read-only (no side effects)
 
 ### E2E Gate
 
