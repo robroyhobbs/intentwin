@@ -16,6 +16,7 @@ import { buildPricingPrompt } from "./prompts/pricing";
 import { buildRiskMitigationPrompt } from "./prompts/risk-mitigation";
 import { buildWhyUsPrompt } from "./prompts/why-us";
 import { createProposalVersion } from "@/lib/versioning/create-version";
+import { runQualityReview } from "./quality-overseer";
 import { loadSources, formatSourcesAsL1Context } from "@/lib/sources";
 import {
   getPersuasionPrompt,
@@ -617,6 +618,15 @@ export async function generateProposal(proposalId: string): Promise<void> {
       triggerEvent: "generation_complete",
       changeSummary: "AI generation completed for all sections",
       label: "Initial Generation",
+    });
+
+    // Auto-trigger quality review after generation completes (fire-and-forget)
+    runQualityReview(proposalId, "auto_post_generation").catch((err) => {
+      console.error(
+        `Auto quality review failed for proposal ${proposalId}:`,
+        err,
+      );
+      // Don't throw — user can manually trigger if auto-trigger fails
     });
   } catch (error) {
     const errorMessage =

@@ -420,40 +420,40 @@ Wire the quality review to auto-trigger when proposal generation completes. Add 
 
 #### Happy Path
 
-- [ ] After full proposal generation completes, quality review auto-triggers
-- [ ] Auto-trigger uses `trigger: "auto_post_generation"`
-- [ ] Regeneration prompt includes GPT-4o feedback (issues + improvement suggestions)
-- [ ] Regenerated section content replaces original in `generated_content`
-- [ ] Frontend sees generation complete → review starts → review completes
+- [x] After full proposal generation completes, quality review auto-triggers
+- [x] Auto-trigger uses `trigger: "auto_post_generation"`
+- [x] Regeneration prompt includes GPT-4o feedback (issues + improvement suggestions)
+- [x] Regenerated section content replaces original in `generated_content`
+- [x] Frontend sees generation complete → review starts → review completes
 
 #### Bad Path
 
-- [ ] Generation failure doesn't trigger quality review
-- [ ] Quality review failure doesn't affect proposal status (stays "review")
-- [ ] Regeneration failure during remediation doesn't crash the review
-- [ ] Auto-trigger on proposal with failed sections (reviews only completed sections)
+- [x] Generation failure doesn't trigger quality review
+- [x] Quality review failure doesn't affect proposal status (stays "review")
+- [x] Regeneration failure during remediation doesn't crash the review
+- [x] Auto-trigger on proposal with failed sections (reviews only completed sections)
 
 #### Edge Cases
 
-- [ ] User triggers manual review while auto-review is pending (409)
-- [ ] User starts editing before auto-review completes (edits preserved)
-- [ ] Generation of new version while review is running (review uses sections at trigger time)
+- [x] User triggers manual review while auto-review is pending (409)
+- [x] User starts editing before auto-review completes (edits preserved)
+- [x] Generation of new version while review is running (review uses sections at trigger time)
 
 #### Security
 
-- [ ] Auto-trigger runs with same auth context as generation
-- [ ] Regeneration uses same organization-scoped prompts
+- [x] Auto-trigger runs with same auth context as generation
+- [x] Regeneration uses same organization-scoped prompts
 
 #### Data Leak
 
-- [ ] GPT-4o feedback in regeneration prompt doesn't leak to user-visible prompt field
-- [ ] Auto-trigger doesn't expose review details in generation logs
+- [x] GPT-4o feedback in regeneration prompt doesn't leak to user-visible prompt field
+- [x] Auto-trigger doesn't expose review details in generation logs
 
 #### Data Damage
 
-- [ ] User edits (`edited_content`) are never overwritten by regeneration
-- [ ] Regeneration only updates `generated_content`
-- [ ] Version snapshot distinguishes generation vs. remediation changes
+- [x] User edits (`edited_content`) are never overwritten by regeneration
+- [x] Regeneration only updates `generated_content`
+- [x] Version snapshot distinguishes generation vs. remediation changes
 
 ### E2E Gate
 
@@ -478,13 +478,13 @@ pnpm test
 
 ### Acceptance Criteria
 
-- [ ] Generation pipeline calls POST quality-review on completion
-- [ ] Regeneration prompt enhancement with GPT-4o feedback
-- [ ] `edited_content` never overwritten
-- [ ] Version snapshot for remediation changes
-- [ ] End-to-end flow: generate → auto-review → remediate → complete
-- [ ] All tests pass
-- [ ] Code committed
+- [x] Generation pipeline calls POST quality-review on completion
+- [x] Regeneration prompt enhancement with GPT-4o feedback
+- [x] `edited_content` never overwritten
+- [x] Version snapshot for remediation changes
+- [x] End-to-end flow: generate → auto-review → remediate → complete
+- [x] All tests pass
+- [x] Code committed
 
 ---
 
