@@ -19,8 +19,23 @@ import {
   History,
   ShieldCheck,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
-import { ProposalContentRenderer } from "@/components/proposal-content-renderer";
+const ProposalContentRenderer = dynamic(
+  () =>
+    import("@/components/proposal-content-renderer").then(
+      (mod) => mod.ProposalContentRenderer,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center gap-2 text-xs text-[var(--foreground-subtle)] py-4">
+        <div className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--border)] border-t-[var(--accent)]" />
+        Loading content...
+      </div>
+    ),
+  },
+);
 import { SectionNavSidebar } from "@/components/ui/section-nav-sidebar";
 import { SectionStatusBadge } from "@/components/ui/section-status-badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";

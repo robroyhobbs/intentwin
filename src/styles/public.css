@@ -1,0 +1,455 @@
+/* ==========================================================================
+   IntentWin Public Pages - Shared Styles
+   ========================================================================== */
+
+/* ==========================================================================
+   Base Page Styles (vf-page)
+   Used by: Landing, Pricing
+   ========================================================================== */
+
+.vf-page {
+  background: #09090b;
+  color: #a1a1aa;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  font-weight: 400;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* ==========================================================================
+   Navigation (vf-nav)
+   Used by: Landing, Pricing
+   ========================================================================== */
+
+.vf-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: rgba(9, 9, 11, 0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.vf-nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 18px 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.vf-logo {
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+  text-decoration: none;
+  letter-spacing: -0.03em;
+}
+.vf-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+.vf-nav-links a {
+  color: #71717a;
+  text-decoration: none;
+  font-size: 13px;
+  transition: color 0.2s;
+}
+.vf-nav-links a:hover {
+  color: #fff;
+}
+.vf-nav-cta {
+  background: linear-gradient(135deg, #7c3aed, #6366f1) !important;
+  color: #fff !important;
+  padding: 8px 22px;
+  border-radius: 8px;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  transition: all 0.2s;
+}
+.vf-nav-cta:hover {
+  opacity: 0.9;
+}
+
+/* ==========================================================================
+   Typography Utilities
+   Used by: Landing, Pricing
+   ========================================================================== */
+
+.vf-gradient-text {
+  background: linear-gradient(135deg, #a78bfa, #818cf8, #6366f1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.vf-section-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 48px;
+}
+.vf-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  background: linear-gradient(90deg, #a78bfa, #818cf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 16px;
+}
+.vf-section-heading {
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 800;
+  line-height: 1.15;
+  color: #fafafa;
+  letter-spacing: -0.03em;
+  margin: 0 0 56px;
+}
+
+/* ==========================================================================
+   Buttons (vf-btn-*)
+   Used by: Landing, Pricing, Request-Access (via ra-btn-ghost equivalent)
+   ========================================================================== */
+
+.vf-btn-primary {
+  display: inline-block;
+  padding: 14px 36px;
+  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 10px;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 24px rgba(124, 58, 237, 0.2);
+}
+.vf-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 32px rgba(124, 58, 237, 0.3);
+}
+.vf-btn-ghost {
+  display: inline-block;
+  padding: 14px 36px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #a1a1aa;
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+  border-radius: 10px;
+  transition: all 0.2s;
+}
+.vf-btn-ghost:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+.vf-btn-full {
+  width: 100%;
+  text-align: center;
+}
+
+/* ==========================================================================
+   Pricing Card Styles
+   Used by: Landing, Pricing
+   ========================================================================== */
+
+.vf-price-amount {
+  font-size: clamp(48px, 8vw, 72px);
+  font-weight: 900;
+  color: #fafafa;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+.vf-price-period {
+  font-size: 20px;
+  color: #52525b;
+  font-weight: 400;
+  margin-left: 2px;
+}
+.vf-price-tagline {
+  font-size: 16px;
+  color: #71717a;
+  margin: 16px 0 36px;
+}
+.vf-price-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.vf-price-list li {
+  padding: 10px 0;
+  font-size: 14px;
+  color: #a1a1aa;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  padding-left: 20px;
+  position: relative;
+}
+.vf-price-list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  transform: translateY(-50%);
+}
+.vf-price-list li:last-child {
+  border-bottom: none;
+}
+.vf-price-note {
+  margin-top: 16px;
+  font-size: 13px;
+  color: #52525b;
+}
+
+/* ==========================================================================
+   Footer Legal Links
+   Used by: Landing, Pricing
+   ========================================================================== */
+
+.vf-footer-legal {
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.vf-footer-legal-link {
+  font-size: 13px;
+  color: #3f3f46;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.vf-footer-legal-link:hover {
+  color: #52525b;
+}
+.vf-footer-legal-sep {
+  font-size: 13px;
+  color: #3f3f46;
+}
+
+/* ==========================================================================
+   Legal Page Styles (legal-*)
+   Used by: Privacy, Terms
+   ========================================================================== */
+
+.legal-page {
+  background: #09090b;
+  color: #a1a1aa;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  font-weight: 400;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Legal Nav */
+.legal-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(9, 9, 11, 0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.legal-nav-inner {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 18px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.legal-logo {
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+  text-decoration: none;
+  letter-spacing: -0.03em;
+}
+.legal-back {
+  color: #71717a;
+  text-decoration: none;
+  font-size: 13px;
+  transition: color 0.2s;
+}
+.legal-back:hover {
+  color: #a78bfa;
+}
+
+/* Legal Main Content */
+.legal-main {
+  flex: 1;
+  padding: 80px 32px 120px;
+}
+.legal-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+.legal-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  background: linear-gradient(90deg, #a78bfa, #818cf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0 0 16px;
+}
+.legal-title {
+  font-size: clamp(32px, 5vw, 48px);
+  font-weight: 800;
+  line-height: 1.1;
+  color: #fafafa;
+  letter-spacing: -0.03em;
+  margin: 0 0 12px;
+}
+.legal-updated {
+  font-size: 14px;
+  color: #71717a;
+  margin: 0 0 56px;
+}
+
+/* Legal Sections */
+.legal-section {
+  margin-bottom: 48px;
+}
+.legal-section h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fafafa;
+  margin: 0 0 16px;
+  letter-spacing: -0.02em;
+}
+.legal-section h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #e4e4e7;
+  margin: 24px 0 8px;
+}
+.legal-section p {
+  font-size: 15px;
+  color: #a1a1aa;
+  line-height: 1.8;
+  margin: 0 0 16px;
+}
+.legal-section ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+}
+.legal-section ul li {
+  font-size: 15px;
+  color: #a1a1aa;
+  line-height: 1.8;
+  padding: 4px 0 4px 24px;
+  position: relative;
+}
+.legal-section ul li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 14px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7c3aed, #6366f1);
+}
+.legal-section a {
+  color: #a78bfa;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.legal-section a:hover {
+  color: #c4b5fd;
+}
+.legal-section strong {
+  color: #e4e4e7;
+  font-weight: 600;
+}
+.legal-contact {
+  padding: 20px 24px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Legal Footer */
+.legal-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 32px;
+}
+.legal-footer-inner {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.legal-footer-text {
+  font-size: 13px;
+  color: #3f3f46;
+}
+.legal-footer-links {
+  display: flex;
+  gap: 24px;
+}
+.legal-footer-links a {
+  font-size: 13px;
+  color: #71717a;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.legal-footer-links a:hover {
+  color: #a78bfa;
+}
+
+/* ==========================================================================
+   Responsive - Shared Breakpoints
+   ========================================================================== */
+
+/* Landing/Pricing responsive */
+@media (max-width: 768px) {
+  .vf-nav-links a:not(.vf-nav-cta) {
+    display: none;
+  }
+  .vf-section-inner {
+    padding: 0 24px;
+  }
+}
+
+/* Legal pages responsive */
+@media (max-width: 768px) {
+  .legal-main {
+    padding: 60px 20px 80px;
+  }
+  .legal-nav-inner {
+    padding: 16px 20px;
+  }
+  .legal-footer {
+    padding: 24px 20px;
+  }
+  .legal-footer-inner {
+    flex-direction: column;
+    text-align: center;
+  }
+}

@@ -1,3 +1,5 @@
+import "@/styles/public.css";
+
 export default function PublicLayout({
   children,
 }: {

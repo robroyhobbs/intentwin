@@ -788,75 +788,9 @@ export default function LandingContent() {
         </footer>
       </div>
 
+      {/* Shared styles provided by @/styles/public.css */}
       <style jsx global>{`
-        /* === Variant F: Refined Statement === */
-
-        .vf-page {
-          background: #09090b;
-          color: #a1a1aa;
-          font-family:
-            "Inter",
-            -apple-system,
-            BlinkMacSystemFont,
-            sans-serif;
-          font-weight: 400;
-          line-height: 1.7;
-          -webkit-font-smoothing: antialiased;
-          min-height: 100vh;
-        }
-
-        /* Nav */
-        .vf-nav {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          z-index: 100;
-          background: rgba(9, 9, 11, 0.85);
-          backdrop-filter: blur(20px);
-          border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-        }
-        .vf-nav-inner {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 18px 48px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        }
-        .vf-logo {
-          font-size: 17px;
-          font-weight: 700;
-          color: #fff;
-          text-decoration: none;
-          letter-spacing: -0.03em;
-        }
-        .vf-nav-links {
-          display: flex;
-          align-items: center;
-          gap: 32px;
-        }
-        .vf-nav-links a {
-          color: #71717a;
-          text-decoration: none;
-          font-size: 13px;
-          transition: color 0.2s;
-        }
-        .vf-nav-links a:hover {
-          color: #fff;
-        }
-        .vf-nav-cta {
-          background: linear-gradient(135deg, #7c3aed, #6366f1) !important;
-          color: #fff !important;
-          padding: 8px 22px;
-          border-radius: 8px;
-          font-weight: 600 !important;
-          font-size: 13px !important;
-          transition: all 0.2s;
-        }
-        .vf-nav-cta:hover {
-          opacity: 0.9;
-        }
+        /* === Landing Page-Specific Styles === */
 
         /* Hero */
         .vf-hero {
@@ -922,12 +856,6 @@ export default function LandingContent() {
           letter-spacing: -0.04em;
           margin: 0 0 36px;
         }
-        .vf-gradient-text {
-          background: linear-gradient(135deg, #a78bfa, #818cf8, #6366f1);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
         .vf-hero-sub {
           font-size: 18px;
           color: #71717a;
@@ -963,42 +891,7 @@ export default function LandingContent() {
           font-size: 14px;
         }
 
-        /* Buttons */
-        .vf-btn-primary {
-          display: inline-block;
-          padding: 14px 36px;
-          background: linear-gradient(135deg, #7c3aed, #6366f1);
-          color: #fff;
-          font-size: 15px;
-          font-weight: 600;
-          text-decoration: none;
-          border-radius: 10px;
-          transition: all 0.25s ease;
-          box-shadow: 0 4px 24px rgba(124, 58, 237, 0.2);
-        }
-        .vf-btn-primary:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 32px rgba(124, 58, 237, 0.3);
-        }
-        .vf-btn-ghost {
-          display: inline-block;
-          padding: 14px 36px;
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          color: #a1a1aa;
-          font-size: 15px;
-          font-weight: 500;
-          text-decoration: none;
-          border-radius: 10px;
-          transition: all 0.2s;
-        }
-        .vf-btn-ghost:hover {
-          border-color: rgba(255, 255, 255, 0.25);
-          color: #fff;
-        }
-        .vf-btn-full {
-          width: 100%;
-          text-align: center;
-        }
+        /* Gov Button (page-specific) */
         .vf-btn-gov {
           display: inline-block;
           padding: 14px 36px;
@@ -1034,33 +927,6 @@ export default function LandingContent() {
           line-height: 1.4;
           letter-spacing: -0.02em;
           margin: 0;
-        }
-
-        /* Shared section styles */
-        .vf-section-inner {
-          max-width: 960px;
-          margin: 0 auto;
-          padding: 0 48px;
-        }
-        .vf-label {
-          display: block;
-          font-size: 12px;
-          font-weight: 600;
-          letter-spacing: 0.15em;
-          text-transform: uppercase;
-          background: linear-gradient(90deg, #a78bfa, #818cf8);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-          margin-bottom: 16px;
-        }
-        .vf-section-heading {
-          font-size: clamp(28px, 4vw, 44px);
-          font-weight: 800;
-          line-height: 1.15;
-          color: #fafafa;
-          letter-spacing: -0.03em;
-          margin: 0 0 56px;
         }
 
         /* Compare (Old vs New) */
@@ -1708,23 +1574,7 @@ export default function LandingContent() {
           backdrop-filter: blur(12px);
         }
         .vf-price-amount {
-          font-size: clamp(48px, 8vw, 72px);
-          font-weight: 900;
-          color: #fafafa;
-          letter-spacing: -0.04em;
           margin: 8px 0 0;
-          line-height: 1;
-        }
-        .vf-price-period {
-          font-size: 20px;
-          color: #52525b;
-          font-weight: 400;
-          margin-left: 2px;
-        }
-        .vf-price-tagline {
-          font-size: 16px;
-          color: #71717a;
-          margin: 16px 0 36px;
         }
         .vf-price-grid {
           display: grid;
@@ -1732,38 +1582,6 @@ export default function LandingContent() {
           gap: 20px;
           text-align: left;
           margin-bottom: 36px;
-        }
-        .vf-price-list {
-          list-style: none;
-          padding: 0;
-          margin: 0;
-        }
-        .vf-price-list li {
-          padding: 10px 0;
-          font-size: 14px;
-          color: #a1a1aa;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-          padding-left: 20px;
-          position: relative;
-        }
-        .vf-price-list li::before {
-          content: "";
-          position: absolute;
-          left: 0;
-          top: 50%;
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #7c3aed, #6366f1);
-          transform: translateY(-50%);
-        }
-        .vf-price-list li:last-child {
-          border-bottom: none;
-        }
-        .vf-price-note {
-          margin-top: 16px;
-          font-size: 13px;
-          color: #52525b;
         }
 
         /* Footer */
@@ -1806,26 +1624,6 @@ export default function LandingContent() {
           color: #3f3f46;
           letter-spacing: 0.05em;
         }
-        .vf-footer-legal {
-          margin-top: 24px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 12px;
-        }
-        .vf-footer-legal-link {
-          font-size: 13px;
-          color: #3f3f46;
-          text-decoration: none;
-          transition: color 0.2s;
-        }
-        .vf-footer-legal-link:hover {
-          color: #52525b;
-        }
-        .vf-footer-legal-sep {
-          font-size: 13px;
-          color: #3f3f46;
-        }
 
         /* Responsive */
         @media (max-width: 900px) {
@@ -1838,14 +1636,8 @@ export default function LandingContent() {
           }
         }
         @media (max-width: 768px) {
-          .vf-nav-links a:not(.vf-nav-cta) {
-            display: none;
-          }
           .vf-hero {
             padding: 140px 24px 100px;
-          }
-          .vf-section-inner {
-            padding: 0 24px;
           }
           .vf-statement {
             padding: 80px 24px;

@@ -1,6 +1,3 @@
-"use client";
-
-import { motion } from "framer-motion";
 import {
   Clock,
   TrendingUp,
@@ -21,16 +18,101 @@ import Link from "next/link";
 export default function AboutPage() {
   return (
     <div className="min-h-screen bg-white">
+      <style jsx global>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        @keyframes fadeInScale {
+          from {
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        @keyframes slideInLeft {
+          from {
+            opacity: 0;
+            transform: translateX(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+        @keyframes slideInRight {
+          from {
+            opacity: 0;
+            transform: translateX(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+        .animate-fadeInUp {
+          animation: fadeInUp 0.5s ease-out both;
+        }
+
+        .animate-fadeIn {
+          animation: fadeIn 0.5s ease-out both;
+        }
+
+        .animate-fadeInScale {
+          animation: fadeInScale 0.5s ease-out both;
+        }
+
+        .animate-slideInLeft {
+          animation: slideInLeft 0.5s ease-out both;
+        }
+
+        .animate-slideInRight {
+          animation: slideInRight 0.5s ease-out both;
+        }
+
+        .animate-hero {
+          animation: fadeInUp 0.6s ease-out both;
+        }
+
+        .animate-delay-100 { animation-delay: 0.1s; }
+        .animate-delay-150 { animation-delay: 0.15s; }
+        .animate-delay-200 { animation-delay: 0.2s; }
+        .animate-delay-250 { animation-delay: 0.25s; }
+        .animate-delay-300 { animation-delay: 0.3s; }
+        .animate-delay-350 { animation-delay: 0.35s; }
+        .animate-delay-400 { animation-delay: 0.4s; }
+        .animate-delay-450 { animation-delay: 0.45s; }
+        .animate-delay-500 { animation-delay: 0.5s; }
+        .animate-delay-50 { animation-delay: 0.05s; }
+      `}</style>
+
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-[#1B365D] via-[#0070AD] to-[#12ABDB] text-white overflow-hidden">
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
         <div className="relative max-w-6xl mx-auto px-6 py-24 md:py-32">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center"
-          >
+          <div className="text-center animate-hero">
             <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full text-sm mb-6">
               <Sparkles className="w-4 h-4" />
               <span>AI-Powered Proposal Generation</span>
@@ -59,7 +141,7 @@ export default function AboutPage() {
                 See How It Works
               </a>
             </div>
-          </motion.div>
+          </div>
         </div>
         <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white to-transparent" />
       </section>
@@ -67,12 +149,7 @@ export default function AboutPage() {
       {/* The Challenge */}
       <section className="py-20 bg-white">
         <div className="max-w-6xl mx-auto px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
+          <div className="text-center mb-16 animate-fadeInUp">
             <h2 className="text-3xl md:text-4xl font-bold text-[#1B365D] mb-4">
               The Challenge
             </h2>
@@ -80,7 +157,7 @@ export default function AboutPage() {
               Our current proposal process creates bottlenecks and
               inconsistencies
             </p>
-          </motion.div>
+          </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
             {[
@@ -115,13 +192,15 @@ export default function AboutPage() {
                 text: "Cannot pursue more opportunities with current capacity",
               },
             ].map((item, i) => (
-              <motion.div
+              <div
                 key={item.label}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="bg-gray-50 rounded-xl p-6 border-l-4 border-[#0070AD]"
+                className={`bg-gray-50 rounded-xl p-6 border-l-4 border-[#0070AD] animate-fadeInUp ${
+                  i === 1 ? "animate-delay-100" :
+                  i === 2 ? "animate-delay-200" :
+                  i === 3 ? "animate-delay-300" :
+                  i === 4 ? "animate-delay-400" :
+                  i === 5 ? "animate-delay-500" : ""
+                }`}
               >
                 <div className="flex items-center gap-3 mb-3">
                   <item.icon className="w-5 h-5 text-[#0070AD]" />
@@ -130,19 +209,14 @@ export default function AboutPage() {
                   </span>
                 </div>
                 <p className="text-gray-700">{item.text}</p>
-              </motion.div>
+              </div>
             ))}
           </div>
 
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            className="bg-gradient-to-r from-[#12ABDB] to-[#0070AD] rounded-2xl p-8 text-white text-center"
-          >
+          <div className="bg-gradient-to-r from-[#12ABDB] to-[#0070AD] rounded-2xl p-8 text-white text-center animate-fadeInScale">
             <p className="text-5xl font-bold mb-2">4-6 weeks</p>
             <p className="text-cyan-100">Average proposal cycle time</p>
-          </motion.div>
+          </div>
         </div>
       </section>
 
@@ -150,11 +224,7 @@ export default function AboutPage() {
       <section className="py-20 bg-gray-50">
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-            >
+            <div className="animate-slideInLeft">
               <h2 className="text-3xl md:text-4xl font-bold text-[#1B365D] mb-6">
                 Introducing IntentWin
               </h2>
@@ -174,14 +244,9 @@ export default function AboutPage() {
                   From initial brief to complete proposal
                 </p>
               </div>
-            </motion.div>
+            </div>
 
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="space-y-4"
-            >
+            <div className="space-y-4 animate-slideInRight">
               {[
                 {
                   icon: Building2,
@@ -221,7 +286,7 @@ export default function AboutPage() {
                   </div>
                 </div>
               ))}
-            </motion.div>
+            </div>
           </div>
         </div>
       </section>
@@ -229,19 +294,14 @@ export default function AboutPage() {
       {/* IDD Methodology */}
       <section className="py-20 bg-white">
         <div className="max-w-6xl mx-auto px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
+          <div className="text-center mb-16 animate-fadeInUp">
             <h2 className="text-3xl md:text-4xl font-bold text-[#1B365D] mb-4">
               Intent-Driven Development (IDD)
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               A 3-layer context model for trustworthy AI generation
             </p>
-          </motion.div>
+          </div>
 
           <div className="grid md:grid-cols-3 gap-6 mb-12">
             {[
@@ -264,13 +324,12 @@ export default function AboutPage() {
                 color: "from-[#12ABDB] to-[#40C4FF]",
               },
             ].map((item, i) => (
-              <motion.div
+              <div
                 key={item.layer}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.15 }}
-                className={`bg-gradient-to-br ${item.color} rounded-2xl p-6 text-white`}
+                className={`bg-gradient-to-br ${item.color} rounded-2xl p-6 text-white animate-fadeInUp ${
+                  i === 1 ? "animate-delay-150" :
+                  i === 2 ? "animate-delay-300" : ""
+                }`}
               >
                 <div className="text-sm font-medium text-white/70 mb-2">
                   {item.layer}
@@ -279,16 +338,11 @@ export default function AboutPage() {
                 <p className="text-white/90 text-sm leading-relaxed">
                   {item.desc}
                 </p>
-              </motion.div>
+              </div>
             ))}
           </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="bg-gray-50 rounded-xl p-6 border-l-4 border-[#12ABDB]"
-          >
+          <div className="bg-gray-50 rounded-xl p-6 border-l-4 border-[#12ABDB] animate-fadeInUp">
             <div className="flex items-center gap-3 mb-2">
               <CheckCircle className="w-5 h-5 text-[#12ABDB]" />
               <span className="text-sm font-bold text-[#0070AD]">
@@ -299,23 +353,18 @@ export default function AboutPage() {
               Every claim in every proposal is traceable to verified company
               sources
             </p>
-          </motion.div>
+          </div>
         </div>
       </section>
 
       {/* Why We're Different */}
       <section className="py-20 bg-gray-50">
         <div className="max-w-6xl mx-auto px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
+          <div className="text-center mb-16 animate-fadeInUp">
             <h2 className="text-3xl md:text-4xl font-bold text-[#1B365D] mb-4">
               Why We&apos;re Different
             </h2>
-          </motion.div>
+          </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
             {[
@@ -344,19 +393,21 @@ export default function AboutPage() {
                 desc: "Every claim links back to verified sources. No hallucinations, no unsupported statements",
               },
             ].map((item, i) => (
-              <motion.div
+              <div
                 key={item.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="bg-white rounded-xl p-6 border-t-4 border-[#0070AD] shadow-sm"
+                className={`bg-white rounded-xl p-6 border-t-4 border-[#0070AD] shadow-sm animate-fadeInUp ${
+                  i === 1 ? "animate-delay-100" :
+                  i === 2 ? "animate-delay-200" :
+                  i === 3 ? "animate-delay-300" :
+                  i === 4 ? "animate-delay-400" :
+                  i === 5 ? "animate-delay-500" : ""
+                }`}
               >
                 <h3 className="font-semibold text-[#1B365D] mb-2">
                   {item.title}
                 </h3>
                 <p className="text-gray-600 text-sm">{item.desc}</p>
-              </motion.div>
+              </div>
             ))}
           </div>
 
@@ -370,16 +421,11 @@ export default function AboutPage() {
       {/* How It Works */}
       <section id="how-it-works" className="py-20 bg-white">
         <div className="max-w-6xl mx-auto px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
+          <div className="text-center mb-16 animate-fadeInUp">
             <h2 className="text-3xl md:text-4xl font-bold text-[#1B365D] mb-4">
               How It Works
             </h2>
-          </motion.div>
+          </div>
 
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-16">
             {[
@@ -409,13 +455,14 @@ export default function AboutPage() {
                 desc: "Download in your preferred format",
               },
             ].map((step, i) => (
-              <motion.div
+              <div
                 key={step.num}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="flex-1 text-center"
+                className={`flex-1 text-center animate-fadeInUp ${
+                  i === 1 ? "animate-delay-100" :
+                  i === 2 ? "animate-delay-200" :
+                  i === 3 ? "animate-delay-300" :
+                  i === 4 ? "animate-delay-400" : ""
+                }`}
               >
                 <div className="w-16 h-16 bg-[#0070AD] rounded-full flex items-center justify-center mx-auto mb-4">
                   <span className="text-2xl font-bold text-white">
@@ -431,7 +478,7 @@ export default function AboutPage() {
                     <ArrowRight className="w-5 h-5 text-[#12ABDB]" />
                   </div>
                 )}
-              </motion.div>
+              </div>
             ))}
           </div>
 
@@ -458,16 +505,11 @@ export default function AboutPage() {
       {/* Key Benefits */}
       <section className="py-20 bg-gray-50">
         <div className="max-w-6xl mx-auto px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
+          <div className="text-center mb-16 animate-fadeInUp">
             <h2 className="text-3xl md:text-4xl font-bold text-[#1B365D] mb-4">
               Key Benefits
             </h2>
-          </motion.div>
+          </div>
 
           <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-6">
             {[
@@ -502,16 +544,17 @@ export default function AboutPage() {
                 highlight: false,
               },
             ].map((item, i) => (
-              <motion.div
+              <div
                 key={item.label}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
                 className={`rounded-xl p-6 text-center border-t-4 ${
                   item.highlight
                     ? "bg-cyan-50 border-[#12ABDB]"
                     : "bg-white border-[#0070AD]"
+                } animate-fadeInUp ${
+                  i === 1 ? "animate-delay-100" :
+                  i === 2 ? "animate-delay-200" :
+                  i === 3 ? "animate-delay-300" :
+                  i === 4 ? "animate-delay-400" : ""
                 }`}
               >
                 <p
@@ -525,7 +568,7 @@ export default function AboutPage() {
                   {item.label}
                 </p>
                 <p className="text-gray-600 text-sm">{item.desc}</p>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
@@ -534,16 +577,11 @@ export default function AboutPage() {
       {/* Platform Features */}
       <section className="py-20 bg-white">
         <div className="max-w-6xl mx-auto px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
+          <div className="text-center mb-16 animate-fadeInUp">
             <h2 className="text-3xl md:text-4xl font-bold text-[#1B365D] mb-4">
               Platform Features
             </h2>
-          </motion.div>
+          </div>
 
           <div className="grid lg:grid-cols-2 gap-12">
             <div>
@@ -561,27 +599,26 @@ export default function AboutPage() {
                   "Multi-format export (PPTX, DOCX, PDF)",
                   "Knowledge base with RAG search",
                 ].map((feature, i) => (
-                  <motion.li
+                  <li
                     key={i}
-                    initial={{ opacity: 0, x: -20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.05 }}
-                    className="flex items-center gap-3 text-gray-700"
+                    className={`flex items-center gap-3 text-gray-700 animate-slideInLeft ${
+                      i === 1 ? "animate-delay-50" :
+                      i === 2 ? "animate-delay-100" :
+                      i === 3 ? "animate-delay-150" :
+                      i === 4 ? "animate-delay-200" :
+                      i === 5 ? "animate-delay-250" :
+                      i === 6 ? "animate-delay-300" :
+                      i === 7 ? "animate-delay-350" : ""
+                    }`}
                   >
                     <CheckCircle className="w-5 h-5 text-[#12ABDB] flex-shrink-0" />
                     {feature}
-                  </motion.li>
+                  </li>
                 ))}
               </ul>
             </div>
 
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="bg-gradient-to-br from-[#1B365D] to-[#2A4A72] rounded-2xl p-8 text-white"
-            >
+            <div className="bg-gradient-to-br from-[#1B365D] to-[#2A4A72] rounded-2xl p-8 text-white animate-slideInRight">
               <h3 className="text-xl font-semibold mb-6">
                 Modern User Experience
               </h3>
@@ -612,7 +649,7 @@ export default function AboutPage() {
                   </div>
                 ))}
               </div>
-            </motion.div>
+            </div>
           </div>
         </div>
       </section>
@@ -620,16 +657,11 @@ export default function AboutPage() {
       {/* Roadmap */}
       <section className="py-20 bg-gray-50">
         <div className="max-w-6xl mx-auto px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
+          <div className="text-center mb-16 animate-fadeInUp">
             <h2 className="text-3xl md:text-4xl font-bold text-[#1B365D] mb-4">
               Future Roadmap
             </h2>
-          </motion.div>
+          </div>
 
           <div className="grid md:grid-cols-5 gap-4">
             {[
@@ -689,13 +721,14 @@ export default function AboutPage() {
                 current: false,
               },
             ].map((phase, i) => (
-              <motion.div
+              <div
                 key={phase.phase}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="bg-white rounded-xl overflow-hidden shadow-sm"
+                className={`bg-white rounded-xl overflow-hidden shadow-sm animate-fadeInUp ${
+                  i === 1 ? "animate-delay-100" :
+                  i === 2 ? "animate-delay-200" :
+                  i === 3 ? "animate-delay-300" :
+                  i === 4 ? "animate-delay-400" : ""
+                }`}
               >
                 <div
                   className={`p-4 ${phase.current ? "bg-[#12ABDB]" : "bg-[#0070AD]"} text-white`}
@@ -723,7 +756,7 @@ export default function AboutPage() {
                     ))}
                   </ul>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
@@ -732,11 +765,7 @@ export default function AboutPage() {
       {/* CTA */}
       <section className="py-24 bg-gradient-to-br from-[#1B365D] via-[#0070AD] to-[#12ABDB] text-white">
         <div className="max-w-4xl mx-auto px-6 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
+          <div className="animate-fadeInUp">
             <Rocket className="w-12 h-12 mx-auto mb-6 text-cyan-200" />
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               Ready to Transform Your Proposal Process?
@@ -788,7 +817,7 @@ export default function AboutPage() {
             <p className="mt-8 text-white/60 text-sm">
               IntentWin | Intelligent Proposal Generation | 2026
             </p>
-          </motion.div>
+          </div>
         </div>
       </section>
     </div>

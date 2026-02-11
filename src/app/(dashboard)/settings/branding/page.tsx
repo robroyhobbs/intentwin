@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import {
   Palette,
@@ -60,7 +61,9 @@ export default function BrandingSettingsPage() {
 
   async function loadBranding() {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       const { data: profile } = await supabase
@@ -164,7 +167,9 @@ export default function BrandingSettingsPage() {
       setBranding({ ...branding, logo_url: urlData.publicUrl });
     } catch (error) {
       console.error("Error uploading logo:", error);
-      alert("Failed to upload logo. Make sure the organization-assets bucket exists in Supabase Storage.");
+      alert(
+        "Failed to upload logo. Make sure the organization-assets bucket exists in Supabase Storage.",
+      );
     } finally {
       setUploading(false);
       if (fileInputRef.current) {
@@ -188,7 +193,9 @@ export default function BrandingSettingsPage() {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[var(--foreground)]">Branding</h1>
+        <h1 className="text-2xl font-bold text-[var(--foreground)]">
+          Branding
+        </h1>
         <p className="mt-1 text-sm text-[var(--foreground-muted)]">
           Customize how your proposals look when exported
         </p>
@@ -202,7 +209,9 @@ export default function BrandingSettingsPage() {
               <ImageIcon className="h-5 w-5 text-[var(--accent)]" />
             </div>
             <div>
-              <h2 className="font-semibold text-[var(--foreground)]">Company Logo</h2>
+              <h2 className="font-semibold text-[var(--foreground)]">
+                Company Logo
+              </h2>
               <p className="text-sm text-[var(--foreground-muted)]">
                 Appears on cover pages and headers
               </p>
@@ -212,11 +221,13 @@ export default function BrandingSettingsPage() {
           <div className="space-y-4">
             {branding.logo_url ? (
               <div className="relative">
-                <div className="flex items-center justify-center p-6 rounded-lg bg-[var(--background-secondary)] border border-[var(--border)]">
-                  <img
+                <div className="relative flex items-center justify-center p-6 rounded-lg bg-[var(--background-secondary)] border border-[var(--border)] min-h-[80px]">
+                  <Image
                     src={branding.logo_url}
                     alt="Company logo"
-                    className="max-h-20 max-w-full object-contain"
+                    fill
+                    className="object-contain p-4"
+                    unoptimized
                   />
                 </div>
                 <button
@@ -263,7 +274,9 @@ export default function BrandingSettingsPage() {
               <Palette className="h-5 w-5 text-[var(--accent)]" />
             </div>
             <div>
-              <h2 className="font-semibold text-[var(--foreground)]">Brand Colors</h2>
+              <h2 className="font-semibold text-[var(--foreground)]">
+                Brand Colors
+              </h2>
               <p className="text-sm text-[var(--foreground-muted)]">
                 Used in headers, accents, and highlights
               </p>
@@ -279,13 +292,17 @@ export default function BrandingSettingsPage() {
                 <input
                   type="color"
                   value={branding.primary_color}
-                  onChange={(e) => setBranding({ ...branding, primary_color: e.target.value })}
+                  onChange={(e) =>
+                    setBranding({ ...branding, primary_color: e.target.value })
+                  }
                   className="h-10 w-14 rounded cursor-pointer border border-[var(--border)]"
                 />
                 <input
                   type="text"
                   value={branding.primary_color}
-                  onChange={(e) => setBranding({ ...branding, primary_color: e.target.value })}
+                  onChange={(e) =>
+                    setBranding({ ...branding, primary_color: e.target.value })
+                  }
                   className="flex-1 px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] text-sm font-mono"
                 />
               </div>
@@ -299,13 +316,23 @@ export default function BrandingSettingsPage() {
                 <input
                   type="color"
                   value={branding.secondary_color}
-                  onChange={(e) => setBranding({ ...branding, secondary_color: e.target.value })}
+                  onChange={(e) =>
+                    setBranding({
+                      ...branding,
+                      secondary_color: e.target.value,
+                    })
+                  }
                   className="h-10 w-14 rounded cursor-pointer border border-[var(--border)]"
                 />
                 <input
                   type="text"
                   value={branding.secondary_color}
-                  onChange={(e) => setBranding({ ...branding, secondary_color: e.target.value })}
+                  onChange={(e) =>
+                    setBranding({
+                      ...branding,
+                      secondary_color: e.target.value,
+                    })
+                  }
                   className="flex-1 px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] text-sm font-mono"
                 />
               </div>
@@ -319,13 +346,17 @@ export default function BrandingSettingsPage() {
                 <input
                   type="color"
                   value={branding.accent_color}
-                  onChange={(e) => setBranding({ ...branding, accent_color: e.target.value })}
+                  onChange={(e) =>
+                    setBranding({ ...branding, accent_color: e.target.value })
+                  }
                   className="h-10 w-14 rounded cursor-pointer border border-[var(--border)]"
                 />
                 <input
                   type="text"
                   value={branding.accent_color}
-                  onChange={(e) => setBranding({ ...branding, accent_color: e.target.value })}
+                  onChange={(e) =>
+                    setBranding({ ...branding, accent_color: e.target.value })
+                  }
                   className="flex-1 px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] text-sm font-mono"
                 />
               </div>
@@ -340,7 +371,9 @@ export default function BrandingSettingsPage() {
               <Type className="h-5 w-5 text-[var(--accent)]" />
             </div>
             <div>
-              <h2 className="font-semibold text-[var(--foreground)]">Typography</h2>
+              <h2 className="font-semibold text-[var(--foreground)]">
+                Typography
+              </h2>
               <p className="text-sm text-[var(--foreground-muted)]">
                 Font used in exported documents
               </p>
@@ -353,7 +386,9 @@ export default function BrandingSettingsPage() {
             </label>
             <select
               value={branding.font_family}
-              onChange={(e) => setBranding({ ...branding, font_family: e.target.value })}
+              onChange={(e) =>
+                setBranding({ ...branding, font_family: e.target.value })
+              }
               className="w-full px-4 py-2.5 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)]"
             >
               {FONT_OPTIONS.map((font) => (
@@ -378,7 +413,9 @@ export default function BrandingSettingsPage() {
               <Eye className="h-5 w-5 text-[var(--accent)]" />
             </div>
             <div>
-              <h2 className="font-semibold text-[var(--foreground)]">Document Text</h2>
+              <h2 className="font-semibold text-[var(--foreground)]">
+                Document Text
+              </h2>
               <p className="text-sm text-[var(--foreground-muted)]">
                 Custom header and footer text
               </p>
@@ -393,7 +430,9 @@ export default function BrandingSettingsPage() {
               <input
                 type="text"
                 value={branding.header_text || ""}
-                onChange={(e) => setBranding({ ...branding, header_text: e.target.value })}
+                onChange={(e) =>
+                  setBranding({ ...branding, header_text: e.target.value })
+                }
                 className="w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)]"
                 placeholder={orgName || "Your Company Name"}
               />
@@ -406,7 +445,9 @@ export default function BrandingSettingsPage() {
               <input
                 type="text"
                 value={branding.footer_text || ""}
-                onChange={(e) => setBranding({ ...branding, footer_text: e.target.value })}
+                onChange={(e) =>
+                  setBranding({ ...branding, footer_text: e.target.value })
+                }
                 className="w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)]"
                 placeholder="Confidential - For Client Use Only"
               />
@@ -425,12 +466,16 @@ export default function BrandingSettingsPage() {
           >
             <div className="flex items-center gap-4">
               {branding.logo_url && (
-                <img
-                  src={branding.logo_url}
-                  alt="Logo"
-                  className="h-8 object-contain"
-                  style={{ filter: "brightness(0) invert(1)" }}
-                />
+                <div className="relative h-8 w-24 flex-shrink-0">
+                  <Image
+                    src={branding.logo_url}
+                    alt="Logo"
+                    fill
+                    className="object-contain"
+                    style={{ filter: "brightness(0) invert(1)" }}
+                    unoptimized
+                  />
+                </div>
               )}
               <div>
                 <h4
@@ -439,7 +484,9 @@ export default function BrandingSettingsPage() {
                 >
                   Sample Proposal Title
                 </h4>
-                <p className="text-sm text-white/70">Prepared for Client Name</p>
+                <p className="text-sm text-white/70">
+                  Prepared for Client Name
+                </p>
               </div>
             </div>
           </div>
@@ -450,13 +497,19 @@ export default function BrandingSettingsPage() {
             />
             <div
               className="text-lg font-semibold mb-2"
-              style={{ color: branding.primary_color, fontFamily: branding.font_family }}
+              style={{
+                color: branding.primary_color,
+                fontFamily: branding.font_family,
+              }}
             >
               Section Heading
             </div>
-            <p className="text-gray-600 text-sm" style={{ fontFamily: branding.font_family }}>
-              This is how your proposal content will appear with your branding applied.
-              Colors and fonts will be used consistently throughout.
+            <p
+              className="text-gray-600 text-sm"
+              style={{ fontFamily: branding.font_family }}
+            >
+              This is how your proposal content will appear with your branding
+              applied. Colors and fonts will be used consistently throughout.
             </p>
             <div
               className="inline-block mt-3 px-4 py-2 rounded text-white text-sm font-medium"
@@ -478,11 +531,7 @@ export default function BrandingSettingsPage() {
 
       {/* Save Button */}
       <div className="flex justify-end mt-6">
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="btn-primary"
-        >
+        <button onClick={handleSave} disabled={saving} className="btn-primary">
           {saving ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : saved ? (
