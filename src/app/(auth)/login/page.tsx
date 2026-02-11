@@ -186,10 +186,10 @@ export default function LoginPage() {
             <p className="mt-6 text-center text-sm text-[var(--foreground-muted)]">
               Don&apos;t have an account?{" "}
               <Link
-                href="/signup"
+                href="/request-access"
                 className="font-medium text-[var(--accent)] hover:underline"
               >
-                Create one
+                Request access
               </Link>
             </p>
           </div>
