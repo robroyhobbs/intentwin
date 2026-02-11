@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     if (context.role !== "admin") {
       return NextResponse.json(
         { error: "Only organization admins can manage billing" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -31,14 +31,17 @@ export async function POST(request: NextRequest) {
     if (orgError || !org?.stripe_customer_id) {
       return NextResponse.json(
         { error: "No billing account found. Please subscribe first." },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
-    const origin = request.headers.get("origin") || "http://localhost:3000";
+    const origin =
+      request.headers.get("origin") ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      "https://intentwin.com";
     const session = await createBillingPortalSession(
       org.stripe_customer_id,
-      `${origin}/settings`
+      `${origin}/settings`,
     );
 
     return NextResponse.json({ url: session.url });
@@ -46,7 +49,7 @@ export async function POST(request: NextRequest) {
     console.error("Portal error:", error);
     return NextResponse.json(
       { error: "Failed to create portal session" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

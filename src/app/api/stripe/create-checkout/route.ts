@@ -110,7 +110,10 @@ export async function POST(request: NextRequest) {
     });
 
     // Create checkout session
-    const origin = request.headers.get("origin") || "http://localhost:3000";
+    const origin =
+      request.headers.get("origin") ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      "https://intentwin.com";
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: "subscription",
