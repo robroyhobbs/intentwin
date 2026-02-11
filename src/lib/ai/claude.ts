@@ -112,7 +112,8 @@ export async function generateStructuredAnalysis(
   rfpRequirements?: Record<string, unknown>,
   winStrategy?: WinStrategyData | null,
 ): Promise<string> {
-  const winStrategySection = winStrategy
+  const hasWinStrategy = winStrategy && winStrategy.win_themes?.length > 0;
+  const winStrategySection = hasWinStrategy
     ? `
 ## Defined Win Strategy & Target Outcomes (User-Defined North Star)
 The proposal team has defined the following outcomes. Align all analysis with these:
@@ -121,13 +122,13 @@ The proposal team has defined the following outcomes. Align all analysis with th
 ${winStrategy.win_themes.map((t) => `- ${t}`).join("\n")}
 
 ### Target Outcomes
-${winStrategy.target_outcomes.map((o) => `- [${o.priority.toUpperCase()}] ${o.outcome} (${o.category.replace(/_/g, " ")})`).join("\n")}
+${(winStrategy.target_outcomes ?? []).map((o) => `- [${o.priority.toUpperCase()}] ${o.outcome} (${o.category.replace(/_/g, " ")})`).join("\n")}
 
 ### Key Differentiators
-${winStrategy.differentiators.map((d) => `- ${d}`).join("\n")}
+${(winStrategy.differentiators ?? []).map((d) => `- ${d}`).join("\n")}
 
 ### Success Metrics
-${winStrategy.success_metrics.map((m) => `- ${m}`).join("\n")}
+${(winStrategy.success_metrics ?? []).map((m) => `- ${m}`).join("\n")}
 `
     : "";
 

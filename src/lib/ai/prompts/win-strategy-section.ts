@@ -5,9 +5,9 @@ import type { WinStrategyData } from "@/types/outcomes";
  * Returns empty string if no win strategy is provided.
  */
 export function buildWinStrategySection(
-  winStrategy?: WinStrategyData | null
+  winStrategy?: WinStrategyData | null,
 ): string {
-  if (!winStrategy) return "";
+  if (!winStrategy || !winStrategy.win_themes?.length) return "";
 
   return `
 ## Win Strategy & Target Outcomes (NORTH STAR)
@@ -16,10 +16,10 @@ These outcomes were defined by the proposal team. Every part of this section sho
 ### Win Themes: ${winStrategy.win_themes.join(", ")}
 
 ### Target Outcomes:
-${winStrategy.target_outcomes.map((o) => `- [${o.priority.toUpperCase()}] ${o.outcome}`).join("\n")}
+${(winStrategy.target_outcomes ?? []).map((o) => `- [${o.priority.toUpperCase()}] ${o.outcome}`).join("\n")}
 
-### Key Differentiators: ${winStrategy.differentiators.join(", ")}
+### Key Differentiators: ${(winStrategy.differentiators ?? []).join(", ")}
 
-### Success Metrics: ${winStrategy.success_metrics.join(", ")}
+### Success Metrics: ${(winStrategy.success_metrics ?? []).join(", ")}
 `;
 }
