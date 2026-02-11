@@ -1,80 +1,113 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readFileSync, existsSync } from "fs";
-import { join, resolve } from "path";
 import { getUserContext } from "@/lib/supabase/auth-api";
+import { createAdminClient } from "@/lib/supabase/admin";
 
-const SOURCES_DIR = join(process.cwd(), "sources");
-
-function extractFrontMatter(content: string): {
-  metadata: Record<string, string>;
-  body: string;
-} {
-  const frontMatterMatch = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
-
-  if (!frontMatterMatch) {
-    return { metadata: {}, body: content };
-  }
-
-  const metadata: Record<string, string> = {};
-  const frontMatter = frontMatterMatch[1];
-  const body = frontMatterMatch[2];
-
-  for (const line of frontMatter.split("\n")) {
-    const match = line.match(/^(\w+):\s*(.*)$/);
-    if (match) {
-      metadata[match[1]] = match[2].replace(/^["']|["']$/g, "");
-    }
-  }
-
-  return { metadata, body };
-}
-
-function extractTitle(content: string): string {
-  const titleMatch = content.match(/^#\s+(.+)$/m);
-  return titleMatch ? titleMatch[1] : "";
-}
-
+/**
+ * GET /api/sources/:category/:file
+ *
+ * Returns the content of a single L1 source item from the database,
+ * scoped to the authenticated user's organization.
+ */
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ category: string; file: string }> },
 ) {
   try {
-    // Require authentication
     const context = await getUserContext(request);
     if (!context) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { category, file } = await params;
+    const adminClient = createAdminClient();
+    const orgId = context.organizationId;
 
-    // Validate path segments to prevent traversal
-    const safePattern = /^[a-zA-Z0-9_-]+$/;
-    if (!safePattern.test(category) || !safePattern.test(file)) {
-      return NextResponse.json({ error: "Invalid path" }, { status: 400 });
+    // Route to the correct table based on category
+    if (category === "company-context") {
+      const { data, error } = await adminClient
+        .from("company_context")
+        .select("*")
+        .eq("organization_id", orgId)
+        .eq("key", file)
+        .single();
+
+      if (error || !data) {
+        return NextResponse.json({ error: "Source not found" }, { status: 404 });
+      }
+
+      return NextResponse.json({
+        fileName: data.key,
+        category,
+        title: data.title,
+        content: data.content,
+        metadata: {
+          status: data.last_verified_at ? "VERIFIED" : "UNVERIFIED",
+          category: data.category,
+          is_locked: data.is_locked,
+          last_verified_at: data.last_verified_at,
+        },
+      });
     }
 
-    const filePath = resolve(SOURCES_DIR, category, `${file}.md`);
+    if (category === "service-catalog") {
+      // file is a composite slug; search by product_name or id
+      const { data, error } = await adminClient
+        .from("product_contexts")
+        .select("*")
+        .eq("organization_id", orgId)
+        .or(`id.eq.${file}`);
 
-    // Ensure resolved path is within SOURCES_DIR
-    if (!filePath.startsWith(SOURCES_DIR)) {
-      return NextResponse.json({ error: "Invalid path" }, { status: 400 });
+      const product = data?.[0];
+      if (error || !product) {
+        return NextResponse.json({ error: "Source not found" }, { status: 404 });
+      }
+
+      // Build readable content from product fields
+      const content = buildProductContent(product);
+
+      return NextResponse.json({
+        fileName: file,
+        category,
+        title: product.product_name,
+        content,
+        metadata: {
+          status: product.last_verified_at ? "VERIFIED" : "UNVERIFIED",
+          service_line: product.service_line,
+          is_locked: product.is_locked,
+        },
+      });
     }
 
-    if (!existsSync(filePath)) {
-      return NextResponse.json({ error: "Source not found" }, { status: 404 });
+    if (category === "case-studies" || category === "evidence-library") {
+      const { data, error } = await adminClient
+        .from("evidence_library")
+        .select("*")
+        .eq("organization_id", orgId)
+        .eq("id", file)
+        .single();
+
+      if (error || !data) {
+        return NextResponse.json({ error: "Source not found" }, { status: 404 });
+      }
+
+      const content = data.full_content || data.summary || "";
+
+      return NextResponse.json({
+        fileName: file,
+        category,
+        title: data.title,
+        content,
+        metadata: {
+          status: data.is_verified ? "VERIFIED" : "UNVERIFIED",
+          evidence_type: data.evidence_type,
+          client_industry: data.client_industry,
+          service_line: data.service_line,
+          metrics: data.metrics,
+        },
+      });
     }
 
-    const rawContent = readFileSync(filePath, "utf-8");
-    const { metadata, body } = extractFrontMatter(rawContent);
-    const title = extractTitle(body) || file.replace(/-/g, " ");
-
-    return NextResponse.json({
-      fileName: file,
-      category,
-      title,
-      content: body,
-      metadata,
-    });
+    return NextResponse.json({ error: "Unknown category" }, { status: 404 });
   } catch (error) {
     console.error("Failed to load source:", error);
     return NextResponse.json(
@@ -82,4 +115,36 @@ export async function GET(
       { status: 500 },
     );
   }
+}
+
+function buildProductContent(product: Record<string, unknown>): string {
+  const lines: string[] = [];
+  lines.push(`# ${product.product_name}`);
+  lines.push("");
+  if (product.description) {
+    lines.push(String(product.description));
+    lines.push("");
+  }
+  lines.push(`**Service Line:** ${product.service_line}`);
+  lines.push("");
+
+  const capabilities = product.capabilities as Array<Record<string, string>> | undefined;
+  if (capabilities?.length) {
+    lines.push("## Capabilities");
+    for (const cap of capabilities) {
+      lines.push(`- **${cap.name || cap.capability}**: ${cap.description || ""}`);
+    }
+    lines.push("");
+  }
+
+  const specs = product.specifications as Record<string, unknown> | undefined;
+  if (specs && Object.keys(specs).length > 0) {
+    lines.push("## Specifications");
+    for (const [key, value] of Object.entries(specs)) {
+      lines.push(`- **${key}**: ${JSON.stringify(value)}`);
+    }
+    lines.push("");
+  }
+
+  return lines.join("\n");
 }

@@ -1,96 +1,147 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readFileSync, readdirSync, existsSync } from "fs";
-import { join, basename } from "path";
 import { getUserContext } from "@/lib/supabase/auth-api";
+import { createAdminClient } from "@/lib/supabase/admin";
 
-const SOURCES_DIR = join(process.cwd(), "sources");
-
-const CATEGORIES = [
-  "company-context",
-  "methodologies",
-  "case-studies",
-  "service-catalog",
-  "evidence-library",
-  "proposal-examples",
-];
-
-function extractFrontMatter(content: string): {
-  metadata: Record<string, string>;
-  body: string;
-} {
-  const frontMatterMatch = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
-
-  if (!frontMatterMatch) {
-    return { metadata: {}, body: content };
-  }
-
-  const metadata: Record<string, string> = {};
-  const frontMatter = frontMatterMatch[1];
-  const body = frontMatterMatch[2];
-
-  for (const line of frontMatter.split("\n")) {
-    const match = line.match(/^(\w+):\s*(.*)$/);
-    if (match) {
-      metadata[match[1]] = match[2].replace(/^["']|["']$/g, "");
-    }
-  }
-
-  return { metadata, body };
-}
-
-function extractTitle(content: string): string {
-  const titleMatch = content.match(/^#\s+(.+)$/m);
-  return titleMatch ? titleMatch[1] : "";
-}
-
+/**
+ * GET /api/sources
+ *
+ * Returns L1 context data for the authenticated user's organization,
+ * grouped into categories the frontend expects.
+ * Reads from company_context, product_contexts, and evidence_library tables.
+ */
 export async function GET(request: NextRequest) {
   try {
-    // Require authentication
     const context = await getUserContext(request);
     if (!context) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const categories = [];
+    const adminClient = createAdminClient();
+    const orgId = context.organizationId;
 
-    for (const category of CATEGORIES) {
-      const dirPath = join(SOURCES_DIR, category);
+    // Fetch all three L1 tables in parallel, scoped to the user's org
+    const [companyRes, productsRes, evidenceRes] = await Promise.all([
+      adminClient
+        .from("company_context")
+        .select("id, category, key, title, content, metadata, is_locked, last_verified_at")
+        .eq("organization_id", orgId)
+        .order("category")
+        .order("title"),
+      adminClient
+        .from("product_contexts")
+        .select("id, product_name, service_line, description, capabilities, specifications, is_locked, last_verified_at")
+        .eq("organization_id", orgId)
+        .order("service_line")
+        .order("product_name"),
+      adminClient
+        .from("evidence_library")
+        .select("id, evidence_type, title, summary, full_content, client_industry, service_line, metrics, is_verified, verified_at")
+        .eq("organization_id", orgId)
+        .order("evidence_type")
+        .order("title"),
+    ]);
 
-      if (!existsSync(dirPath)) {
-        continue;
+    const companyContextItems = companyRes.data ?? [];
+    const productItems = productsRes.data ?? [];
+    const evidenceItems = evidenceRes.data ?? [];
+
+    // Map company_context categories to source categories
+    const categoryMap: Record<string, { name: string; key: string; files: SourceFile[] }> = {};
+
+    // Group company context entries
+    for (const item of companyContextItems) {
+      const catKey = "company-context";
+      if (!categoryMap[catKey]) {
+        categoryMap[catKey] = { name: "company context", key: catKey, files: [] };
       }
-
-      const files = readdirSync(dirPath).filter((f) => f.endsWith(".md"));
-      const fileInfos = [];
-
-      for (const file of files) {
-        const filePath = join(dirPath, file);
-        const content = readFileSync(filePath, "utf-8");
-        const { metadata, body } = extractFrontMatter(content);
-        const title = extractTitle(body) || basename(file, ".md").replace(/-/g, " ");
-
-        fileInfos.push({
-          fileName: basename(file, ".md"),
-          category,
-          title,
-          status: metadata.status || "UNVERIFIED",
-          contentType: metadata.content_type,
-          verifiedDate: metadata.verified_date,
-        });
-      }
-
-      if (fileInfos.length > 0) {
-        categories.push({
-          name: category.replace(/-/g, " "),
-          key: category,
-          files: fileInfos,
-        });
-      }
+      categoryMap[catKey].files.push({
+        fileName: item.key,
+        category: catKey,
+        title: item.title,
+        status: item.last_verified_at ? "VERIFIED" : "UNVERIFIED",
+        contentType: item.category,
+      });
     }
+
+    // Group products as "service-catalog"
+    if (productItems.length > 0) {
+      categoryMap["service-catalog"] = {
+        name: "service catalog",
+        key: "service-catalog",
+        files: productItems.map((p) => ({
+          fileName: `${p.service_line}-${p.product_name}`.replace(/\s+/g, "-").toLowerCase(),
+          category: "service-catalog",
+          title: p.product_name,
+          status: p.last_verified_at ? "VERIFIED" : "UNVERIFIED",
+          contentType: p.service_line,
+        })),
+      };
+    }
+
+    // Group evidence items by type
+    const evidenceByType: Record<string, typeof evidenceItems> = {};
+    for (const item of evidenceItems) {
+      const type = item.evidence_type;
+      if (!evidenceByType[type]) evidenceByType[type] = [];
+      evidenceByType[type].push(item);
+    }
+
+    // Case studies
+    if (evidenceByType["case_study"]?.length) {
+      categoryMap["case-studies"] = {
+        name: "case studies",
+        key: "case-studies",
+        files: evidenceByType["case_study"].map((e) => ({
+          fileName: e.id,
+          category: "case-studies",
+          title: e.title,
+          status: e.is_verified ? "VERIFIED" : "UNVERIFIED",
+          contentType: "case_study",
+        })),
+      };
+    }
+
+    // Other evidence (metrics, testimonials, certifications, awards) → evidence-library
+    const otherEvidence = evidenceItems.filter((e) => e.evidence_type !== "case_study");
+    if (otherEvidence.length > 0) {
+      categoryMap["evidence-library"] = {
+        name: "evidence library",
+        key: "evidence-library",
+        files: otherEvidence.map((e) => ({
+          fileName: e.id,
+          category: "evidence-library",
+          title: e.title,
+          status: e.is_verified ? "VERIFIED" : "UNVERIFIED",
+          contentType: e.evidence_type,
+        })),
+      };
+    }
+
+    // Return categories in a consistent order
+    const orderedKeys = [
+      "company-context",
+      "service-catalog",
+      "case-studies",
+      "evidence-library",
+    ];
+    const categories = orderedKeys
+      .filter((k) => categoryMap[k])
+      .map((k) => categoryMap[k]);
 
     return NextResponse.json({ categories });
   } catch (error) {
     console.error("Failed to load sources:", error);
-    return NextResponse.json({ error: "Failed to load sources" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to load sources" },
+      { status: 500 }
+    );
   }
+}
+
+interface SourceFile {
+  fileName: string;
+  category: string;
+  title: string;
+  status: string;
+  contentType?: string;
 }
