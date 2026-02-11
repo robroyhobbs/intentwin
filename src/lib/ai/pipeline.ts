@@ -146,16 +146,24 @@ async function fetchL1Context(
   supabase: ReturnType<typeof createAdminClient>,
   serviceLine?: string,
   industry?: string,
+  organizationId?: string,
 ): Promise<L1Context> {
   try {
     // Fetch company context (brand, values, certifications, legal)
-    const { data: companyContext } = await supabase
+    let companyQuery = supabase
       .from("company_context")
       .select("*")
       .order("category");
+    if (organizationId) {
+      companyQuery = companyQuery.eq("organization_id", organizationId);
+    }
+    const { data: companyContext } = await companyQuery;
 
     // Fetch relevant product contexts
     let productQuery = supabase.from("product_contexts").select("*");
+    if (organizationId) {
+      productQuery = productQuery.eq("organization_id", organizationId);
+    }
     if (serviceLine) {
       productQuery = productQuery.eq("service_line", serviceLine);
     }
@@ -166,6 +174,9 @@ async function fetchL1Context(
       .from("evidence_library")
       .select("*")
       .eq("is_verified", true);
+    if (organizationId) {
+      evidenceQuery = evidenceQuery.eq("organization_id", organizationId);
+    }
     if (serviceLine) {
       evidenceQuery = evidenceQuery.eq("service_line", serviceLine);
     }
@@ -400,7 +411,12 @@ export async function generateProposal(proposalId: string): Promise<void> {
     // IDD Stage 0: Fetch L1 Context (Company Truth)
     const serviceLine = (intakeData.opportunity_type as string) || undefined;
     const industry = (intakeData.client_industry as string) || undefined;
-    const l1Context = await fetchL1Context(supabase, serviceLine, industry);
+    const l1Context = await fetchL1Context(
+      supabase,
+      serviceLine,
+      industry,
+      proposal.organization_id,
+    );
 
     // Debug log for L1 context - only in development
     if (process.env.NODE_ENV === "development") {
@@ -692,7 +708,12 @@ export async function regenerateSection(
     // Fetch L1 context
     const serviceLine = (intakeData.opportunity_type as string) || undefined;
     const industry = (intakeData.client_industry as string) || undefined;
-    const l1Context = await fetchL1Context(supabase, serviceLine, industry);
+    const l1Context = await fetchL1Context(
+      supabase,
+      serviceLine,
+      industry,
+      proposal.organization_id,
+    );
 
     let staticSourcesContext = "";
     try {
