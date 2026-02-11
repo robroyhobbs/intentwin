@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import LandingContent from "./(public)/landing/LandingContent";
 import { getJsonLd } from "./(public)/landing/json-ld";
+import "@/styles/public.css";
 
 export const dynamic = "force-dynamic";
 
