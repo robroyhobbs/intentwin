@@ -83,16 +83,12 @@ export async function runQualityReview(
   };
 
   try {
-    // Set status to reviewing
-    await supabase
-      .from("proposals")
-      .update({ quality_review: { ...result } })
-      .eq("id", proposalId);
-
     // Fetch proposal data
     const { data: proposal, error: proposalErr } = await supabase
       .from("proposals")
-      .select("id, intake_data, win_strategy_data, organization_id, quality_review")
+      .select(
+        "id, intake_data, win_strategy_data, organization_id, quality_review",
+      )
       .eq("id", proposalId)
       .single();
 
@@ -129,7 +125,12 @@ export async function runQualityReview(
 
     // ── Round 1: Review all sections ──
     const sectionReviews: SectionReview[] = [];
-    const weakSections: { sectionId: string; sectionType: string; score: number; feedback: string }[] = [];
+    const weakSections: {
+      sectionId: string;
+      sectionType: string;
+      score: number;
+      feedback: string;
+    }[] = [];
 
     for (const section of sections) {
       try {
@@ -198,7 +199,9 @@ export async function runQualityReview(
         );
 
         const systemPrompt = buildSystemPrompt();
-        const regeneratedContent = await generateText(regenPrompt, { systemPrompt });
+        const regeneratedContent = await generateText(regenPrompt, {
+          systemPrompt,
+        });
 
         // Update section content in database
         await supabase
@@ -224,7 +227,9 @@ export async function runQualityReview(
         const newAvg = calculateSectionScore(newScores);
 
         // Update the section review with new scores
-        const existingReview = sectionReviews.find((r) => r.section_id === weak.sectionId);
+        const existingReview = sectionReviews.find(
+          (r) => r.section_id === weak.sectionId,
+        );
         if (existingReview) {
           existingReview.score = newAvg;
           existingReview.dimensions = {
@@ -251,7 +256,10 @@ export async function runQualityReview(
           section_id: weak.sectionId,
           round: 1,
           original_score: weak.score,
-          issues: [weak.feedback, `Remediation failed: ${err instanceof Error ? err.message : "Unknown error"}`],
+          issues: [
+            weak.feedback,
+            `Remediation failed: ${err instanceof Error ? err.message : "Unknown error"}`,
+          ],
           new_score: weak.score,
         });
       }
@@ -259,11 +267,14 @@ export async function runQualityReview(
 
     // ── Calculate final scores ──
     result.sections = sectionReviews;
-    result.overall_score = sectionReviews.length > 0
-      ? Math.round(
-          (sectionReviews.reduce((sum, s) => sum + s.score, 0) / sectionReviews.length) * 10,
-        ) / 10
-      : 0;
+    result.overall_score =
+      sectionReviews.length > 0
+        ? Math.round(
+            (sectionReviews.reduce((sum, s) => sum + s.score, 0) /
+              sectionReviews.length) *
+              10,
+          ) / 10
+        : 0;
     result.pass = result.overall_score >= PASS_THRESHOLD;
     result.status = "completed";
 

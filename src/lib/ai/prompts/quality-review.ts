@@ -81,16 +81,21 @@ export function calculateSectionScore(scores: QualityScores): number {
 export function buildQualityReviewPrompt(
   input: QualityReviewPromptInput,
 ): string {
-  const { sectionContent, sectionType, proposalContext, brandVoice, winStrategy } = input;
+  const {
+    sectionContent,
+    sectionType,
+    proposalContext,
+    brandVoice,
+    winStrategy,
+  } = input;
 
   const content =
     sectionContent.trim() === ""
       ? "[No content provided — this section is empty]"
       : sectionContent.length > MAX_CONTENT_LENGTH
-        ? sectionContent.slice(0, MAX_CONTENT_LENGTH) + "\n\n[Content truncated for review]"
+        ? sectionContent.slice(0, MAX_CONTENT_LENGTH) +
+          "\n\n[Content truncated for review]"
         : sectionContent;
-
-  const contentLabel = sectionContent.trim() === "" ? "No content provided" : "";
 
   let prompt = `You are a senior proposal quality reviewer. Review the following proposal section and score it across 4 quality dimensions.
 
@@ -101,7 +106,6 @@ ${sectionType}
 - Client: ${proposalContext.clientName || "Unknown"}
 - Industry: ${proposalContext.industry || "Not specified"}
 ${proposalContext.opportunityType ? `- Opportunity: ${proposalContext.opportunityType}` : ""}
-${contentLabel ? `\nNote: ${contentLabel}` : ""}
 
 ## Section Content
 ${content}

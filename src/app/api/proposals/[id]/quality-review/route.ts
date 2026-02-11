@@ -38,7 +38,10 @@ export async function POST(
         trigger = body.trigger;
       } else if (body.trigger !== undefined) {
         return NextResponse.json(
-          { error: "Invalid trigger value. Must be 'manual' or 'auto_post_generation'." },
+          {
+            error:
+              "Invalid trigger value. Must be 'manual' or 'auto_post_generation'.",
+          },
           { status: 400 },
         );
       }
@@ -47,9 +50,7 @@ export async function POST(
     }
 
     // Check if review is already in progress (prevent concurrent reviews)
-    const qualityReview = proposal.quality_review as
-      | { status?: string }
-      | null;
+    const qualityReview = proposal.quality_review as { status?: string } | null;
     if (qualityReview?.status === "reviewing") {
       return NextResponse.json(
         { error: "Quality review is already in progress" },
@@ -76,25 +77,9 @@ export async function POST(
       .eq("id", id);
 
     // Fire-and-forget: run quality review in background
+    // The overseer handles its own error state (sets status: "failed" internally)
     runQualityReview(id, trigger).catch((err) => {
       console.error(`Quality review failed for proposal ${id}:`, err);
-      // Attempt to set status to "failed" so it doesn't stay stuck
-      supabase
-        .from("proposals")
-        .update({
-          quality_review: {
-            status: "failed",
-            run_at: new Date().toISOString(),
-            trigger,
-            model: "gpt-4o",
-            overall_score: 0,
-            pass: false,
-            sections: [],
-            remediation: [],
-          },
-        })
-        .eq("id", id)
-        .then(() => {});
     });
 
     return NextResponse.json({
