@@ -20,6 +20,22 @@ const ALLOWED_TYPES: Record<string, string> = {
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
+// Magic byte signatures for file type verification
+const MAGIC_BYTES: Record<string, { offset: number; bytes: number[] }[]> = {
+  pdf: [{ offset: 0, bytes: [0x25, 0x50, 0x44, 0x46] }], // %PDF
+  docx: [{ offset: 0, bytes: [0x50, 0x4b, 0x03, 0x04] }], // PK (ZIP)
+  pptx: [{ offset: 0, bytes: [0x50, 0x4b, 0x03, 0x04] }], // PK (ZIP)
+};
+
+function verifyMagicBytes(buffer: ArrayBuffer, fileType: string): boolean {
+  const signatures = MAGIC_BYTES[fileType];
+  if (!signatures) return true; // txt/md don't have magic bytes
+  const view = new Uint8Array(buffer);
+  return signatures.some((sig) =>
+    sig.bytes.every((byte, i) => view[sig.offset + i] === byte),
+  );
+}
+
 export async function POST(request: NextRequest) {
   try {
     const context = await getUserContext(request);
@@ -79,6 +95,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Verify magic bytes match claimed file type
+    const fileBuffer = await file.arrayBuffer();
+    if (!verifyMagicBytes(fileBuffer, fileType)) {
+      return NextResponse.json(
+        { error: "File content does not match its declared type." },
+        { status: 400 },
+      );
+    }
+
     const adminClient = createAdminClient();
     // Use organization_id in storage path for proper isolation
     const storagePath = `${context.organizationId}/${documentType}/${nanoid()}-${file.name}`;
@@ -86,7 +111,7 @@ export async function POST(request: NextRequest) {
     // Upload to Supabase Storage
     const { error: uploadError } = await adminClient.storage
       .from("knowledge-base-documents")
-      .upload(storagePath, file, {
+      .upload(storagePath, Buffer.from(fileBuffer), {
         contentType: file.type,
       });
 
