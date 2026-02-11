@@ -1,6 +1,13 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { FileText, Sparkles, TrendingUp, CheckCircle2, Zap, Target } from "lucide-react";
+import {
+  FileText,
+  Sparkles,
+  TrendingUp,
+  CheckCircle2,
+  Zap,
+  Target,
+} from "lucide-react";
 import { ProposalCard } from "@/components/ui/proposal-card";
 import { GettingStartedChecklist } from "@/components/dashboard/getting-started-checklist";
 
@@ -23,7 +30,7 @@ export default async function ProposalsPage({
 
   let query = supabase
     .from("proposals")
-    .select("*")
+    .select("*, proposal_sections(id, generation_status)")
     .order("created_at", { ascending: false });
 
   if (tab !== "all") {
@@ -41,7 +48,9 @@ export default async function ProposalsPage({
     .from("proposals")
     .select("status");
 
-  const statusCounts: Record<string, number> = { all: allProposals?.length || 0 };
+  const statusCounts: Record<string, number> = {
+    all: allProposals?.length || 0,
+  };
   for (const p of allProposals || []) {
     if (["draft", "intake", "generating"].includes(p.status)) {
       statusCounts["draft"] = (statusCounts["draft"] || 0) + 1;
@@ -68,12 +77,16 @@ export default async function ProposalsPage({
                 Proposals
               </h1>
               <p className="mt-0.5 text-sm text-[var(--foreground-muted)]">
-                Create and manage AI-powered proposals with Intent-Driven Development
+                Create and manage AI-powered proposals with Intent-Driven
+                Development
               </p>
             </div>
           </div>
 
-          <Link href="/proposals/new" className="btn-primary inline-flex items-center gap-2 px-5 py-2.5">
+          <Link
+            href="/proposals/new"
+            className="btn-primary inline-flex items-center gap-2 px-5 py-2.5"
+          >
             <Sparkles className="h-4 w-4" />
             New Proposal
           </Link>
@@ -86,8 +99,12 @@ export default async function ProposalsPage({
               <FileText className="h-5 w-5 text-[var(--accent)]" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-[var(--foreground)]">{totalCount}</p>
-              <p className="text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wide">Total Proposals</p>
+              <p className="text-2xl font-bold text-[var(--foreground)]">
+                {totalCount}
+              </p>
+              <p className="text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wide">
+                Total Proposals
+              </p>
             </div>
           </div>
 
@@ -96,8 +113,12 @@ export default async function ProposalsPage({
               <TrendingUp className="h-5 w-5 text-[var(--warning)]" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-[var(--foreground)]">{reviewCount}</p>
-              <p className="text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wide">In Review</p>
+              <p className="text-2xl font-bold text-[var(--foreground)]">
+                {reviewCount}
+              </p>
+              <p className="text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wide">
+                In Review
+              </p>
             </div>
           </div>
 
@@ -106,8 +127,12 @@ export default async function ProposalsPage({
               <CheckCircle2 className="h-5 w-5 text-[var(--success)]" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-[var(--foreground)]">{exportedCount}</p>
-              <p className="text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wide">Exported</p>
+              <p className="text-2xl font-bold text-[var(--foreground)]">
+                {exportedCount}
+              </p>
+              <p className="text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wide">
+                Exported
+              </p>
             </div>
           </div>
 
@@ -117,7 +142,9 @@ export default async function ProposalsPage({
             </div>
             <div>
               <p className="text-2xl font-bold text-[var(--foreground)]">IDD</p>
-              <p className="text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wide">Methodology</p>
+              <p className="text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wide">
+                Methodology
+              </p>
             </div>
           </div>
         </div>
@@ -131,7 +158,9 @@ export default async function ProposalsPage({
         {STATUS_TABS.map((t) => (
           <Link
             key={t.value}
-            href={t.value === "all" ? "/proposals" : `/proposals?tab=${t.value}`}
+            href={
+              t.value === "all" ? "/proposals" : `/proposals?tab=${t.value}`
+            }
             className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-150 ${
               tab === t.value
                 ? "bg-[var(--card-bg)] text-[var(--accent)] shadow-sm border border-[var(--accent-muted)]"
@@ -164,9 +193,14 @@ export default async function ProposalsPage({
             {tab === "all" ? "No proposals yet" : `No ${tab} proposals`}
           </h3>
           <p className="mt-2 text-sm text-[var(--foreground-muted)] max-w-md mx-auto">
-            Get started by creating your first AI-powered proposal. Define your intent, and let AI generate winning content backed by verified case studies.
+            Get started by creating your first AI-powered proposal. Define your
+            intent, and let AI generate winning content backed by verified case
+            studies.
           </p>
-          <Link href="/proposals/new" className="btn-primary mt-8 inline-flex items-center gap-2 px-6 py-3">
+          <Link
+            href="/proposals/new"
+            className="btn-primary mt-8 inline-flex items-center gap-2 px-6 py-3"
+          >
             <Sparkles className="h-5 w-5" />
             Create Your First Proposal
           </Link>
@@ -175,6 +209,14 @@ export default async function ProposalsPage({
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {proposals.map((proposal, index) => {
             const intake = proposal.intake_data as Record<string, string>;
+            const sections = (proposal as Record<string, unknown>)
+              .proposal_sections as
+              | { id: string; generation_status: string }[]
+              | undefined;
+            const sectionCount = sections?.length || 0;
+            const completedSections =
+              sections?.filter((s) => s.generation_status === "completed")
+                .length || 0;
             return (
               <div
                 key={proposal.id}
@@ -187,6 +229,8 @@ export default async function ProposalsPage({
                   clientName={intake?.client_name || "No client"}
                   opportunityType={intake?.opportunity_type || ""}
                   createdAt={proposal.created_at}
+                  sectionCount={sectionCount}
+                  completedSections={completedSections}
                 />
               </div>
             );
