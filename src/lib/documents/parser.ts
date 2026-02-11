@@ -1,6 +1,7 @@
 import { parseDocx } from "./parsers/docx";
 import { parsePdf } from "./parsers/pdf";
 import { parsePptx } from "./parsers/pptx";
+import { parseTxt, parseMd } from "./parsers/text";
 
 export interface ParsedSection {
   heading: string | null;
@@ -11,7 +12,7 @@ export interface ParsedSection {
 
 export async function parseDocument(
   buffer: Buffer,
-  fileType: string
+  fileType: string,
 ): Promise<ParsedSection[]> {
   switch (fileType) {
     case "docx":
@@ -20,6 +21,10 @@ export async function parseDocument(
       return parsePdf(buffer);
     case "pptx":
       return parsePptx(buffer);
+    case "txt":
+      return parseTxt(buffer);
+    case "md":
+      return parseMd(buffer);
     default:
       throw new Error(`Unsupported file type: ${fileType}`);
   }

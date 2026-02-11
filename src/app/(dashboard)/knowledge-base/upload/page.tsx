@@ -51,22 +51,29 @@ export default function UploadPage() {
   const [winStatus, setWinStatus] = useState("unknown");
   const [uploading, setUploading] = useState(false);
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    if (acceptedFiles.length > 0) {
-      const f = acceptedFiles[0];
-      setFile(f);
-      if (!title) {
-        setTitle(f.name.replace(/\.(docx|pdf|pptx)$/i, ""));
+  const onDrop = useCallback(
+    (acceptedFiles: File[]) => {
+      if (acceptedFiles.length > 0) {
+        const f = acceptedFiles[0];
+        setFile(f);
+        if (!title) {
+          setTitle(f.name.replace(/\.(docx|pdf|pptx|txt|md)$/i, ""));
+        }
       }
-    }
-  }, [title]);
+    },
+    [title],
+  );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+        [".docx"],
       "application/pdf": [".pdf"],
-      "application/vnd.openxmlformats-officedocument.presentationml.presentation": [".pptx"],
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+        [".pptx"],
+      "text/plain": [".txt"],
+      "text/markdown": [".md"],
     },
     maxFiles: 1,
     maxSize: 50 * 1024 * 1024,
@@ -116,7 +123,9 @@ export default function UploadPage() {
 
   return (
     <div className="max-w-2xl">
-      <h1 className="text-2xl font-bold text-[var(--foreground)]">Upload Document</h1>
+      <h1 className="text-2xl font-bold text-[var(--foreground)]">
+        Upload Document
+      </h1>
       <p className="mt-1 text-sm text-[var(--foreground-muted)]">
         Add a document to the knowledge base for proposal generation
       </p>
@@ -129,8 +138,8 @@ export default function UploadPage() {
             isDragActive
               ? "border-[var(--accent)] bg-[var(--accent-subtle)]"
               : file
-              ? "border-[var(--success)] bg-[var(--success-subtle)]"
-              : "border-[var(--border)] hover:border-[var(--foreground-subtle)]"
+                ? "border-[var(--success)] bg-[var(--success-subtle)]"
+                : "border-[var(--border)] hover:border-[var(--foreground-subtle)]"
           }`}
         >
           <input {...getInputProps()} />
@@ -138,7 +147,9 @@ export default function UploadPage() {
             <div className="flex items-center justify-center gap-3">
               <FileText className="h-8 w-8 text-[var(--success)]" />
               <div className="text-left">
-                <p className="text-sm font-medium text-[var(--foreground)]">{file.name}</p>
+                <p className="text-sm font-medium text-[var(--foreground)]">
+                  {file.name}
+                </p>
                 <p className="text-xs text-[var(--foreground-muted)]">
                   {(file.size / 1024 / 1024).toFixed(1)} MB
                 </p>
@@ -163,7 +174,7 @@ export default function UploadPage() {
                   : "Drag and drop a file, or click to browse"}
               </p>
               <p className="mt-1 text-xs text-[var(--foreground-subtle)]">
-                DOCX, PDF, or PPTX (max 50MB)
+                DOCX, PDF, PPTX, TXT, or MD (max 50MB)
               </p>
             </>
           )}
@@ -172,9 +183,7 @@ export default function UploadPage() {
         {/* Metadata fields */}
         <div className="space-y-4">
           <div>
-            <label className={labelClass}>
-              Title *
-            </label>
+            <label className={labelClass}>Title *</label>
             <input
               type="text"
               value={title}
@@ -185,9 +194,7 @@ export default function UploadPage() {
           </div>
 
           <div>
-            <label className={labelClass}>
-              Description
-            </label>
+            <label className={labelClass}>Description</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -198,9 +205,7 @@ export default function UploadPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={labelClass}>
-                Document Type
-              </label>
+              <label className={labelClass}>Document Type</label>
               <select
                 value={documentType}
                 onChange={(e) => setDocumentType(e.target.value)}
@@ -215,9 +220,7 @@ export default function UploadPage() {
             </div>
 
             <div>
-              <label className={labelClass}>
-                Win Status
-              </label>
+              <label className={labelClass}>Win Status</label>
               <select
                 value={winStatus}
                 onChange={(e) => setWinStatus(e.target.value)}
@@ -233,9 +236,7 @@ export default function UploadPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={labelClass}>
-                Industry
-              </label>
+              <label className={labelClass}>Industry</label>
               <select
                 value={industry}
                 onChange={(e) => setIndustry(e.target.value)}
@@ -251,9 +252,7 @@ export default function UploadPage() {
             </div>
 
             <div>
-              <label className={labelClass}>
-                Service Line
-              </label>
+              <label className={labelClass}>Service Line</label>
               <select
                 value={serviceLine}
                 onChange={(e) => setServiceLine(e.target.value)}

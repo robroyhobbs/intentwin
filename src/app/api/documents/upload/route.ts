@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getUserContext, checkPlanLimit, incrementUsage } from "@/lib/supabase/auth-api";
+import {
+  getUserContext,
+  checkPlanLimit,
+  incrementUsage,
+} from "@/lib/supabase/auth-api";
 import { nanoid } from "nanoid";
 import { processDocument } from "@/lib/documents/pipeline";
 
@@ -10,6 +14,8 @@ const ALLOWED_TYPES: Record<string, string> = {
   "application/pdf": "pdf",
   "application/vnd.openxmlformats-officedocument.presentationml.presentation":
     "pptx",
+  "text/plain": "txt",
+  "text/markdown": "md",
 };
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
@@ -23,18 +29,22 @@ export async function POST(request: NextRequest) {
     }
 
     // Check plan limits
-    const limitCheck = await checkPlanLimit(context.organizationId, "max_documents");
+    const limitCheck = await checkPlanLimit(
+      context.organizationId,
+      "max_documents",
+    );
     if (!limitCheck.allowed) {
       return NextResponse.json(
         { error: limitCheck.message || "Document limit reached" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
     const title = formData.get("title") as string;
-    const documentType = (formData.get("document_type") as string) || "proposal";
+    const documentType =
+      (formData.get("document_type") as string) || "proposal";
     const industry = formData.get("industry") as string | null;
     const serviceLine = formData.get("service_line") as string | null;
     const clientName = formData.get("client_name") as string | null;
@@ -53,8 +63,11 @@ export async function POST(request: NextRequest) {
     const fileType = ALLOWED_TYPES[file.type];
     if (!fileType) {
       return NextResponse.json(
-        { error: "Unsupported file type. Please upload DOCX, PDF, or PPTX." },
-        { status: 400 }
+        {
+          error:
+            "Unsupported file type. Please upload DOCX, PDF, PPTX, TXT, or MD.",
+        },
+        { status: 400 },
       );
     }
 
@@ -62,7 +75,7 @@ export async function POST(request: NextRequest) {
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
         { error: "File too large. Maximum size is 50MB." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -80,7 +93,7 @@ export async function POST(request: NextRequest) {
     if (uploadError) {
       return NextResponse.json(
         { error: `Upload failed: ${uploadError.message}` },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -111,7 +124,7 @@ export async function POST(request: NextRequest) {
     if (dbError || !document) {
       return NextResponse.json(
         { error: `Database error: ${dbError?.message}` },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -132,7 +145,7 @@ export async function POST(request: NextRequest) {
     console.error("Upload error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
