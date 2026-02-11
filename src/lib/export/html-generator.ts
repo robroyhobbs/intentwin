@@ -1,5 +1,5 @@
 import { extractMermaidBlocks } from "@/lib/diagrams/extract-mermaid";
-import { batchMermaidToSvg } from "@/lib/diagrams/mermaid-to-svg";
+import { batchMermaidToImages } from "@/lib/diagrams/mermaid-to-svg";
 
 interface ProposalSection {
   title: string;
@@ -180,7 +180,7 @@ const ACCENT_COLORS = ["#0070AD", "#12ABDB", "#1B365D", "#0070AD", "#12ABDB"];
 export async function generateHtml(data: ProposalData): Promise<string> {
   const companyName = data.company_name || "IntentWin";
 
-  // Collect all mermaid blocks for batch SVG conversion
+  // Collect all mermaid blocks for batch image conversion
   const allMermaidCodes: string[] = [];
   for (const section of data.sections) {
     const blocks = extractMermaidBlocks(section.content);
@@ -189,7 +189,7 @@ export async function generateHtml(data: ProposalData): Promise<string> {
     }
   }
 
-  const svgMap = await batchMermaidToSvg(allMermaidCodes);
+  const imageMap = await batchMermaidToImages(allMermaidCodes);
 
   // Build section HTML
   const sectionsHtml = data.sections
@@ -200,9 +200,12 @@ export async function generateHtml(data: ProposalData): Promise<string> {
       const bodyHtml = blocks
         .map((block) => {
           if (block.type === "mermaid") {
-            const svg = svgMap.get(block.content);
-            if (svg) {
-              return `<div class="diagram-container"><div class="diagram">${svg}</div></div>`;
+            const result = imageMap.get(block.content);
+            if (result?.type === "svg") {
+              return `<div class="diagram-container"><div class="diagram">${result.data}</div></div>`;
+            }
+            if (result?.type === "image") {
+              return `<div class="diagram-container"><div class="diagram"><img src="${result.data}" alt="Diagram" style="max-width:100%;height:auto;" /></div></div>`;
             }
             return `<pre class="diagram-fallback"><code>${escapeHtml(block.content)}</code></pre>`;
           }

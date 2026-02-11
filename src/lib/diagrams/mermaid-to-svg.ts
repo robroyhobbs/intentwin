@@ -1,17 +1,62 @@
 /**
- * Server-side conversion of Mermaid diagram code to SVG.
- * Uses the mermaid.ink public API for rendering.
+ * Server-side conversion of Mermaid diagram code to images.
+ * Uses Gemini image generation, with mermaid.ink SVG as fallback.
  */
 
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+const IMAGE_MODEL = "gemini-3-pro-image-preview";
+
 /**
- * Converts mermaid code to an SVG string via the mermaid.ink API.
- * Falls back to null if rendering fails.
+ * Converts mermaid code to an image via Gemini image generation.
+ * Falls back to mermaid.ink SVG, then to null if both fail.
+ * Returns { type: "image", data: "data:image/png;base64,..." } or { type: "svg", data: "<svg>..." } or null.
  */
-export async function mermaidToSvg(
-  mermaidCode: string
-): Promise<string | null> {
+export async function mermaidToImage(
+  mermaidCode: string,
+): Promise<{ type: "svg" | "image"; data: string } | null> {
+  // Try Gemini image generation first
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (apiKey) {
+    try {
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({
+        model: IMAGE_MODEL,
+        generationConfig: {
+          // @ts-expect-error -- Gemini image generation uses responseModalities
+          responseModalities: ["image", "text"],
+        },
+      });
+
+      const prompt = `Create a clean, professional technical diagram based on this Mermaid diagram definition.
+Use a modern, minimal style with a white background, clean lines, rounded rectangles for nodes, and a professional blue/gray color scheme.
+Make it look like a high-quality consulting deliverable diagram.
+
+Mermaid definition:
+${mermaidCode}`;
+
+      const result = await model.generateContent(prompt);
+      const response = result.response;
+      const parts = response.candidates?.[0]?.content?.parts;
+
+      if (parts) {
+        for (const part of parts) {
+          if (part.inlineData) {
+            const { mimeType, data } = part.inlineData;
+            return {
+              type: "image",
+              data: `data:${mimeType};base64,${data}`,
+            };
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("Gemini diagram generation failed, falling back to mermaid.ink:", err);
+    }
+  }
+
+  // Fallback to mermaid.ink SVG
   try {
-    // Base64-encode the mermaid definition
     const encoded = Buffer.from(mermaidCode, "utf-8").toString("base64");
     const url = `https://mermaid.ink/svg/${encoded}`;
 
@@ -19,33 +64,56 @@ export async function mermaidToSvg(
       signal: AbortSignal.timeout(10000),
     });
 
-    if (!response.ok) {
-      console.error(
-        `Mermaid.ink returned ${response.status} for diagram`,
-        mermaidCode.slice(0, 80)
-      );
-      return null;
+    if (response.ok) {
+      const svg = await response.text();
+      return { type: "svg", data: svg };
     }
 
-    return await response.text();
+    console.error(
+      `Mermaid.ink returned ${response.status} for diagram`,
+      mermaidCode.slice(0, 80),
+    );
   } catch (error) {
-    console.error("Failed to convert mermaid to SVG:", error);
-    return null;
+    console.error("Mermaid.ink fallback also failed:", error);
   }
+
+  return null;
 }
 
 /**
- * Batch convert multiple mermaid blocks to SVGs.
- * Returns a Map of mermaid code → SVG string (or null on failure).
+ * Batch convert multiple mermaid blocks to images.
+ * Returns a Map of mermaid code → result (or null on failure).
  */
+export async function batchMermaidToImages(
+  mermaidBlocks: string[],
+): Promise<Map<string, { type: "svg" | "image"; data: string } | null>> {
+  const results = new Map<string, { type: "svg" | "image"; data: string } | null>();
+  // Process sequentially to avoid Gemini rate limits
+  for (const code of mermaidBlocks) {
+    const result = await mermaidToImage(code);
+    results.set(code, result);
+  }
+  return results;
+}
+
+// Keep backward-compatible exports
+export async function mermaidToSvg(
+  mermaidCode: string,
+): Promise<string | null> {
+  const result = await mermaidToImage(mermaidCode);
+  if (!result) return null;
+  if (result.type === "svg") return result.data;
+  // For images, return null (caller should use mermaidToImage directly)
+  return null;
+}
+
 export async function batchMermaidToSvg(
-  mermaidBlocks: string[]
+  mermaidBlocks: string[],
 ): Promise<Map<string, string | null>> {
   const results = new Map<string, string | null>();
-  const promises = mermaidBlocks.map(async (code) => {
+  for (const code of mermaidBlocks) {
     const svg = await mermaidToSvg(code);
     results.set(code, svg);
-  });
-  await Promise.all(promises);
+  }
   return results;
 }

@@ -1,4 +1,6 @@
 import { generateHtml } from "./html-generator";
+import chromium from "@sparticuz/chromium";
+import puppeteerCore from "puppeteer-core";
 
 interface ProposalSection {
   title: string;
@@ -20,11 +22,12 @@ export async function generatePdf(data: ProposalData): Promise<Buffer> {
   // Generate the full HTML first
   const html = await generateHtml(data);
 
-  // Use puppeteer to render to PDF
-  const puppeteer = await import("puppeteer");
-  const browser = await puppeteer.default.launch({
-    headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  // Use @sparticuz/chromium for serverless (Vercel) compatibility
+  const browser = await puppeteerCore.launch({
+    args: chromium.args,
+    defaultViewport: chromium.defaultViewport,
+    executablePath: await chromium.executablePath(),
+    headless: chromium.headless,
   });
 
   try {
