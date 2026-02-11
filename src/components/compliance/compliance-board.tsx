@@ -35,7 +35,11 @@ interface Requirement {
   requirement_text: string;
   source_reference: string | null;
   category: "mandatory" | "desirable" | "informational";
-  compliance_status: "met" | "partially_met" | "not_addressed" | "not_applicable";
+  compliance_status:
+    | "met"
+    | "partially_met"
+    | "not_addressed"
+    | "not_applicable";
   mapped_section_id: string | null;
   notes: string | null;
   is_extracted: boolean;
@@ -60,19 +64,58 @@ interface ComplianceBoardProps {
 // ── Constants ──────────────────────────────────────────────────────────────
 
 const COLUMNS = [
-  { id: "met" as const, title: "Met", icon: CheckCircle2, color: "var(--success)" },
-  { id: "partially_met" as const, title: "Partially Met", icon: CircleDot, color: "var(--warning)" },
-  { id: "not_addressed" as const, title: "Not Addressed", icon: Circle, color: "var(--danger)" },
-  { id: "not_applicable" as const, title: "N/A", icon: MinusCircle, color: "var(--foreground-muted)" },
+  {
+    id: "met" as const,
+    title: "Met",
+    icon: CheckCircle2,
+    color: "var(--success)",
+  },
+  {
+    id: "partially_met" as const,
+    title: "Partially Met",
+    icon: CircleDot,
+    color: "var(--warning)",
+  },
+  {
+    id: "not_addressed" as const,
+    title: "Not Addressed",
+    icon: Circle,
+    color: "var(--danger)",
+  },
+  {
+    id: "not_applicable" as const,
+    title: "N/A",
+    icon: MinusCircle,
+    color: "var(--foreground-muted)",
+  },
 ] as const;
 
-const CATEGORY_COLORS: Record<string, { bg: string; text: string; label: string }> = {
-  mandatory: { bg: "rgba(239, 68, 68, 0.1)", text: "#ef4444", label: "MANDATORY" },
-  desirable: { bg: "rgba(234, 179, 8, 0.1)", text: "#eab308", label: "DESIRABLE" },
-  informational: { bg: "rgba(59, 130, 246, 0.1)", text: "#3b82f6", label: "INFO" },
+const CATEGORY_COLORS: Record<
+  string,
+  { bg: string; text: string; label: string }
+> = {
+  mandatory: {
+    bg: "rgba(239, 68, 68, 0.1)",
+    text: "#ef4444",
+    label: "MANDATORY",
+  },
+  desirable: {
+    bg: "rgba(234, 179, 8, 0.1)",
+    text: "#eab308",
+    label: "DESIRABLE",
+  },
+  informational: {
+    bg: "rgba(59, 130, 246, 0.1)",
+    text: "#3b82f6",
+    label: "INFO",
+  },
 };
 
-const CATEGORY_ORDER: Record<string, number> = { mandatory: 0, desirable: 1, informational: 2 };
+const CATEGORY_ORDER: Record<string, number> = {
+  mandatory: 0,
+  desirable: 1,
+  informational: 2,
+};
 
 // ── Droppable Column ───────────────────────────────────────────────────────
 
@@ -102,7 +145,8 @@ function DroppableColumn({
   const { isOver, setNodeRef } = useDroppable({ id });
 
   const sorted = [...requirements].sort(
-    (a, b) => (CATEGORY_ORDER[a.category] ?? 2) - (CATEGORY_ORDER[b.category] ?? 2),
+    (a, b) =>
+      (CATEGORY_ORDER[a.category] ?? 2) - (CATEGORY_ORDER[b.category] ?? 2),
   );
 
   return (
@@ -111,12 +155,15 @@ function DroppableColumn({
       className="flex-1 min-w-[220px] rounded-lg border transition-colors"
       style={{
         borderColor: isOver ? color : "var(--border)",
-        backgroundColor: isOver ? `${color}08` : "var(--background-secondary)",
+        backgroundColor: isOver ? `${color}18` : "var(--background-secondary)",
+        boxShadow: isOver ? `inset 0 0 0 1px ${color}40` : "none",
       }}
     >
       <div className="p-3 border-b border-[var(--border)] flex items-center gap-2">
         <Icon className="h-4 w-4" style={{ color }} />
-        <span className="text-sm font-semibold text-[var(--foreground)]">{title}</span>
+        <span className="text-sm font-semibold text-[var(--foreground)]">
+          {title}
+        </span>
         <span
           className="ml-auto text-xs font-medium rounded-full px-2 py-0.5"
           style={{ backgroundColor: `${color}15`, color }}
@@ -164,17 +211,21 @@ function DraggableCard({
   onNotesChange: (reqId: string, notes: string) => void;
   onDelete: (reqId: string) => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: requirement.id,
-    data: { requirement },
-  });
+  const { attributes, listeners, setNodeRef, transform, isDragging } =
+    useDraggable({
+      id: requirement.id,
+      data: { requirement },
+    });
 
   const style = transform
     ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
     : undefined;
 
-  const cat = CATEGORY_COLORS[requirement.category] || CATEGORY_COLORS.desirable;
-  const mappedSection = sections?.find((s) => s.id === requirement.mapped_section_id);
+  const cat =
+    CATEGORY_COLORS[requirement.category] || CATEGORY_COLORS.desirable;
+  const mappedSection = sections?.find(
+    (s) => s.id === requirement.mapped_section_id,
+  );
   const truncated =
     requirement.requirement_text.length > 80
       ? requirement.requirement_text.slice(0, 80) + "..."
@@ -202,7 +253,9 @@ function DraggableCard({
             </span>
           )}
         </div>
-        <p className="text-xs text-[var(--foreground)] leading-relaxed">{truncated}</p>
+        <p className="text-xs text-[var(--foreground)] leading-relaxed">
+          {truncated}
+        </p>
         {mappedSection && (
           <p className="text-[10px] text-[var(--foreground-muted)] mt-1">
             &rarr; {mappedSection.title}
@@ -249,7 +302,8 @@ function DraggableCard({
 // ── Card Overlay (for drag preview) ────────────────────────────────────────
 
 function CardOverlay({ requirement }: { requirement: Requirement }) {
-  const cat = CATEGORY_COLORS[requirement.category] || CATEGORY_COLORS.desirable;
+  const cat =
+    CATEGORY_COLORS[requirement.category] || CATEGORY_COLORS.desirable;
   const truncated =
     requirement.requirement_text.length > 80
       ? requirement.requirement_text.slice(0, 80) + "..."
@@ -270,14 +324,19 @@ function CardOverlay({ requirement }: { requirement: Requirement }) {
 
 // ── Main Board Component ───────────────────────────────────────────────────
 
-export function ComplianceBoard({ proposalId, sections }: ComplianceBoardProps) {
+export function ComplianceBoard({
+  proposalId,
+  sections,
+}: ComplianceBoardProps) {
   const [requirements, setRequirements] = useState<Requirement[]>([]);
   const [summary, setSummary] = useState<ComplianceSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [addText, setAddText] = useState("");
-  const [addCategory, setAddCategory] = useState<"mandatory" | "desirable" | "informational">("desirable");
+  const [addCategory, setAddCategory] = useState<
+    "mandatory" | "desirable" | "informational"
+  >("desirable");
   const [activeReq, setActiveReq] = useState<Requirement | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const notesTimerRef = useRef<Record<string, NodeJS.Timeout>>({});
@@ -308,7 +367,9 @@ export function ComplianceBoard({ proposalId, sections }: ComplianceBoardProps) 
   // ── Drag and Drop ──────────────────────────────────────────────────────
 
   function handleDragStart(event: DragStartEvent) {
-    const req = event.active.data.current?.requirement as Requirement | undefined;
+    const req = event.active.data.current?.requirement as
+      | Requirement
+      | undefined;
     if (req) setActiveReq(req);
   }
 
@@ -325,7 +386,9 @@ export function ComplianceBoard({ proposalId, sections }: ComplianceBoardProps) 
     // Optimistic update
     const prevRequirements = [...requirements];
     setRequirements((prev) =>
-      prev.map((r) => (r.id === reqId ? { ...r, compliance_status: newStatus } : r)),
+      prev.map((r) =>
+        r.id === reqId ? { ...r, compliance_status: newStatus } : r,
+      ),
     );
 
     try {
@@ -427,7 +490,9 @@ export function ComplianceBoard({ proposalId, sections }: ComplianceBoardProps) 
 
   const score = summary
     ? summary.total > 0
-      ? Math.round(((summary.met + summary.not_applicable) / summary.total) * 100)
+      ? Math.round(
+          ((summary.met + summary.not_applicable) / summary.total) * 100,
+        )
       : 0
     : 0;
 
@@ -448,7 +513,9 @@ export function ComplianceBoard({ proposalId, sections }: ComplianceBoardProps) 
           {summary && summary.mandatory_gaps > 0 && (
             <div className="flex items-center gap-1.5 text-sm text-[var(--danger)]">
               <AlertTriangle className="h-4 w-4" />
-              <span className="font-medium">{summary.mandatory_gaps} mandatory gaps</span>
+              <span className="font-medium">
+                {summary.mandatory_gaps} mandatory gaps
+              </span>
             </div>
           )}
         </div>
@@ -475,7 +542,9 @@ export function ComplianceBoard({ proposalId, sections }: ComplianceBoardProps) 
           <div className="flex items-center gap-3">
             <select
               value={addCategory}
-              onChange={(e) => setAddCategory(e.target.value as typeof addCategory)}
+              onChange={(e) =>
+                setAddCategory(e.target.value as typeof addCategory)
+              }
               className="text-xs rounded border border-[var(--border)] bg-[var(--background)] px-2 py-1.5 text-[var(--foreground)]"
             >
               <option value="mandatory">Mandatory</option>
@@ -486,7 +555,10 @@ export function ComplianceBoard({ proposalId, sections }: ComplianceBoardProps) 
               Add
             </button>
             <button
-              onClick={() => { setShowAddForm(false); setAddText(""); }}
+              onClick={() => {
+                setShowAddForm(false);
+                setAddText("");
+              }}
               className="btn-secondary text-xs py-1.5"
             >
               <X className="h-3.5 w-3.5" />
@@ -523,7 +595,9 @@ export function ComplianceBoard({ proposalId, sections }: ComplianceBoardProps) 
                 title={col.title}
                 icon={col.icon}
                 color={col.color}
-                requirements={requirements.filter((r) => r.compliance_status === col.id)}
+                requirements={requirements.filter(
+                  (r) => r.compliance_status === col.id,
+                )}
                 onCardClick={(id) =>
                   setExpandedCard(expandedCard === id ? null : id)
                 }
@@ -543,8 +617,14 @@ export function ComplianceBoard({ proposalId, sections }: ComplianceBoardProps) 
 
       {/* Delete Confirmation */}
       {deleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="card p-6 max-w-sm space-y-4">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          onClick={() => setDeleteConfirm(null)}
+        >
+          <div
+            className="card p-6 max-w-sm space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
             <p className="text-sm text-[var(--foreground)]">
               Are you sure you want to delete this requirement?
             </p>

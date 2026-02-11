@@ -68,6 +68,10 @@ export function VersionHistory({ proposalId, onRestore }: VersionHistoryProps) {
   const [saving, setSaving] = useState(false);
   const [editingLabel, setEditingLabel] = useState<string | null>(null);
   const [labelInput, setLabelInput] = useState("");
+  const [confirmRestore, setConfirmRestore] = useState<{
+    id: string;
+    number: number;
+  } | null>(null);
 
   useEffect(() => {
     fetchVersions();
@@ -90,13 +94,16 @@ export function VersionHistory({ proposalId, onRestore }: VersionHistoryProps) {
   async function handleSaveVersion() {
     setSaving(true);
     try {
-      const response = await authFetch(`/api/proposals/${proposalId}/versions`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          change_summary: "Manual checkpoint",
-        }),
-      });
+      const response = await authFetch(
+        `/api/proposals/${proposalId}/versions`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            change_summary: "Manual checkpoint",
+          }),
+        },
+      );
 
       if (response.ok) {
         toast.success("Version saved");
@@ -112,16 +119,13 @@ export function VersionHistory({ proposalId, onRestore }: VersionHistoryProps) {
     }
   }
 
-  async function handleRestore(versionId: string, versionNumber: number) {
-    if (!confirm(`Restore to version ${versionNumber}? Your current changes will be saved as a new version first.`)) {
-      return;
-    }
-
+  async function handleRestore(versionId: string) {
+    setConfirmRestore(null);
     setRestoring(versionId);
     try {
       const response = await authFetch(
         `/api/proposals/${proposalId}/versions/${versionId}/restore`,
-        { method: "POST" }
+        { method: "POST" },
       );
 
       if (response.ok) {
@@ -149,7 +153,7 @@ export function VersionHistory({ proposalId, onRestore }: VersionHistoryProps) {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ label: labelInput || null }),
-        }
+        },
       );
 
       if (response.ok) {
@@ -174,7 +178,9 @@ export function VersionHistory({ proposalId, onRestore }: VersionHistoryProps) {
       <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
         <div className="flex items-center gap-2">
           <History className="h-4 w-4 text-[var(--brand-primary)]" />
-          <h3 className="text-sm font-semibold text-[var(--foreground)]">Version History</h3>
+          <h3 className="text-sm font-semibold text-[var(--foreground)]">
+            Version History
+          </h3>
           <span className="text-xs text-[var(--foreground-muted)] bg-[var(--background-secondary)] px-2 py-0.5 rounded-full">
             {versions.length}
           </span>
@@ -198,7 +204,9 @@ export function VersionHistory({ proposalId, onRestore }: VersionHistoryProps) {
         ) : versions.length === 0 ? (
           <div className="p-6 text-center">
             <AlertCircle className="h-8 w-8 text-[var(--foreground-muted)] mx-auto mb-2" />
-            <p className="text-sm text-[var(--foreground-muted)]">No versions yet</p>
+            <p className="text-sm text-[var(--foreground-muted)]">
+              No versions yet
+            </p>
             <p className="text-xs text-[var(--foreground-muted)] mt-1">
               Versions are created automatically at key milestones
             </p>
@@ -206,7 +214,8 @@ export function VersionHistory({ proposalId, onRestore }: VersionHistoryProps) {
         ) : (
           <>
             {displayVersions.map((version, index) => {
-              const TriggerIcon = TRIGGER_ICONS[version.trigger_event] || History;
+              const TriggerIcon =
+                TRIGGER_ICONS[version.trigger_event] || History;
               const isLatest = index === 0;
               const isRestoring = restoring === version.id;
 
@@ -280,19 +289,24 @@ export function VersionHistory({ proposalId, onRestore }: VersionHistoryProps) {
                       </div>
 
                       <p className="text-xs text-[var(--foreground-muted)] mt-0.5">
-                        {TRIGGER_LABELS[version.trigger_event] || version.trigger_event}
-                        {version.change_summary && ` - ${version.change_summary}`}
+                        {TRIGGER_LABELS[version.trigger_event] ||
+                          version.trigger_event}
+                        {version.change_summary &&
+                          ` - ${version.change_summary}`}
                       </p>
 
                       <div className="flex items-center gap-3 mt-1.5 text-[10px] text-[var(--foreground-muted)]">
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          {new Date(version.created_at).toLocaleString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            hour: "numeric",
-                            minute: "2-digit",
-                          })}
+                          {new Date(version.created_at).toLocaleString(
+                            "en-US",
+                            {
+                              month: "short",
+                              day: "numeric",
+                              hour: "numeric",
+                              minute: "2-digit",
+                            },
+                          )}
                         </span>
                         <span className="flex items-center gap-1">
                           <FileText className="h-3 w-3" />
@@ -304,11 +318,18 @@ export function VersionHistory({ proposalId, onRestore }: VersionHistoryProps) {
                     {/* Actions */}
                     {!isLatest && (
                       <button
-                        onClick={() => handleRestore(version.id, version.version_number)}
+                        onClick={() =>
+                          setConfirmRestore({
+                            id: version.id,
+                            number: version.version_number,
+                          })
+                        }
                         disabled={isRestoring}
                         className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-lg text-[var(--brand-primary)] hover:bg-[var(--brand-primary)]/10 transition-colors disabled:opacity-50"
                       >
-                        <RotateCcw className={`h-3.5 w-3.5 ${isRestoring ? "animate-spin" : ""}`} />
+                        <RotateCcw
+                          className={`h-3.5 w-3.5 ${isRestoring ? "animate-spin" : ""}`}
+                        />
                         {isRestoring ? "Restoring..." : "Restore"}
                       </button>
                     )}
@@ -350,6 +371,39 @@ export function VersionHistory({ proposalId, onRestore }: VersionHistoryProps) {
             </>
           )}
         </button>
+      )}
+
+      {/* Restore Confirmation Modal */}
+      {confirmRestore && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          onClick={() => setConfirmRestore(null)}
+        >
+          <div
+            className="card p-6 max-w-sm space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-sm text-[var(--foreground)]">
+              Restore to version {confirmRestore.number}? Your current changes
+              will be saved as a new version first.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setConfirmRestore(null)}
+                className="btn-secondary text-xs"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleRestore(confirmRestore.id)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--brand-primary)] px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Restore
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
