@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import {
   Upload,
   Search,
@@ -21,7 +21,10 @@ const fileTypeIcon: Record<string, React.ReactNode> = {
   pptx: <Presentation className="h-5 w-5 text-[var(--warning)]" />,
 };
 
-const statusBadge: Record<string, { icon: React.ReactNode; label: string; className: string }> = {
+const statusBadge: Record<
+  string,
+  { icon: React.ReactNode; label: string; className: string }
+> = {
   pending: {
     icon: <Clock className="h-3 w-3" />,
     label: "Pending",
@@ -45,7 +48,7 @@ const statusBadge: Record<string, { icon: React.ReactNode; label: string; classN
 };
 
 export default async function KnowledgeBasePage() {
-  const supabase = createAdminClient();
+  const supabase = await createClient();
   const { data: documents } = await supabase
     .from("documents")
     .select("*")
@@ -65,7 +68,9 @@ export default async function KnowledgeBasePage() {
             <Database className="h-6 w-6 text-black" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-[var(--foreground)]">Knowledge Base</h1>
+            <h1 className="text-2xl font-bold text-[var(--foreground)]">
+              Knowledge Base
+            </h1>
             <p className="mt-0.5 text-sm text-[var(--foreground-muted)]">
               Manage uploaded documents for proposal generation
             </p>
@@ -111,8 +116,12 @@ export default async function KnowledgeBasePage() {
             <FileText className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-2xl font-bold text-[var(--foreground)]">{totalDocs}</p>
-            <p className="text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wide">Total Documents</p>
+            <p className="text-2xl font-bold text-[var(--foreground)]">
+              {totalDocs}
+            </p>
+            <p className="text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wide">
+              Total Documents
+            </p>
           </div>
         </div>
         <div className="group flex items-center gap-4 rounded-xl bg-[var(--card-bg)] border border-[var(--border)] px-5 py-4 transition-all hover:border-[var(--success)] hover:shadow-[0_0_20px_rgba(0,255,136,0.15)]">
@@ -120,8 +129,12 @@ export default async function KnowledgeBasePage() {
             <CheckCircle2 className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-2xl font-bold text-[var(--foreground)]">{completedDocs}</p>
-            <p className="text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wide">Indexed</p>
+            <p className="text-2xl font-bold text-[var(--foreground)]">
+              {completedDocs}
+            </p>
+            <p className="text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wide">
+              Indexed
+            </p>
           </div>
         </div>
         <div className="group flex items-center gap-4 rounded-xl bg-[var(--card-bg)] border border-[var(--border)] px-5 py-4 transition-all hover:border-[var(--info)] hover:shadow-[0_0_20px_rgba(0,102,255,0.15)]">
@@ -129,8 +142,12 @@ export default async function KnowledgeBasePage() {
             <FileSpreadsheet className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-2xl font-bold text-[var(--foreground)]">{totalChunks}</p>
-            <p className="text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wide">Total Chunks</p>
+            <p className="text-2xl font-bold text-[var(--foreground)]">
+              {totalChunks}
+            </p>
+            <p className="text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wide">
+              Total Chunks
+            </p>
           </div>
         </div>
       </div>
@@ -157,7 +174,8 @@ export default async function KnowledgeBasePage() {
         <div className="card overflow-hidden">
           <div className="divide-y divide-[var(--border)]">
             {documents.map((doc) => {
-              const status = statusBadge[doc.processing_status] ?? statusBadge.pending;
+              const status =
+                statusBadge[doc.processing_status] ?? statusBadge.pending;
               return (
                 <div
                   key={doc.id}
@@ -174,11 +192,14 @@ export default async function KnowledgeBasePage() {
                       <p className="text-xs text-[var(--foreground-muted)]">
                         {doc.file_name} &middot;{" "}
                         {doc.document_type.replace("_", " ")}
-                        {doc.chunk_count > 0 && ` \u00B7 ${doc.chunk_count} chunks`}
+                        {doc.chunk_count > 0 &&
+                          ` \u00B7 ${doc.chunk_count} chunks`}
                       </p>
                     </div>
                   </div>
-                  <div className={`inline-flex items-center gap-1 ${status.className}`}>
+                  <div
+                    className={`inline-flex items-center gap-1 ${status.className}`}
+                  >
                     {status.icon}
                     {status.label}
                   </div>
