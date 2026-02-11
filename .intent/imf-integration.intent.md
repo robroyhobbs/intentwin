@@ -386,7 +386,134 @@ All four checks are simple string operations (no LLM call needed). Framework adh
 
 ## 8. Open Items
 
-- [ ] Define specific AIDA/PAS/FAB prompt templates per section
+- [x] Define specific AIDA/PAS/FAB prompt templates per section — DONE (Phase 2, commit 0b16641)
 - [ ] Determine if org settings UI needs update for brand voice (or just expose in settings page)
 - [ ] Test Gemini 3 Pro response quality with layered prompts
 - [ ] Benchmark generation time with added prompt complexity
+
+---
+
+## 9. Finalized Implementation Details
+
+> [!SYNCED] Last synced: 2026-02-10 from commits 24b797d..0b16641
+
+### Module Structure
+
+```
+src/lib/ai/
+├── persuasion.ts                      # Core persuasion engine (390 LOC)
+├── claude.ts                          # LLM abstraction (brand voice added)
+├── pipeline.ts                        # Generation pipeline (persuasion wired in)
+├── prompts/
+│   ├── executive-summary.ts           # AIDA framework
+│   ├── understanding.ts               # PAS framework
+│   ├── approach.ts                    # FAB framework
+│   ├── methodology.ts                 # Before-After-Bridge framework
+│   ├── team.ts                        # Social Proof + Authority framework
+│   ├── case-studies.ts                # STAR framework
+│   ├── timeline.ts                    # Certainty Framework
+│   ├── pricing.ts                     # Value Framing (unchanged — natural match)
+│   ├── risk-mitigation.ts             # Acknowledge-Address-Assure framework
+│   └── why-us.ts                      # Competitive Differentiation (unchanged — natural match)
+└── __tests__/
+    ├── persuasion.test.ts             # 30 tests — pure function unit tests
+    ├── pipeline-persuasion.test.ts    # 22 tests — integration tests
+    └── section-prompts.test.ts        # 26 tests — framework verification
+```
+
+### Public API — persuasion.ts
+
+```typescript
+// Types
+export interface BrandVoice {
+  tone: string;
+  terminology: { use: string[]; avoid: string[] };
+}
+
+export interface QualityCheck {
+  winThemePresent: boolean;
+  lengthInRange: boolean;
+  noBlockedTerms: boolean;
+  hasProofPoint: boolean;
+}
+
+// Constants
+export const SECTION_TYPES = [
+  "executive_summary",
+  "understanding",
+  "approach",
+  "methodology",
+  "team",
+  "case_studies",
+  "timeline",
+  "pricing",
+  "risk_mitigation",
+  "why_us",
+] as const;
+
+// Functions
+export function getPersuasionPrompt(sectionType: string): string;
+export function getBestPracticesPrompt(sectionType: string): string;
+export function buildWinThemesPrompt(themes: string[]): string;
+export function buildCompetitivePrompt(
+  differentiators: string[],
+  objections: string[],
+): string;
+export function buildBrandVoiceSystemPrompt(brandVoice: BrandVoice): string;
+export function runQualityChecks(
+  content: string,
+  sectionType: string,
+  winThemes: string[],
+  avoidTerms: string[],
+): QualityCheck;
+```
+
+### Section Word Length Ranges
+
+| Section           | Min | Max  |
+| ----------------- | --- | ---- |
+| executive_summary | 300 | 500  |
+| understanding     | 500 | 700  |
+| approach          | 800 | 1200 |
+| methodology       | 500 | 800  |
+| team              | 400 | 600  |
+| case_studies      | 600 | 900  |
+| timeline          | 400 | 600  |
+| pricing           | 300 | 500  |
+| risk_mitigation   | 400 | 600  |
+| why_us            | 400 | 600  |
+
+### Pipeline Integration Pattern
+
+```
+generateProposal()
+  → Extract brandVoice from org settings JSONB
+  → Build systemPrompt with brandVoice via buildSystemPrompt()
+  → For each section:
+      → basePrompt = config.buildPrompt(intakeData, analysis, context, winStrategy, companyInfo)
+      → persuasionContext = [framework + bestPractices + winThemes + competitive].filter(Boolean)
+      → prompt = basePrompt + "\n\n---\n\n## Persuasion & Quality Guidance\n\n" + persuasionContext
+      → generatedContent = generateText(prompt, { systemPrompt })
+      → runQualityChecks(content, type, themes, avoidTerms)  // advisory, logged, never blocks
+```
+
+### Key Design Decisions Confirmed
+
+| Decision                   | Final Choice                               | Rationale                                         |
+| -------------------------- | ------------------------------------------ | ------------------------------------------------- |
+| Persuasion injection point | Appended after base prompt with separator  | Non-breaking; base prompts unchanged              |
+| Quality check enforcement  | Advisory (log-only in dev)                 | Prevents false positives from blocking generation |
+| Brand voice storage        | `organizations.settings.brand_voice` JSONB | No schema migration needed                        |
+| System prompt modification | Extended buildSystemPrompt signature       | Single injection point for brand voice            |
+| Prompt builder changes     | Instructions section only, same signatures | 100% backward compatible                          |
+| Pricing/Why Us prompts     | Not modified                               | Already matched frameworks naturally              |
+| Test framework             | vitest with vite-tsconfig-paths            | Next.js path alias compatibility                  |
+| Proof point detection      | Regex pattern matching (6 patterns)        | No LLM call needed, fast                          |
+| Fallback behavior          | Unknown sections get generic framework     | Graceful degradation                              |
+
+### Test Coverage Summary
+
+- **78 total tests** across 3 test files
+- **6 test categories per phase:** Happy Path, Bad Path, Edge Cases, Security, Data Leak, Data Damage
+- **All passing** with TypeScript clean (`tsc --noEmit`)
+- **Production build verified** (`next build` succeeds)

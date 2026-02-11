@@ -14,6 +14,7 @@ import {
   BarChart3,
   Building2,
   Palette,
+  MessageSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
@@ -39,6 +40,11 @@ const navGroups = [
     label: "Settings",
     items: [
       { name: "Company Profile", href: "/settings/company", icon: Building2 },
+      {
+        name: "Brand Voice",
+        href: "/settings/brand-voice",
+        icon: MessageSquare,
+      },
       { name: "Branding", href: "/settings/branding", icon: Palette },
       { name: "Billing & Plan", href: "/settings", icon: Settings },
     ],
