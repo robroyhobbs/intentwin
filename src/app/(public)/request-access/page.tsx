@@ -72,12 +72,7 @@ export default function RequestAccessPage() {
             {isSuccess ? (
               <div className="ra-success">
                 <div className="ra-success-icon">
-                  <svg
-                    width="48"
-                    height="48"
-                    viewBox="0 0 48 48"
-                    fill="none"
-                  >
+                  <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
                     <circle
                       cx="24"
                       cy="24"
@@ -135,7 +130,13 @@ export default function RequestAccessPage() {
                         viewBox="0 0 16 16"
                         fill="none"
                       >
-                        <circle cx="8" cy="8" r="7" stroke="#ef4444" strokeWidth="1.5" />
+                        <circle
+                          cx="8"
+                          cy="8"
+                          r="7"
+                          stroke="#ef4444"
+                          strokeWidth="1.5"
+                        />
                         <path
                           d="M8 5V8.5"
                           stroke="#ef4444"
@@ -247,12 +248,14 @@ export default function RequestAccessPage() {
       </div>
 
       <style jsx global>{`
-        @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
-
         .ra-page {
           background: #09090b;
           color: #a1a1aa;
-          font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+          font-family:
+            "Inter",
+            -apple-system,
+            BlinkMacSystemFont,
+            sans-serif;
           font-weight: 400;
           line-height: 1.7;
           -webkit-font-smoothing: antialiased;
@@ -409,7 +412,11 @@ export default function RequestAccessPage() {
           border-radius: 10px;
           color: #fafafa;
           font-size: 15px;
-          font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+          font-family:
+            "Inter",
+            -apple-system,
+            BlinkMacSystemFont,
+            sans-serif;
           transition: all 0.2s ease;
           outline: none;
           box-sizing: border-box;
@@ -463,7 +470,11 @@ export default function RequestAccessPage() {
           color: #fff;
           font-size: 16px;
           font-weight: 600;
-          font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+          font-family:
+            "Inter",
+            -apple-system,
+            BlinkMacSystemFont,
+            sans-serif;
           border: none;
           border-radius: 10px;
           cursor: pointer;

@@ -123,8 +123,6 @@ export default function PricingContent() {
       </div>
 
       <style jsx global>{`
-        @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
-
         .vf-page {
           background: #09090b;
           color: #a1a1aa;
