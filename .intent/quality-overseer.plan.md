@@ -92,47 +92,47 @@ Build the GPT-4o review prompt and the core scoring function that evaluates a si
 
 #### Happy Path
 
-- [ ] Review prompt includes all 4 dimensions with clear rubric
-- [ ] Prompt injects section content, section type, and proposal context
-- [ ] GPT-4o returns valid JSON with scores (1-10) for each dimension + feedback
-- [ ] Section average is calculated correctly from 4 dimension scores
-- [ ] Prompt includes brand voice settings when available
-- [ ] Prompt includes win strategy context when available
+- [x] Review prompt includes all 4 dimensions with clear rubric
+- [x] Prompt injects section content, section type, and proposal context
+- [x] GPT-4o returns valid JSON with scores (1-10) for each dimension + feedback
+- [x] Section average is calculated correctly from 4 dimension scores
+- [x] Prompt includes brand voice settings when available
+- [x] Prompt includes win strategy context when available
 
 #### Bad Path
 
-- [ ] Handles GPT-4o returning malformed JSON (retry with JSON mode)
-- [ ] Handles GPT-4o timeout (returns error, doesn't crash)
-- [ ] Handles GPT-4o rate limit (backs off, retries once)
-- [ ] Handles empty section content (returns low score with "no content" feedback)
-- [ ] Handles missing brand voice settings (skips that dimension context, still scores)
-- [ ] Handles OpenAI API error (500, 503) gracefully
+- [x] Handles GPT-4o returning malformed JSON (retry with JSON mode)
+- [x] Handles GPT-4o timeout (returns error, doesn't crash)
+- [x] Handles GPT-4o rate limit (backs off, retries once)
+- [x] Handles empty section content (returns low score with "no content" feedback)
+- [x] Handles missing brand voice settings (skips that dimension context, still scores)
+- [x] Handles OpenAI API error (500, 503) gracefully
 
 #### Edge Cases
 
-- [ ] Very long section content (truncate to GPT-4o context limit)
-- [ ] Section with only headers/formatting, no substance
-- [ ] Section content is HTML vs markdown vs plain text
-- [ ] All dimensions score exactly 10 (perfect score)
-- [ ] All dimensions score exactly 1 (worst score)
+- [x] Very long section content (truncate to GPT-4o context limit)
+- [x] Section with only headers/formatting, no substance
+- [x] Section content is HTML vs markdown vs plain text
+- [x] All dimensions score exactly 10 (perfect score)
+- [x] All dimensions score exactly 1 (worst score)
 
 #### Security
 
-- [ ] Prompt doesn't leak system instructions or internal architecture
-- [ ] Client data sent to GPT-4o is only the section content + context needed for review
-- [ ] No PII beyond what's in the proposal content itself
+- [x] Prompt doesn't leak system instructions or internal architecture
+- [x] Client data sent to GPT-4o is only the section content + context needed for review
+- [x] No PII beyond what's in the proposal content itself
 
 #### Data Leak
 
-- [ ] GPT-4o feedback doesn't echo back sensitive internal prompts
-- [ ] Error messages from OpenAI don't expose API keys or internal URLs
-- [ ] Scores and feedback are sanitized before storage
+- [x] GPT-4o feedback doesn't echo back sensitive internal prompts
+- [x] Error messages from OpenAI don't expose API keys or internal URLs
+- [x] Scores and feedback are sanitized before storage
 
 #### Data Damage
 
-- [ ] Review function is read-only (doesn't modify section content)
-- [ ] Scoring function is pure (same input → same structure output, scores may vary)
-- [ ] Failed review doesn't corrupt existing proposal data
+- [x] Review function is read-only (doesn't modify section content)
+- [x] Scoring function is pure (same input → same structure output, scores may vary)
+- [x] Failed review doesn't corrupt existing proposal data
 
 ### E2E Gate
 
