@@ -1,5 +1,4 @@
 import { generateHtml } from "./html-generator";
-import chromium from "@sparticuz/chromium";
 import puppeteerCore from "puppeteer-core";
 
 interface ProposalSection {
@@ -16,17 +15,76 @@ interface ProposalData {
   sections: ProposalSection[];
 }
 
+/**
+ * Find a usable Chromium executable for PDF generation.
+ * In production (Vercel), uses @sparticuz/chromium.
+ * Locally, searches for installed browsers.
+ */
+async function findBrowser(): Promise<{
+  executablePath: string;
+  args: string[];
+}> {
+  // In local development, prefer local browser to avoid @sparticuz/chromium
+  // download timeout. Only use @sparticuz/chromium in production (Vercel).
+  const { existsSync } = await import("fs");
+  const isVercel =
+    !!process.env.VERCEL || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+
+  if (isVercel) {
+    try {
+      const chromium = await import("@sparticuz/chromium");
+      const execPath = await chromium.default.executablePath();
+      if (execPath) {
+        return { executablePath: execPath, args: chromium.default.args };
+      }
+    } catch {
+      // Fall through to local detection
+    }
+  }
+
+  // Local development: search for installed browsers
+  const candidates = [
+    // macOS
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
+    "/Applications/Chromium.app/Contents/MacOS/Chromium",
+    "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+    "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+    // Linux
+    "/usr/bin/google-chrome-stable",
+    "/usr/bin/google-chrome",
+    "/usr/bin/chromium-browser",
+    "/usr/bin/chromium",
+    // Puppeteer cache
+    `${process.env.HOME}/.cache/puppeteer/chrome/*/chrome-*/chrome`,
+  ];
+
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) {
+      return {
+        executablePath: candidate,
+        args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      };
+    }
+  }
+
+  throw new Error(
+    "No Chromium-based browser found. Install Chrome, Edge, or Chromium for PDF export.",
+  );
+}
+
 export async function generatePdf(data: ProposalData): Promise<Buffer> {
   const companyName = data.company_name || "IntentWin";
 
   // Generate the full HTML first
   const html = await generateHtml(data);
 
-  // Use @sparticuz/chromium for serverless (Vercel) compatibility
+  const { executablePath, args } = await findBrowser();
+
   const browser = await puppeteerCore.launch({
-    args: chromium.args,
+    args,
     defaultViewport: { width: 1280, height: 720 },
-    executablePath: await chromium.executablePath(),
+    executablePath,
     headless: true,
   });
 
