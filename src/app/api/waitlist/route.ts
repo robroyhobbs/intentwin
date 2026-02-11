@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendWaitlistConfirmation } from "@/lib/email/send-waitlist-email";
+import { sendAdminWaitlistNotification } from "@/lib/email/send-admin-notification";
 
 export async function POST(request: NextRequest) {
   try {
@@ -79,6 +80,14 @@ export async function POST(request: NextRequest) {
       name: name.trim(),
       email: email.toLowerCase().trim(),
       company: company.trim(),
+    });
+
+    // Fire-and-forget: notify admin of new signup
+    void sendAdminWaitlistNotification({
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
+      company: company.trim(),
+      company_size: company_size || undefined,
     });
 
     return NextResponse.json({ success: true });

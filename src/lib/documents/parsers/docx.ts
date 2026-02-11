@@ -28,7 +28,10 @@ export async function parseDocx(buffer: Buffer): Promise<ParsedSection[]> {
     );
   }
 
-  let result: { value: string; messages: mammoth.Message[] };
+  let result: {
+    value: string;
+    messages: Array<{ type: string; message: string }>;
+  };
   try {
     result = await mammoth.convertToHtml({ buffer });
   } catch (err) {
