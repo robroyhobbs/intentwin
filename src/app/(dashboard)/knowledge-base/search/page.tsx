@@ -38,7 +38,7 @@ export default function SearchPage() {
           query: query.trim(),
           document_type: documentType || undefined,
           limit: 10,
-          threshold: 0.5,
+          threshold: 0.2,
         }),
       });
 
@@ -61,7 +61,9 @@ export default function SearchPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-[var(--foreground)]">Search Knowledge Base</h1>
+      <h1 className="text-2xl font-bold text-[var(--foreground)]">
+        Search Knowledge Base
+      </h1>
       <p className="mt-1 text-sm text-[var(--foreground-muted)]">
         Search across all indexed documents using natural language
       </p>
@@ -126,10 +128,7 @@ export default function SearchPage() {
               {results.length} result{results.length !== 1 ? "s" : ""} found
             </p>
             {results.map((result) => (
-              <div
-                key={result.id}
-                className="card p-5"
-              >
+              <div key={result.id} className="card p-5">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2">
                     <FileText className="h-4 w-4 text-[var(--foreground-subtle)]" />
