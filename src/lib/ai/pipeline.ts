@@ -26,6 +26,7 @@ import {
   runQualityChecks,
   type BrandVoice,
 } from "./persuasion";
+import { getIndustryConfig, buildIndustryContext } from "./industry-configs";
 import type { WinStrategyData } from "@/types/outcomes";
 import type {
   OutcomeContract,
@@ -424,6 +425,7 @@ export async function generateProposal(proposalId: string): Promise<void> {
     // IDD Stage 0: Fetch L1 Context (Company Truth)
     const serviceLine = (intakeData.opportunity_type as string) || undefined;
     const industry = (intakeData.client_industry as string) || undefined;
+    const industryConfig = getIndustryConfig(industry || "");
     const l1Context = await fetchL1Context(
       supabase,
       serviceLine,
@@ -549,9 +551,21 @@ export async function generateProposal(proposalId: string): Promise<void> {
           .filter(Boolean)
           .join("\n\n");
 
-        const prompt = persuasionContext
-          ? `${basePrompt}\n\n---\n\n## Persuasion & Quality Guidance\n\n${persuasionContext}`
-          : basePrompt;
+        // Build industry intelligence context for this section
+        const industryContext = buildIndustryContext(
+          industryConfig,
+          config.type,
+        );
+
+        const prompt = [
+          basePrompt,
+          industryContext ? `\n\n---\n\n${industryContext}` : "",
+          persuasionContext
+            ? `\n\n---\n\n## Persuasion & Quality Guidance\n\n${persuasionContext}`
+            : "",
+        ]
+          .filter(Boolean)
+          .join("");
 
         // Generate the section content with organization-aware system prompt
         const generatedContent = await generateText(prompt, {

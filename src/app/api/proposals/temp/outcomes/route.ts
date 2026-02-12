@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUserContext } from "@/lib/supabase/auth-api";
 import { generateText } from "@/lib/ai/claude";
 import { buildOutcomesPrompt } from "@/lib/ai/prompts/outcomes";
+import { getIndustryConfig } from "@/lib/ai/industry-configs";
 import type { WinStrategyData } from "@/types/outcomes";
 
 export async function POST(request: NextRequest) {
@@ -18,12 +19,18 @@ export async function POST(request: NextRequest) {
     if (!intake_data) {
       return NextResponse.json(
         { error: "Intake data is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    // Generate outcomes using Claude
-    const prompt = buildOutcomesPrompt(intake_data);
+    // Generate outcomes using Claude, with industry win themes if available
+    const industryConfig = getIndustryConfig(
+      (intake_data.client_industry as string) || "",
+    );
+    let prompt = buildOutcomesPrompt(intake_data);
+    if (industryConfig && industryConfig.winThemes.length > 0) {
+      prompt += `\n\n## Industry Win Themes\nFor the ${industryConfig.displayName} sector, consider incorporating these proven win themes:\n${industryConfig.winThemes.map((t) => `- ${t}`).join("\n")}\n\nWeave these into the win_themes and differentiators you generate.`;
+    }
     const rawResponse = await generateText(prompt, { temperature: 0.5 });
 
     // Parse the JSON response
@@ -39,7 +46,7 @@ export async function POST(request: NextRequest) {
       console.error("Failed to parse outcomes JSON:", rawResponse);
       return NextResponse.json(
         { error: "Failed to parse AI-generated outcomes" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -64,7 +71,7 @@ export async function POST(request: NextRequest) {
     console.error("Generate outcomes error:", error);
     return NextResponse.json(
       { error: "Failed to generate outcomes" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
