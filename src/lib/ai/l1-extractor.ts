@@ -341,6 +341,8 @@ export async function extractL1FromText(
     const prompt = buildL1ExtractionPrompt(text, fileName);
 
     const response = await generateText(prompt, {
+      systemPrompt:
+        "You are an expert data extraction analyst. You extract structured company information from documents and return valid JSON. Be thorough and extract every relevant item.",
       temperature: 0.2,
       maxTokens: 8192,
     });

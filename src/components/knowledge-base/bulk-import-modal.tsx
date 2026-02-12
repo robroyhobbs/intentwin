@@ -275,16 +275,52 @@ export function BulkImportModal({
     setStep("processing");
 
     const results: FileEntry[] = [...files];
+    let hitPlanLimit = false;
 
     // Sliding window: process CONCURRENT_LIMIT files at a time
     for (let i = 0; i < files.length; i += CONCURRENT_LIMIT) {
+      if (hitPlanLimit) {
+        // Mark remaining files as failed with plan limit message
+        for (let j = i; j < files.length; j++) {
+          results[j] = {
+            ...files[j],
+            status: "failed",
+            error: "Skipped — document limit reached",
+          };
+        }
+        setFiles((prev) =>
+          prev.map((f, idx) =>
+            idx >= i
+              ? {
+                  ...f,
+                  status: "failed" as const,
+                  error: "Skipped — document limit reached",
+                }
+              : f,
+          ),
+        );
+        break;
+      }
+
       const batch = files.slice(i, i + CONCURRENT_LIMIT);
       const batchResults = await Promise.all(
         batch.map((entry, batchIdx) => processFile(entry, i + batchIdx)),
       );
       batchResults.forEach((result, batchIdx) => {
         results[i + batchIdx] = result;
+        if (
+          result.error?.toLowerCase().includes("limit") ||
+          result.error?.toLowerCase().includes("upgrade")
+        ) {
+          hitPlanLimit = true;
+        }
       });
+    }
+
+    if (hitPlanLimit) {
+      toast.error(
+        "Document limit reached on your current plan. Upgrade your plan to import more files.",
+      );
     }
 
     // Merge all extracted items
