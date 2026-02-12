@@ -36,78 +36,394 @@ const DEFAULT_COLORS = {
   muted: "64748B",
 };
 
-// Convert hex color to PPTX format (remove #)
 function toColorCode(hex: string): string {
   return hex.replace("#", "").toUpperCase();
 }
 
-/**
- * Extracts key points from verbose content for concise slide bullets
- * Following the "slides are for discussion, not details" principle
- */
-function extractKeyPoints(content: string, maxPoints: number = 4): string[] {
-  const lines = content
-    .split("\n")
-    .map((l) => l.trim())
-    .filter(Boolean);
-  const bullets: string[] = [];
+// ============================================================
+// Markdown → Rich Text Parser
+// ============================================================
 
-  for (const line of lines) {
-    // Skip markdown headers
-    if (line.startsWith("#")) continue;
-
-    // Extract bullet points
-    if (line.startsWith("-") || line.startsWith("*") || /^\d+\./.test(line)) {
-      const text = line
-        .replace(/^[-*]\s*/, "")
-        .replace(/^\d+\.\s*/, "")
-        .trim();
-      // Keep bullets concise - max 60 chars for PPTX readability
-      if (text && text.length > 0) {
-        bullets.push(text.length > 60 ? text.substring(0, 57) + "..." : text);
-      }
-    }
-    // Extract key value proposition sentences
-    else if (
-      line.includes("will") ||
-      line.includes("deliver") ||
-      line.includes("enable") ||
-      line.includes("reduce") ||
-      line.includes("increase") ||
-      line.includes("improve") ||
-      line.includes("%")
-    ) {
-      const shortened = line.length > 60 ? line.substring(0, 57) + "..." : line;
-      if (!bullets.includes(shortened)) {
-        bullets.push(shortened);
-      }
-    }
-
-    if (bullets.length >= maxPoints) break;
-  }
-
-  // If we didn't find enough bullets, extract first sentences
-  if (bullets.length < 2) {
-    const sentences = content.match(/[^.!?]+[.!?]+/g) || [];
-    for (const sentence of sentences) {
-      const clean = sentence.trim().replace(/^[-*#\d.]\s*/, "");
-      if (clean.length > 15 && clean.length < 80 && !bullets.includes(clean)) {
-        const shortened =
-          clean.length > 60 ? clean.substring(0, 57) + "..." : clean;
-        bullets.push(shortened);
-        if (bullets.length >= maxPoints) break;
-      }
-    }
-  }
-
-  return bullets.slice(0, maxPoints);
+interface TextRun {
+  text: string;
+  bold?: boolean;
+  italic?: boolean;
 }
+
+/** Parse inline markdown (bold, italic, links, code) into TextRun[] */
+function parseInlineMarkdown(text: string): TextRun[] {
+  const runs: TextRun[] = [];
+  // Strip links: [text](url) → text
+  let cleaned = text.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+  // Strip inline code backticks
+  cleaned = cleaned.replace(/`([^`]+)`/g, "$1");
+  // Strip strikethrough
+  cleaned = cleaned.replace(/~~([^~]+)~~/g, "$1");
+  // Strip HTML tags
+  cleaned = cleaned.replace(/<[^>]+>/g, "");
+
+  // Parse bold/italic patterns
+  const regex = /(\*{1,3}|_{1,3})((?:(?!\1).)+)\1/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(cleaned)) !== null) {
+    // Text before match
+    if (match.index > lastIndex) {
+      const before = cleaned.slice(lastIndex, match.index);
+      if (before) runs.push({ text: before });
+    }
+    const marker = match[1];
+    const inner = match[2];
+    if (marker.length === 3) {
+      runs.push({ text: inner, bold: true, italic: true });
+    } else if (marker.length === 2) {
+      runs.push({ text: inner, bold: true });
+    } else {
+      runs.push({ text: inner, italic: true });
+    }
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Remaining text after last match
+  if (lastIndex < cleaned.length) {
+    const remainder = cleaned.slice(lastIndex);
+    if (remainder) runs.push({ text: remainder });
+  }
+
+  // If no matches at all, return the whole cleaned string
+  if (runs.length === 0 && cleaned.trim()) {
+    runs.push({ text: cleaned });
+  }
+
+  return runs;
+}
+
+// ============================================================
+// Markdown → Slide Content Blocks
+// ============================================================
+
+type ContentBlock =
+  | { type: "heading"; text: string; level: number }
+  | { type: "paragraph"; runs: TextRun[] }
+  | { type: "bullet"; runs: TextRun[] }
+  | { type: "blockquote"; text: string }
+  | { type: "table-row"; cells: string[] };
+
+/** Parse markdown content into structured content blocks */
+function parseMarkdownToBlocks(content: string): ContentBlock[] {
+  const lines = content.split("\n");
+  const blocks: ContentBlock[] = [];
+  let inCodeBlock = false;
+  let inTable = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    // Toggle code block — skip all content inside
+    if (trimmed.startsWith("```")) {
+      inCodeBlock = !inCodeBlock;
+      continue;
+    }
+    if (inCodeBlock) continue;
+
+    // Skip empty lines
+    if (!trimmed) {
+      inTable = false;
+      continue;
+    }
+
+    // Skip horizontal rules
+    if (/^[-*_]{3,}\s*$/.test(trimmed)) continue;
+
+    // Skip image lines
+    if (trimmed.startsWith("![")) continue;
+
+    // Headings
+    const headingMatch = trimmed.match(/^(#{1,4})\s+(.+)$/);
+    if (headingMatch) {
+      inTable = false;
+      blocks.push({
+        type: "heading",
+        text: headingMatch[2].replace(/\*{1,3}/g, "").trim(),
+        level: headingMatch[1].length,
+      });
+      continue;
+    }
+
+    // Table rows (pipes)
+    if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
+      // Skip separator rows like |---|---|
+      if (/^\|[\s-:|]+\|$/.test(trimmed)) {
+        inTable = true;
+        continue;
+      }
+      inTable = true;
+      const cells = trimmed
+        .split("|")
+        .slice(1, -1)
+        .map((c) => c.trim())
+        .filter(Boolean);
+      if (cells.length > 0) {
+        blocks.push({ type: "table-row", cells });
+      }
+      continue;
+    }
+    if (inTable && !trimmed.startsWith("|")) {
+      inTable = false;
+    }
+
+    // Blockquotes
+    if (trimmed.startsWith(">")) {
+      const quoteText = trimmed.replace(/^>\s*/, "").trim();
+      if (quoteText) {
+        blocks.push({ type: "blockquote", text: quoteText });
+      }
+      continue;
+    }
+
+    // Bullet points (-, *, or numbered)
+    const bulletMatch = trimmed.match(/^(?:[-*]|\d+\.)\s+(.+)$/);
+    if (bulletMatch) {
+      blocks.push({
+        type: "bullet",
+        runs: parseInlineMarkdown(bulletMatch[1]),
+      });
+      continue;
+    }
+
+    // Regular paragraph text
+    const runs = parseInlineMarkdown(trimmed);
+    if (runs.length > 0 && runs.some((r) => r.text.trim())) {
+      blocks.push({ type: "paragraph", runs });
+    }
+  }
+
+  return blocks;
+}
+
+// ============================================================
+// Slide Content Grouping
+// ============================================================
+
+interface SlideContent {
+  title: string;
+  blocks: ContentBlock[];
+}
+
+const MAX_ITEMS_PER_SLIDE = 10;
+const MAX_CONTENT_SLIDES_PER_SECTION = 4;
+
+/** Split content blocks into slide-sized groups, splitting on headings */
+function groupBlocksIntoSlides(
+  sectionTitle: string,
+  blocks: ContentBlock[],
+): SlideContent[] {
+  const slides: SlideContent[] = [];
+  let currentTitle = sectionTitle;
+  let currentBlocks: ContentBlock[] = [];
+
+  function flushSlide() {
+    if (currentBlocks.length > 0) {
+      slides.push({ title: currentTitle, blocks: [...currentBlocks] });
+      currentBlocks = [];
+    }
+  }
+
+  for (const block of blocks) {
+    if (block.type === "heading") {
+      // New heading → new slide
+      flushSlide();
+      currentTitle = block.text;
+      continue;
+    }
+
+    currentBlocks.push(block);
+
+    // Overflow check: if too many items, split to next slide
+    if (currentBlocks.length >= MAX_ITEMS_PER_SLIDE) {
+      flushSlide();
+      currentTitle = currentTitle + " (cont.)";
+    }
+  }
+
+  flushSlide();
+
+  // Cap total content slides per section
+  return slides.slice(0, MAX_CONTENT_SLIDES_PER_SECTION);
+}
+
+// ============================================================
+// Render Helpers
+// ============================================================
+
+interface RenderContext {
+  pptx: pptxgen;
+  COLORS: typeof DEFAULT_COLORS;
+  fontFamily: string;
+  accentColor: string;
+}
+
+function renderTextRuns(
+  runs: TextRun[],
+  ctx: RenderContext,
+  fontSize: number,
+): pptxgen.TextProps[] {
+  return runs.map((run) => ({
+    text: run.text,
+    options: {
+      fontSize,
+      fontFace: ctx.fontFamily,
+      color: ctx.COLORS.text,
+      bold: run.bold || false,
+      italic: run.italic || false,
+    },
+  }));
+}
+
+function addContentSlide(
+  slideContent: SlideContent,
+  sectionIdx: number,
+  ctx: RenderContext,
+) {
+  const slide = ctx.pptx.addSlide({ masterName: "BRANDED_MASTER" });
+
+  // Section number badge
+  slide.addText(String(sectionIdx + 1).padStart(2, "0"), {
+    x: 0.8,
+    y: 0.3,
+    w: 0.6,
+    h: 0.3,
+    fontSize: 10,
+    bold: true,
+    color: ctx.accentColor,
+    fontFace: ctx.fontFamily,
+  });
+
+  // Slide title
+  slide.addText(slideContent.title, {
+    x: 0.8,
+    y: 0.55,
+    w: 8.5,
+    h: 0.5,
+    fontSize: 22,
+    bold: true,
+    color: ctx.COLORS.dark,
+    fontFace: ctx.fontFamily,
+  });
+
+  // Accent line
+  slide.addShape(ctx.pptx.ShapeType.line, {
+    x: 0.8,
+    y: 1.1,
+    w: 8.5,
+    h: 0,
+    line: { color: ctx.accentColor, width: 2 },
+  });
+
+  // Build text items from content blocks
+  const textItems: pptxgen.TextProps[] = [];
+
+  for (const block of slideContent.blocks) {
+    switch (block.type) {
+      case "bullet": {
+        const bulletRuns = renderTextRuns(block.runs, ctx, 14);
+        // Add bullet marker to first run
+        if (bulletRuns.length > 0) {
+          // Combine bullet marker with the text runs on same line
+          for (let r = 0; r < bulletRuns.length; r++) {
+            const isFirst = r === 0;
+            const isLast = r === bulletRuns.length - 1;
+            textItems.push({
+              ...bulletRuns[r],
+              options: {
+                ...bulletRuns[r].options,
+                ...(isFirst
+                  ? {
+                      bullet: {
+                        type: "bullet" as const,
+                        characterCode: "25CF",
+                      },
+                    }
+                  : {}),
+                breakLine: isLast,
+              },
+            });
+          }
+        }
+        break;
+      }
+      case "paragraph": {
+        const pRuns = renderTextRuns(block.runs, ctx, 14);
+        for (let r = 0; r < pRuns.length; r++) {
+          textItems.push({
+            ...pRuns[r],
+            options: {
+              ...pRuns[r].options,
+              breakLine: r === pRuns.length - 1,
+            },
+          });
+        }
+        // Add spacing after paragraph
+        textItems.push({
+          text: "\n",
+          options: { fontSize: 6, breakLine: true },
+        });
+        break;
+      }
+      case "blockquote": {
+        textItems.push({
+          text: `"${block.text}"`,
+          options: {
+            fontSize: 13,
+            italic: true,
+            color: ctx.COLORS.muted,
+            fontFace: ctx.fontFamily,
+            breakLine: true,
+          },
+        });
+        break;
+      }
+      case "table-row": {
+        const rowText = block.cells.join("  |  ");
+        textItems.push({
+          text: rowText,
+          options: {
+            fontSize: 12,
+            fontFace: ctx.fontFamily,
+            color: ctx.COLORS.text,
+            breakLine: true,
+          },
+        });
+        break;
+      }
+      // headings handled by slide splitting, shouldn't appear here
+      default:
+        break;
+    }
+  }
+
+  if (textItems.length > 0) {
+    slide.addText(textItems, {
+      x: 0.8,
+      y: 1.25,
+      w: 8.5,
+      h: 3.8,
+      lineSpacingMultiple: 1.4,
+      valign: "top",
+    });
+  }
+}
+
+// ============================================================
+// Main Generator
+// ============================================================
 
 export async function generatePptx(data: ProposalData): Promise<Buffer> {
   const pptx = new pptxgen();
   const companyName = data.company_name || "IntentWin";
 
-  // Use custom branding or defaults
   const branding = data.branding;
   const COLORS = {
     primary: branding
@@ -136,7 +452,6 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
     title: "BRANDED_MASTER",
     background: { color: COLORS.white },
     objects: [
-      // Top accent bar
       {
         rect: {
           x: 0,
@@ -146,7 +461,6 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
           fill: { color: COLORS.primary },
         },
       },
-      // Footer
       {
         text: {
           text: `${companyName} | ${data.title} | ${footerText}`,
@@ -163,13 +477,10 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
     ],
   });
 
-  // Title slide
+  // ── Title Slide ──
   const titleSlide = pptx.addSlide({ masterName: "BRANDED_MASTER" });
-  titleSlide.background = {
-    color: COLORS.dark,
-  };
+  titleSlide.background = { color: COLORS.dark };
 
-  // Add gradient overlay effect with shapes
   titleSlide.addShape(pptx.ShapeType.rect, {
     x: 0,
     y: 0,
@@ -209,7 +520,7 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
     fontFace: fontFamily,
   });
 
-  // Agenda slide
+  // ── Agenda Slide ──
   const agendaSlide = pptx.addSlide({ masterName: "BRANDED_MASTER" });
 
   agendaSlide.addText("Agenda", {
@@ -223,7 +534,6 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
     fontFace: fontFamily,
   });
 
-  // Accent line under title
   agendaSlide.addShape(pptx.ShapeType.line, {
     x: 0.8,
     y: 1.1,
@@ -232,13 +542,12 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
     line: { color: COLORS.primary, width: 3 },
   });
 
-  // Agenda items
-  const agendaItems = data.sections.slice(0, 7).map((s, i) => ({
+  const agendaItems = data.sections.slice(0, 10).map((s, i) => ({
     text: `${i + 1}. ${s.title}`,
     options: {
-      fontSize: 16,
+      fontSize: 15,
       color: COLORS.text,
-      bullet: false,
+      bullet: false as const,
       breakLine: true,
       fontFace: fontFamily,
     },
@@ -248,11 +557,11 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
     x: 0.8,
     y: 1.5,
     w: 8.5,
-    h: 3.5,
-    lineSpacingMultiple: 1.6,
+    h: 3.8,
+    lineSpacingMultiple: 1.5,
   });
 
-  // Section slides
+  // ── Section Slides ──
   const accentColors = [COLORS.primary, COLORS.accent, COLORS.dark];
 
   for (let sectionIdx = 0; sectionIdx < data.sections.length; sectionIdx++) {
@@ -263,7 +572,6 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
     const introSlide = pptx.addSlide({ masterName: "BRANDED_MASTER" });
     introSlide.background = { color: COLORS.dark };
 
-    // Large section number (watermark style)
     introSlide.addText(String(sectionIdx + 1).padStart(2, "0"), {
       x: 0.8,
       y: 1.2,
@@ -276,7 +584,6 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
       fontFace: fontFamily,
     });
 
-    // Section title
     introSlide.addText(section.title, {
       x: 0.8,
       y: 2.2,
@@ -288,7 +595,6 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
       fontFace: fontFamily,
     });
 
-    // Accent line
     introSlide.addShape(pptx.ShapeType.line, {
       x: 0.8,
       y: 3.4,
@@ -297,78 +603,67 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
       line: { color: accentColor, width: 4 },
     });
 
-    // Content slide with extracted key points
-    const bullets = extractKeyPoints(section.content, 4);
+    // Parse section content into blocks, then group into slides
+    const blocks = parseMarkdownToBlocks(section.content);
+    const slideGroups = groupBlocksIntoSlides(section.title, blocks);
 
-    if (bullets.length > 0) {
-      const contentSlide = pptx.addSlide({ masterName: "BRANDED_MASTER" });
+    const ctx: RenderContext = { pptx, COLORS, fontFamily, accentColor };
 
-      // Section number badge
-      contentSlide.addText(String(sectionIdx + 1).padStart(2, "0"), {
+    if (slideGroups.length > 0) {
+      for (const slideContent of slideGroups) {
+        addContentSlide(slideContent, sectionIdx, ctx);
+      }
+    } else {
+      // Fallback: if parsing produced nothing, render raw text on one slide
+      const fallbackSlide = pptx.addSlide({ masterName: "BRANDED_MASTER" });
+      fallbackSlide.addText(section.title, {
         x: 0.8,
-        y: 0.4,
-        w: 0.6,
-        h: 0.35,
-        fontSize: 10,
-        bold: true,
-        color: accentColor,
-        fontFace: fontFamily,
-      });
-
-      // Section title
-      contentSlide.addText(section.title, {
-        x: 0.8,
-        y: 0.7,
+        y: 0.55,
         w: 8.5,
-        h: 0.6,
-        fontSize: 24,
+        h: 0.5,
+        fontSize: 22,
         bold: true,
         color: COLORS.dark,
         fontFace: fontFamily,
       });
-
-      // Accent line
-      contentSlide.addShape(pptx.ShapeType.line, {
+      fallbackSlide.addShape(pptx.ShapeType.line, {
         x: 0.8,
-        y: 1.35,
+        y: 1.1,
         w: 8.5,
         h: 0,
         line: { color: accentColor, width: 2 },
       });
+      // Strip all markdown syntax for fallback plain text
+      const plainText = section.content
+        .replace(/^#{1,4}\s+/gm, "")
+        .replace(/\*{1,3}([^*]+)\*{1,3}/g, "$1")
+        .replace(/_{1,3}([^_]+)_{1,3}/g, "$1")
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+        .replace(/`([^`]+)`/g, "$1")
+        .replace(/~~([^~]+)~~/g, "$1")
+        .replace(/<[^>]+>/g, "")
+        .replace(/^[-*]\s+/gm, "- ")
+        .replace(/^\d+\.\s+/gm, "- ")
+        .trim()
+        .slice(0, 800);
 
-      // Bullet points - concise and readable
-      const bulletItems = bullets.map((bullet) => ({
-        text: bullet,
-        options: {
-          fontSize: 18,
-          color: COLORS.text,
-          bullet: {
-            type: "bullet" as const,
-            code: "25CF", // Filled circle
-            color: accentColor,
-          },
-          breakLine: true,
-          fontFace: fontFamily,
-          indentLevel: 0,
-        },
-      }));
-
-      contentSlide.addText(bulletItems as pptxgen.TextProps[], {
+      fallbackSlide.addText(plainText, {
         x: 0.8,
-        y: 1.6,
+        y: 1.25,
         w: 8.5,
-        h: 3.5,
-        lineSpacingMultiple: 1.8,
+        h: 3.8,
+        fontSize: 12,
+        color: COLORS.text,
+        fontFace: fontFamily,
         valign: "top",
       });
     }
   }
 
-  // Thank you slide
+  // ── Thank You Slide ──
   const endSlide = pptx.addSlide({ masterName: "BRANDED_MASTER" });
   endSlide.background = { color: COLORS.dark };
 
-  // Decorative accent
   endSlide.addShape(pptx.ShapeType.ellipse, {
     x: 7,
     y: -1,
@@ -400,7 +695,6 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
     fontFace: fontFamily,
   });
 
-  // CTA
   endSlide.addText("Let's discuss next steps →", {
     x: 3.3,
     y: 4.2,
