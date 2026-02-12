@@ -248,62 +248,62 @@ Build the three UI components for the Bulk Import flow: the main modal (upload +
 
 #### Happy Path
 
-- [ ] BulkImportModal renders drop zone in initial state
-- [ ] Drop zone accepts .md, .pdf, .docx, .pptx files
-- [ ] Drop zone shows file list after files are dropped
-- [ ] File list shows filename, size, and pending status
-- [ ] Clicking "Import" starts processing with progress indicators
-- [ ] Per-file progress shows: pending → processing → done/failed
-- [ ] Processing runs 3-4 files concurrently (sliding window)
-- [ ] Each file triggers L2 upload (existing endpoint) then L1 extract (new endpoint)
-- [ ] After all files processed, review screen appears with extracted items
-- [ ] BulkImportReview groups items by category (company_context, products, evidence)
-- [ ] Each item has a checkbox (pre-checked for new items)
-- [ ] Conflict items show existing vs new value with radio toggle
-- [ ] "Accept All" button saves all checked items via commit endpoint
-- [ ] "Accept Selected" saves only checked items
-- [ ] BulkImportSummary shows counts of imported items per category
-- [ ] Summary has navigation links to Settings and Knowledge Base
+- [x] BulkImportModal renders drop zone in initial state
+- [x] Drop zone accepts .md, .pdf, .docx, .pptx files
+- [x] Drop zone shows file list after files are dropped
+- [x] File list shows filename, size, and pending status
+- [x] Clicking "Import" starts processing with progress indicators
+- [x] Per-file progress shows: pending → processing → done/failed
+- [x] Processing runs 3-4 files concurrently (sliding window)
+- [x] Each file triggers L2 upload (existing endpoint) then L1 extract (new endpoint)
+- [x] After all files processed, review screen appears with extracted items
+- [x] BulkImportReview groups items by category (company_context, products, evidence)
+- [x] Each item has a checkbox (pre-checked for new items)
+- [x] Conflict items show existing vs new value with radio toggle
+- [x] "Accept All" button saves all checked items via commit endpoint
+- [x] "Accept Selected" saves only checked items
+- [x] BulkImportSummary shows counts of imported items per category
+- [x] Summary has navigation links to Settings and Knowledge Base
 
 #### Bad Path
 
-- [ ] Drop zone rejects unsupported file types (.exe, .zip, .jpg) with error message
-- [ ] Drop zone rejects more than 20 files with error message
-- [ ] Drop zone rejects empty file (0 bytes) with error message
-- [ ] Processing failure on one file shows error badge, continues other files
-- [ ] Gemini extraction failure shows warning, file still stored as L2
-- [ ] Network error during processing shows retry button
-- [ ] Commit failure shows error toast with retry option
+- [x] Drop zone rejects unsupported file types (.exe, .zip, .jpg) with error message
+- [x] Drop zone rejects more than 20 files with error message
+- [x] Drop zone rejects empty file (0 bytes) with error message
+- [x] Processing failure on one file shows error badge, continues other files
+- [x] Gemini extraction failure shows warning, file still stored as L2
+- [x] Network error during processing shows retry button
+- [x] Commit failure shows error toast with retry option
 
 #### Edge Cases
 
-- [ ] Single file upload works (not just multi-file)
-- [ ] Exactly 20 files at the limit works
-- [ ] All files fail extraction — review screen shows "No items extracted" message
-- [ ] All items are conflicts — review screen pre-selects "keep existing"
-- [ ] User unchecks all items — "Accept" button is disabled
-- [ ] User navigates away during processing — shows confirmation dialog
-- [ ] Modal closes cleanly when "Cancel" is clicked at any step
+- [x] Single file upload works (not just multi-file)
+- [x] Exactly 20 files at the limit works
+- [x] All files fail extraction — review screen shows "No items extracted" message
+- [x] All items are conflicts — review screen pre-selects "keep existing"
+- [x] User unchecks all items — "Accept" button is disabled
+- [x] User navigates away during processing — shows confirmation dialog
+- [x] Modal closes cleanly when "Cancel" is clicked at any step
 
 #### Security
 
-- [ ] File content sent to extract endpoint uses authFetch (includes session token)
-- [ ] Commit uses authFetch with POST method
-- [ ] No file content stored in browser localStorage or sessionStorage
-- [ ] Drop zone validates file type by extension AND MIME type
+- [x] File content sent to extract endpoint uses authFetch (includes session token)
+- [x] Commit uses authFetch with POST method
+- [x] No file content stored in browser localStorage or sessionStorage
+- [x] Drop zone validates file type by extension AND MIME type
 
 #### Data Leak
 
-- [ ] Processing errors don't show raw API response to user
-- [ ] Review screen doesn't show organization_id in UI
-- [ ] Failed extraction doesn't expose Gemini error details to user
+- [x] Processing errors don't show raw API response to user
+- [x] Review screen doesn't show organization_id in UI
+- [x] Failed extraction doesn't expose Gemini error details to user
 
 #### Data Damage
 
-- [ ] Closing modal during upload doesn't corrupt uploaded L2 documents
-- [ ] Closing modal during extract doesn't save partial L1 items
-- [ ] Re-opening modal after close starts fresh (no stale state)
-- [ ] Double-clicking "Accept" doesn't submit twice (button disabled after first click)
+- [x] Closing modal during upload doesn't corrupt uploaded L2 documents
+- [x] Closing modal during extract doesn't save partial L1 items
+- [x] Re-opening modal after close starts fresh (no stale state)
+- [x] Double-clicking "Accept" doesn't submit twice (button disabled after first click)
 
 ### E2E Gate
 
@@ -322,13 +322,13 @@ timeout 15 bash -c 'npx next dev -p 3099 2>&1 | head -30' || true
 
 ### Acceptance Criteria
 
-- [ ] BulkImportModal implements 4-step wizard (upload → processing → review → summary)
-- [ ] Drop zone supports drag-and-drop + file picker
-- [ ] Processing shows per-file progress with 4 states (pending/processing/done/failed)
-- [ ] Review screen has item checkboxes and conflict resolution UI
-- [ ] Summary screen shows counts and navigation links
-- [ ] All 6 test categories pass
-- [ ] TypeScript compiles clean
+- [x] BulkImportModal implements 4-step wizard (upload → processing → review → summary)
+- [x] Drop zone supports drag-and-drop + file picker
+- [x] Processing shows per-file progress with 4 states (pending/processing/done/failed)
+- [x] Review screen has item checkboxes and conflict resolution UI
+- [x] Summary screen shows counts and navigation links
+- [x] All 6 test categories pass
+- [x] TypeScript compiles clean
 
 ---
 
