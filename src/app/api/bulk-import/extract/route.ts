@@ -9,8 +9,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { extractL1FromText } from "@/lib/ai/l1-extractor";
 import { parseDocument } from "@/lib/documents/parser";
+import { processDocument } from "@/lib/documents/pipeline";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getUserContext } from "@/lib/supabase/auth-api";
+import { getUserContext, incrementUsage } from "@/lib/supabase/auth-api";
+import { nanoid } from "nanoid";
 
 function getFileType(fileName: string): string | null {
   const ext = fileName.split(".").pop()?.toLowerCase();
@@ -80,9 +82,56 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Fetch existing L1 data for conflict detection
+    // Save file as a document record (so it appears in Uploaded Documents)
     const supabase = createAdminClient();
     const orgId = context.organizationId;
+
+    const mimeTypes: Record<string, string> = {
+      pdf: "application/pdf",
+      docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      txt: "text/plain",
+      md: "text/markdown",
+    };
+
+    const storagePath = `${orgId}/bulk-import/${nanoid()}-${fileName}`;
+    const { error: uploadError } = await supabase.storage
+      .from("knowledge-base-documents")
+      .upload(storagePath, buffer, {
+        contentType: mimeTypes[fileType] || "application/octet-stream",
+      });
+
+    if (!uploadError) {
+      const { data: document } = await supabase
+        .from("documents")
+        .insert({
+          title: fileName.replace(/\.[^.]+$/, ""),
+          file_name: fileName,
+          file_type: fileType,
+          file_size_bytes: file.size,
+          storage_path: storagePath,
+          mime_type: mimeTypes[fileType] || "application/octet-stream",
+          document_type: "reference",
+          uploaded_by: context.user.id,
+          organization_id: orgId,
+          team_id: context.teamId,
+          processing_status: "pending",
+        })
+        .select("id")
+        .single();
+
+      if (document) {
+        await incrementUsage(orgId, "documents_uploaded");
+        // Process chunks in background
+        processDocument(document.id).catch((err) => {
+          console.error(`Failed to process document ${document.id}:`, err);
+        });
+      }
+    } else {
+      console.error("Bulk import file storage failed:", uploadError.message);
+    }
+
+    // Fetch existing L1 data for conflict detection
 
     const { data: existingCC } = await supabase
       .from("company_context")

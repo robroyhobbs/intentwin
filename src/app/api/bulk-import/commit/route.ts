@@ -51,9 +51,7 @@ export async function POST(request: NextRequest) {
         );
       }
       if (
-        !(VALID_COMPANY_CATEGORIES as readonly string[]).includes(
-          item.category,
-        )
+        !(VALID_COMPANY_CATEGORIES as readonly string[]).includes(item.category)
       ) {
         return NextResponse.json(
           { error: `Invalid category: ${item.category}` },
@@ -105,6 +103,7 @@ export async function POST(request: NextRequest) {
 
     const supabase = createAdminClient();
     const orgId = context.organizationId;
+    const errors: string[] = [];
 
     // Upsert company_context
     if (company_context.length > 0) {
@@ -112,35 +111,52 @@ export async function POST(request: NextRequest) {
         ...item,
         organization_id: orgId,
       }));
-      await supabase
+      const { error: ccError } = await supabase
         .from("company_context")
         .upsert(ccData, { onConflict: "category,key,organization_id" });
+      if (ccError) {
+        console.error("company_context upsert failed:", ccError);
+        errors.push(`Company context: ${ccError.message}`);
+      }
     }
 
     // Upsert product_contexts
     if (product_contexts.length > 0) {
-      const pcData = product_contexts.map(
-        (item: Record<string, unknown>) => ({
-          ...item,
-          organization_id: orgId,
-        }),
-      );
-      await supabase.from("product_contexts").upsert(pcData, {
-        onConflict: "product_name,service_line,organization_id",
-      });
+      const pcData = product_contexts.map((item: Record<string, unknown>) => ({
+        ...item,
+        organization_id: orgId,
+      }));
+      const { error: pcError } = await supabase
+        .from("product_contexts")
+        .upsert(pcData, {
+          onConflict: "product_name,service_line,organization_id",
+        });
+      if (pcError) {
+        console.error("product_contexts upsert failed:", pcError);
+        errors.push(`Products: ${pcError.message}`);
+      }
     }
 
     // Upsert evidence_library
     if (evidence_library.length > 0) {
-      const elData = evidence_library.map(
-        (item: Record<string, unknown>) => ({
-          ...item,
-          organization_id: orgId,
-        }),
-      );
-      await supabase
+      const elData = evidence_library.map((item: Record<string, unknown>) => ({
+        ...item,
+        organization_id: orgId,
+      }));
+      const { error: elError } = await supabase
         .from("evidence_library")
         .upsert(elData, { onConflict: "title,organization_id" });
+      if (elError) {
+        console.error("evidence_library upsert failed:", elError);
+        errors.push(`Evidence: ${elError.message}`);
+      }
+    }
+
+    if (errors.length > 0) {
+      return NextResponse.json(
+        { error: `Some items failed to save: ${errors.join("; ")}` },
+        { status: 500 },
+      );
     }
 
     return NextResponse.json({
