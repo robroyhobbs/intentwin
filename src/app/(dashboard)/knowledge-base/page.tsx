@@ -13,6 +13,7 @@ import {
   Database,
 } from "lucide-react";
 import { BulkImportButton } from "@/components/knowledge-base/bulk-import-button";
+import { DeleteDocumentButton } from "@/components/knowledge-base/delete-document-button";
 
 export const dynamic = "force-dynamic";
 
@@ -199,11 +200,17 @@ export default async function KnowledgeBasePage() {
                       </p>
                     </div>
                   </div>
-                  <div
-                    className={`inline-flex items-center gap-1 ${status.className}`}
-                  >
-                    {status.icon}
-                    {status.label}
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`inline-flex items-center gap-1 ${status.className}`}
+                    >
+                      {status.icon}
+                      {status.label}
+                    </div>
+                    <DeleteDocumentButton
+                      documentId={doc.id}
+                      documentTitle={doc.title}
+                    />
                   </div>
                 </div>
               );
