@@ -47,6 +47,7 @@ export async function updateSession(request: NextRequest) {
     pathname === "/about" ||
     pathname === "/pricing" ||
     pathname === "/request-access" ||
+    pathname === "/capabilities" ||
     pathname === "/demo-login" ||
     pathname === "/privacy" ||
     pathname === "/terms";

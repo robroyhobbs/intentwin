@@ -14,6 +14,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/api/demo-auth") ||
     pathname === "/demo-login" ||
     pathname === "/request-access" ||
+    pathname === "/capabilities" ||
     pathname.includes(".");
 
   // Check demo authentication if enabled

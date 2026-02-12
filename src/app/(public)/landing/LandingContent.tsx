@@ -74,6 +74,7 @@ export default function LandingContent() {
               IntentWin
             </Link>
             <div className="vf-nav-links">
+              <Link href="/capabilities">Capabilities</Link>
               <a href="#compare">Compare</a>
               <a href="#framework">Framework</a>
               <a href="#gov">Gov</a>
