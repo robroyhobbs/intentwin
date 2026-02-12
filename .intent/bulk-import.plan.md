@@ -352,44 +352,44 @@ Wire the Bulk Import modal into the Knowledge Base page. Add the "Bulk Import" b
 
 #### Happy Path
 
-- [ ] Knowledge Base page has "Bulk Import" button
-- [ ] Clicking button opens BulkImportModal
-- [ ] Modal closes on successful import and refreshes document list
-- [ ] After import, new documents appear in Knowledge Base list
-- [ ] After import, new company_context entries accessible via GET /api/settings/company
-- [ ] After import, new product_contexts entries accessible via GET /api/settings/products
-- [ ] After import, new evidence entries accessible via GET /api/evidence
-- [ ] Full flow: drop files → process → review → accept → summary → close → data in DB
+- [x] Knowledge Base page has "Bulk Import" button
+- [x] Clicking button opens BulkImportModal
+- [x] Modal closes on successful import and refreshes document list
+- [x] After import, new documents appear in Knowledge Base list
+- [x] After import, new company_context entries accessible via GET /api/settings/company
+- [x] After import, new product_contexts entries accessible via GET /api/settings/products
+- [x] After import, new evidence entries accessible via GET /api/evidence
+- [x] Full flow: drop files → process → review → accept → summary → close → data in DB
 
 #### Bad Path
 
-- [ ] Button disabled when user has no organization
-- [ ] Modal handles session expiry mid-import (re-auth prompt)
-- [ ] Import with files that all fail parsing shows appropriate error state
+- [x] Button disabled when user has no organization
+- [x] Modal handles session expiry mid-import (re-auth prompt)
+- [x] Import with files that all fail parsing shows appropriate error state
 
 #### Edge Cases
 
-- [ ] Opening modal when Knowledge Base is empty works
-- [ ] Opening modal when Knowledge Base already has documents works
-- [ ] Re-importing same files updates existing L1 entries (upsert) without duplicating L2 docs
-- [ ] Bulk Import button coexists with existing "Upload Documents" button
+- [x] Opening modal when Knowledge Base is empty works
+- [x] Opening modal when Knowledge Base already has documents works
+- [x] Re-importing same files updates existing L1 entries (upsert) without duplicating L2 docs
+- [x] Bulk Import button coexists with existing "Upload Documents" button
 
 #### Security
 
-- [ ] Bulk Import button only shown to authenticated users
-- [ ] Modal passes organization context correctly to all API calls
-- [ ] Cannot trigger import without valid session
+- [x] Bulk Import button only shown to authenticated users
+- [x] Modal passes organization context correctly to all API calls
+- [x] Cannot trigger import without valid session
 
 #### Data Leak
 
-- [ ] Page doesn't show import data from other organizations
-- [ ] After modal close, no import data remains in component state
+- [x] Page doesn't show import data from other organizations
+- [x] After modal close, no import data remains in component state
 
 #### Data Damage
 
-- [ ] Failed import doesn't affect existing Knowledge Base documents
-- [ ] Cancelled import doesn't leave partial state in database
-- [ ] L2 documents from failed L1 extraction are still properly stored
+- [x] Failed import doesn't affect existing Knowledge Base documents
+- [x] Cancelled import doesn't leave partial state in database
+- [x] L2 documents from failed L1 extraction are still properly stored
 
 ### E2E Gate
 
@@ -417,13 +417,13 @@ timeout 30 bash -c '
 
 ### Acceptance Criteria
 
-- [ ] "Bulk Import" button visible on Knowledge Base page
-- [ ] Full end-to-end flow works: upload → process → review → commit
-- [ ] L2 documents stored and indexed
-- [ ] L1 items saved to correct tables with org scope
-- [ ] All 6 test categories pass
-- [ ] TypeScript compiles clean
-- [ ] Production build succeeds
+- [x] "Bulk Import" button visible on Knowledge Base page
+- [x] Full end-to-end flow works: upload → process → review → commit
+- [x] L2 documents stored and indexed
+- [x] L1 items saved to correct tables with org scope
+- [x] All 6 test categories pass
+- [x] TypeScript compiles clean
+- [x] Production build succeeds
 
 ---
 

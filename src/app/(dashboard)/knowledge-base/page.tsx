@@ -12,6 +12,7 @@ import {
   BookOpen,
   Database,
 } from "lucide-react";
+import { BulkImportButton } from "@/components/knowledge-base/bulk-import-button";
 
 export const dynamic = "force-dynamic";
 
@@ -84,6 +85,7 @@ export default async function KnowledgeBasePage() {
             <Search className="h-4 w-4" />
             Search
           </Link>
+          <BulkImportButton />
           <Link
             href="/knowledge-base/upload"
             className="btn-primary inline-flex items-center gap-2"
