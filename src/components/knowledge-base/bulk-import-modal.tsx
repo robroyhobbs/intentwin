@@ -23,7 +23,7 @@ type Step = "upload" | "processing" | "review" | "summary";
 
 interface FileEntry {
   file: File;
-  status: "pending" | "uploading" | "extracting" | "done" | "failed";
+  status: "pending" | "extracting" | "done" | "failed";
   error?: string;
   extractedItems?: ExtractedItems;
 }
@@ -103,7 +103,6 @@ function mergeExtractedItems(entries: FileEntry[]): ExtractedItems {
 
 const statusIcon: Record<FileEntry["status"], React.ReactNode> = {
   pending: <Clock className="h-4 w-4 text-[var(--foreground-subtle)]" />,
-  uploading: <Loader2 className="h-4 w-4 text-[var(--info)] animate-spin" />,
   extracting: <Loader2 className="h-4 w-4 text-[var(--accent)] animate-spin" />,
   done: <CheckCircle2 className="h-4 w-4 text-[var(--success)]" />,
   failed: <AlertCircle className="h-4 w-4 text-[var(--danger)]" />,
@@ -111,7 +110,6 @@ const statusIcon: Record<FileEntry["status"], React.ReactNode> = {
 
 const statusLabel: Record<FileEntry["status"], string> = {
   pending: "Pending",
-  uploading: "Uploading...",
   extracting: "Extracting...",
   done: "Done",
   failed: "Failed",
@@ -196,35 +194,7 @@ export function BulkImportModal({
     index: number,
   ): Promise<FileEntry> {
     try {
-      // Step 1: Upload as L2 document
-      setFiles((prev) =>
-        prev.map((f, i) =>
-          i === index ? { ...f, status: "uploading" as const } : f,
-        ),
-      );
-
-      const formData = new FormData();
-      formData.append("file", entry.file);
-      formData.append(
-        "title",
-        entry.file.name.replace(/\.(docx|pdf|pptx|txt|md)$/i, ""),
-      );
-      formData.append("document_type", "other");
-
-      const uploadRes = await authFetch("/api/documents/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!uploadRes.ok) {
-        const err = await uploadRes.json().catch(() => ({}));
-        throw new Error((err as { error?: string }).error || "Upload failed");
-      }
-
-      // Consume the upload response (we don't need parsedText from it)
-      await uploadRes.json();
-
-      // Step 2: Extract L1 data — send the file directly to the extract endpoint
+      // Extract L1 data — send the file to the extract endpoint
       setFiles((prev) =>
         prev.map((f, i) =>
           i === index ? { ...f, status: "extracting" as const } : f,
@@ -240,18 +210,16 @@ export function BulkImportModal({
       });
 
       if (!extractRes.ok) {
-        // L2 still saved, but L1 extraction failed — show as failed so user knows
         const err = await extractRes.json().catch(() => ({}));
         const errMsg = (err as { error?: string }).error || "Extraction failed";
-        const displayMsg = `${errMsg} (file saved, but no L1 data extracted)`;
         setFiles((prev) =>
           prev.map((f, i) =>
             i === index
-              ? { ...f, status: "failed" as const, error: displayMsg }
+              ? { ...f, status: "failed" as const, error: errMsg }
               : f,
           ),
         );
-        return { ...entry, status: "failed", error: displayMsg };
+        return { ...entry, status: "failed", error: errMsg };
       }
 
       const extractedItems = (await extractRes.json()) as ExtractedItems;
@@ -517,8 +485,8 @@ export function BulkImportModal({
               <div className="flex items-center gap-2 mb-4">
                 <Loader2 className="h-4 w-4 text-[var(--accent)] animate-spin" />
                 <p className="text-sm text-[var(--foreground-muted)]">
-                  Processing {files.length} files ({CONCURRENT_LIMIT} at a
-                  time)...
+                  Extracting L1 data from {files.length} files (
+                  {CONCURRENT_LIMIT} at a time)...
                 </p>
               </div>
               <div className="rounded-xl border border-[var(--border)] bg-[var(--card-bg)] divide-y divide-[var(--border)]">
