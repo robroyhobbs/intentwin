@@ -142,63 +142,63 @@ Build the CRUD API routes for `evidence_library` table with filter support, and 
 
 #### Happy Path
 
-- [ ] GET `/api/evidence` returns empty array for org with no evidence
-- [ ] POST creates evidence entry with all fields (evidence_type, title, summary, full_content, etc.)
-- [ ] POST auto-defaults `is_verified` to false
-- [ ] GET returns evidence sorted by evidence_type then created_at
-- [ ] GET with `?type=case_study` filter returns only case studies
-- [ ] GET with `?industry=healthcare` filter returns matching + null industry entries
-- [ ] GET with `?service_line=cloud` filter returns matching entries
-- [ ] GET with `?verified=true` filter returns only verified entries
-- [ ] GET with multiple filters combines them (AND logic)
-- [ ] PATCH updates title, summary, full_content
-- [ ] PATCH with `{ id, is_verified: true }` marks entry as verified
-- [ ] PATCH with `{ id, is_verified: false }` unverifies entry
-- [ ] DELETE removes an evidence entry by ID
+- [x] GET `/api/evidence` returns empty array for org with no evidence
+- [x] POST creates evidence entry with all fields (evidence_type, title, summary, full_content, etc.)
+- [x] POST auto-defaults `is_verified` to false
+- [x] GET returns evidence sorted by evidence_type then created_at
+- [x] GET with `?type=case_study` filter returns only case studies
+- [x] GET with `?industry=healthcare` filter returns matching + null industry entries
+- [x] GET with `?service_line=cloud` filter returns matching entries
+- [x] GET with `?verified=true` filter returns only verified entries
+- [x] GET with multiple filters combines them (AND logic)
+- [x] PATCH updates title, summary, full_content
+- [x] PATCH with `{ id, is_verified: true }` marks entry as verified
+- [x] PATCH with `{ id, is_verified: false }` unverifies entry
+- [x] DELETE removes an evidence entry by ID
 
 #### Bad Path
 
-- [ ] POST with empty title returns 400
-- [ ] POST with invalid evidence_type returns 400
-- [ ] POST with missing summary returns 400
-- [ ] PATCH with non-existent evidence ID returns 404
-- [ ] DELETE with non-existent evidence ID returns 404
-- [ ] PATCH with missing id in body returns 400
-- [ ] GET with invalid filter value (e.g., `?type=invalid`) returns 400
-- [ ] Unauthenticated request returns 401
-- [ ] PATCH with invalid is_verified value (not boolean) returns 400
+- [x] POST with empty title returns 400
+- [x] POST with invalid evidence_type returns 400
+- [x] POST with missing summary returns 400
+- [x] PATCH with non-existent evidence ID returns 404
+- [x] DELETE with non-existent evidence ID returns 404
+- [x] PATCH with missing id in body returns 400
+- [x] GET with invalid filter value (e.g., `?type=invalid`) returns 400
+- [x] Unauthenticated request returns 401
+- [x] PATCH with invalid is_verified value (not boolean) returns 400
 
 #### Edge Cases
 
-- [ ] POST evidence with null client_industry and null service_line succeeds
-- [ ] POST with client_size "enterprise" / "mid_market" / "smb" all succeed
-- [ ] GET with no filters returns all evidence for org
-- [ ] GET with `?verified=false` returns only unverified
-- [ ] POST with very long full_content (50K chars) succeeds
-- [ ] PATCH verify then unverify roundtrip works correctly
-- [ ] GET with 50+ evidence entries returns all correctly
+- [x] POST evidence with null client_industry and null service_line succeeds
+- [x] POST with client_size "enterprise" / "mid_market" / "smb" all succeed
+- [x] GET with no filters returns all evidence for org
+- [x] GET with `?verified=false` returns only unverified
+- [x] POST with very long full_content (50K chars) succeeds
+- [x] PATCH verify then unverify roundtrip works correctly
+- [x] GET with 50+ evidence entries returns all correctly
 
 #### Security
 
-- [ ] API validates user belongs to an organization
-- [ ] Cannot access evidence from another organization
-- [ ] Cannot verify evidence in another organization
-- [ ] SQL injection in title/summary is prevented
-- [ ] Filter values are sanitized before query
+- [x] API validates user belongs to an organization
+- [x] Cannot access evidence from another organization
+- [x] Cannot verify evidence in another organization
+- [x] SQL injection in title/summary is prevented
+- [x] Filter values are sanitized before query
 
 #### Data Leak
 
-- [ ] Error responses don't expose database schema details
-- [ ] API response doesn't include organization_id
-- [ ] 404 response doesn't reveal evidence exists in another org
-- [ ] Verification toggle response doesn't expose who verified
+- [x] Error responses don't expose database schema details
+- [x] API response doesn't include organization_id
+- [x] 404 response doesn't reveal evidence exists in another org
+- [x] Verification toggle response doesn't expose who verified
 
 #### Data Damage
 
-- [ ] Failed insert doesn't leave partial data
-- [ ] Verification toggle failure reverts cleanly
-- [ ] DELETE with confirmation dialog prevents accidental deletion
-- [ ] PATCH failure doesn't corrupt existing evidence
+- [x] Failed insert doesn't leave partial data
+- [x] Verification toggle failure reverts cleanly
+- [x] DELETE with confirmation dialog prevents accidental deletion
+- [x] PATCH failure doesn't corrupt existing evidence
 
 ### E2E Gate
 
@@ -220,16 +220,16 @@ timeout 15 bash -c 'npx next dev -p 3099 2>&1 | head -20' || true
 
 ### Acceptance Criteria
 
-- [ ] GET/POST/PATCH/DELETE routes with filter support
-- [ ] All 6 test categories pass
-- [ ] Evidence Library page renders with card grid grouped by 5 types
-- [ ] Filter bar works (type, industry, service_line, verified)
-- [ ] Inline verify toggle updates is_verified via PATCH
-- [ ] Add/edit form with simplified metrics/outcomes textareas
-- [ ] Delete with confirmation dialog
-- [ ] Sidebar nav item added under Knowledge group
-- [ ] Empty states for each type section
-- [ ] TypeScript compiles clean
+- [x] GET/POST/PATCH/DELETE routes with filter support
+- [x] All 6 test categories pass
+- [x] Evidence Library page renders with card grid grouped by 5 types
+- [x] Filter bar works (type, industry, service_line, verified)
+- [x] Inline verify toggle updates is_verified via PATCH
+- [x] Add/edit form with simplified metrics/outcomes textareas
+- [x] Delete with confirmation dialog
+- [x] Sidebar nav item added under Knowledge group
+- [x] Empty states for each type section
+- [x] TypeScript compiles clean
 
 ---
 
@@ -257,55 +257,55 @@ Build the AI evidence extraction endpoint and UI integration. Users select from 
 
 #### Happy Path
 
-- [ ] `buildEvidenceExtractionPrompt(docText)` returns prompt with document content embedded
-- [ ] Prompt includes all 5 evidence types for extraction
-- [ ] Parsing valid JSON array response returns typed EvidenceExtraction[]
-- [ ] Each parsed evidence has: evidence_type, title, summary, full_content, metrics, outcomes
-- [ ] Extraction endpoint fetches document text, calls generateText, parses response
-- [ ] Response includes count and extracted evidence entries
-- [ ] Calls generateText with temperature 0.2
-- [ ] Extracted entries inserted with is_verified=false
-- [ ] Multiple documents concatenated for extraction
-- [ ] Document selector shows org's processed documents
+- [x] `buildEvidenceExtractionPrompt(docText)` returns prompt with document content embedded
+- [x] Prompt includes all 5 evidence types for extraction
+- [x] Parsing valid JSON array response returns typed EvidenceExtraction[]
+- [x] Each parsed evidence has: evidence_type, title, summary, full_content, metrics, outcomes
+- [x] Extraction endpoint fetches document text, calls generateText, parses response
+- [x] Response includes count and extracted evidence entries
+- [x] Calls generateText with temperature 0.2
+- [x] Extracted entries inserted with is_verified=false
+- [x] Multiple documents concatenated for extraction
+- [x] Document selector shows org's processed documents
 
 #### Bad Path
 
-- [ ] Empty document text still produces a valid prompt
-- [ ] AI returns malformed JSON — parser falls back to empty array
-- [ ] AI returns JSON wrapped in markdown code block — parser strips wrapper
-- [ ] AI returns evidence with invalid evidence_type — defaults to "metric"
-- [ ] AI returns evidence with invalid outcomes — filters to valid OutcomeCategory only
-- [ ] No processed documents in org returns 400 "No documents available"
-- [ ] generateText throws — endpoint returns 500 with safe error message
-- [ ] Empty document_ids array returns 400
+- [x] Empty document text still produces a valid prompt
+- [x] AI returns malformed JSON — parser falls back to empty array
+- [x] AI returns JSON wrapped in markdown code block — parser strips wrapper
+- [x] AI returns evidence with invalid evidence_type — defaults to "metric"
+- [x] AI returns evidence with invalid outcomes — filters to valid OutcomeCategory only
+- [x] No processed documents in org returns 400 "No documents available"
+- [x] generateText throws — endpoint returns 500 with safe error message
+- [x] Empty document_ids array returns 400
 
 #### Edge Cases
 
-- [ ] Very large document (500K+ chars) — prompt truncates to MAX_DOCUMENT_CHARS
-- [ ] Document with no extractable evidence — AI returns empty array, endpoint returns empty
-- [ ] parseEvidenceResponse handles empty string
-- [ ] parseEvidenceResponse handles code fence without json label
-- [ ] Re-extraction does not delete previously extracted evidence (additive, not replace)
+- [x] Very large document (500K+ chars) — prompt truncates to MAX_DOCUMENT_CHARS
+- [x] Document with no extractable evidence — AI returns empty array, endpoint returns empty
+- [x] parseEvidenceResponse handles empty string
+- [x] parseEvidenceResponse handles code fence without json label
+- [x] Re-extraction does not delete previously extracted evidence (additive, not replace)
 
 #### Security
 
-- [ ] Document text in prompt is wrapped in structured tags (prevents injection)
-- [ ] Extraction endpoint validates user belongs to org
-- [ ] Cannot extract from documents in another org
-- [ ] Unauthenticated request returns 401
+- [x] Document text in prompt is wrapped in structured tags (prevents injection)
+- [x] Extraction endpoint validates user belongs to org
+- [x] Cannot extract from documents in another org
+- [x] Unauthenticated request returns 401
 
 #### Data Leak
 
-- [ ] Extraction prompt doesn't include org settings
-- [ ] Error responses don't include raw AI response text
-- [ ] Evidence types are the only valid values (no custom labels leak)
+- [x] Extraction prompt doesn't include org settings
+- [x] Error responses don't include raw AI response text
+- [x] Evidence types are the only valid values (no custom labels leak)
 
 #### Data Damage
 
-- [ ] Failed AI response does not delete existing evidence
-- [ ] Empty AI response does not insert any rows
-- [ ] Partial extraction failure doesn't leave orphan rows
-- [ ] Re-extraction is additive (preserves all existing entries)
+- [x] Failed AI response does not delete existing evidence
+- [x] Empty AI response does not insert any rows
+- [x] Partial extraction failure doesn't leave orphan rows
+- [x] Re-extraction is additive (preserves all existing entries)
 
 ### E2E Gate
 
@@ -327,16 +327,16 @@ npx next build
 
 ### Acceptance Criteria
 
-- [ ] Extraction prompt produces well-structured output
-- [ ] JSON parsing handles all Gemini response formats (raw, code-fenced, partial)
-- [ ] Extraction is additive (never deletes existing evidence)
-- [ ] All 6 test categories pass
-- [ ] Document selector UI works on Evidence Library page
-- [ ] Toast notification after extraction: "X evidence entries extracted"
-- [ ] Full pipeline verification: L1 data appears in generated proposal context
-- [ ] All tests pass
-- [ ] TypeScript compiles clean
-- [ ] Production build succeeds
+- [x] Extraction prompt produces well-structured output
+- [x] JSON parsing handles all Gemini response formats (raw, code-fenced, partial)
+- [x] Extraction is additive (never deletes existing evidence)
+- [x] All 6 test categories pass
+- [x] Document selector UI works on Evidence Library page
+- [x] Toast notification after extraction: "X evidence entries extracted"
+- [x] Full pipeline verification: L1 data appears in generated proposal context
+- [x] All tests pass
+- [x] TypeScript compiles clean
+- [x] Production build succeeds
 
 ---
 
