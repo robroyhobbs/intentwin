@@ -69,9 +69,7 @@ const DIMENSION_LABELS: Record<keyof DimensionScores, string> = {
 };
 
 function formatSectionType(type: string): string {
-  return type
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function ScoreBar({ score, max = 10 }: { score: number; max?: number }) {
@@ -101,9 +99,13 @@ function ScoreBar({ score, max = 10 }: { score: number; max?: number }) {
 // ============================================================
 
 export function QualityReport({ proposalId, initialData }: QualityReportProps) {
-  const [data, setData] = useState<QualityReviewData | null>(initialData || null);
+  const [data, setData] = useState<QualityReviewData | null>(
+    initialData || null,
+  );
   const [collapsed, setCollapsed] = useState(true);
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(
+    new Set(),
+  );
   const [triggering, setTriggering] = useState(false);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
   const authFetch = useAuthFetch();
@@ -111,7 +113,9 @@ export function QualityReport({ proposalId, initialData }: QualityReportProps) {
   // Poll for results when status is "reviewing"
   const pollResults = useCallback(async () => {
     try {
-      const res = await authFetch(`/api/proposals/${proposalId}/quality-review`);
+      const res = await authFetch(
+        `/api/proposals/${proposalId}/quality-review`,
+      );
       if (!res.ok) return;
       const result = await res.json();
       if (result) {
@@ -167,11 +171,14 @@ export function QualityReport({ proposalId, initialData }: QualityReportProps) {
   const handleTrigger = async () => {
     setTriggering(true);
     try {
-      const res = await authFetch(`/api/proposals/${proposalId}/quality-review`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ trigger: "manual" }),
-      });
+      const res = await authFetch(
+        `/api/proposals/${proposalId}/quality-review`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ trigger: "manual" }),
+        },
+      );
 
       if (res.status === 409) {
         toast.error("Quality review is already in progress.");
@@ -296,9 +303,9 @@ export function QualityReport({ proposalId, initialData }: QualityReportProps) {
   return (
     <div className="border border-[var(--border)] rounded-xl bg-[var(--card-bg)] overflow-hidden">
       {/* Header — always visible */}
-      <button
+      <div
         onClick={() => setCollapsed(!collapsed)}
-        className="w-full flex items-center justify-between p-4 hover:bg-[var(--background-secondary)] transition-colors"
+        className="w-full flex items-center justify-between p-4 hover:bg-[var(--background-secondary)] transition-colors cursor-pointer"
       >
         <div className="flex items-center gap-3">
           {collapsed ? (
@@ -333,20 +340,19 @@ export function QualityReport({ proposalId, initialData }: QualityReportProps) {
           disabled={triggering}
           className="text-xs text-[var(--accent)] hover:underline flex items-center gap-1"
         >
-          <RefreshCw className={`h-3 w-3 ${triggering ? "animate-spin" : ""}`} />
+          <RefreshCw
+            className={`h-3 w-3 ${triggering ? "animate-spin" : ""}`}
+          />
           Re-evaluate
         </button>
-      </button>
+      </div>
 
       {/* Expandable content */}
       {!collapsed && (
         <div className="border-t border-[var(--border)] p-4 space-y-4">
           {/* Overall score */}
           <div className="flex items-center gap-4">
-            <div
-              className="text-3xl font-bold"
-              style={{ color: passColor }}
-            >
+            <div className="text-3xl font-bold" style={{ color: passColor }}>
               {data.overall_score}
             </div>
             <div>
