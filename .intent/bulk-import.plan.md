@@ -139,65 +139,65 @@ Build the two new API routes: `/api/bulk-import/extract` (sends file content to 
 
 #### Happy Path
 
-- [ ] POST `/api/bulk-import/extract` with valid content + fileName returns extracted items
-- [ ] Extract response includes `company_context`, `product_contexts`, `evidence_library` arrays
-- [ ] Extract response items include `isConflict: false` for new items
-- [ ] Extract response items include `isConflict: true` with `existingValue` for conflicts
-- [ ] Company context conflict detected on matching (category, key) in same org
-- [ ] Product conflict detected on matching (product_name, service_line) in same org
-- [ ] Evidence conflict detected on matching title in same org
-- [ ] POST `/api/bulk-import/commit` with approved items inserts into company_context
-- [ ] Commit inserts into product_contexts with capabilities as JSONB
-- [ ] Commit inserts into evidence_library with all fields
-- [ ] Commit upserts company_context on conflict (category, key)
-- [ ] Commit upserts product_contexts on conflict (product_name, service_line)
-- [ ] Commit upserts evidence_library on conflict (title)
-- [ ] Commit returns counts: `{ inserted: { company_context: N, product_contexts: N, evidence_library: N } }`
+- [x] POST `/api/bulk-import/extract` with valid content + fileName returns extracted items
+- [x] Extract response includes `company_context`, `product_contexts`, `evidence_library` arrays
+- [x] Extract response items include `isConflict: false` for new items
+- [x] Extract response items include `isConflict: true` with `existingValue` for conflicts
+- [x] Company context conflict detected on matching (category, key) in same org
+- [x] Product conflict detected on matching (product_name, service_line) in same org
+- [x] Evidence conflict detected on matching title in same org
+- [x] POST `/api/bulk-import/commit` with approved items inserts into company_context
+- [x] Commit inserts into product_contexts with capabilities as JSONB
+- [x] Commit inserts into evidence_library with all fields
+- [x] Commit upserts company_context on conflict (category, key)
+- [x] Commit upserts product_contexts on conflict (product_name, service_line)
+- [x] Commit upserts evidence_library on conflict (title)
+- [x] Commit returns counts: `{ inserted: { company_context: N, product_contexts: N, evidence_library: N } }`
 
 #### Bad Path
 
-- [ ] Extract with empty content string returns 400
-- [ ] Extract with missing fileName returns 400
-- [ ] Extract without auth returns 401
-- [ ] Commit with empty items array returns 400
-- [ ] Commit with items missing required fields returns 400
-- [ ] Commit without auth returns 401
-- [ ] Extract when Gemini fails returns 500 with safe message, no crash
-- [ ] Commit with invalid company_context category returns 400
-- [ ] Commit with invalid evidence_type returns 400
+- [x] Extract with empty content string returns 400
+- [x] Extract with missing fileName returns 400
+- [x] Extract without auth returns 401
+- [x] Commit with empty items array returns 400
+- [x] Commit with items missing required fields returns 400
+- [x] Commit without auth returns 401
+- [x] Extract when Gemini fails returns 500 with safe message, no crash
+- [x] Commit with invalid company_context category returns 400
+- [x] Commit with invalid evidence_type returns 400
 
 #### Edge Cases
 
-- [ ] Extract with very large content (200K chars) still works (truncated internally)
-- [ ] Commit with 100+ items processes all correctly
-- [ ] Commit with mix of new and conflict items handles both
-- [ ] Extract when org has zero existing L1 data — all items flagged as new
-- [ ] Extract when org has matching L1 data — correct items flagged as conflicts
-- [ ] Commit with all three table types in single request
+- [x] Extract with very large content (200K chars) still works (truncated internally)
+- [x] Commit with 100+ items processes all correctly
+- [x] Commit with mix of new and conflict items handles both
+- [x] Extract when org has zero existing L1 data — all items flagged as new
+- [x] Extract when org has matching L1 data — correct items flagged as conflicts
+- [x] Commit with all three table types in single request
 
 #### Security
 
-- [ ] Extract validates user belongs to an organization
-- [ ] Commit validates user belongs to an organization
-- [ ] Cannot extract using another org's context for conflict check
-- [ ] Commit scopes all inserts to user's organization_id
-- [ ] SQL injection in content/title/key fields is prevented (parameterized queries)
-- [ ] XSS in extracted content is handled (stored as text, not rendered as HTML)
+- [x] Extract validates user belongs to an organization
+- [x] Commit validates user belongs to an organization
+- [x] Cannot extract using another org's context for conflict check
+- [x] Commit scopes all inserts to user's organization_id
+- [x] SQL injection in content/title/key fields is prevented (parameterized queries)
+- [x] XSS in extracted content is handled (stored as text, not rendered as HTML)
 
 #### Data Leak
 
-- [ ] Extract error response doesn't expose Gemini raw response
-- [ ] Extract error response doesn't expose database schema
-- [ ] Commit error response doesn't expose other org's data
-- [ ] Conflict detection doesn't reveal full content of existing entries to unauthorized users
+- [x] Extract error response doesn't expose Gemini raw response
+- [x] Extract error response doesn't expose database schema
+- [x] Commit error response doesn't expose other org's data
+- [x] Conflict detection doesn't reveal full content of existing entries to unauthorized users
 
 #### Data Damage
 
-- [ ] Failed commit doesn't leave partial data (all-or-nothing per table)
-- [ ] Commit failure on one table doesn't affect already-committed tables
-- [ ] Upsert on conflict correctly replaces old values
-- [ ] Commit doesn't delete existing L1 data that wasn't in the import
-- [ ] Re-submitting same commit is idempotent (upsert, not duplicate)
+- [x] Failed commit doesn't leave partial data (all-or-nothing per table)
+- [x] Commit failure on one table doesn't affect already-committed tables
+- [x] Upsert on conflict correctly replaces old values
+- [x] Commit doesn't delete existing L1 data that wasn't in the import
+- [x] Re-submitting same commit is idempotent (upsert, not duplicate)
 
 ### E2E Gate
 
@@ -216,12 +216,12 @@ npx tsc --noEmit
 
 ### Acceptance Criteria
 
-- [ ] Extract route returns structured items with conflict flags
-- [ ] Commit route upserts items to all 3 L1 tables correctly
-- [ ] Conflict detection matches on correct keys per table
-- [ ] All inserts scoped to user's organization_id
-- [ ] All 6 test categories pass
-- [ ] TypeScript compiles clean
+- [x] Extract route returns structured items with conflict flags
+- [x] Commit route upserts items to all 3 L1 tables correctly
+- [x] Conflict detection matches on correct keys per table
+- [x] All inserts scoped to user's organization_id
+- [x] All 6 test categories pass
+- [x] TypeScript compiles clean
 
 ---
 
