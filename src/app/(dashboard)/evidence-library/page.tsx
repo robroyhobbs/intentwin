@@ -173,10 +173,10 @@ export default function EvidenceLibraryPage() {
       client_industry: ev.client_industry || "",
       service_line: ev.service_line || "",
       client_size: ev.client_size || "",
-      outcomes_text: ev.outcomes_demonstrated
+      outcomes_text: (ev.outcomes_demonstrated || [])
         .map((o) => `${o.outcome}: ${o.description}`)
         .join("\n"),
-      metrics_text: ev.metrics
+      metrics_text: (ev.metrics || [])
         .map((m) => `${m.name}: ${m.value} (${m.context})`)
         .join("\n"),
     });
@@ -654,9 +654,9 @@ export default function EvidenceLibraryPage() {
                       </div>
 
                       {/* Metrics preview */}
-                      {ev.metrics.length > 0 && (
+                      {(ev.metrics || []).length > 0 && (
                         <div className="mt-2 pt-2 border-t border-[var(--card-border)]">
-                          {ev.metrics.slice(0, 2).map((m, i) => (
+                          {(ev.metrics || []).slice(0, 2).map((m, i) => (
                             <p
                               key={i}
                               className="text-[10px] text-[var(--foreground-subtle)]"
@@ -665,9 +665,9 @@ export default function EvidenceLibraryPage() {
                               {m.value}
                             </p>
                           ))}
-                          {ev.metrics.length > 2 && (
+                          {(ev.metrics || []).length > 2 && (
                             <p className="text-[10px] text-[var(--foreground-subtle)]">
-                              +{ev.metrics.length - 2} more
+                              +{(ev.metrics || []).length - 2} more
                             </p>
                           )}
                         </div>

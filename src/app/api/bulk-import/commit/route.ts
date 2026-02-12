@@ -142,6 +142,8 @@ export async function POST(request: NextRequest) {
       const elData = evidence_library.map((item: Record<string, unknown>) => ({
         ...item,
         organization_id: orgId,
+        outcomes_demonstrated: item.outcomes_demonstrated || [],
+        metrics: item.metrics || [],
       }));
       const { error: elError } = await supabase
         .from("evidence_library")
