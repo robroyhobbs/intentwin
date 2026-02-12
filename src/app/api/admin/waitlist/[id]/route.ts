@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext } from "@/lib/supabase/auth-api";
 
-const VALID_STATUSES = ["pending", "contacted", "approved", "rejected"] as const;
+const VALID_STATUSES = [
+  "pending",
+  "contacted",
+  "approved",
+  "rejected",
+] as const;
 type WaitlistStatus = (typeof VALID_STATUSES)[number];
 
 /**
@@ -81,6 +86,13 @@ export async function PATCH(
         { error: "Failed to update waitlist entry" },
         { status: 500 },
       );
+    }
+
+    // When approved, auto-add email to allowed_emails so the user can sign up
+    if (status === "approved" && entry.email) {
+      await adminClient
+        .from("allowed_emails")
+        .upsert({ email: entry.email }, { onConflict: "email" });
     }
 
     return NextResponse.json({ entry });
