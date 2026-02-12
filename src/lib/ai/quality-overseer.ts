@@ -1,15 +1,21 @@
 /**
- * Quality Overseer — Core Review + Remediation Logic
+ * Quality Overseer — 3-Judge Council Review + Remediation
  *
- * Reviews all generated sections using GPT-4o, identifies weak sections,
- * regenerates them with Gemini (injecting GPT-4o feedback), and stores
- * the complete quality_review JSONB on the proposals table.
+ * Reviews all generated sections using a council of 3 LLMs:
+ *   1. GPT-4o (OpenAI)
+ *   2. Llama 3.3 70B (Groq)
+ *   3. Mistral Small (Mistral)
  *
- * Flow: Review all → Identify weak (< 8.5) → Regen with Gemini → Re-review → Store
+ * Judges review each section in parallel. Scores are aggregated via
+ * weighted average with majority vote for pass/fail.
+ *
+ * Flow: Council reviews → Aggregate → Weak by consensus (2+)? → Gemini remediates → GPT-4o re-reviews → Store
  */
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { reviewWithGPT4o } from "./openai-client";
+import { reviewWithGroq } from "./groq-client";
+import { reviewWithMistral } from "./mistral-client";
 import {
   buildQualityReviewPrompt,
   calculateSectionScore,
@@ -24,6 +30,45 @@ import { createProposalVersion } from "@/lib/versioning/create-version";
 // Types
 // ============================================================
 
+export interface JudgeResult {
+  judge_id: string;
+  judge_name: string;
+  provider: string;
+  scores: {
+    content_quality: number;
+    client_fit: number;
+    evidence: number;
+    brand_voice: number;
+  };
+  score: number;
+  feedback: string;
+  status: "completed" | "failed" | "timeout";
+  error?: string;
+}
+
+export interface JudgeInfo {
+  judge_id: string;
+  judge_name: string;
+  provider: string;
+  status: "completed" | "failed" | "timeout";
+  error?: string;
+}
+
+export interface CouncilSectionReview {
+  section_id: string;
+  section_type: string;
+  score: number;
+  dimensions: {
+    content_quality: number;
+    client_fit: number;
+    evidence: number;
+    brand_voice: number;
+  };
+  feedback: string;
+  judge_reviews: JudgeResult[];
+}
+
+/** Kept for backward compatibility with old single-judge data */
 export interface SectionReview {
   section_id: string;
   section_type: string;
@@ -50,10 +95,203 @@ export interface QualityReviewResult {
   run_at: string;
   trigger: "auto_post_generation" | "manual";
   model: string;
+  judges?: JudgeInfo[];
+  consensus?: "unanimous" | "majority" | "split";
   overall_score: number;
   pass: boolean;
-  sections: SectionReview[];
+  sections: CouncilSectionReview[] | SectionReview[];
   remediation: RemediationEntry[];
+}
+
+// ============================================================
+// Judge Definitions
+// ============================================================
+
+interface JudgeDefinition {
+  id: string;
+  name: string;
+  provider: string;
+  reviewFn: (prompt: string) => Promise<QualityScores>;
+}
+
+function getAvailableJudges(): JudgeDefinition[] {
+  const judges: JudgeDefinition[] = [];
+
+  // GPT-4o is always available (required)
+  judges.push({
+    id: "gpt-4o",
+    name: "GPT-4o",
+    provider: "openai",
+    reviewFn: reviewWithGPT4o,
+  });
+
+  // Groq — optional, skipped if no API key
+  if (process.env.GROQ_API_KEY) {
+    judges.push({
+      id: "llama-3.3-70b",
+      name: "Llama 3.3",
+      provider: "groq",
+      reviewFn: reviewWithGroq,
+    });
+  }
+
+  // Mistral — optional, skipped if no API key
+  if (process.env.MISTRAL_API_KEY) {
+    judges.push({
+      id: "mistral-small",
+      name: "Mistral Small",
+      provider: "mistral",
+      reviewFn: reviewWithMistral,
+    });
+  }
+
+  return judges;
+}
+
+// ============================================================
+// Council Review (per-section)
+// ============================================================
+
+/**
+ * Run all available judges on a single section prompt in parallel.
+ * Returns individual JudgeResults + aggregated scores.
+ */
+async function runCouncilReview(
+  prompt: string,
+  judges: JudgeDefinition[],
+): Promise<{
+  judgeResults: JudgeResult[];
+  aggregated: QualityScores;
+  aggregatedScore: number;
+}> {
+  // Run all judges in parallel — never Promise.all so one failure doesn't cancel others
+  const settled = await Promise.allSettled(
+    judges.map(async (judge) => {
+      try {
+        const scores = await judge.reviewFn(prompt);
+        const avg = calculateSectionScore(scores);
+        return {
+          judge_id: judge.id,
+          judge_name: judge.name,
+          provider: judge.provider,
+          scores: {
+            content_quality: scores.content_quality,
+            client_fit: scores.client_fit,
+            evidence: scores.evidence,
+            brand_voice: scores.brand_voice,
+          },
+          score: avg,
+          feedback: scores.feedback,
+          status: "completed" as const,
+        };
+      } catch (err) {
+        const isTimeout =
+          err instanceof Error &&
+          (err.message.includes("timeout") || err.message.includes("ETIMEDOUT"));
+        return {
+          judge_id: judge.id,
+          judge_name: judge.name,
+          provider: judge.provider,
+          scores: { content_quality: 0, client_fit: 0, evidence: 0, brand_voice: 0 },
+          score: 0,
+          feedback: "",
+          status: (isTimeout ? "timeout" : "failed") as "timeout" | "failed",
+          error: err instanceof Error ? err.message : "Unknown error",
+        };
+      }
+    }),
+  );
+
+  // Extract results (allSettled always returns fulfilled since we catch inside)
+  const judgeResults: JudgeResult[] = settled.map((s) =>
+    s.status === "fulfilled"
+      ? s.value
+      : {
+          judge_id: "unknown",
+          judge_name: "Unknown",
+          provider: "unknown",
+          scores: { content_quality: 0, client_fit: 0, evidence: 0, brand_voice: 0 },
+          score: 0,
+          feedback: "",
+          status: "failed" as const,
+          error: "Promise rejected unexpectedly",
+        },
+  );
+
+  // Filter to successful judges for aggregation
+  const successful = judgeResults.filter((r) => r.status === "completed");
+
+  if (successful.length === 0) {
+    // All judges failed — return zeros
+    return {
+      judgeResults,
+      aggregated: {
+        content_quality: 0,
+        client_fit: 0,
+        evidence: 0,
+        brand_voice: 0,
+        feedback: "All judges failed to review this section.",
+      },
+      aggregatedScore: 0,
+    };
+  }
+
+  // Average across successful judges
+  const avg = (arr: number[]) =>
+    Math.round((arr.reduce((s, v) => s + v, 0) / arr.length) * 10) / 10;
+
+  const aggregated: QualityScores = {
+    content_quality: avg(successful.map((r) => r.scores.content_quality)),
+    client_fit: avg(successful.map((r) => r.scores.client_fit)),
+    evidence: avg(successful.map((r) => r.scores.evidence)),
+    brand_voice: avg(successful.map((r) => r.scores.brand_voice)),
+    feedback: successful.map((r) => `**${r.judge_name}:** ${r.feedback}`).join("\n\n"),
+  };
+
+  const aggregatedScore = calculateSectionScore(aggregated);
+
+  return { judgeResults, aggregated, aggregatedScore };
+}
+
+// ============================================================
+// Consensus Calculation
+// ============================================================
+
+function calculateConsensus(
+  sectionReviews: CouncilSectionReview[],
+): "unanimous" | "majority" | "split" {
+  if (sectionReviews.length === 0) return "split";
+
+  // Look at individual judge pass/fail across all sections
+  let unanimousCount = 0;
+  let majorityCount = 0;
+  let splitCount = 0;
+
+  for (const section of sectionReviews) {
+    const successful = section.judge_reviews.filter(
+      (r) => r.status === "completed",
+    );
+    if (successful.length === 0) {
+      splitCount++;
+      continue;
+    }
+
+    const passes = successful.filter((r) => r.score >= PASS_THRESHOLD).length;
+    const fails = successful.length - passes;
+
+    if (passes === successful.length || fails === successful.length) {
+      unanimousCount++;
+    } else if (passes > fails || fails > passes) {
+      majorityCount++;
+    } else {
+      splitCount++;
+    }
+  }
+
+  // Overall consensus from section-level agreement
+  if (unanimousCount === sectionReviews.length) return "unanimous";
+  if (splitCount > sectionReviews.length / 2) return "split";
+  return "majority";
 }
 
 // ============================================================
@@ -61,8 +299,7 @@ export interface QualityReviewResult {
 // ============================================================
 
 /**
- * Run quality review on all sections of a proposal.
- * Returns the complete QualityReviewResult to be stored in proposals.quality_review.
+ * Run quality review on all sections of a proposal using the 3-judge council.
  */
 export async function runQualityReview(
   proposalId: string,
@@ -70,12 +307,19 @@ export async function runQualityReview(
 ): Promise<QualityReviewResult> {
   const supabase = createAdminClient();
   const runAt = new Date().toISOString();
+  const judges = getAvailableJudges();
 
   const result: QualityReviewResult = {
     status: "reviewing",
     run_at: runAt,
     trigger,
-    model: "gpt-4o",
+    model: judges.length > 1 ? "council" : judges[0]?.id || "unknown",
+    judges: judges.map((j) => ({
+      judge_id: j.id,
+      judge_name: j.name,
+      provider: j.provider,
+      status: "completed" as const,
+    })),
     overall_score: 0,
     pass: false,
     sections: [],
@@ -113,6 +357,7 @@ export async function runQualityReview(
       result.status = "completed";
       result.overall_score = 0;
       result.pass = false;
+      result.consensus = "split";
       await storeResult(supabase, proposalId, result);
       return result;
     }
@@ -123,8 +368,8 @@ export async function runQualityReview(
       differentiators?: string[];
     } | null;
 
-    // ── Round 1: Review all sections ──
-    const sectionReviews: SectionReview[] = [];
+    // ── Round 1: Council reviews all sections ──
+    const sectionReviews: CouncilSectionReview[] = [];
     const weakSections: {
       sectionId: string;
       sectionType: string;
@@ -145,52 +390,72 @@ export async function runQualityReview(
           winStrategy,
         });
 
-        const scores = await reviewWithGPT4o(prompt);
-        const sectionAvg = calculateSectionScore(scores);
+        const { judgeResults, aggregated, aggregatedScore } =
+          await runCouncilReview(prompt, judges);
 
-        const review: SectionReview = {
+        const review: CouncilSectionReview = {
           section_id: section.id,
           section_type: section.section_type,
-          score: sectionAvg,
+          score: aggregatedScore,
           dimensions: {
-            content_quality: scores.content_quality,
-            client_fit: scores.client_fit,
-            evidence: scores.evidence,
-            brand_voice: scores.brand_voice,
+            content_quality: aggregated.content_quality,
+            client_fit: aggregated.client_fit,
+            evidence: aggregated.evidence,
+            brand_voice: aggregated.brand_voice,
           },
-          feedback: scores.feedback,
+          feedback: aggregated.feedback,
+          judge_reviews: judgeResults,
         };
 
         sectionReviews.push(review);
 
-        if (sectionAvg < REGEN_THRESHOLD) {
+        // Council consensus for remediation: 2+ judges must score below threshold
+        const successfulJudges = judgeResults.filter(
+          (r) => r.status === "completed",
+        );
+        const weakJudgeCount = successfulJudges.filter(
+          (r) => r.score < REGEN_THRESHOLD,
+        ).length;
+
+        if (weakJudgeCount >= 2 || (successfulJudges.length === 1 && weakJudgeCount === 1)) {
           weakSections.push({
             sectionId: section.id,
             sectionType: section.section_type,
-            score: sectionAvg,
-            feedback: scores.feedback,
+            score: aggregatedScore,
+            feedback: aggregated.feedback,
           });
         }
       } catch (err) {
-        // If a single section review fails, mark the whole review as failed
-        console.error(`Quality review failed for section ${section.id}:`, err);
+        console.error(`Council review failed for section ${section.id}:`, err);
         result.status = "failed";
         result.sections = sectionReviews;
+        // Update judge statuses based on what we know
         await storeResult(supabase, proposalId, result);
         return result;
       }
     }
 
-    // ── Round 2: Remediate weak sections ──
+    // Update judge info with actual statuses from the last section reviewed
+    if (sectionReviews.length > 0 && result.judges) {
+      const lastSection = sectionReviews[sectionReviews.length - 1];
+      result.judges = lastSection.judge_reviews.map((jr) => ({
+        judge_id: jr.judge_id,
+        judge_name: jr.judge_name,
+        provider: jr.provider,
+        status: jr.status,
+        error: jr.error,
+      }));
+    }
+
+    // ── Round 2: Remediate weak sections (council consensus) ──
     let remediationOccurred = false;
 
     for (const weak of weakSections) {
       try {
-        // Find the original section data
         const originalSection = sections.find((s) => s.id === weak.sectionId);
         if (!originalSection) continue;
 
-        // Regenerate with Gemini, injecting GPT-4o feedback
+        // Regenerate with Gemini, injecting council feedback
         const regenPrompt = buildRemediationPrompt(
           originalSection.generated_content || "",
           originalSection.section_type,
@@ -211,7 +476,7 @@ export async function runQualityReview(
 
         remediationOccurred = true;
 
-        // Re-review the regenerated section
+        // Re-review with GPT-4o only (single judge, not full council)
         const reReviewPrompt = buildQualityReviewPrompt({
           sectionContent: regeneratedContent,
           sectionType: weak.sectionType,
@@ -226,7 +491,7 @@ export async function runQualityReview(
         const newScores = await reviewWithGPT4o(reReviewPrompt);
         const newAvg = calculateSectionScore(newScores);
 
-        // Update the section review with new scores
+        // Update the section review with GPT-4o re-review score
         const existingReview = sectionReviews.find(
           (r) => r.section_id === weak.sectionId,
         );
@@ -241,7 +506,6 @@ export async function runQualityReview(
           existingReview.feedback = newScores.feedback;
         }
 
-        // Log remediation
         result.remediation.push({
           section_id: weak.sectionId,
           round: 1,
@@ -250,7 +514,6 @@ export async function runQualityReview(
           new_score: newAvg,
         });
       } catch (err) {
-        // Remediation failure: log but don't crash — keep original score
         console.error(`Remediation failed for section ${weak.sectionId}:`, err);
         result.remediation.push({
           section_id: weak.sectionId,
@@ -276,6 +539,7 @@ export async function runQualityReview(
           ) / 10
         : 0;
     result.pass = result.overall_score >= PASS_THRESHOLD;
+    result.consensus = calculateConsensus(sectionReviews);
     result.status = "completed";
 
     // Store result
@@ -286,8 +550,8 @@ export async function runQualityReview(
       await createProposalVersion({
         proposalId,
         triggerEvent: "generation_complete",
-        changeSummary: `Quality overseer remediated ${weakSections.length} section(s). Overall score: ${result.overall_score}`,
-        label: "Quality Review Remediation",
+        changeSummary: `Quality council remediated ${weakSections.length} section(s). Overall score: ${result.overall_score}`,
+        label: "Quality Council Remediation",
       });
     }
 
@@ -316,7 +580,7 @@ async function storeResult(
 }
 
 /**
- * Build a Gemini regeneration prompt that injects GPT-4o feedback.
+ * Build a Gemini regeneration prompt that injects council feedback.
  */
 function buildRemediationPrompt(
   originalContent: string,
@@ -329,7 +593,7 @@ function buildRemediationPrompt(
 ## Original Content
 ${originalContent}
 
-## Quality Review Feedback (from independent reviewer)
+## Quality Review Feedback (from independent reviewer council)
 ${feedback}
 
 ## Proposal Context
