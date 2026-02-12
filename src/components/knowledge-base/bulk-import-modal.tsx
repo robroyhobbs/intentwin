@@ -14,14 +14,8 @@ import {
   Clock,
   Layers,
 } from "lucide-react";
-import {
-  BulkImportReview,
-  type ExtractedItems,
-} from "./bulk-import-review";
-import {
-  BulkImportSummary,
-  type ImportCounts,
-} from "./bulk-import-summary";
+import { BulkImportReview, type ExtractedItems } from "./bulk-import-review";
+import { BulkImportSummary, type ImportCounts } from "./bulk-import-summary";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -46,11 +40,13 @@ const MAX_FILES = 20;
 const CONCURRENT_LIMIT = 3;
 
 const ACCEPTED_TYPES = {
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-    [".docx"],
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [
+    ".docx",
+  ],
   "application/pdf": [".pdf"],
-  "application/vnd.openxmlformats-officedocument.presentationml.presentation":
-    [".pptx"],
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": [
+    ".pptx",
+  ],
   "text/plain": [".txt"],
   "text/markdown": [".md"],
 };
@@ -107,12 +103,8 @@ function mergeExtractedItems(entries: FileEntry[]): ExtractedItems {
 
 const statusIcon: Record<FileEntry["status"], React.ReactNode> = {
   pending: <Clock className="h-4 w-4 text-[var(--foreground-subtle)]" />,
-  uploading: (
-    <Loader2 className="h-4 w-4 text-[var(--info)] animate-spin" />
-  ),
-  extracting: (
-    <Loader2 className="h-4 w-4 text-[var(--accent)] animate-spin" />
-  ),
+  uploading: <Loader2 className="h-4 w-4 text-[var(--info)] animate-spin" />,
+  extracting: <Loader2 className="h-4 w-4 text-[var(--accent)] animate-spin" />,
   done: <CheckCircle2 className="h-4 w-4 text-[var(--success)]" />,
   failed: <AlertCircle className="h-4 w-4 text-[var(--danger)]" />,
 };
@@ -226,48 +218,42 @@ export function BulkImportModal({
 
       if (!uploadRes.ok) {
         const err = await uploadRes.json().catch(() => ({}));
-        throw new Error(
-          (err as { error?: string }).error || "Upload failed",
-        );
+        throw new Error((err as { error?: string }).error || "Upload failed");
       }
 
-      const uploadData = (await uploadRes.json()) as {
-        parsedText?: string;
-      };
+      // Consume the upload response (we don't need parsedText from it)
+      await uploadRes.json();
 
-      // Step 2: Extract L1 data
+      // Step 2: Extract L1 data — send the file directly to the extract endpoint
       setFiles((prev) =>
         prev.map((f, i) =>
           i === index ? { ...f, status: "extracting" as const } : f,
         ),
       );
 
+      const extractFormData = new FormData();
+      extractFormData.append("file", entry.file);
+
       const extractRes = await authFetch("/api/bulk-import/extract", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          content: uploadData.parsedText || "",
-          fileName: entry.file.name,
-        }),
+        body: extractFormData,
       });
 
       if (!extractRes.ok) {
         // L2 still saved, but L1 extraction failed
         const err = await extractRes.json().catch(() => ({}));
-        const errMsg =
-          (err as { error?: string }).error || "Extraction failed";
-        toast.error(`${entry.file.name}: ${errMsg} (file still saved as document)`);
+        const errMsg = (err as { error?: string }).error || "Extraction failed";
+        toast.error(
+          `${entry.file.name}: ${errMsg} (file still saved as document)`,
+        );
         return { ...entry, status: "done", extractedItems: undefined };
       }
 
-      const extractedItems =
-        (await extractRes.json()) as ExtractedItems;
+      const extractedItems = (await extractRes.json()) as ExtractedItems;
 
       setFiles((prev) =>
         prev.map((f, i) =>
-          i === index
-            ? { ...f, status: "done" as const, extractedItems }
-            : f,
+          i === index ? { ...f, status: "done" as const, extractedItems } : f,
         ),
       );
 
@@ -277,9 +263,7 @@ export function BulkImportModal({
         error instanceof Error ? error.message : "Processing failed";
       setFiles((prev) =>
         prev.map((f, i) =>
-          i === index
-            ? { ...f, status: "failed" as const, error: errMsg }
-            : f,
+          i === index ? { ...f, status: "failed" as const, error: errMsg } : f,
         ),
       );
       return { ...entry, status: "failed", error: errMsg };
@@ -296,9 +280,7 @@ export function BulkImportModal({
     for (let i = 0; i < files.length; i += CONCURRENT_LIMIT) {
       const batch = files.slice(i, i + CONCURRENT_LIMIT);
       const batchResults = await Promise.all(
-        batch.map((entry, batchIdx) =>
-          processFile(entry, i + batchIdx),
-        ),
+        batch.map((entry, batchIdx) => processFile(entry, i + batchIdx)),
       );
       batchResults.forEach((result, batchIdx) => {
         results[i + batchIdx] = result;
@@ -357,7 +339,9 @@ export function BulkImportModal({
 
   function handleClose() {
     if (processing) {
-      if (!confirm("Processing is in progress. Are you sure you want to close?")) {
+      if (
+        !confirm("Processing is in progress. Are you sure you want to close?")
+      ) {
         return;
       }
     }
@@ -492,7 +476,8 @@ export function BulkImportModal({
               <div className="flex items-center gap-2 mb-4">
                 <Loader2 className="h-4 w-4 text-[var(--accent)] animate-spin" />
                 <p className="text-sm text-[var(--foreground-muted)]">
-                  Processing {files.length} files ({CONCURRENT_LIMIT} at a time)...
+                  Processing {files.length} files ({CONCURRENT_LIMIT} at a
+                  time)...
                 </p>
               </div>
               <div className="rounded-xl border border-[var(--border)] bg-[var(--card-bg)] divide-y divide-[var(--border)]">
@@ -536,10 +521,7 @@ export function BulkImportModal({
 
           {/* STEP: Summary */}
           {step === "summary" && importCounts && (
-            <BulkImportSummary
-              counts={importCounts}
-              onClose={handleClose}
-            />
+            <BulkImportSummary counts={importCounts} onClose={handleClose} />
           )}
         </div>
       </div>

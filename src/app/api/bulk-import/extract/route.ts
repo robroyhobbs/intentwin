@@ -1,14 +1,23 @@
 /**
  * POST /api/bulk-import/extract
  *
- * Accepts document content + fileName, sends to Gemini for L1 extraction,
+ * Accepts a file upload (FormData), parses it server-side using existing
+ * document parsers, sends parsed text to Gemini for L1 extraction,
  * then checks existing L1 data for conflicts before returning results.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { extractL1FromText } from "@/lib/ai/l1-extractor";
+import { parseDocument } from "@/lib/documents/parser";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext } from "@/lib/supabase/auth-api";
+
+function getFileType(fileName: string): string | null {
+  const ext = fileName.split(".").pop()?.toLowerCase();
+  if (!ext) return null;
+  const supported = ["md", "txt", "pdf", "docx", "pptx"];
+  return supported.includes(ext) ? ext : null;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,25 +26,52 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { content, fileName } = body;
+    const formData = await request.formData();
+    const file = formData.get("file") as File | null;
 
-    if (!content || typeof content !== "string" || !content.trim()) {
+    if (!file || !(file instanceof File) || file.size === 0) {
       return NextResponse.json(
-        { error: "Content is required" },
+        { error: "A non-empty file is required" },
         { status: 400 },
       );
     }
 
-    if (!fileName || typeof fileName !== "string") {
+    const fileName = file.name;
+    const fileType = getFileType(fileName);
+
+    if (!fileType) {
       return NextResponse.json(
-        { error: "fileName is required" },
+        { error: `Unsupported file type: ${fileName}` },
         { status: 400 },
       );
     }
 
-    // Extract L1 data from document text via Gemini
-    const result = await extractL1FromText(content, fileName);
+    // Parse file into sections using existing document parsers
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    let parsedText: string;
+    try {
+      const sections = await parseDocument(buffer, fileType);
+      parsedText = sections
+        .map((s) => (s.heading ? `${s.heading}\n${s.content}` : s.content))
+        .join("\n\n");
+    } catch {
+      return NextResponse.json(
+        { error: "Failed to parse document" },
+        { status: 400 },
+      );
+    }
+
+    if (!parsedText.trim()) {
+      return NextResponse.json(
+        { error: "Document contains no extractable text" },
+        { status: 400 },
+      );
+    }
+
+    // Extract L1 data from parsed text via Gemini
+    const result = await extractL1FromText(parsedText, fileName);
 
     if (result.error) {
       return NextResponse.json(

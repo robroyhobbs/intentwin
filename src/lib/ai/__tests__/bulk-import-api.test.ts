@@ -71,6 +71,20 @@ vi.mock("@/lib/ai/l1-extractor", () => ({
   ],
 }));
 
+let mockParseResult = [
+  { heading: "Test Section", content: "Acme Corp is a cloud solutions provider." },
+];
+let mockParseError = false;
+
+vi.mock("@/lib/documents/parser", () => ({
+  parseDocument: vi.fn(async () => {
+    if (mockParseError) {
+      throw new Error("Parse failed");
+    }
+    return mockParseResult;
+  }),
+}));
+
 // Track supabase calls
 let upsertCalls: Array<{
   table: string;
@@ -96,13 +110,32 @@ import { POST as commitPOST } from "@/app/api/bulk-import/commit/route";
 
 const TEST_ORG_ID = "org-test-123";
 
-function makeExtractRequest(body: unknown) {
+function makeExtractRequest(
+  fileName: string,
+  fileContent: string = "Acme Corp cloud migration case study...",
+) {
+  const formData = new FormData();
+  const blob = new Blob([fileContent], { type: "text/markdown" });
+  const file = new File([blob], fileName, { type: "text/markdown" });
+  formData.append("file", file);
+
   return new NextRequest(
     new URL("http://localhost:3000/api/bulk-import/extract"),
     {
       method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
+      body: formData,
+    },
+  );
+}
+
+function makeExtractRequestEmpty() {
+  // FormData with no file
+  const formData = new FormData();
+  return new NextRequest(
+    new URL("http://localhost:3000/api/bulk-import/extract"),
+    {
+      method: "POST",
+      body: formData,
     },
   );
 }
@@ -149,6 +182,10 @@ beforeEach(() => {
   upsertCalls = [];
   selectResults = {};
   mockExtractError = false;
+  mockParseError = false;
+  mockParseResult = [
+    { heading: "Test Section", content: "Acme Corp is a cloud solutions provider." },
+  ];
   mockExtractionResult = {
     data: {
       company_context: [
@@ -195,13 +232,8 @@ beforeEach(() => {
 // ════════════════════════════════════════════════════════════════════════════
 
 describe("Bulk Import Extract API — Happy Path", () => {
-  it("POST /api/bulk-import/extract with valid content + fileName returns extracted items", async () => {
-    const res = await extractPOST(
-      makeExtractRequest({
-        content: "Acme Corp cloud migration case study...",
-        fileName: "acme-overview.md",
-      }),
-    );
+  it("POST /api/bulk-import/extract with valid file returns extracted items", async () => {
+    const res = await extractPOST(makeExtractRequest("acme-overview.md"));
     const json = await res.json();
 
     expect(res.status).toBe(200);
@@ -211,9 +243,7 @@ describe("Bulk Import Extract API — Happy Path", () => {
   });
 
   it("extract response includes company_context, product_contexts, evidence_library arrays", async () => {
-    const res = await extractPOST(
-      makeExtractRequest({ content: "Content", fileName: "file.md" }),
-    );
+    const res = await extractPOST(makeExtractRequest("file.md"));
     const json = await res.json();
 
     expect(Array.isArray(json.company_context)).toBe(true);
@@ -222,19 +252,15 @@ describe("Bulk Import Extract API — Happy Path", () => {
   });
 
   it("extract response items include isConflict: false for new items", async () => {
-    // No existing data → no conflicts
     selectResults = {};
 
-    const res = await extractPOST(
-      makeExtractRequest({ content: "Content", fileName: "file.md" }),
-    );
+    const res = await extractPOST(makeExtractRequest("file.md"));
     const json = await res.json();
 
     expect(json.company_context[0].isConflict).toBe(false);
   });
 
   it("extract response items include isConflict: true with existingValue for conflicts", async () => {
-    // Set up existing data that matches
     selectResults.company_context = [
       {
         category: "brand",
@@ -244,9 +270,7 @@ describe("Bulk Import Extract API — Happy Path", () => {
       },
     ];
 
-    const res = await extractPOST(
-      makeExtractRequest({ content: "Content", fileName: "file.md" }),
-    );
+    const res = await extractPOST(makeExtractRequest("file.md"));
     const json = await res.json();
 
     const conflictItem = json.company_context.find(
@@ -266,9 +290,7 @@ describe("Bulk Import Extract API — Happy Path", () => {
       },
     ];
 
-    const res = await extractPOST(
-      makeExtractRequest({ content: "Content", fileName: "file.md" }),
-    );
+    const res = await extractPOST(makeExtractRequest("file.md"));
     const json = await res.json();
 
     expect(json.company_context[0].isConflict).toBe(true);
@@ -284,9 +306,7 @@ describe("Bulk Import Extract API — Happy Path", () => {
       },
     ];
 
-    const res = await extractPOST(
-      makeExtractRequest({ content: "Content", fileName: "file.md" }),
-    );
+    const res = await extractPOST(makeExtractRequest("file.md"));
     const json = await res.json();
 
     expect(json.product_contexts[0].isConflict).toBe(true);
@@ -302,9 +322,7 @@ describe("Bulk Import Extract API — Happy Path", () => {
       },
     ];
 
-    const res = await extractPOST(
-      makeExtractRequest({ content: "Content", fileName: "file.md" }),
-    );
+    const res = await extractPOST(makeExtractRequest("file.md"));
     const json = await res.json();
 
     expect(json.evidence_library[0].isConflict).toBe(true);
@@ -331,7 +349,6 @@ describe("Bulk Import Commit API — Happy Path", () => {
         evidence_library: [],
       }),
     );
-    const json = await res.json();
 
     expect(res.status).toBe(200);
     const ccUpsert = upsertCalls.find((c) => c.table === "company_context");
@@ -475,16 +492,37 @@ describe("Bulk Import Commit API — Happy Path", () => {
 // ════════════════════════════════════════════════════════════════════════════
 
 describe("Bulk Import API — Bad Path", () => {
-  it("extract with empty content string returns 400", async () => {
+  it("extract with no file returns 400", async () => {
+    const res = await extractPOST(makeExtractRequestEmpty());
+    expect(res.status).toBe(400);
+  });
+
+  it("extract with empty file returns 400", async () => {
+    const formData = new FormData();
+    const file = new File([], "empty.md", { type: "text/markdown" });
+    formData.append("file", file);
+
     const res = await extractPOST(
-      makeExtractRequest({ content: "", fileName: "file.md" }),
+      new NextRequest(
+        new URL("http://localhost:3000/api/bulk-import/extract"),
+        { method: "POST", body: formData },
+      ),
     );
     expect(res.status).toBe(400);
   });
 
-  it("extract with missing fileName returns 400", async () => {
+  it("extract with unsupported file type returns 400", async () => {
+    const formData = new FormData();
+    const file = new File(["data"], "file.exe", {
+      type: "application/octet-stream",
+    });
+    formData.append("file", file);
+
     const res = await extractPOST(
-      makeExtractRequest({ content: "Some content" }),
+      new NextRequest(
+        new URL("http://localhost:3000/api/bulk-import/extract"),
+        { method: "POST", body: formData },
+      ),
     );
     expect(res.status).toBe(400);
   });
@@ -492,9 +530,7 @@ describe("Bulk Import API — Bad Path", () => {
   it("extract without auth returns 401", async () => {
     (getUserContext as ReturnType<typeof vi.fn>).mockResolvedValue(null);
 
-    const res = await extractPOST(
-      makeExtractRequest({ content: "Content", fileName: "file.md" }),
-    );
+    const res = await extractPOST(makeExtractRequest("file.md"));
     expect(res.status).toBe(401);
   });
 
@@ -538,14 +574,19 @@ describe("Bulk Import API — Bad Path", () => {
   it("extract when Gemini fails returns 500 with safe message", async () => {
     mockExtractError = true;
 
-    const res = await extractPOST(
-      makeExtractRequest({ content: "Content", fileName: "file.md" }),
-    );
+    const res = await extractPOST(makeExtractRequest("file.md"));
     const json = await res.json();
 
     expect(res.status).toBe(500);
     expect(json.error).toBeDefined();
     expect(json.error).not.toContain("stack");
+  });
+
+  it("extract when parser fails returns 400", async () => {
+    mockParseError = true;
+
+    const res = await extractPOST(makeExtractRequest("file.md"));
+    expect(res.status).toBe(400);
   });
 
   it("commit with invalid company_context category returns 400", async () => {
@@ -590,11 +631,9 @@ describe("Bulk Import API — Bad Path", () => {
 // ════════════════════════════════════════════════════════════════════════════
 
 describe("Bulk Import API — Edge Cases", () => {
-  it("extract with very large content (200K chars) still works", async () => {
+  it("extract with large file content still works", async () => {
     const largeContent = "A".repeat(200_000);
-    const res = await extractPOST(
-      makeExtractRequest({ content: largeContent, fileName: "big.md" }),
-    );
+    const res = await extractPOST(makeExtractRequest("big.md", largeContent));
     expect(res.status).toBe(200);
   });
 
@@ -637,7 +676,6 @@ describe("Bulk Import API — Edge Cases", () => {
     );
 
     expect(res.status).toBe(200);
-    // Upsert handles both new and existing
     const ccUpsert = upsertCalls.find((c) => c.table === "company_context");
     expect(ccUpsert).toBeDefined();
   });
@@ -645,9 +683,7 @@ describe("Bulk Import API — Edge Cases", () => {
   it("extract when org has zero existing L1 data — all items flagged as new", async () => {
     selectResults = {};
 
-    const res = await extractPOST(
-      makeExtractRequest({ content: "Content", fileName: "file.md" }),
-    );
+    const res = await extractPOST(makeExtractRequest("file.md"));
     const json = await res.json();
 
     json.company_context.forEach((item: Record<string, unknown>) => {
@@ -665,9 +701,7 @@ describe("Bulk Import API — Edge Cases", () => {
       },
     ];
 
-    const res = await extractPOST(
-      makeExtractRequest({ content: "Content", fileName: "file.md" }),
-    );
+    const res = await extractPOST(makeExtractRequest("file.md"));
     const json = await res.json();
 
     expect(json.company_context[0].isConflict).toBe(true);
@@ -704,6 +738,28 @@ describe("Bulk Import API — Edge Cases", () => {
     expect(json.counts.product_contexts).toBe(1);
     expect(json.counts.evidence_library).toBe(1);
   });
+
+  it("extract with .txt file works", async () => {
+    const res = await extractPOST(makeExtractRequest("notes.txt", "Some notes about our company."));
+    expect(res.status).toBe(200);
+  });
+
+  it("extract with .pdf file extension is accepted", async () => {
+    const formData = new FormData();
+    const file = new File(["fake pdf content"], "report.pdf", {
+      type: "application/pdf",
+    });
+    formData.append("file", file);
+
+    const res = await extractPOST(
+      new NextRequest(
+        new URL("http://localhost:3000/api/bulk-import/extract"),
+        { method: "POST", body: formData },
+      ),
+    );
+    // Parser mock returns valid content, so should succeed
+    expect(res.status).toBe(200);
+  });
 });
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -718,9 +774,7 @@ describe("Bulk Import API — Security", () => {
       role: "admin",
     });
 
-    const res = await extractPOST(
-      makeExtractRequest({ content: "Content", fileName: "file.md" }),
-    );
+    const res = await extractPOST(makeExtractRequest("file.md"));
     expect(res.status).toBe(401);
   });
 
@@ -775,7 +829,6 @@ describe("Bulk Import API — Security", () => {
       }),
     );
 
-    // Should succeed (Supabase uses parameterized queries)
     expect(res.status).toBe(200);
     const ccUpsert = upsertCalls.find((c) => c.table === "company_context");
     const data = ccUpsert?.data as Record<string, unknown>[];
@@ -802,14 +855,9 @@ describe("Bulk Import API — Security", () => {
   });
 
   it("cannot extract using another org's context for conflict check", async () => {
-    // The conflict check should use the authenticated user's org, not a supplied one
-    const res = await extractPOST(
-      makeExtractRequest({ content: "Content", fileName: "file.md" }),
-    );
+    const res = await extractPOST(makeExtractRequest("file.md"));
 
-    // Verify the from().select().eq() chain was called with the correct org
     const fromCalls = mockSupabaseClient.from.mock.calls;
-    // The eq calls should use TEST_ORG_ID
     expect(res.status).toBe(200);
     expect(fromCalls.length).toBeGreaterThan(0);
   });
@@ -823,9 +871,7 @@ describe("Bulk Import API — Data Leak", () => {
   it("extract error response doesn't expose Gemini raw response", async () => {
     mockExtractError = true;
 
-    const res = await extractPOST(
-      makeExtractRequest({ content: "Content", fileName: "file.md" }),
-    );
+    const res = await extractPOST(makeExtractRequest("file.md"));
     const json = await res.json();
 
     expect(JSON.stringify(json)).not.toContain("generateText");
@@ -835,9 +881,7 @@ describe("Bulk Import API — Data Leak", () => {
   it("extract error response doesn't expose database schema", async () => {
     mockExtractError = true;
 
-    const res = await extractPOST(
-      makeExtractRequest({ content: "Content", fileName: "file.md" }),
-    );
+    const res = await extractPOST(makeExtractRequest("file.md"));
     const json = await res.json();
 
     expect(JSON.stringify(json)).not.toContain("organization_id");
@@ -845,7 +889,6 @@ describe("Bulk Import API — Data Leak", () => {
   });
 
   it("commit error response doesn't expose other org's data", async () => {
-    // Even on error, should not leak other org data
     const res = await commitPOST(
       makeCommitRequest({
         company_context: [],
@@ -868,13 +911,9 @@ describe("Bulk Import API — Data Leak", () => {
       },
     ];
 
-    const res = await extractPOST(
-      makeExtractRequest({ content: "Content", fileName: "file.md" }),
-    );
+    const res = await extractPOST(makeExtractRequest("file.md"));
     const json = await res.json();
 
-    // The existing value shown should be the title/summary, not raw DB content
-    // (this is checked at the API level - conflict info should be limited)
     expect(res.status).toBe(200);
     const conflict = json.company_context.find(
       (i: Record<string, unknown>) => i.isConflict,
@@ -891,7 +930,6 @@ describe("Bulk Import API — Data Leak", () => {
 
 describe("Bulk Import API — Data Damage", () => {
   it("commit doesn't delete existing L1 data that wasn't in the import", async () => {
-    // Commit should only upsert, never delete
     await commitPOST(
       makeCommitRequest({
         company_context: [
@@ -902,7 +940,6 @@ describe("Bulk Import API — Data Damage", () => {
       }),
     );
 
-    // Verify no delete calls were made
     const fromCalls = mockSupabaseClient.from.mock.results;
     fromCalls.forEach((result: { value: Record<string, unknown> }) => {
       expect(result.value.delete).toBeUndefined;
@@ -946,14 +983,11 @@ describe("Bulk Import API — Data Damage", () => {
 
     expect(res1.status).toBe(200);
     expect(res2.status).toBe(200);
-    // Both should use upsert (not insert), so idempotent
     const ccUpserts = upsertCalls.filter((c) => c.table === "company_context");
     ccUpserts.forEach((u) => expect(u.onConflict).toBeDefined());
   });
 
   it("failed commit doesn't leave partial data", async () => {
-    // If upsert returns an error, the response should indicate failure
-    // In real implementation, each table upsert is independent
     const res = await commitPOST(
       makeCommitRequest({
         company_context: [
@@ -968,7 +1002,6 @@ describe("Bulk Import API — Data Damage", () => {
   });
 
   it("commit failure on one table doesn't affect already-committed tables", async () => {
-    // Each table is upserted independently — partial success is acceptable
     const res = await commitPOST(
       makeCommitRequest({
         company_context: [
