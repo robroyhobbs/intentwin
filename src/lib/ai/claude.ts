@@ -85,26 +85,56 @@ export interface GenerateOptions {
   model?: string;
 }
 
+const FALLBACK_MODEL = "gemini-2.0-flash";
+
 export async function generateText(
   prompt: string,
   options: GenerateOptions = {},
 ): Promise<string> {
   const genAI = getClient();
-  const modelName =
-    options.model || process.env.GEMINI_MODEL || "gemini-3-pro-preview";
+  const primaryModel =
+    options.model || process.env.GEMINI_MODEL || "gemini-2.0-flash";
 
-  const model = genAI.getGenerativeModel({
-    model: modelName,
-    systemInstruction: options.systemPrompt || SYSTEM_PROMPT,
-    generationConfig: {
-      maxOutputTokens: options.maxTokens || 4096,
-      temperature: options.temperature ?? 0.7,
-    },
-  });
+  const modelsToTry = [primaryModel];
+  if (primaryModel !== FALLBACK_MODEL) {
+    modelsToTry.push(FALLBACK_MODEL);
+  }
 
-  const result = await model.generateContent(prompt);
-  const response = result.response;
-  return response.text();
+  let lastError: Error | null = null;
+
+  for (const modelName of modelsToTry) {
+    try {
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        systemInstruction: options.systemPrompt || SYSTEM_PROMPT,
+        generationConfig: {
+          maxOutputTokens: options.maxTokens || 4096,
+          temperature: options.temperature ?? 0.7,
+        },
+      });
+
+      const result = await model.generateContent(prompt);
+      const response = result.response;
+      return response.text();
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      const isRetryable =
+        lastError.message.includes("503") ||
+        lastError.message.includes("Service Unavailable") ||
+        lastError.message.includes("overloaded") ||
+        lastError.message.includes("high demand");
+
+      if (isRetryable && modelName !== FALLBACK_MODEL) {
+        console.warn(
+          `[AI] ${modelName} unavailable (503), falling back to ${FALLBACK_MODEL}`,
+        );
+        continue;
+      }
+      throw lastError;
+    }
+  }
+
+  throw lastError || new Error("All models failed");
 }
 
 export async function generateStructuredAnalysis(

@@ -240,13 +240,18 @@ export function BulkImportModal({
       });
 
       if (!extractRes.ok) {
-        // L2 still saved, but L1 extraction failed
+        // L2 still saved, but L1 extraction failed — show as failed so user knows
         const err = await extractRes.json().catch(() => ({}));
         const errMsg = (err as { error?: string }).error || "Extraction failed";
-        toast.error(
-          `${entry.file.name}: ${errMsg} (file still saved as document)`,
+        const displayMsg = `${errMsg} (file saved, but no L1 data extracted)`;
+        setFiles((prev) =>
+          prev.map((f, i) =>
+            i === index
+              ? { ...f, status: "failed" as const, error: displayMsg }
+              : f,
+          ),
         );
-        return { ...entry, status: "done", extractedItems: undefined };
+        return { ...entry, status: "failed", error: displayMsg };
       }
 
       const extractedItems = (await extractRes.json()) as ExtractedItems;
