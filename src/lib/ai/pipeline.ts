@@ -369,7 +369,19 @@ export async function generateProposal(proposalId: string): Promise<void> {
     })
     .eq("id", proposalId);
 
+  // Safety timeout: if generation takes longer than 10 minutes, abort and reset
+  const GENERATION_TIMEOUT_MS = 10 * 60 * 1000;
+  const timeoutController = new AbortController();
+  const timeoutId = setTimeout(
+    () => timeoutController.abort(),
+    GENERATION_TIMEOUT_MS,
+  );
+
   try {
+    // Check for abort periodically during the generation loop
+    if (timeoutController.signal.aborted) {
+      throw new Error("Generation timed out");
+    }
     // Fetch proposal with organization
     const { data: proposal, error: fetchError } = await supabase
       .from("proposals")
@@ -486,6 +498,11 @@ export async function generateProposal(proposalId: string): Promise<void> {
 
     // Stage 2 & 3: Retrieve context and generate each section
     for (const config of SECTION_CONFIGS) {
+      // Check timeout before each section
+      if (timeoutController.signal.aborted) {
+        throw new Error("Generation timed out");
+      }
+
       const section = sections.find((s) => s.section_type === config.type);
       if (!section) continue;
 
@@ -642,6 +659,8 @@ export async function generateProposal(proposalId: string): Promise<void> {
       .eq("id", proposalId);
 
     throw error;
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 

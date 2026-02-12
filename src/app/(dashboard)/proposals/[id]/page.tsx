@@ -168,9 +168,24 @@ export default function ProposalPage() {
     }
   }, [proposal?.status, fetchReviews]);
 
+  // Poll during generation with a 10-minute timeout safety net
   useEffect(() => {
     if (proposal?.status !== "generating") return;
-    const interval = setInterval(fetchProposal, 3000);
+    const startedAt = Date.now();
+    const MAX_POLL_MS = 10 * 60 * 1000; // 10 minutes
+
+    const interval = setInterval(() => {
+      if (Date.now() - startedAt > MAX_POLL_MS) {
+        clearInterval(interval);
+        toast.error(
+          "Generation appears to have stalled. Please refresh or try again.",
+        );
+        // Force-refresh once more to pick up any status change we missed
+        fetchProposal();
+        return;
+      }
+      fetchProposal();
+    }, 3000);
     return () => clearInterval(interval);
   }, [proposal?.status, fetchProposal]);
 
@@ -597,7 +612,10 @@ export default function ProposalPage() {
           <div className="flex-1 overflow-y-auto bg-[var(--background-secondary)]">
             {/* Quality Report */}
             <div className="px-8 pt-6 max-w-4xl mx-auto">
-              <QualityReport proposalId={id} />
+              <QualityReport
+                proposalId={id}
+                proposalStatus={proposal?.status}
+              />
             </div>
 
             {currentSection ? (

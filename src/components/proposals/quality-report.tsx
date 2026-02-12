@@ -55,6 +55,8 @@ interface QualityReviewData {
 interface QualityReportProps {
   proposalId: string;
   initialData?: QualityReviewData | null;
+  /** Current proposal status — disables trigger when "generating" */
+  proposalStatus?: string;
 }
 
 // ============================================================
@@ -98,7 +100,12 @@ function ScoreBar({ score, max = 10 }: { score: number; max?: number }) {
 // Component
 // ============================================================
 
-export function QualityReport({ proposalId, initialData }: QualityReportProps) {
+export function QualityReport({
+  proposalId,
+  initialData,
+  proposalStatus,
+}: QualityReportProps) {
+  const isGenerating = proposalStatus === "generating";
   const [data, setData] = useState<QualityReviewData | null>(
     initialData || null,
   );
@@ -169,6 +176,10 @@ export function QualityReport({ proposalId, initialData }: QualityReportProps) {
 
   // Trigger quality review
   const handleTrigger = async () => {
+    if (isGenerating) {
+      toast.error("Please wait for proposal generation to finish first.");
+      return;
+    }
     setTriggering(true);
     try {
       const res = await authFetch(
@@ -236,7 +247,7 @@ export function QualityReport({ proposalId, initialData }: QualityReportProps) {
           </div>
           <button
             onClick={handleTrigger}
-            disabled={triggering}
+            disabled={triggering || isGenerating}
             className="btn-secondary text-xs px-3 py-1.5"
           >
             {triggering ? (
@@ -247,7 +258,9 @@ export function QualityReport({ proposalId, initialData }: QualityReportProps) {
           </button>
         </div>
         <p className="text-xs text-[var(--foreground-muted)] mt-2">
-          No quality review yet. Run one to score your proposal sections.
+          {isGenerating
+            ? "Quality review will be available after generation completes."
+            : "No quality review yet. Run one to score your proposal sections."}
         </p>
       </div>
     );
@@ -283,7 +296,7 @@ export function QualityReport({ proposalId, initialData }: QualityReportProps) {
           </div>
           <button
             onClick={handleTrigger}
-            disabled={triggering}
+            disabled={triggering || isGenerating}
             className="btn-secondary text-xs px-3 py-1.5"
           >
             {triggering ? (
@@ -337,8 +350,8 @@ export function QualityReport({ proposalId, initialData }: QualityReportProps) {
             e.stopPropagation();
             handleTrigger();
           }}
-          disabled={triggering}
-          className="text-xs text-[var(--accent)] hover:underline flex items-center gap-1"
+          disabled={triggering || isGenerating}
+          className="text-xs text-[var(--accent)] hover:underline flex items-center gap-1 disabled:opacity-50"
         >
           <RefreshCw
             className={`h-3 w-3 ${triggering ? "animate-spin" : ""}`}

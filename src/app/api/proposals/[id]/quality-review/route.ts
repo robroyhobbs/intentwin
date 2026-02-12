@@ -49,6 +49,17 @@ export async function POST(
       // No body or invalid JSON — use default "manual"
     }
 
+    // Block reviews while proposal is still generating
+    if (proposal.status === "generating") {
+      return NextResponse.json(
+        {
+          error:
+            "Cannot run quality review while the proposal is still generating. Please wait for generation to complete.",
+        },
+        { status: 409 },
+      );
+    }
+
     // Check if review is already in progress (prevent concurrent reviews)
     const qualityReview = proposal.quality_review as { status?: string } | null;
     if (qualityReview?.status === "reviewing") {
