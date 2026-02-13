@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     if (!content && (!document_ids || document_ids.length === 0)) {
       return NextResponse.json(
         { error: "Either content or document_ids is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
         if (!verifiedDoc) {
           return NextResponse.json(
             { error: `Document ${docId} not found or access denied` },
-            { status: 404 }
+            { status: 404 },
           );
         }
 
@@ -48,9 +48,12 @@ export async function POST(request: NextRequest) {
           .eq("organization_id", context.organizationId)
           .single();
 
-        if (doc?.processing_status === "pending" || doc?.processing_status === "processing") {
+        if (
+          doc?.processing_status === "pending" ||
+          doc?.processing_status === "processing"
+        ) {
           // Document is still being processed - wait a bit and retry
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise((resolve) => setTimeout(resolve, 2000));
 
           // Check again
           const { data: docRetry } = await adminClient
@@ -59,7 +62,10 @@ export async function POST(request: NextRequest) {
             .eq("id", docId)
             .single();
 
-          if (docRetry?.processing_status === "pending" || docRetry?.processing_status === "processing") {
+          if (
+            docRetry?.processing_status === "pending" ||
+            docRetry?.processing_status === "processing"
+          ) {
             // Still processing - use preview if available
             if (docRetry?.parsed_text_preview) {
               combinedContent += `\n\n--- Document: ${doc.file_name} (partial) ---\n${docRetry.parsed_text_preview}`;
@@ -86,7 +92,9 @@ export async function POST(request: NextRequest) {
         if (chunks && chunks.length > 0) {
           const docContent = chunks
             .map((c) => {
-              const heading = c.section_heading ? `## ${c.section_heading}\n` : "";
+              const heading = c.section_heading
+                ? `## ${c.section_heading}\n`
+                : "";
               return heading + c.content;
             })
             .join("\n\n");
@@ -100,16 +108,17 @@ export async function POST(request: NextRequest) {
     }
 
     if (!combinedContent.trim()) {
-      return NextResponse.json(
-        { error: "No content to analyze" },
-        { status: 400 }
-      );
+      const hint =
+        document_ids?.length > 0
+          ? "The uploaded documents could not be parsed. Try pasting the content directly or uploading a different file format (PDF, DOCX, or TXT)."
+          : "No content to analyze. Please enter some text or upload a document.";
+      return NextResponse.json({ error: hint }, { status: 400 });
     }
 
     // Build extraction prompt
     const prompt = buildExtractionPrompt(
       combinedContent,
-      document_ids?.length > 0 ? "file" : content_type
+      document_ids?.length > 0 ? "file" : content_type,
     );
 
     // Call Claude for extraction
@@ -133,7 +142,7 @@ export async function POST(request: NextRequest) {
       console.error("Failed to parse extraction response:", response);
       return NextResponse.json(
         { error: "Failed to parse extraction results" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -161,7 +170,7 @@ export async function POST(request: NextRequest) {
     console.error("Extraction error:", error);
     return NextResponse.json(
       { error: "Failed to extract intake data" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
