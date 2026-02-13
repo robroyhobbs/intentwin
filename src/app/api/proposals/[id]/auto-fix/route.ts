@@ -3,10 +3,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
 import { generateText } from "@/lib/ai/claude";
 import { buildAutoFixPrompt } from "@/lib/ai/prompts/auto-fix";
+import { getQualityFeedbackForSection } from "@/lib/ai/quality-overseer";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
@@ -19,7 +20,10 @@ export async function POST(
     // Verify proposal belongs to user's organization
     const proposal = await verifyProposalAccess(context, id);
     if (!proposal) {
-      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Proposal not found" },
+        { status: 404 },
+      );
     }
 
     const body = await request.json();
@@ -28,7 +32,7 @@ export async function POST(
     if (!sectionId) {
       return NextResponse.json(
         { error: "sectionId is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -43,10 +47,7 @@ export async function POST(
       .single();
 
     if (sectionError || !section) {
-      return NextResponse.json(
-        { error: "Section not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Section not found" }, { status: 404 });
     }
 
     const currentContent =
@@ -55,7 +56,7 @@ export async function POST(
     if (!currentContent) {
       return NextResponse.json(
         { error: "Section has no content to revise" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -70,26 +71,37 @@ export async function POST(
     if (reviewsError) {
       return NextResponse.json(
         { error: "Failed to fetch reviews" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
-    if (!openReviews || openReviews.length === 0) {
+    // Fetch quality judge feedback (non-blocking — null if unavailable)
+    const qualityFeedback = await getQualityFeedbackForSection(
+      id,
+      sectionId,
+    ).catch(() => null);
+
+    const hasManualReviews = openReviews && openReviews.length > 0;
+
+    if (!hasManualReviews && !qualityFeedback) {
       return NextResponse.json(
-        { error: "No open reviews to address" },
-        { status: 400 }
+        { error: "No open reviews or quality feedback to address" },
+        { status: 400 },
       );
     }
 
-    // Build the auto-fix prompt
+    // Build the auto-fix prompt with both feedback sources
     const { system, user: userPrompt } = buildAutoFixPrompt(
       section.title,
       currentContent,
-      openReviews.map((r) => ({
-        id: r.id,
-        content: r.content,
-        selected_text: r.selected_text,
-      }))
+      hasManualReviews
+        ? openReviews.map((r) => ({
+            id: r.id,
+            content: r.content,
+            selected_text: r.selected_text,
+          }))
+        : [],
+      qualityFeedback,
     );
 
     // Call Claude to generate revised content
@@ -102,7 +114,7 @@ export async function POST(
     if (!revisedContent) {
       return NextResponse.json(
         { error: "AI returned empty response" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -119,22 +131,24 @@ export async function POST(
     if (updateError) {
       return NextResponse.json(
         { error: "Failed to update section" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
-    // Mark all addressed reviews as resolved
-    const reviewIds = openReviews.map((r) => r.id);
-    const { error: resolveError } = await adminClient
-      .from("proposal_reviews")
-      .update({
-        status: "resolved",
-        updated_at: new Date().toISOString(),
-      })
-      .in("id", reviewIds);
+    // Mark all addressed manual reviews as resolved
+    const reviewIds = hasManualReviews ? openReviews.map((r) => r.id) : [];
+    if (reviewIds.length > 0) {
+      const { error: resolveError } = await adminClient
+        .from("proposal_reviews")
+        .update({
+          status: "resolved",
+          updated_at: new Date().toISOString(),
+        })
+        .in("id", reviewIds);
 
-    if (resolveError) {
-      console.error("Failed to resolve reviews:", resolveError);
+      if (resolveError) {
+        console.error("Failed to resolve reviews:", resolveError);
+      }
     }
 
     return NextResponse.json({
@@ -146,7 +160,7 @@ export async function POST(
     console.error("Auto-fix error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

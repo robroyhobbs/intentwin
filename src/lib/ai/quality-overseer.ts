@@ -602,6 +602,68 @@ async function storeResult(
 }
 
 /**
+ * Extract quality council feedback for a specific section from the proposal's
+ * quality_review JSONB column. Returns a formatted string with all judge
+ * scores and comments, or null if no feedback exists.
+ */
+export async function getQualityFeedbackForSection(
+  proposalId: string,
+  sectionId: string,
+): Promise<string | null> {
+  try {
+    const supabase = createAdminClient();
+    const { data: proposal, error } = await supabase
+      .from("proposals")
+      .select("quality_review")
+      .eq("id", proposalId)
+      .single();
+
+    if (error || !proposal?.quality_review) return null;
+
+    const review = proposal.quality_review as QualityReviewResult;
+    if (review.status === "failed" || !review.sections?.length) return null;
+
+    const sectionReview = review.sections.find(
+      (s) => s.section_id === sectionId,
+    );
+    if (!sectionReview) return null;
+
+    // Build formatted feedback string
+    const lines: string[] = [];
+    lines.push(`Overall Section Score: ${sectionReview.score}/10`);
+    lines.push(`Dimensions:`);
+    lines.push(
+      `  - Content Quality: ${sectionReview.dimensions.content_quality}/10`,
+    );
+    lines.push(`  - Client Fit: ${sectionReview.dimensions.client_fit}/10`);
+    lines.push(`  - Evidence: ${sectionReview.dimensions.evidence}/10`);
+    lines.push(`  - Brand Voice: ${sectionReview.dimensions.brand_voice}/10`);
+    lines.push("");
+
+    // Include per-judge feedback if available (CouncilSectionReview)
+    const councilReview = sectionReview as CouncilSectionReview;
+    if (councilReview.judge_reviews?.length) {
+      for (const jr of councilReview.judge_reviews) {
+        if (jr.status === "completed" && jr.feedback) {
+          lines.push(
+            `**${jr.judge_name} (${jr.provider})** — Score: ${jr.score}/10`,
+          );
+          lines.push(jr.feedback);
+          lines.push("");
+        }
+      }
+    } else if (sectionReview.feedback) {
+      // Old single-judge format
+      lines.push(sectionReview.feedback);
+    }
+
+    return lines.join("\n").trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Build a Gemini regeneration prompt that injects council feedback.
  */
 function buildRemediationPrompt(

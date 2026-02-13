@@ -64,6 +64,11 @@ interface Section {
   review_status: string;
 }
 
+interface QualityReviewSection {
+  section_id: string;
+  score: number;
+}
+
 interface Proposal {
   id: string;
   title: string;
@@ -72,6 +77,10 @@ interface Proposal {
   created_at: string;
   deal_outcome?: string;
   deal_value?: number;
+  quality_review?: {
+    status: string;
+    sections?: QualityReviewSection[];
+  } | null;
 }
 
 export default function ProposalPage() {
@@ -699,7 +708,12 @@ export default function ProposalPage() {
                       )}
                       {regeneratingSection === currentSection.id
                         ? "Regenerating..."
-                        : "Regenerate"}
+                        : proposal?.quality_review?.status === "completed" &&
+                            proposal.quality_review.sections?.some(
+                              (s) => s.section_id === currentSection.id,
+                            )
+                          ? "Regenerate with Feedback"
+                          : "Regenerate"}
                     </button>
                   </div>
                 </div>

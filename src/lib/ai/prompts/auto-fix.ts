@@ -13,7 +13,8 @@ interface ReviewComment {
 export function buildAutoFixPrompt(
   sectionTitle: string,
   sectionContent: string,
-  comments: ReviewComment[]
+  comments: ReviewComment[],
+  qualityFeedback?: string | null,
 ): { system: string; user: string } {
   const commentsList = comments
     .map((c, i) => {
@@ -25,10 +26,13 @@ export function buildAutoFixPrompt(
     })
     .join("\n");
 
-  const system = `You are an expert proposal editor. Your task is to revise proposal section content based on reviewer feedback.
+  const hasComments = comments.length > 0;
+  const hasFeedback = !!qualityFeedback;
+
+  const system = `You are an expert proposal editor. Your task is to revise proposal section content based on ${hasComments && hasFeedback ? "reviewer feedback and quality judge assessments" : hasComments ? "reviewer feedback" : "quality judge assessments"}.
 
 Rules:
-- Address every reviewer comment listed below
+- Address every piece of feedback listed below
 - Preserve the overall structure, formatting (headings, lists, paragraphs), and Mermaid diagram blocks
 - Maintain professional tone and terminology
 - Make targeted edits — do NOT rewrite content that doesn't need changing
@@ -37,17 +41,17 @@ Rules:
 - Do not add meta-commentary about your changes — just output the revised content
 - Return ONLY the revised section content, nothing else`;
 
-  const user = `## Section: ${sectionTitle}
+  let userParts = `## Section: ${sectionTitle}\n\n## Current Content:\n\n${sectionContent}`;
 
-## Current Content:
+  if (hasComments) {
+    userParts += `\n\n## Reviewer Comments to Address:\n\n${commentsList}`;
+  }
 
-${sectionContent}
+  if (hasFeedback) {
+    userParts += `\n\n## Quality Judge Feedback (from independent reviewer council):\n\n${qualityFeedback}`;
+  }
 
-## Reviewer Comments to Address:
+  userParts += `\n\nPlease revise the section content above to address all feedback. Return only the revised content.`;
 
-${commentsList}
-
-Please revise the section content above to address all reviewer comments. Return only the revised content.`;
-
-  return { system, user };
+  return { system, user: userParts };
 }

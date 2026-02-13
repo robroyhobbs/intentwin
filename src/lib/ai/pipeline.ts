@@ -685,6 +685,7 @@ export async function generateProposal(proposalId: string): Promise<void> {
 export async function regenerateSection(
   proposalId: string,
   sectionId: string,
+  qualityFeedback?: string | null,
 ): Promise<void> {
   const supabase = createAdminClient();
 
@@ -812,9 +813,14 @@ export async function regenerateSection(
       .filter(Boolean)
       .join("\n\n");
 
-    const prompt = persuasionContext
+    let prompt = persuasionContext
       ? `${basePrompt}\n\n---\n\n## Persuasion & Quality Guidance\n\n${persuasionContext}`
       : basePrompt;
+
+    // Inject quality council feedback when available (feedback-aware regeneration)
+    if (qualityFeedback) {
+      prompt += `\n\n---\n\n## Quality Review Feedback (from independent reviewer council)\n\nThe previous version of this section was reviewed by a quality council. Address ALL issues identified below:\n\n${qualityFeedback}\n\nIMPORTANT: Your rewrite must specifically address each piece of feedback above. Improve specificity, evidence, client relevance, and persuasive impact based on the judges' comments.`;
+    }
 
     const generatedContent = await generateText(prompt, { systemPrompt });
 
