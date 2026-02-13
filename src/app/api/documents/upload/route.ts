@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   getUserContext,
@@ -156,9 +156,13 @@ export async function POST(request: NextRequest) {
     // Increment usage counter
     await incrementUsage(context.organizationId, "documents_uploaded");
 
-    // Trigger processing in the background (fire and forget)
-    processDocument(document.id).catch((err) => {
-      console.error(`Failed to process document ${document.id}:`, err);
+    // Process document after response is sent (extends serverless function lifetime)
+    after(async () => {
+      try {
+        await processDocument(document.id);
+      } catch (err) {
+        console.error(`Failed to process document ${document.id}:`, err);
+      }
     });
 
     return NextResponse.json({

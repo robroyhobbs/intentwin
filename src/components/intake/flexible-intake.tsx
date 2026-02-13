@@ -12,14 +12,21 @@ import {
   Sparkles,
   File,
 } from "lucide-react";
-import type { IntakeMode, ExtractedIntake, ClientResearch } from "@/types/intake";
+import type {
+  IntakeMode,
+  ExtractedIntake,
+  ClientResearch,
+} from "@/types/intake";
 
 interface FlexibleIntakeProps {
   onExtracted: (data: ExtractedIntake, research: ClientResearch | null) => void;
   onManualEntry: () => void;
 }
 
-export function FlexibleIntake({ onExtracted, onManualEntry }: FlexibleIntakeProps) {
+export function FlexibleIntake({
+  onExtracted,
+  onManualEntry,
+}: FlexibleIntakeProps) {
   const [mode, setMode] = useState<IntakeMode | null>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [uploadedDocIds, setUploadedDocIds] = useState<string[]>([]);
@@ -27,7 +34,9 @@ export function FlexibleIntake({ onExtracted, onManualEntry }: FlexibleIntakePro
   const [verbalDescription, setVerbalDescription] = useState("");
   const [researchEnabled, setResearchEnabled] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<Record<string, string>>({});
+  const [uploadProgress, setUploadProgress] = useState<Record<string, string>>(
+    {},
+  );
   const [error, setError] = useState<string | null>(null);
 
   const handleFileDrop = useCallback(
@@ -36,7 +45,7 @@ export function FlexibleIntake({ onExtracted, onManualEntry }: FlexibleIntakePro
       const droppedFiles = Array.from(e.dataTransfer.files);
       await handleFiles(droppedFiles);
     },
-    []
+    [],
   );
 
   const handleFileSelect = useCallback(
@@ -46,11 +55,14 @@ export function FlexibleIntake({ onExtracted, onManualEntry }: FlexibleIntakePro
         await handleFiles(selectedFiles);
       }
     },
-    []
+    [],
   );
 
   // Poll for document processing completion
-  const pollDocumentStatus = async (docId: string, fileName: string): Promise<boolean> => {
+  const pollDocumentStatus = async (
+    docId: string,
+    fileName: string,
+  ): Promise<boolean> => {
     const maxAttempts = 30; // 30 seconds max
     for (let i = 0; i < maxAttempts; i++) {
       try {
@@ -84,7 +96,9 @@ export function FlexibleIntake({ onExtracted, onManualEntry }: FlexibleIntakePro
 
     const validFiles = newFiles.filter((f) => validTypes.includes(f.type));
     if (validFiles.length !== newFiles.length) {
-      setError("Some files were skipped. Supported formats: PDF, DOCX, PPTX, TXT");
+      setError(
+        "Some files were skipped. Supported formats: PDF, DOCX, PPTX, TXT",
+      );
     }
 
     setFiles((prev) => [...prev, ...validFiles]);
@@ -118,7 +132,9 @@ export function FlexibleIntake({ onExtracted, onManualEntry }: FlexibleIntakePro
           setUploadProgress((prev) => ({ ...prev, [file.name]: "done" }));
         } else {
           setUploadProgress((prev) => ({ ...prev, [file.name]: "error" }));
-          setError(`Failed to process ${file.name}. You can still try to analyze.`);
+          setError(
+            `Failed to process ${file.name}. Try pasting the content directly or using a different file.`,
+          );
         }
       } catch {
         setUploadProgress((prev) => ({ ...prev, [file.name]: "error" }));
@@ -196,15 +212,24 @@ export function FlexibleIntake({ onExtracted, onManualEntry }: FlexibleIntakePro
   };
 
   // Check if all uploaded files are done processing
-  const allFilesReady = files.length > 0 && files.every(
-    (f) => uploadProgress[f.name] === "done" || uploadProgress[f.name] === "error"
-  );
+  const allFilesReady =
+    files.length > 0 &&
+    files.every(
+      (f) =>
+        uploadProgress[f.name] === "done" || uploadProgress[f.name] === "error",
+    );
+  const anyFileSucceeded = files.some((f) => uploadProgress[f.name] === "done");
   const anyFilesProcessing = files.some(
-    (f) => uploadProgress[f.name] === "uploading" || uploadProgress[f.name] === "processing"
+    (f) =>
+      uploadProgress[f.name] === "uploading" ||
+      uploadProgress[f.name] === "processing",
   );
 
   const canAnalyze =
-    (mode === "upload" && uploadedDocIds.length > 0 && allFilesReady) ||
+    (mode === "upload" &&
+      uploadedDocIds.length > 0 &&
+      allFilesReady &&
+      anyFileSucceeded) ||
     (mode === "paste" && pastedContent.trim().length > 50) ||
     (mode === "describe" && verbalDescription.trim().length > 20);
 
@@ -229,7 +254,9 @@ export function FlexibleIntake({ onExtracted, onManualEntry }: FlexibleIntakePro
               <Upload className="h-8 w-8 text-[var(--foreground-muted)] group-hover:text-[var(--accent)]" />
             </div>
             <div className="text-center">
-              <p className="font-semibold text-[var(--foreground)]">Upload Files</p>
+              <p className="font-semibold text-[var(--foreground)]">
+                Upload Files
+              </p>
               <p className="text-sm text-[var(--foreground-muted)]">
                 RFP, brief, email, or any document
               </p>
@@ -244,7 +271,9 @@ export function FlexibleIntake({ onExtracted, onManualEntry }: FlexibleIntakePro
               <FileText className="h-8 w-8 text-[var(--foreground-muted)] group-hover:text-[var(--accent)]" />
             </div>
             <div className="text-center">
-              <p className="font-semibold text-[var(--foreground)]">Paste Content</p>
+              <p className="font-semibold text-[var(--foreground)]">
+                Paste Content
+              </p>
               <p className="text-sm text-[var(--foreground-muted)]">
                 Email thread, notes, or brief
               </p>
@@ -259,7 +288,9 @@ export function FlexibleIntake({ onExtracted, onManualEntry }: FlexibleIntakePro
               <MessageSquare className="h-8 w-8 text-[var(--foreground-muted)] group-hover:text-[var(--accent)]" />
             </div>
             <div className="text-center">
-              <p className="font-semibold text-[var(--foreground)]">Describe It</p>
+              <p className="font-semibold text-[var(--foreground)]">
+                Describe It
+              </p>
               <p className="text-sm text-[var(--foreground-muted)]">
                 Tell us about the opportunity
               </p>
@@ -274,7 +305,9 @@ export function FlexibleIntake({ onExtracted, onManualEntry }: FlexibleIntakePro
               <Edit3 className="h-8 w-8 text-[var(--foreground-muted)]" />
             </div>
             <div className="text-center">
-              <p className="font-semibold text-[var(--foreground)]">Manual Entry</p>
+              <p className="font-semibold text-[var(--foreground)]">
+                Manual Entry
+              </p>
               <p className="text-sm text-[var(--foreground-muted)]">
                 Fill in the form yourself
               </p>
@@ -318,7 +351,9 @@ export function FlexibleIntake({ onExtracted, onManualEntry }: FlexibleIntakePro
             className="w-4 h-4 rounded border-[var(--border)] text-[var(--accent)] focus:ring-[var(--accent)]"
           />
           <Search className="h-4 w-4 text-[var(--foreground-muted)]" />
-          <span className="text-sm text-[var(--foreground-muted)]">Research client</span>
+          <span className="text-sm text-[var(--foreground-muted)]">
+            Research client
+          </span>
         </label>
       </div>
 
@@ -383,10 +418,14 @@ export function FlexibleIntake({ onExtracted, onManualEntry }: FlexibleIntakePro
                       </span>
                     )}
                     {uploadProgress[file.name] === "done" && (
-                      <span className="text-xs text-[var(--success)]">Ready</span>
+                      <span className="text-xs text-[var(--success)]">
+                        Ready
+                      </span>
                     )}
                     {uploadProgress[file.name] === "error" && (
-                      <span className="text-xs text-[var(--danger)]">Failed</span>
+                      <span className="text-xs text-[var(--danger)]">
+                        Failed
+                      </span>
                     )}
                     <button
                       onClick={() => removeFile(index)}
