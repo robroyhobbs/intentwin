@@ -2,18 +2,18 @@
  * Quality Overseer — 3-Judge Council Review + Remediation
  *
  * Reviews all generated sections using a council of 3 LLMs:
- *   1. GPT-4o (OpenAI)
+ *   1. Gemini 2.0 Flash (Google)
  *   2. Llama 3.3 70B (Groq)
  *   3. Mistral Small (Mistral)
  *
  * Judges review each section in parallel. Scores are aggregated via
  * weighted average with majority vote for pass/fail.
  *
- * Flow: Council reviews → Aggregate → Weak by consensus (2+)? → Gemini remediates → GPT-4o re-reviews → Store
+ * Flow: Council reviews → Aggregate → Weak by consensus (2+)? → Gemini remediates → Gemini re-reviews → Store
  */
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { reviewWithGPT4o } from "./openai-client";
+import { reviewWithGemini } from "./gemini-review-client";
 import { reviewWithGroq } from "./groq-client";
 import { reviewWithMistral } from "./mistral-client";
 import {
@@ -117,18 +117,18 @@ interface JudgeDefinition {
 /** Returns the model label for the initial "reviewing" status based on available judges. */
 export function getReviewModelLabel(): string {
   const judges = getAvailableJudges();
-  return judges.length > 1 ? "council" : judges[0]?.id || "gpt-4o";
+  return judges.length > 1 ? "council" : judges[0]?.id || "gemini-2.0-flash";
 }
 
 function getAvailableJudges(): JudgeDefinition[] {
   const judges: JudgeDefinition[] = [];
 
-  // GPT-4o is always available (required)
+  // Gemini Flash is always available (uses same GEMINI_API_KEY as main generation)
   judges.push({
-    id: "gpt-4o",
-    name: "GPT-4o",
-    provider: "openai",
-    reviewFn: reviewWithGPT4o,
+    id: "gemini-2.0-flash",
+    name: "Gemini Flash",
+    provider: "google",
+    reviewFn: reviewWithGemini,
   });
 
   // Groq — optional, skipped if no API key
@@ -498,7 +498,7 @@ export async function runQualityReview(
 
         remediationOccurred = true;
 
-        // Re-review with GPT-4o only (single judge, not full council)
+        // Re-review with Gemini Flash (single judge, not full council)
         const reReviewPrompt = buildQualityReviewPrompt({
           sectionContent: regeneratedContent,
           sectionType: weak.sectionType,
@@ -510,7 +510,7 @@ export async function runQualityReview(
           winStrategy,
         });
 
-        const newScores = await reviewWithGPT4o(reReviewPrompt);
+        const newScores = await reviewWithGemini(reReviewPrompt);
         const newAvg = calculateSectionScore(newScores);
 
         // Update the section review with GPT-4o re-review score
