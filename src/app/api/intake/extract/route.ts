@@ -69,25 +69,48 @@ export async function POST(request: NextRequest) {
           doc?.processing_status === "pending" ||
           doc?.processing_status === "processing"
         ) {
-          // Document is still being processed - wait a bit and retry
-          await new Promise((resolve) => setTimeout(resolve, 2000));
+          // Document is still being processed — poll with backoff up to ~45 seconds
+          let settled = false;
+          const delays = [2000, 3000, 5000, 5000, 10000, 10000, 10000];
+          for (const delay of delays) {
+            await new Promise((resolve) => setTimeout(resolve, delay));
+            const { data: docRetry } = await adminClient
+              .from("documents")
+              .select("processing_status, parsed_text_preview")
+              .eq("id", docId)
+              .single();
 
-          // Check again
-          const { data: docRetry } = await adminClient
-            .from("documents")
-            .select("processing_status, parsed_text_preview")
-            .eq("id", docId)
-            .single();
+            if (
+              docRetry?.processing_status === "completed" ||
+              docRetry?.processing_status === "failed"
+            ) {
+              settled = true;
+              break;
+            }
+          }
 
-          if (
-            docRetry?.processing_status === "pending" ||
-            docRetry?.processing_status === "processing"
-          ) {
-            // Still processing - use preview if available
-            if (docRetry?.parsed_text_preview) {
-              combinedContent += `\n\n--- Document: ${doc.file_name} (partial) ---\n${docRetry.parsed_text_preview}`;
+          if (!settled) {
+            // Still processing after ~45s — use preview if available
+            const { data: docFinal } = await adminClient
+              .from("documents")
+              .select("processing_status, parsed_text_preview")
+              .eq("id", docId)
+              .single();
+            if (docFinal?.parsed_text_preview) {
+              combinedContent += `\n\n--- Document: ${doc.file_name} (partial) ---\n${docFinal.parsed_text_preview}`;
             }
             continue;
+          }
+          // Re-read the document status after settling for the flow below
+          const { data: docSettled } = await adminClient
+            .from("documents")
+            .select("processing_status, parsed_text_preview, file_name")
+            .eq("id", docId)
+            .eq("organization_id", context.organizationId)
+            .single();
+          if (docSettled) {
+            // Override doc reference for the remaining logic
+            Object.assign(doc, docSettled);
           }
         }
 
