@@ -14,10 +14,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      console.error("Extract: Failed to parse request body");
+      return NextResponse.json(
+        { error: "Invalid request body" },
+        { status: 400 },
+      );
+    }
     const { content, document_ids, content_type = "pasted" } = body;
 
+    console.log("Extract request:", {
+      hasContent: !!content,
+      contentLength: content?.length ?? 0,
+      documentIds: document_ids ?? "none",
+      contentType: content_type,
+    });
+
     if (!content && (!document_ids || document_ids.length === 0)) {
+      console.error("Extract: No content and no document_ids provided");
       return NextResponse.json(
         { error: "Either content or document_ids is required" },
         { status: 400 },
@@ -108,6 +125,11 @@ export async function POST(request: NextRequest) {
     }
 
     if (!combinedContent.trim()) {
+      console.error("Extract: combinedContent is empty after processing", {
+        hadDocIds: !!document_ids?.length,
+        docCount: document_ids?.length ?? 0,
+        originalContentLength: content?.length ?? 0,
+      });
       const hint =
         document_ids?.length > 0
           ? "The uploaded documents could not be parsed. Try pasting the content directly or uploading a different file format (PDF, DOCX, or TXT)."
