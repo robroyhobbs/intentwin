@@ -316,6 +316,9 @@ function buildL1ContextString(l1Context: L1Context): string {
     : "";
 }
 
+// Document types to exclude from evidence retrieval (not useful as proposal evidence)
+const EXCLUDED_DOC_TYPES = new Set(["rfp", "template"]);
+
 async function retrieveContext(
   supabase: ReturnType<typeof createAdminClient>,
   searchQuery: string,
@@ -324,17 +327,30 @@ async function retrieveContext(
   try {
     const queryEmbedding = await generateQueryEmbedding(searchQuery);
 
+    // Over-fetch to compensate for filtering out RFP/template docs
     const { data: results } = await supabase.rpc("match_document_chunks", {
       query_embedding: JSON.stringify(queryEmbedding),
       match_threshold: 0.5,
-      match_count: limit,
+      match_count: limit * 3,
     });
 
     if (!results || results.length === 0) {
       return { context: "No relevant reference material found.", chunkIds: [] };
     }
 
-    const context = results
+    // Filter out RFP and template documents — they're not evidence
+    const filtered = results
+      .filter(
+        (r: { document_type: string }) =>
+          !EXCLUDED_DOC_TYPES.has(r.document_type),
+      )
+      .slice(0, limit);
+
+    if (filtered.length === 0) {
+      return { context: "No relevant reference material found.", chunkIds: [] };
+    }
+
+    const context = filtered
       .map(
         (r: {
           document_title: string;
@@ -346,7 +362,7 @@ async function retrieveContext(
       )
       .join("\n\n");
 
-    const chunkIds = results.map((r: { id: string }) => r.id);
+    const chunkIds = filtered.map((r: { id: string }) => r.id);
 
     return { context, chunkIds };
   } catch (error) {

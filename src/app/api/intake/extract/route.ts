@@ -145,6 +145,17 @@ export async function POST(request: NextRequest) {
           combinedContent += `\n\n--- Document: ${doc.file_name} ---\n${doc.parsed_text_preview}`;
         }
       }
+
+      // Auto-tag intake documents as 'rfp' so they're excluded from evidence retrieval
+      adminClient
+        .from("documents")
+        .update({ document_type: "rfp" })
+        .in("id", document_ids)
+        .eq("organization_id", context.organizationId)
+        .then(({ error }) => {
+          if (error)
+            console.error("Failed to auto-tag intake docs as rfp:", error);
+        });
     }
 
     if (!combinedContent.trim()) {
