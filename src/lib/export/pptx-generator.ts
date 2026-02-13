@@ -51,7 +51,9 @@ interface TextRun {
 }
 
 /** Parse inline markdown (bold, italic, links, code) into TextRun[] */
-function parseInlineMarkdown(text: string): TextRun[] {
+export function parseInlineMarkdown(text: string): TextRun[] {
+  if (!text) return [];
+
   const runs: TextRun[] = [];
   // Strip links: [text](url) → text
   let cleaned = text.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
@@ -103,7 +105,7 @@ function parseInlineMarkdown(text: string): TextRun[] {
 // Markdown → Slide Content Blocks
 // ============================================================
 
-type ContentBlock =
+export type ContentBlock =
   | { type: "heading"; text: string; level: number }
   | { type: "paragraph"; runs: TextRun[] }
   | { type: "bullet"; runs: TextRun[] }
@@ -111,7 +113,9 @@ type ContentBlock =
   | { type: "table-row"; cells: string[] };
 
 /** Parse markdown content into structured content blocks */
-function parseMarkdownToBlocks(content: string): ContentBlock[] {
+export function parseMarkdownToBlocks(content: string): ContentBlock[] {
+  if (!content) return [];
+
   const lines = content.split("\n");
   const blocks: ContentBlock[] = [];
   let inCodeBlock = false;
@@ -204,86 +208,49 @@ function parseMarkdownToBlocks(content: string): ContentBlock[] {
 }
 
 // ============================================================
-// Key Bullet Extraction (Executive Style)
+// Slide Splitting
 // ============================================================
 
-const MAX_BULLETS_PER_SLIDE = 5;
-const MAX_BULLET_LENGTH = 120;
+const MAX_ITEMS_PER_SLIDE = 8;
+const MAX_CONTENT_SLIDES_PER_SECTION = 3;
 
-/** Condense a string into an action-oriented fragment */
-function condenseToFragment(text: string): string {
-  let s = text.trim();
-  // Strip markdown remnants
-  s = s.replace(/\*{1,3}([^*]+)\*{1,3}/g, "$1");
-  s = s.replace(/_{1,3}([^_]+)_{1,3}/g, "$1");
-  s = s.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
-  s = s.replace(/`([^`]+)`/g, "$1");
-  s = s.replace(/<[^>]+>/g, "");
-  // Strip leading filler
-  s = s.replace(
-    /^(In order to|It is important to note that|This (section |)describes|The following|As mentioned|Please note that|We will|We have|Our team)\s*/i,
-    "",
-  );
-  // Capitalize first letter
-  if (s.length > 0) s = s.charAt(0).toUpperCase() + s.slice(1);
-  // Remove trailing period for fragment style
-  s = s.replace(/\.\s*$/, "");
-  // Truncate with ellipsis if too long
-  if (s.length > MAX_BULLET_LENGTH) {
-    s = s.slice(0, MAX_BULLET_LENGTH - 1).replace(/\s+\S*$/, "") + "...";
-  }
-  return s;
-}
+/** Split content blocks into slide-sized groups */
+export function splitBlocksIntoSlides(
+  blocks: ContentBlock[],
+): ContentBlock[][] {
+  if (blocks.length === 0) return [];
 
-/** Extract 3-5 key bullets from parsed content blocks */
-function extractKeyBullets(blocks: ContentBlock[]): string[] {
-  const bullets: string[] = [];
-  const paragraphs: string[] = [];
+  const slides: ContentBlock[][] = [];
+  let currentSlide: ContentBlock[] = [];
 
   for (const block of blocks) {
-    if (block.type === "bullet") {
-      const text = block.runs.map((r) => r.text).join("");
-      const condensed = condenseToFragment(text);
-      if (condensed.length > 10) bullets.push(condensed);
-    } else if (block.type === "paragraph") {
-      const text = block.runs.map((r) => r.text).join("");
-      const condensed = condenseToFragment(text);
-      if (condensed.length > 10) paragraphs.push(condensed);
-    } else if (block.type === "table-row") {
-      // Convert table rows: "Key: Value" format
-      if (block.cells.length >= 2) {
-        const condensed = condenseToFragment(
-          `${block.cells[0]}: ${block.cells[1]}`,
-        );
-        if (condensed.length > 10) paragraphs.push(condensed);
-      }
+    // Headings always start a new slide (if current has content)
+    if (block.type === "heading" && currentSlide.length > 0) {
+      slides.push(currentSlide);
+      currentSlide = [block];
+      continue;
     }
-    // Skip headings and blockquotes for bullet extraction
+
+    // If current slide is full, start a new one
+    if (currentSlide.length >= MAX_ITEMS_PER_SLIDE) {
+      slides.push(currentSlide);
+      currentSlide = [];
+    }
+
+    currentSlide.push(block);
   }
 
-  // Prioritize existing bullets, backfill from paragraphs
-  const result: string[] = [];
-  for (const b of bullets) {
-    if (result.length >= MAX_BULLETS_PER_SLIDE) break;
-    result.push(b);
-  }
-  for (const p of paragraphs) {
-    if (result.length >= MAX_BULLETS_PER_SLIDE) break;
-    // Skip paragraphs that are too similar to existing bullets
-    const isDuplicate = result.some(
-      (existing) =>
-        existing.toLowerCase().includes(p.toLowerCase().slice(0, 30)) ||
-        p.toLowerCase().includes(existing.toLowerCase().slice(0, 30)),
-    );
-    if (!isDuplicate) result.push(p);
+  // Push last slide if it has content
+  if (currentSlide.length > 0) {
+    slides.push(currentSlide);
   }
 
-  // If we still have nothing, return a single "See proposal document for details"
-  if (result.length === 0) {
-    result.push("See proposal document for full details");
+  // Cap at MAX_CONTENT_SLIDES_PER_SECTION
+  if (slides.length > MAX_CONTENT_SLIDES_PER_SECTION) {
+    return slides.slice(0, MAX_CONTENT_SLIDES_PER_SECTION);
   }
 
-  return result;
+  return slides;
 }
 
 // ============================================================
@@ -297,14 +264,38 @@ interface RenderContext {
   accentColor: string;
 }
 
-/** Render a single condensed content slide with 3-5 key bullets */
-function addCondensedSlide(
+/** Convert TextRun[] to pptxgenjs TextProps[] with formatting */
+function runsToTextProps(
+  runs: TextRun[],
+  ctx: RenderContext,
+  options?: { bullet?: boolean; italic?: boolean },
+): pptxgen.TextProps[] {
+  return runs.map((run) => ({
+    text: run.text,
+    options: {
+      fontSize: 16,
+      fontFace: ctx.fontFamily,
+      color: ctx.COLORS.text,
+      bold: run.bold || false,
+      italic: run.italic || options?.italic || false,
+      ...(options?.bullet
+        ? { bullet: { type: "bullet" as const, characterCode: "25CF" } }
+        : {}),
+    },
+  }));
+}
+
+/** Render a content slide with rich-formatted blocks */
+function addContentSlide(
   sectionTitle: string,
-  keyBullets: string[],
+  slideBlocks: ContentBlock[],
   sectionIdx: number,
+  slideNumber: number,
   ctx: RenderContext,
 ) {
   const slide = ctx.pptx.addSlide({ masterName: "BRANDED_MASTER" });
+  const displayTitle =
+    slideNumber > 0 ? `${sectionTitle} (cont.)` : sectionTitle;
 
   // Section number badge
   slide.addText(String(sectionIdx + 1).padStart(2, "0"), {
@@ -319,7 +310,7 @@ function addCondensedSlide(
   });
 
   // Slide title
-  slide.addText(sectionTitle, {
+  slide.addText(displayTitle, {
     x: 0.8,
     y: 0.55,
     w: 8.5,
@@ -339,21 +330,85 @@ function addCondensedSlide(
     line: { color: ctx.accentColor, width: 2 },
   });
 
-  // Key bullets
-  const bulletItems: pptxgen.TextProps[] = keyBullets.map((bullet) => ({
-    text: bullet,
-    options: {
-      fontSize: 15,
-      fontFace: ctx.fontFamily,
-      color: ctx.COLORS.text,
-      bullet: { type: "bullet" as const, characterCode: "25CF" },
-      breakLine: true,
-      lineSpacingMultiple: 1.6,
-    },
-  }));
+  // Render blocks into text items
+  const textItems: pptxgen.TextProps[] = [];
 
-  if (bulletItems.length > 0) {
-    slide.addText(bulletItems, {
+  for (const block of slideBlocks) {
+    switch (block.type) {
+      case "heading":
+        textItems.push({
+          text: block.text,
+          options: {
+            fontSize: 18,
+            fontFace: ctx.fontFamily,
+            color: ctx.COLORS.dark,
+            bold: true,
+            breakLine: true,
+            lineSpacingMultiple: 1.8,
+          },
+        });
+        break;
+
+      case "bullet":
+        textItems.push(
+          ...runsToTextProps(block.runs, ctx, { bullet: true }).map((tp) => ({
+            ...tp,
+            options: {
+              ...tp.options,
+              breakLine: true,
+              lineSpacingMultiple: 1.5,
+            },
+          })),
+        );
+        break;
+
+      case "paragraph":
+        textItems.push(
+          ...runsToTextProps(block.runs, ctx).map((tp) => ({
+            ...tp,
+            options: {
+              ...tp.options,
+              breakLine: true,
+              lineSpacingMultiple: 1.5,
+            },
+          })),
+        );
+        break;
+
+      case "blockquote":
+        textItems.push({
+          text: block.text,
+          options: {
+            fontSize: 15,
+            fontFace: ctx.fontFamily,
+            color: ctx.COLORS.muted,
+            italic: true,
+            breakLine: true,
+            lineSpacingMultiple: 1.5,
+          },
+        });
+        break;
+
+      case "table-row":
+        if (block.cells.length >= 2) {
+          textItems.push({
+            text: `${block.cells[0]}: ${block.cells.slice(1).join(", ")}`,
+            options: {
+              fontSize: 15,
+              fontFace: ctx.fontFamily,
+              color: ctx.COLORS.text,
+              bullet: { type: "bullet" as const, characterCode: "25CF" },
+              breakLine: true,
+              lineSpacingMultiple: 1.5,
+            },
+          });
+        }
+        break;
+    }
+  }
+
+  if (textItems.length > 0) {
+    slide.addText(textItems, {
       x: 1.0,
       y: 1.35,
       w: 8.0,
@@ -550,14 +605,36 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
       line: { color: accentColor, width: 4 },
     });
 
-    // Parse section content and extract 3-5 key bullets
+    // Parse section content into blocks and split into slides
     const blocks = parseMarkdownToBlocks(section.content);
-    const keyBullets = extractKeyBullets(blocks);
-
+    const slideGroups = splitBlocksIntoSlides(blocks);
     const ctx: RenderContext = { pptx, COLORS, fontFamily, accentColor };
 
-    // One condensed content slide per section
-    addCondensedSlide(section.title, keyBullets, sectionIdx, ctx);
+    if (slideGroups.length === 0) {
+      // Fallback slide for empty/code-only content
+      addContentSlide(
+        section.title,
+        [
+          {
+            type: "paragraph",
+            runs: [{ text: "See proposal document for full details" }],
+          },
+        ],
+        sectionIdx,
+        0,
+        ctx,
+      );
+    } else {
+      for (let slideIdx = 0; slideIdx < slideGroups.length; slideIdx++) {
+        addContentSlide(
+          section.title,
+          slideGroups[slideIdx],
+          sectionIdx,
+          slideIdx,
+          ctx,
+        );
+      }
+    }
   }
 
   // ── Thank You Slide ──
