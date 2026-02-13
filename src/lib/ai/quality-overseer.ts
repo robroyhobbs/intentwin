@@ -114,6 +114,12 @@ interface JudgeDefinition {
   reviewFn: (prompt: string) => Promise<QualityScores>;
 }
 
+/** Returns the model label for the initial "reviewing" status based on available judges. */
+export function getReviewModelLabel(): string {
+  const judges = getAvailableJudges();
+  return judges.length > 1 ? "council" : judges[0]?.id || "gpt-4o";
+}
+
 function getAvailableJudges(): JudgeDefinition[] {
   const judges: JudgeDefinition[] = [];
 
@@ -187,12 +193,18 @@ async function runCouncilReview(
       } catch (err) {
         const isTimeout =
           err instanceof Error &&
-          (err.message.includes("timeout") || err.message.includes("ETIMEDOUT"));
+          (err.message.includes("timeout") ||
+            err.message.includes("ETIMEDOUT"));
         return {
           judge_id: judge.id,
           judge_name: judge.name,
           provider: judge.provider,
-          scores: { content_quality: 0, client_fit: 0, evidence: 0, brand_voice: 0 },
+          scores: {
+            content_quality: 0,
+            client_fit: 0,
+            evidence: 0,
+            brand_voice: 0,
+          },
           score: 0,
           feedback: "",
           status: (isTimeout ? "timeout" : "failed") as "timeout" | "failed",
@@ -210,7 +222,12 @@ async function runCouncilReview(
           judge_id: "unknown",
           judge_name: "Unknown",
           provider: "unknown",
-          scores: { content_quality: 0, client_fit: 0, evidence: 0, brand_voice: 0 },
+          scores: {
+            content_quality: 0,
+            client_fit: 0,
+            evidence: 0,
+            brand_voice: 0,
+          },
           score: 0,
           feedback: "",
           status: "failed" as const,
@@ -245,7 +262,9 @@ async function runCouncilReview(
     client_fit: avg(successful.map((r) => r.scores.client_fit)),
     evidence: avg(successful.map((r) => r.scores.evidence)),
     brand_voice: avg(successful.map((r) => r.scores.brand_voice)),
-    feedback: successful.map((r) => `**${r.judge_name}:** ${r.feedback}`).join("\n\n"),
+    feedback: successful
+      .map((r) => `**${r.judge_name}:** ${r.feedback}`)
+      .join("\n\n"),
   };
 
   const aggregatedScore = calculateSectionScore(aggregated);
@@ -417,7 +436,10 @@ export async function runQualityReview(
           (r) => r.score < REGEN_THRESHOLD,
         ).length;
 
-        if (weakJudgeCount >= 2 || (successfulJudges.length === 1 && weakJudgeCount === 1)) {
+        if (
+          weakJudgeCount >= 2 ||
+          (successfulJudges.length === 1 && weakJudgeCount === 1)
+        ) {
           weakSections.push({
             sectionId: section.id,
             sectionType: section.section_type,

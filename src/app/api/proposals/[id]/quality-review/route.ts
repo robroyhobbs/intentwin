@@ -1,6 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
-import { runQualityReview } from "@/lib/ai/quality-overseer";
+import {
+  runQualityReview,
+  getReviewModelLabel,
+} from "@/lib/ai/quality-overseer";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -71,6 +74,7 @@ export async function POST(
 
     // Set initial "reviewing" status immediately
     const supabase = createAdminClient();
+    const modelLabel = getReviewModelLabel();
     await supabase
       .from("proposals")
       .update({
@@ -78,7 +82,7 @@ export async function POST(
           status: "reviewing",
           run_at: new Date().toISOString(),
           trigger,
-          model: "gpt-4o",
+          model: modelLabel,
           overall_score: 0,
           pass: false,
           sections: [],
@@ -87,10 +91,13 @@ export async function POST(
       })
       .eq("id", id);
 
-    // Fire-and-forget: run quality review in background
-    // The overseer handles its own error state (sets status: "failed" internally)
-    runQualityReview(id, trigger).catch((err) => {
-      console.error(`Quality review failed for proposal ${id}:`, err);
+    // Run quality review after response is sent (extends serverless function lifetime)
+    after(async () => {
+      try {
+        await runQualityReview(id, trigger);
+      } catch (err) {
+        console.error(`Quality review failed for proposal ${id}:`, err);
+      }
     });
 
     return NextResponse.json({
