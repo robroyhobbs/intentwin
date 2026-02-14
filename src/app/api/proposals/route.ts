@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getUserContext, checkPlanLimit, incrementUsage } from "@/lib/supabase/auth-api";
+import {
+  getUserContext,
+  checkPlanLimit,
+  incrementUsage,
+} from "@/lib/supabase/auth-api";
 
 export async function GET(request: NextRequest) {
   try {
@@ -27,7 +31,7 @@ export async function GET(request: NextRequest) {
     console.error("Get proposals error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -41,11 +45,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Check plan limits before creating
-    const limitCheck = await checkPlanLimit(context.organizationId, "proposals_per_month");
+    const limitCheck = await checkPlanLimit(
+      context.organizationId,
+      "proposals_per_month",
+    );
     if (!limitCheck.allowed) {
       return NextResponse.json(
         { error: limitCheck.message || "Proposal limit reached" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -56,13 +63,11 @@ export async function POST(request: NextRequest) {
       win_strategy_data,
       outcome_contract,
       intent_status,
+      bid_evaluation,
     } = body;
 
     if (!title) {
-      return NextResponse.json(
-        { error: "Title is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Title is required" }, { status: 400 });
     }
 
     const adminClient = createAdminClient();
@@ -89,6 +94,9 @@ export async function POST(request: NextRequest) {
         proposalData.intent_approved_at = new Date().toISOString();
       }
     }
+    if (bid_evaluation) {
+      proposalData.bid_evaluation = bid_evaluation;
+    }
 
     const { data: proposal, error } = await adminClient
       .from("proposals")
@@ -99,7 +107,7 @@ export async function POST(request: NextRequest) {
     if (error) {
       return NextResponse.json(
         { error: `Failed to create proposal: ${error.message}` },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -111,7 +119,7 @@ export async function POST(request: NextRequest) {
     console.error("Create proposal error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
