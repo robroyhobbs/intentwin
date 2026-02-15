@@ -72,6 +72,24 @@ export async function POST(
       );
     }
 
+    // Block reviews while any section is being regenerated
+    const supabaseCheck = createAdminClient();
+    const { count: regeneratingCount } = await supabaseCheck
+      .from("proposal_sections")
+      .select("id", { count: "exact", head: true })
+      .eq("proposal_id", id)
+      .eq("generation_status", "generating");
+
+    if (regeneratingCount && regeneratingCount > 0) {
+      return NextResponse.json(
+        {
+          error:
+            "Cannot run quality review while sections are being regenerated. Please wait for regeneration to complete.",
+        },
+        { status: 409 },
+      );
+    }
+
     // Set initial "reviewing" status immediately
     const supabase = createAdminClient();
     const modelLabel = getReviewModelLabel();
