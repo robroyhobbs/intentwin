@@ -269,11 +269,26 @@ export default function NewProposalPage() {
     setBidScoring(true);
     setBidError(null);
     try {
+      // Normalize ExtractedIntake structure into flat format for bid-scoring
+      const ext = extractedData?.extracted;
+      const rfpRequirements = {
+        title: extractedData?.input_summary,
+        agency: ext?.client_name?.value,
+        deadline: ext?.timeline?.value,
+        budget_range: ext?.budget_range?.value,
+        scope: ext?.scope_description?.value,
+        requirements: ext?.key_requirements?.value,
+        evaluation_criteria: ext?.decision_criteria?.value,
+        compliance_requirements: ext?.compliance_requirements?.value,
+        technical_environment: ext?.technical_environment?.value,
+        source_text: extractedData?.source_text,
+      };
+
       const response = await authFetch("/api/intake/bid-evaluation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          rfp_requirements: extractedData,
+          rfp_requirements: rfpRequirements,
           service_line: intakeData.opportunity_type,
           industry: intakeData.client_industry,
         }),

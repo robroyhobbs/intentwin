@@ -382,6 +382,26 @@ function buildRfpSummary(requirements: Record<string, unknown>): string {
     sections.push(`**Evaluation Criteria:**\n${criteria}`);
   }
 
+  // Handle compliance requirements
+  if (Array.isArray(requirements.compliance_requirements)) {
+    const compliance = requirements.compliance_requirements
+      .slice(0, 10)
+      .map((c: string) => `- ${c}`)
+      .join("\n");
+    sections.push(`**Compliance Requirements:**\n${compliance}`);
+  }
+
+  if (requirements.technical_environment)
+    sections.push(
+      `**Technical Environment:** ${requirements.technical_environment}`,
+    );
+
+  // Include source text as fallback context when structured fields are sparse
+  if (sections.length < 3 && requirements.source_text) {
+    const sourceText = String(requirements.source_text).slice(0, 3000);
+    sections.push(`**Source Content:**\n${sourceText}`);
+  }
+
   return sections.join("\n") || "No RFP details extracted.";
 }
 
