@@ -6,7 +6,7 @@
 -- align with. This is the "source of truth" for claims.
 
 -- Company-wide context (brand, values, certifications, legal)
-create table public.company_context (
+create table if not exists public.company_context (
   id uuid primary key default gen_random_uuid(),
 
   -- Categorization
@@ -33,7 +33,7 @@ create table public.company_context (
 );
 
 -- Product/service line capabilities
-create table public.product_contexts (
+create table if not exists public.product_contexts (
   id uuid primary key default gen_random_uuid(),
 
   -- Identification
@@ -65,7 +65,7 @@ create table public.product_contexts (
 );
 
 -- Evidence library (case studies, metrics, testimonials, certifications)
-create table public.evidence_library (
+create table if not exists public.evidence_library (
   id uuid primary key default gen_random_uuid(),
 
   -- Classification
@@ -108,18 +108,18 @@ create table public.evidence_library (
 );
 
 -- Create indexes for efficient querying
-create index idx_company_context_category on public.company_context(category);
-create index idx_product_contexts_service_line on public.product_contexts(service_line);
-create index idx_evidence_library_type on public.evidence_library(evidence_type);
-create index idx_evidence_library_industry on public.evidence_library(client_industry);
-create index idx_evidence_library_service_line on public.evidence_library(service_line);
-create index idx_evidence_library_verified on public.evidence_library(is_verified);
+create index if not exists idx_company_context_category on public.company_context(category);
+create index if not exists idx_product_contexts_service_line on public.product_contexts(service_line);
+create index if not exists idx_evidence_library_type on public.evidence_library(evidence_type);
+create index if not exists idx_evidence_library_industry on public.evidence_library(client_industry);
+create index if not exists idx_evidence_library_service_line on public.evidence_library(service_line);
+create index if not exists idx_evidence_library_verified on public.evidence_library(is_verified);
 
 -- GIN indexes for JSONB querying
-create index idx_product_capabilities_gin on public.product_contexts using gin(capabilities);
-create index idx_product_outcomes_gin on public.product_contexts using gin(supported_outcomes);
-create index idx_evidence_outcomes_gin on public.evidence_library using gin(outcomes_demonstrated);
-create index idx_evidence_metrics_gin on public.evidence_library using gin(metrics);
+create index if not exists idx_product_capabilities_gin on public.product_contexts using gin(capabilities);
+create index if not exists idx_product_outcomes_gin on public.product_contexts using gin(supported_outcomes);
+create index if not exists idx_evidence_outcomes_gin on public.evidence_library using gin(outcomes_demonstrated);
+create index if not exists idx_evidence_metrics_gin on public.evidence_library using gin(metrics);
 
 -- Enable RLS
 alter table public.company_context enable row level security;
@@ -129,9 +129,11 @@ alter table public.evidence_library enable row level security;
 -- RLS Policies: All authenticated users can read, only admins can write
 
 -- Company Context
+drop policy if exists "company_context_select" on public.company_context;
 create policy "company_context_select" on public.company_context
   for select to authenticated using (true);
 
+drop policy if exists "company_context_insert" on public.company_context;
 create policy "company_context_insert" on public.company_context
   for insert to authenticated
   with check (
@@ -141,6 +143,7 @@ create policy "company_context_insert" on public.company_context
     )
   );
 
+drop policy if exists "company_context_update" on public.company_context;
 create policy "company_context_update" on public.company_context
   for update to authenticated
   using (
@@ -151,9 +154,11 @@ create policy "company_context_update" on public.company_context
   );
 
 -- Product Contexts
+drop policy if exists "product_contexts_select" on public.product_contexts;
 create policy "product_contexts_select" on public.product_contexts
   for select to authenticated using (true);
 
+drop policy if exists "product_contexts_insert" on public.product_contexts;
 create policy "product_contexts_insert" on public.product_contexts
   for insert to authenticated
   with check (
@@ -163,6 +168,7 @@ create policy "product_contexts_insert" on public.product_contexts
     )
   );
 
+drop policy if exists "product_contexts_update" on public.product_contexts;
 create policy "product_contexts_update" on public.product_contexts
   for update to authenticated
   using (
@@ -173,9 +179,11 @@ create policy "product_contexts_update" on public.product_contexts
   );
 
 -- Evidence Library
+drop policy if exists "evidence_library_select" on public.evidence_library;
 create policy "evidence_library_select" on public.evidence_library
   for select to authenticated using (true);
 
+drop policy if exists "evidence_library_insert" on public.evidence_library;
 create policy "evidence_library_insert" on public.evidence_library
   for insert to authenticated
   with check (
@@ -185,6 +193,7 @@ create policy "evidence_library_insert" on public.evidence_library
     )
   );
 
+drop policy if exists "evidence_library_update" on public.evidence_library;
 create policy "evidence_library_update" on public.evidence_library
   for update to authenticated
   using (
@@ -203,14 +212,17 @@ begin
 end;
 $$ language plpgsql;
 
+drop trigger if exists update_company_context_updated_at on public.company_context;
 create trigger update_company_context_updated_at
   before update on public.company_context
   for each row execute function public.update_updated_at();
 
+drop trigger if exists update_product_contexts_updated_at on public.product_contexts;
 create trigger update_product_contexts_updated_at
   before update on public.product_contexts
   for each row execute function public.update_updated_at();
 
+drop trigger if exists update_evidence_library_updated_at on public.evidence_library;
 create trigger update_evidence_library_updated_at
   before update on public.evidence_library
   for each row execute function public.update_updated_at();

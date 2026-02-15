@@ -71,6 +71,7 @@ ALTER TABLE proposal_versions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE section_versions ENABLE ROW LEVEL SECURITY;
 
 -- Users can view versions of proposals they own
+DROP POLICY IF EXISTS "Users can view own proposal versions" ON proposal_versions;
 CREATE POLICY "Users can view own proposal versions"
   ON proposal_versions FOR SELECT
   USING (
@@ -82,6 +83,7 @@ CREATE POLICY "Users can view own proposal versions"
   );
 
 -- Users can create versions for their own proposals
+DROP POLICY IF EXISTS "Users can create versions for own proposals" ON proposal_versions;
 CREATE POLICY "Users can create versions for own proposals"
   ON proposal_versions FOR INSERT
   WITH CHECK (
@@ -93,6 +95,7 @@ CREATE POLICY "Users can create versions for own proposals"
   );
 
 -- Users can update version labels/summaries for their own proposals
+DROP POLICY IF EXISTS "Users can update own proposal versions" ON proposal_versions;
 CREATE POLICY "Users can update own proposal versions"
   ON proposal_versions FOR UPDATE
   USING (
@@ -104,6 +107,7 @@ CREATE POLICY "Users can update own proposal versions"
   );
 
 -- Section versions follow proposal version permissions
+DROP POLICY IF EXISTS "Users can view own section versions" ON section_versions;
 CREATE POLICY "Users can view own section versions"
   ON section_versions FOR SELECT
   USING (
@@ -115,6 +119,7 @@ CREATE POLICY "Users can view own section versions"
     )
   );
 
+DROP POLICY IF EXISTS "Users can create section versions" ON section_versions;
 CREATE POLICY "Users can create section versions"
   ON section_versions FOR INSERT
   WITH CHECK (

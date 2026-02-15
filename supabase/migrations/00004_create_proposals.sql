@@ -1,5 +1,5 @@
 -- Main proposals table
-create table public.proposals (
+create table if not exists public.proposals (
   id uuid primary key default gen_random_uuid(),
 
   title text not null,
@@ -27,7 +27,7 @@ create table public.proposals (
 );
 
 -- Individual proposal sections
-create table public.proposal_sections (
+create table if not exists public.proposal_sections (
   id uuid primary key default gen_random_uuid(),
   proposal_id uuid not null references public.proposals(id) on delete cascade,
 
@@ -69,7 +69,7 @@ create table public.proposal_sections (
 );
 
 -- Track source chunks used for each section (citations)
-create table public.section_sources (
+create table if not exists public.section_sources (
   id uuid primary key default gen_random_uuid(),
   section_id uuid not null references public.proposal_sections(id) on delete cascade,
   chunk_id uuid not null references public.document_chunks(id) on delete cascade,
@@ -80,20 +80,22 @@ create table public.section_sources (
 );
 
 -- Indexes
-create index idx_proposals_status on public.proposals(status);
-create index idx_proposals_created_by on public.proposals(created_by);
-create index idx_proposals_team on public.proposals(team_id);
-create index idx_sections_proposal on public.proposal_sections(proposal_id);
-create index idx_sections_type on public.proposal_sections(section_type);
-create index idx_section_sources_section on public.section_sources(section_id);
-create index idx_section_sources_chunk on public.section_sources(chunk_id);
+create index if not exists idx_proposals_status on public.proposals(status);
+create index if not exists idx_proposals_created_by on public.proposals(created_by);
+create index if not exists idx_proposals_team on public.proposals(team_id);
+create index if not exists idx_sections_proposal on public.proposal_sections(proposal_id);
+create index if not exists idx_sections_type on public.proposal_sections(section_type);
+create index if not exists idx_section_sources_section on public.section_sources(section_id);
+create index if not exists idx_section_sources_chunk on public.section_sources(chunk_id);
 
 -- Auto-update triggers
+drop trigger if exists proposals_updated_at on public.proposals;
 create trigger proposals_updated_at
   before update on public.proposals
   for each row
   execute function extensions.moddatetime(updated_at);
 
+drop trigger if exists proposal_sections_updated_at on public.proposal_sections;
 create trigger proposal_sections_updated_at
   before update on public.proposal_sections
   for each row

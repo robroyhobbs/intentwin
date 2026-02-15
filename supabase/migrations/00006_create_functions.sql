@@ -115,6 +115,7 @@ begin
 end;
 $$ language plpgsql security definer;
 
+drop trigger if exists update_chunk_count_on_insert on public.document_chunks;
 create trigger update_chunk_count_on_insert
   after insert on public.document_chunks
   for each row

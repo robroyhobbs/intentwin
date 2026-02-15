@@ -10,10 +10,12 @@ alter table public.section_sources enable row level security;
 -- ==================
 -- PROFILES
 -- ==================
+drop policy if exists "profiles_select_all" on public.profiles;
 create policy "profiles_select_all" on public.profiles
   for select to authenticated
   using (true);
 
+drop policy if exists "profiles_update_own" on public.profiles;
 create policy "profiles_update_own" on public.profiles
   for update to authenticated
   using ((select auth.uid()) = id);
@@ -21,10 +23,12 @@ create policy "profiles_update_own" on public.profiles
 -- ==================
 -- TEAMS
 -- ==================
+drop policy if exists "teams_select_all" on public.teams;
 create policy "teams_select_all" on public.teams
   for select to authenticated
   using (true);
 
+drop policy if exists "teams_insert_admin" on public.teams;
 create policy "teams_insert_admin" on public.teams
   for insert to authenticated
   with check (
@@ -34,6 +38,7 @@ create policy "teams_insert_admin" on public.teams
     )
   );
 
+drop policy if exists "teams_update_admin" on public.teams;
 create policy "teams_update_admin" on public.teams
   for update to authenticated
   using (
@@ -46,6 +51,7 @@ create policy "teams_update_admin" on public.teams
 -- ==================
 -- DOCUMENTS
 -- ==================
+drop policy if exists "documents_select" on public.documents;
 create policy "documents_select" on public.documents
   for select to authenticated
   using (
@@ -56,10 +62,12 @@ create policy "documents_select" on public.documents
     )
   );
 
+drop policy if exists "documents_insert" on public.documents;
 create policy "documents_insert" on public.documents
   for insert to authenticated
   with check ((select auth.uid()) = uploaded_by);
 
+drop policy if exists "documents_update" on public.documents;
 create policy "documents_update" on public.documents
   for update to authenticated
   using (
@@ -70,6 +78,7 @@ create policy "documents_update" on public.documents
     )
   );
 
+drop policy if exists "documents_delete" on public.documents;
 create policy "documents_delete" on public.documents
   for delete to authenticated
   using (
@@ -83,6 +92,7 @@ create policy "documents_delete" on public.documents
 -- ==================
 -- DOCUMENT CHUNKS
 -- ==================
+drop policy if exists "chunks_select" on public.document_chunks;
 create policy "chunks_select" on public.document_chunks
   for select to authenticated
   using (
@@ -102,6 +112,7 @@ create policy "chunks_select" on public.document_chunks
 -- ==================
 -- PROPOSALS
 -- ==================
+drop policy if exists "proposals_select" on public.proposals;
 create policy "proposals_select" on public.proposals
   for select to authenticated
   using (
@@ -112,10 +123,12 @@ create policy "proposals_select" on public.proposals
     )
   );
 
+drop policy if exists "proposals_insert" on public.proposals;
 create policy "proposals_insert" on public.proposals
   for insert to authenticated
   with check ((select auth.uid()) = created_by);
 
+drop policy if exists "proposals_update" on public.proposals;
 create policy "proposals_update" on public.proposals
   for update to authenticated
   using (
@@ -126,6 +139,7 @@ create policy "proposals_update" on public.proposals
     )
   );
 
+drop policy if exists "proposals_delete" on public.proposals;
 create policy "proposals_delete" on public.proposals
   for delete to authenticated
   using (
@@ -139,6 +153,7 @@ create policy "proposals_delete" on public.proposals
 -- ==================
 -- PROPOSAL SECTIONS
 -- ==================
+drop policy if exists "sections_select" on public.proposal_sections;
 create policy "sections_select" on public.proposal_sections
   for select to authenticated
   using (
@@ -155,6 +170,7 @@ create policy "sections_select" on public.proposal_sections
     )
   );
 
+drop policy if exists "sections_update" on public.proposal_sections;
 create policy "sections_update" on public.proposal_sections
   for update to authenticated
   using (
@@ -174,6 +190,7 @@ create policy "sections_update" on public.proposal_sections
 -- ==================
 -- SECTION SOURCES
 -- ==================
+drop policy if exists "section_sources_select" on public.section_sources;
 create policy "section_sources_select" on public.section_sources
   for select to authenticated
   using (

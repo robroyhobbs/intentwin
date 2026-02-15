@@ -2,7 +2,7 @@
 SET search_path TO public, extensions;
 
 -- Uploaded source documents (past proposals, case studies, etc.)
-create table public.documents (
+create table if not exists public.documents (
   id uuid primary key default gen_random_uuid(),
   title text not null,
   description text,
@@ -40,7 +40,7 @@ create table public.documents (
 );
 
 -- Document chunks with embeddings
-create table public.document_chunks (
+create table if not exists public.document_chunks (
   id uuid primary key default gen_random_uuid(),
   document_id uuid not null references public.documents(id) on delete cascade,
 
@@ -63,26 +63,27 @@ create table public.document_chunks (
 );
 
 -- Indexes
-create index idx_documents_type on public.documents(document_type);
-create index idx_documents_processing on public.documents(processing_status);
-create index idx_documents_team on public.documents(team_id);
-create index idx_documents_tags on public.documents using gin(tags);
-create index idx_documents_industry on public.documents(industry);
-create index idx_documents_service_line on public.documents(service_line);
+create index if not exists idx_documents_type on public.documents(document_type);
+create index if not exists idx_documents_processing on public.documents(processing_status);
+create index if not exists idx_documents_team on public.documents(team_id);
+create index if not exists idx_documents_tags on public.documents using gin(tags);
+create index if not exists idx_documents_industry on public.documents(industry);
+create index if not exists idx_documents_service_line on public.documents(service_line);
 
-create index idx_chunks_document on public.document_chunks(document_id);
-create index idx_chunks_section on public.document_chunks(section_heading);
+create index if not exists idx_chunks_document on public.document_chunks(document_id);
+create index if not exists idx_chunks_section on public.document_chunks(section_heading);
 
 -- HNSW index for fast approximate nearest neighbor search
-create index idx_chunks_embedding on public.document_chunks
+create index if not exists idx_chunks_embedding on public.document_chunks
   using hnsw (embedding vector_cosine_ops)
   with (m = 16, ef_construction = 64);
 
 -- Full-text search index
-create index idx_chunks_content_fts on public.document_chunks
+create index if not exists idx_chunks_content_fts on public.document_chunks
   using gin (to_tsvector('english', content));
 
 -- Auto-update
+drop trigger if exists documents_updated_at on public.documents;
 create trigger documents_updated_at
   before update on public.documents
   for each row
