@@ -9,12 +9,18 @@ IntentWin ingests an RFP or solicitation document, cross-references it against y
 ### Key Capabilities
 
 - **RFP Intake & Analysis** — Upload PDF/DOCX solicitations; AI extracts requirements, evaluation criteria, and compliance items
+- **Bid/No-Bid Scoring** — Automated opportunity evaluation engine that scores RFPs on fit, capacity, and win probability before committing resources
 - **Two-Layer Knowledge System** — L1 (verified company context: brand, products, evidence) + L2 (uploaded reference documents for RAG retrieval)
+- **Bulk Import** — Batch extraction and import of L1 company context from uploaded documents
 - **Section-by-Section Generation** — 15 prompt-specialized AI pipelines for each proposal section (executive summary, approach, methodology, team, pricing, etc.)
-- **Quality Overseer** — Automated review scoring proposals on compliance, persuasiveness, specificity, and consistency with auto-remediation
+- **Industry Intelligence** — Industry-specific proposal tuning for healthcare, financial services, manufacturing, and public sector
+- **Persuasion Engine** — AI-driven persuasive writing optimization layered into generated content
+- **Quality Overseer** — 3-judge LLM council review system scoring proposals on compliance, persuasiveness, specificity, and consistency with auto-remediation
+- **AI Evidence Extraction** — Automatically extract case studies, certifications, and metrics from uploaded documents
 - **Evidence Library** — Case studies, certifications, and metrics linked to proposals with verified sourcing
 - **5-Format Export** — HTML, DOCX, PPTX, Google Slides, and PDF with Mermaid diagram rendering
 - **Version Control** — Full proposal versioning with diff comparison and restore
+- **Brand Voice** — Configurable brand voice settings that shape AI-generated content tone and style
 - **Multi-Tenant** — Organization-scoped data isolation via Supabase RLS; every table filtered by `organization_id`
 - **Waitlist + Self-Service Signup** — Access-controlled onboarding with auto-confirm and automatic org provisioning
 
@@ -31,12 +37,13 @@ IntentWin ingests an RFP or solicitation document, cross-references it against y
 │  - KB Docs   │  - /api/evidence   │  Bearer token fallback    │
 │  - L1 Sources│  - /api/sources    │  Waitlist gate            │
 │  - Settings  │  - /api/documents  │  Auto-confirm enabled     │
-│  - Analytics │  - /api/export     │                           │
+│  - Analytics │  - /api/bulk-import│                           │
 ├──────────────┴────────────────────┴──────────────────────────┤
 │                        AI Layer                               │
 │   Google Gemini 2.5 Pro (generation + quality review)         │
 │   Voyage AI voyage-3 (1024d vector embeddings)                │
-│   15 section prompts + quality overseer pipeline              │
+│   15 section prompts + 3-judge quality council                │
+│   Industry intelligence + persuasion engine                   │
 ├──────────────────────────────────────────────────────────────┤
 │                       Supabase                                │
 │   PostgreSQL + pgvector + Row Level Security                  │
@@ -71,39 +78,60 @@ IntentWin ingests an RFP or solicitation document, cross-references it against y
 ```
 src/
 ├── app/
-│   ├── (auth)/                # Login, signup, password reset, waitlist
+│   ├── (auth)/                # Login, signup, password reset, callback
 │   ├── (dashboard)/           # Authenticated pages
-│   │   ├── proposals/         # Proposal list + editor + versions
+│   │   ├── proposals/         # Proposal list + editor + versions + export
 │   │   ├── evidence-library/  # Case studies, certs, metrics CRUD
-│   │   ├── knowledge-base/    # L2 document upload + L1 sources browser
-│   │   │   └── sources/       # L1 context viewer (reads from DB)
-│   │   ├── settings/          # Company context (L1), products, org config
+│   │   ├── knowledge-base/    # L2 document upload + search + L1 sources browser
+│   │   │   ├── sources/       # L1 context viewer (reads from DB)
+│   │   │   ├── search/        # Semantic search across knowledge base
+│   │   │   └── upload/        # Document upload interface
+│   │   ├── settings/          # Company context (L1), products, brand voice, branding
 │   │   ├── analytics/         # Usage and proposal outcome analytics
 │   │   └── onboarding/        # New org setup wizard
-│   ├── (public)/              # Landing page, pricing
-│   └── api/                   # 20+ API route groups
-│       ├── proposals/         # CRUD + generation + versioning + export
-│       ├── intake/            # RFP parsing + requirement extraction
+│   ├── (public)/              # Public-facing pages
+│   │   ├── landing/           # Marketing landing page with JSON-LD
+│   │   ├── capabilities/      # Sales-ready capabilities showcase
+│   │   ├── pricing/           # Plan tiers and pricing
+│   │   ├── blog/              # Blog with dynamic [slug] routing
+│   │   ├── about/             # About page
+│   │   ├── request-access/    # Waitlist request form
+│   │   ├── privacy/           # Privacy policy
+│   │   └── terms/             # Terms of service
+│   ├── demo-login/            # Demo account quick-login
+│   └── api/                   # 25+ API route groups
+│       ├── proposals/         # CRUD + generation + versioning + export + quality review
+│       ├── intake/            # RFP parsing + requirement extraction + bid evaluation
+│       ├── bulk-import/       # Batch L1 context extraction and import
 │       ├── sources/           # L1 context API (org-scoped, DB-backed)
-│       ├── documents/         # Upload, process, chunk, embed, search
-│       ├── evidence/          # Evidence library CRUD
+│       ├── documents/         # Upload, process, chunk, embed, search, reprocess
+│       ├── evidence/          # Evidence library CRUD + AI extraction
+│       ├── diagrams/          # Mermaid diagram generation
 │       ├── settings/          # Company context + products management
+│       ├── analytics/         # Proposal outcome analytics
 │       ├── admin/             # Waitlist management
 │       ├── auth/              # Access check, session management
-│       ├── stripe/            # Billing webhooks + checkout
-│       └── cron/              # Scheduled jobs
+│       ├── stripe/            # Billing webhooks + checkout + portal
+│       ├── cron/              # Scheduled jobs (nurture emails)
+│       └── health/            # Health check endpoint
 ├── components/
 │   ├── proposals/             # Proposal editor, section renderer
 │   ├── intake/                # RFP upload + analysis UI
 │   ├── knowledge-base/        # Document manager
 │   ├── review/                # Quality review display
 │   └── ui/                    # Shared UI components
+├── content/                   # Static content (blog posts, etc.)
 ├── hooks/                     # React hooks (auth-fetch, etc.)
+├── types/                     # TypeScript type definitions
 └── lib/
     ├── ai/
     │   ├── pipeline.ts        # Multi-section generation orchestrator
-    │   ├── quality-overseer.ts # Automated quality review + scoring
+    │   ├── quality-overseer.ts # 3-judge LLM council quality review
+    │   ├── bid-scoring.ts     # Bid/no-bid opportunity scoring
+    │   ├── persuasion.ts      # Persuasive writing engine
+    │   ├── l1-extractor.ts    # L1 context extraction from documents
     │   ├── embeddings.ts      # Vector embedding + similarity search
+    │   ├── industry-configs/  # Healthcare, financial, manufacturing, public sector
     │   └── prompts/           # 15 section-specific prompt templates
     ├── documents/             # File parsing (PDF, DOCX, PPTX)
     ├── export/                # PDF, DOCX, PPTX, Slides, HTML generators
@@ -173,12 +201,15 @@ Uploaded documents (PDF, DOCX, PPTX) that are chunked, embedded, and retrieved v
 Each proposal generation runs through specialized prompt chains:
 
 1. **Intake** — Parse RFP, extract requirements and evaluation criteria
-2. **L1 Context Fetch** — Pull verified company data (brand, products, evidence) for the user's org
-3. **L2 RAG Retrieval** — Semantic search across uploaded documents for relevant content
-4. **Win Strategy** — Analyze competitive positioning and key themes
-5. **Section Generation** (parallel) — Executive summary, understanding, approach, methodology, team, timeline, pricing, risk mitigation, case studies, outcomes, why-us
-6. **Quality Review** — Score each section (0-100) across compliance, persuasiveness, specificity, consistency
-7. **Auto-Remediation** — Re-generate sections scoring below threshold
+2. **Bid/No-Bid Evaluation** — Score opportunity fit, capacity, and win probability
+3. **L1 Context Fetch** — Pull verified company data (brand, products, evidence) for the user's org
+4. **L2 RAG Retrieval** — Semantic search across uploaded documents for relevant content
+5. **Industry Intelligence** — Apply industry-specific context (healthcare, financial services, manufacturing, public sector)
+6. **Win Strategy** — Analyze competitive positioning and key themes
+7. **Section Generation** (parallel) — Executive summary, understanding, approach, methodology, team, timeline, pricing, risk mitigation, case studies, outcomes, why-us
+8. **Persuasion Enhancement** — Optimize generated content for persuasive impact
+9. **Quality Review** — 3-judge LLM council scores each section (0-100) across compliance, persuasiveness, specificity, consistency
+10. **Auto-Remediation** — Re-generate sections scoring below threshold with judge feedback
 
 ## Export Formats
 
@@ -186,7 +217,7 @@ Each proposal generation runs through specialized prompt chains:
 |--------|-----------|-------|
 | HTML | Server-rendered + Mermaid diagrams | Includes inline CSS for email-safe output |
 | DOCX | `docx` library | Structured sections with headers and formatting |
-| PPTX | `pptxgenjs` | Slide deck with section-per-slide layout |
+| PPTX | `pptxgenjs` | Rich-text multi-slide rendering with markdown parsing |
 | Google Slides | Google Slides API | Requires Google OAuth credentials |
 | PDF | Puppeteer + Chrome/Edge | Uses `@sparticuz/chromium` on Vercel, local browser on dev |
 
@@ -205,8 +236,8 @@ Each proposal generation runs through specialized prompt chains:
 
 ```bash
 # Clone and install
-git clone <repo-url>
-cd capgemini-proposal-generator
+git clone https://github.com/robroyhobbs/intentwin.git
+cd intentwin
 pnpm install
 
 # Configure environment
@@ -242,14 +273,6 @@ Open [http://localhost:3000](http://localhost:3000) to access the app.
 3. Configure L1 context in Settings > Company
 4. Upload reference documents to Knowledge Base
 5. Create first proposal
-
-### Demo Account
-
-A demo account with pre-seeded L1 context (29 company context entries, 6 products, 7 evidence items):
-
-- **Email:** `som@thecomsystems.com`
-- **Password:** `COMSystems2026!`
-- **Org:** COM Systems
 
 ## Scripts
 

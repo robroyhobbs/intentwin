@@ -1,0 +1,1346 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IntentWin — Getting Started</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      :root {
+        --bg: #09090b;
+        --surface: #18181b;
+        --surface2: #27272a;
+        --border: #3f3f46;
+        --border-dim: #27272a;
+        --text: #fafafa;
+        --text2: #a1a1aa;
+        --text3: #71717a;
+        --accent: #818cf8;
+        --accent2: #6366f1;
+        --accent-dim: rgba(99, 102, 241, 0.1);
+        --green: #34d399;
+        --green-dim: rgba(52, 211, 153, 0.1);
+        --amber: #fbbf24;
+        --amber-dim: rgba(251, 191, 36, 0.08);
+        --blue: #60a5fa;
+        --blue-dim: rgba(96, 165, 250, 0.08);
+        --red: #f87171;
+        --max-w: 720px;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        font-family:
+          "Inter",
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.7;
+        font-size: 16px;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* ─── CONTAINER ─── */
+      .wrap {
+        max-width: var(--max-w);
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+
+      /* ─── HERO ─── */
+      .hero {
+        padding: 100px 24px 80px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+      }
+      .hero::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+          ellipse 60% 50% at 50% 0%,
+          rgba(99, 102, 241, 0.15),
+          transparent
+        );
+      }
+      .hero * {
+        position: relative;
+      }
+      .hero-label {
+        display: inline-block;
+        border: 1px solid var(--border);
+        border-radius: 100px;
+        padding: 6px 20px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text2);
+        letter-spacing: 0.3px;
+        margin-bottom: 28px;
+      }
+      .hero h1 {
+        font-size: clamp(2.4rem, 5vw, 3.6rem);
+        font-weight: 900;
+        letter-spacing: -0.04em;
+        line-height: 1.1;
+        margin-bottom: 20px;
+        background: linear-gradient(to bottom, #fff 30%, var(--text2));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+      .hero p {
+        font-size: 18px;
+        color: var(--text2);
+        max-width: 520px;
+        margin: 0 auto 40px;
+        line-height: 1.7;
+      }
+      .hero-stats {
+        display: flex;
+        justify-content: center;
+        gap: 48px;
+        padding-top: 32px;
+        border-top: 1px solid var(--border-dim);
+        max-width: 480px;
+        margin: 0 auto;
+      }
+      .hero-stat {
+        text-align: center;
+      }
+      .hero-stat strong {
+        display: block;
+        font-size: 22px;
+        font-weight: 800;
+        color: var(--text);
+      }
+      .hero-stat span {
+        font-size: 13px;
+        color: var(--text3);
+      }
+
+      /* ─── SECTION ─── */
+      .section {
+        padding: 72px 0;
+      }
+      .section + .section {
+        border-top: 1px solid var(--border-dim);
+      }
+      .section-label {
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 12px;
+      }
+      .section h2 {
+        font-size: clamp(1.6rem, 3vw, 2rem);
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        margin-bottom: 8px;
+      }
+      .section .subtitle {
+        font-size: 16px;
+        color: var(--text2);
+        margin-bottom: 36px;
+        max-width: 560px;
+      }
+
+      /* ─── CARDS ─── */
+      .cards {
+        display: grid;
+        gap: 16px;
+        margin-bottom: 32px;
+      }
+      .cards.cols-2 {
+        grid-template-columns: 1fr 1fr;
+      }
+      .cards.cols-3 {
+        grid-template-columns: 1fr 1fr 1fr;
+      }
+      .cards.cols-4 {
+        grid-template-columns: 1fr 1fr 1fr 1fr;
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border-dim);
+        border-radius: 16px;
+        padding: 28px;
+        transition: border-color 0.2s;
+      }
+      .card:hover {
+        border-color: var(--border);
+      }
+      .card-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        margin-bottom: 16px;
+      }
+      .card-icon.purple {
+        background: var(--accent-dim);
+      }
+      .card-icon.green {
+        background: var(--green-dim);
+      }
+      .card-icon.amber {
+        background: var(--amber-dim);
+      }
+      .card-icon.blue {
+        background: var(--blue-dim);
+      }
+      .card h3 {
+        font-size: 15px;
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+      .card p {
+        font-size: 14px;
+        color: var(--text2);
+        line-height: 1.6;
+        margin: 0;
+      }
+
+      /* ─── STEPS ─── */
+      .steps {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        margin-bottom: 32px;
+      }
+      .step {
+        display: grid;
+        grid-template-columns: 56px 1fr;
+        gap: 0;
+        background: var(--surface);
+        padding: 24px 28px 24px 0;
+        position: relative;
+      }
+      .step:first-child {
+        border-radius: 16px 16px 0 0;
+      }
+      .step:last-child {
+        border-radius: 0 0 16px 16px;
+      }
+      .step:only-child {
+        border-radius: 16px;
+      }
+      .step-num {
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding-top: 2px;
+      }
+      .step-num span {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background: var(--accent);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 800;
+      }
+      .step h3 {
+        font-size: 15px;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+      .step p {
+        font-size: 14px;
+        color: var(--text2);
+        line-height: 1.6;
+        margin: 0;
+      }
+
+      /* ─── PIPELINE ─── */
+      .pipeline {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 2px;
+        margin: 0 0 32px;
+        border-radius: 20px;
+        overflow: hidden;
+      }
+      .pipe {
+        background: var(--surface);
+        padding: 32px 24px;
+        position: relative;
+      }
+      .pipe::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        right: 0;
+        width: 6px;
+        height: 6px;
+        border-top: 2px solid var(--text3);
+        border-right: 2px solid var(--text3);
+        transform: translate(50%, -50%) rotate(45deg);
+      }
+      .pipe:nth-child(3)::after,
+      .pipe:nth-child(6)::after {
+        display: none;
+      }
+      .pipe-num {
+        font-size: 42px;
+        font-weight: 900;
+        letter-spacing: -0.04em;
+        line-height: 1;
+        margin-bottom: 12px;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+      .pipe-num.c1 {
+        background: linear-gradient(135deg, var(--accent), #a78bfa);
+      }
+      .pipe-num.c2 {
+        background: linear-gradient(135deg, #60a5fa, #38bdf8);
+      }
+      .pipe-num.c3 {
+        background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      }
+      .pipe-num.c4 {
+        background: linear-gradient(135deg, #34d399, #10b981);
+      }
+      .pipe-num.c5 {
+        background: linear-gradient(135deg, var(--accent), #c084fc);
+      }
+      .pipe-num.c6 {
+        background: linear-gradient(135deg, #34d399, #6ee7b7);
+      }
+      .pipe-num.c1,
+      .pipe-num.c2,
+      .pipe-num.c3,
+      .pipe-num.c4,
+      .pipe-num.c5,
+      .pipe-num.c6 {
+        -webkit-background-clip: text;
+      }
+      .pipe h3 {
+        font-size: 15px;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+      .pipe p {
+        font-size: 13px;
+        color: var(--text3);
+        line-height: 1.5;
+        margin: 0;
+      }
+      @media (max-width: 640px) {
+        .pipeline {
+          grid-template-columns: 1fr;
+        }
+        .pipe::after {
+          display: none;
+        }
+      }
+
+      /* ─── PHASE BAR ─── */
+      .phases {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 32px;
+        background: var(--surface);
+        border-radius: 14px;
+        padding: 4px;
+      }
+      .phase {
+        flex: 1;
+        text-align: center;
+        padding: 14px 12px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text3);
+        transition: all 0.2s;
+      }
+      .phase.on {
+        background: var(--accent);
+        color: #fff;
+      }
+      .phase small {
+        display: block;
+        font-size: 10px;
+        font-weight: 700;
+        opacity: 0.6;
+        margin-bottom: 2px;
+        letter-spacing: 0.5px;
+      }
+
+      /* ─── TABLE ─── */
+      .tbl {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 32px;
+        font-size: 14px;
+      }
+      .tbl th {
+        text-align: left;
+        padding: 12px 16px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: var(--text3);
+        border-bottom: 1px solid var(--border-dim);
+      }
+      .tbl td {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border-dim);
+        color: var(--text2);
+      }
+      .tbl tr:last-child td {
+        border-bottom: none;
+      }
+      .tbl td strong {
+        color: var(--text);
+        font-weight: 600;
+      }
+
+      /* ─── CALLOUT ─── */
+      .callout {
+        border-radius: 14px;
+        padding: 20px 24px;
+        margin: 32px 0;
+        font-size: 14px;
+        line-height: 1.7;
+      }
+      .callout.tip {
+        background: var(--accent-dim);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+      }
+      .callout.tip .callout-label {
+        color: var(--accent);
+      }
+      .callout.success {
+        background: var(--green-dim);
+        border: 1px solid rgba(52, 211, 153, 0.2);
+      }
+      .callout.success .callout-label {
+        color: var(--green);
+      }
+      .callout.warn {
+        background: var(--amber-dim);
+        border: 1px solid rgba(251, 191, 36, 0.15);
+      }
+      .callout.warn .callout-label {
+        color: var(--amber);
+      }
+      .callout-label {
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+      }
+      .callout p {
+        color: var(--text2);
+        margin: 0;
+      }
+      .callout strong {
+        color: var(--text);
+      }
+
+      /* ─── LIST ─── */
+      .clean-list {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 32px;
+      }
+      .clean-list li {
+        padding: 14px 0 14px 36px;
+        position: relative;
+        font-size: 14px;
+        color: var(--text2);
+        border-bottom: 1px solid var(--border-dim);
+      }
+      .clean-list li:last-child {
+        border-bottom: none;
+      }
+      .clean-list li::before {
+        content: attr(data-n);
+        position: absolute;
+        left: 0;
+        top: 14px;
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        background: var(--surface2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text3);
+      }
+      .clean-list li strong {
+        color: var(--text);
+      }
+
+      /* ─── EXPORT GRID ─── */
+      .exports {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 12px;
+        margin-bottom: 32px;
+      }
+      .export {
+        background: var(--surface);
+        border: 1px solid var(--border-dim);
+        border-radius: 14px;
+        padding: 24px 12px;
+        text-align: center;
+        transition: all 0.2s;
+      }
+      .export:hover {
+        border-color: var(--border);
+        transform: translateY(-2px);
+      }
+      .export.rec {
+        border-color: var(--accent);
+        background: var(--accent-dim);
+      }
+      .export .ico {
+        font-size: 28px;
+        margin-bottom: 10px;
+      }
+      .export .name {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text);
+      }
+      .export .ext {
+        font-size: 11px;
+        color: var(--text3);
+        margin-top: 2px;
+      }
+      .export .badge {
+        display: inline-block;
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        background: var(--accent);
+        color: #fff;
+        padding: 2px 6px;
+        border-radius: 4px;
+        margin-bottom: 8px;
+      }
+
+      /* ─── FOOTER ─── */
+      .footer {
+        text-align: center;
+        padding: 64px 0 48px;
+        border-top: 1px solid var(--border-dim);
+        color: var(--text3);
+        font-size: 14px;
+      }
+      .footer strong {
+        color: var(--accent);
+      }
+
+      /* ─── MOBILE ─── */
+      @media (max-width: 640px) {
+        .cards.cols-2,
+        .cards.cols-3,
+        .cards.cols-4 {
+          grid-template-columns: 1fr;
+        }
+        .exports {
+          grid-template-columns: repeat(3, 1fr);
+        }
+        .hero-stats {
+          gap: 24px;
+        }
+        .phases {
+          flex-direction: column;
+        }
+        .hero {
+          padding: 64px 24px 48px;
+        }
+      }
+      @media (max-width: 400px) {
+        .exports {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ═══════════════ HERO ═══════════════ -->
+    <div class="hero">
+      <div class="wrap">
+        <div class="hero-label">Getting Started Guide</div>
+        <h1>Welcome to IntentWin</h1>
+        <p>
+          Create winning proposals with AI. Define your strategy first, then let
+          the AI write — backed by evidence and reviewed by a multi-judge
+          quality council.
+        </p>
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <strong>5 min</strong><span>Setup time</span>
+          </div>
+          <div class="hero-stat">
+            <strong>3 phases</strong><span>Proposal flow</span>
+          </div>
+          <div class="hero-stat">
+            <strong>3 judges</strong><span>Quality council</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="wrap">
+      <!-- ═══════════════ HOW IT WORKS ═══════════════ -->
+      <div class="section">
+        <div class="section-label">How it works</div>
+        <h2>Brief to proposal in six steps</h2>
+        <p class="subtitle">
+          IntentWin is intent-driven — you define what you want before the AI
+          writes a word.
+        </p>
+
+        <div class="pipeline">
+          <div class="pipe">
+            <div class="pipe-num c1">01</div>
+            <h3>Input</h3>
+            <p>
+              Upload an RFP, paste a brief, or describe the opportunity in your
+              own words.
+            </p>
+          </div>
+          <div class="pipe">
+            <div class="pipe-num c2">02</div>
+            <h3>Context</h3>
+            <p>
+              Define the client, their challenges, desired outcomes, and
+              engagement scope.
+            </p>
+          </div>
+          <div class="pipe">
+            <div class="pipe-num c3">03</div>
+            <h3>Strategy</h3>
+            <p>
+              AI generates win themes, differentiators, and competitive
+              positioning.
+            </p>
+          </div>
+          <div class="pipe">
+            <div class="pipe-num c4">04</div>
+            <h3>Approve</h3>
+            <p>
+              Review and lock the intent. This is your quality gate before
+              generation.
+            </p>
+          </div>
+          <div class="pipe">
+            <div class="pipe-num c5">05</div>
+            <h3>Generate</h3>
+            <p>
+              AI writes every section, backed by evidence and scored by 3
+              independent judges.
+            </p>
+          </div>
+          <div class="pipe">
+            <div class="pipe-num c6">06</div>
+            <h3>Export</h3>
+            <p>
+              Download as PPTX, DOCX, PDF, HTML slides, or deploy as a live web
+              page.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════ 1. SIGN UP ═══════════════ -->
+      <div class="section" id="signup">
+        <div class="section-label">01 &mdash; Account Setup</div>
+        <h2>Sign up &amp; onboarding</h2>
+        <p class="subtitle">
+          Create your account and complete the 5-step wizard to configure your
+          company profile.
+        </p>
+
+        <div class="steps">
+          <div class="step">
+            <div class="step-num"><span>1</span></div>
+            <div>
+              <h3>Create your account</h3>
+              <p>
+                Visit intentwin.com, enter your work email, and set a password.
+                You'll provide your name and organization.
+              </p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num"><span>2</span></div>
+            <div>
+              <h3>Company profile</h3>
+              <p>
+                Enter your company name, a short description, and select your
+                primary industry.
+              </p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num"><span>3</span></div>
+            <div>
+              <h3>Add differentiators</h3>
+              <p>
+                Add 3 things that make you unique. These get woven into "Why Us"
+                sections automatically.
+              </p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num"><span>4</span></div>
+            <div>
+              <h3>Knowledge base</h3>
+              <p>
+                Pick your proposal types (Cloud Migration, AI/ML, etc.) or skip
+                and upload documents later.
+              </p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num"><span>5</span></div>
+            <div>
+              <h3>You're ready</h3>
+              <p>
+                Review your setup and jump straight into creating your first
+                proposal.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout success">
+          <div class="callout-label">Pro tip</div>
+          <p>
+            Don't worry about perfection. You can update your company profile,
+            differentiators, and knowledge base anytime from
+            <strong>Settings</strong>.
+          </p>
+        </div>
+      </div>
+
+      <!-- ═══════════════ 2. CREATE PROPOSAL ═══════════════ -->
+      <div class="section" id="create">
+        <div class="section-label">02 &mdash; New Proposal</div>
+        <h2>Start a new proposal</h2>
+        <p class="subtitle">
+          Click "New Proposal" from your dashboard and choose how to input your
+          opportunity.
+        </p>
+
+        <div class="cards cols-2">
+          <div class="card">
+            <div class="card-icon purple">&#x1F4C1;</div>
+            <h3>Upload files</h3>
+            <p>
+              Upload an RFP, client brief, or email. Supports PDF, DOCX, PPTX,
+              and TXT.
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-icon blue">&#x1F4CB;</div>
+            <h3>Paste content</h3>
+            <p>
+              Paste email threads, meeting notes, or a brief directly into the
+              text area.
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-icon amber">&#x1F4AC;</div>
+            <h3>Describe it</h3>
+            <p>
+              Describe the opportunity in your own words. Great for early-stage
+              conversations.
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-icon green">&#x270D;&#xFE0F;</div>
+            <h3>Manual entry</h3>
+            <p>Skip AI extraction and fill in form fields yourself.</p>
+          </div>
+        </div>
+
+        <div class="callout tip">
+          <div class="callout-label">Client research</div>
+          <p>
+            Enable the <strong>"Research client"</strong> checkbox and the AI
+            will gather company intelligence to enrich your proposal
+            automatically.
+          </p>
+        </div>
+      </div>
+
+      <!-- ═══════════════ 3. PHASE 1 ═══════════════ -->
+      <div class="section" id="phase1">
+        <div class="section-label">03 &mdash; Phase 1</div>
+        <div class="phases">
+          <div class="phase on"><small>Phase 1</small>Context</div>
+          <div class="phase"><small>Phase 2</small>Strategy</div>
+          <div class="phase"><small>Phase 3</small>Review</div>
+        </div>
+
+        <h2>Define context</h2>
+        <p class="subtitle">
+          Tell the AI who you're writing for and what they need. The more
+          specific, the better.
+        </p>
+
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th>What to enter</th>
+              <th>Required</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Client Name</strong></td>
+              <td>The company you're writing for</td>
+              <td>Yes</td>
+            </tr>
+            <tr>
+              <td><strong>Industry</strong></td>
+              <td>
+                Select from dropdown — triggers industry-specific intelligence
+              </td>
+              <td>Recommended</td>
+            </tr>
+            <tr>
+              <td><strong>Opportunity Type</strong></td>
+              <td>
+                Cloud Migration, App Modernization, AI/ML, Data & Analytics,
+                etc.
+              </td>
+              <td>Recommended</td>
+            </tr>
+            <tr>
+              <td><strong>Current Challenges</strong></td>
+              <td>
+                Client pain points. Be specific: "Legacy ERP causing $2M/yr
+                downtime"
+              </td>
+              <td>Yes</td>
+            </tr>
+            <tr>
+              <td><strong>Desired Outcomes</strong></td>
+              <td>
+                What success looks like: "Reduce infrastructure costs by 40%"
+              </td>
+              <td>Yes</td>
+            </tr>
+            <tr>
+              <td><strong>Scope</strong></td>
+              <td>Brief description of what the engagement covers</td>
+              <td>Optional</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout warn">
+          <div class="callout-label">Advanced options</div>
+          <p>
+            Expand <strong>Advanced Options</strong> to add budget range,
+            timeline, technical environment, and compliance requirements for
+            more precise output.
+          </p>
+        </div>
+      </div>
+
+      <!-- ═══════════════ 4. PHASE 2 ═══════════════ -->
+      <div class="section" id="phase2">
+        <div class="section-label">04 &mdash; Phase 2</div>
+        <div class="phases">
+          <div class="phase"><small>Phase 1</small>Context</div>
+          <div class="phase on"><small>Phase 2</small>Strategy</div>
+          <div class="phase"><small>Phase 3</small>Review</div>
+        </div>
+
+        <h2>Win strategy</h2>
+        <p class="subtitle">
+          The AI generates a strategy based on your context. This is what makes
+          IntentWin unique: strategy before writing.
+        </p>
+
+        <div class="cards cols-2">
+          <div class="card">
+            <div class="card-icon purple">&#x1F3AF;</div>
+            <h3>Win themes</h3>
+            <p>
+              3-5 strategic themes woven throughout the proposal. Remove any
+              that don't fit.
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-icon blue">&#x1F4C8;</div>
+            <h3>Target outcomes</h3>
+            <p>
+              Categorized outcomes with priority levels. Adjust to focus the
+              proposal.
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-icon green">&#x1F4AA;</div>
+            <h3>Differentiators</h3>
+            <p>
+              Your key differentiators from your profile, woven into "Why Us"
+              sections.
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-icon amber">&#x1F50D;</div>
+            <h3>Competitive intel</h3>
+            <p>
+              Optional field for known competitors, incumbents, or key deal
+              influencers.
+            </p>
+          </div>
+        </div>
+
+        <div class="callout success">
+          <div class="callout-label">Pro tip</div>
+          <p>
+            Click <strong>"Regenerate Strategy"</strong> if the themes don't
+            resonate. Each generation produces different angles. You can also
+            edit themes manually.
+          </p>
+        </div>
+      </div>
+
+      <!-- ═══════════════ 5. PHASE 3 ═══════════════ -->
+      <div class="section" id="phase3">
+        <div class="section-label">05 &mdash; Phase 3</div>
+        <div class="phases">
+          <div class="phase"><small>Phase 1</small>Context</div>
+          <div class="phase"><small>Phase 2</small>Strategy</div>
+          <div class="phase on"><small>Phase 3</small>Review</div>
+        </div>
+
+        <h2>Review &amp; create</h2>
+        <p class="subtitle">Final checkpoint before the AI starts writing.</p>
+
+        <div class="steps">
+          <div class="step">
+            <div class="step-num"><span>1</span></div>
+            <div>
+              <h3>Review the summary</h3>
+              <p>
+                Check pain points, desired outcomes, and win strategy themes.
+              </p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num"><span>2</span></div>
+            <div>
+              <h3>Approve the intent</h3>
+              <p>
+                Check the "I approve this Intent" checkbox to confirm the AI's
+                direction.
+              </p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num"><span>3</span></div>
+            <div>
+              <h3>Create proposal</h3>
+              <p>
+                Click "Create Proposal" and watch the progress bar as the AI
+                writes each section. Takes 1-3 minutes.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout tip">
+          <div class="callout-label">Why approval matters</div>
+          <p>
+            The approval step ensures the AI generates content that delivers
+            your <strong>specific</strong> outcomes, verified against your
+            company's actual capabilities. No generic boilerplate.
+          </p>
+        </div>
+      </div>
+
+      <!-- ═══════════════ 6. EDITING ═══════════════ -->
+      <div class="section" id="editing">
+        <div class="section-label">06 &mdash; Editing</div>
+        <h2>Edit &amp; refine</h2>
+        <p class="subtitle">
+          Fine-tune AI-generated content in the section editor.
+        </p>
+
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>Action</th>
+              <th>What it does</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Edit</strong></td>
+              <td>Opens the rich text editor for manual changes</td>
+            </tr>
+            <tr>
+              <td><strong>Regenerate</strong></td>
+              <td>
+                Re-generates the entire section from scratch using your intent
+              </td>
+            </tr>
+            <tr>
+              <td><strong>AI Auto-Fix</strong></td>
+              <td>
+                Applies AI fixes to address review comments (after quality
+                review)
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Versions</strong></td>
+              <td>
+                View history, compare diffs, and restore any previous version
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout success">
+          <div class="callout-label">Pro tip</div>
+          <p>
+            The AI generates <strong>Mermaid diagrams</strong> (architecture
+            diagrams, flow charts, timelines) inline. They render in preview and
+            export to all formats.
+          </p>
+        </div>
+      </div>
+
+      <!-- ═══════════════ 7. QUALITY REVIEW ═══════════════ -->
+      <div class="section" id="quality">
+        <div class="section-label">07 &mdash; Quality</div>
+        <h2>Quality review</h2>
+        <p class="subtitle">
+          Three independent AI judges review your proposal like a real
+          evaluation committee.
+        </p>
+
+        <div class="cards cols-4">
+          <div class="card" style="text-align: center">
+            <div style="font-size: 24px; margin-bottom: 8px">&#x1F4DD;</div>
+            <h3 style="color: var(--accent)">Content</h3>
+            <p>Clarity, depth, and persuasiveness</p>
+          </div>
+          <div class="card" style="text-align: center">
+            <div style="font-size: 24px; margin-bottom: 8px">&#x1F3AF;</div>
+            <h3 style="color: var(--blue)">Client Fit</h3>
+            <p>Addresses specific challenges</p>
+          </div>
+          <div class="card" style="text-align: center">
+            <div style="font-size: 24px; margin-bottom: 8px">&#x1F4CA;</div>
+            <h3 style="color: var(--green)">Evidence</h3>
+            <p>Claims backed by data</p>
+          </div>
+          <div class="card" style="text-align: center">
+            <div style="font-size: 24px; margin-bottom: 8px">&#x1F3A4;</div>
+            <h3 style="color: var(--amber)">Brand Voice</h3>
+            <p>Tone &amp; style consistency</p>
+          </div>
+        </div>
+
+        <p style="font-size: 14px; color: var(--text2); margin-bottom: 32px">
+          Each section gets a score out of 10. Sections below
+          <strong style="color: var(--text)">8.5</strong> are flagged for
+          auto-remediation. The council provides consensus indicators, specific
+          feedback, and one-click rewrites.
+        </p>
+
+        <div class="callout tip">
+          <div class="callout-label">Annotations</div>
+          <p>
+            In review mode, <strong>highlight any text</strong> to add your own
+            comments. They're tracked alongside the council's feedback and can
+            be resolved individually.
+          </p>
+        </div>
+      </div>
+
+      <!-- ═══════════════ 8. COMPLIANCE ═══════════════ -->
+      <div class="section" id="compliance">
+        <div class="section-label">08 &mdash; Compliance</div>
+        <h2>Compliance tracking</h2>
+        <p class="subtitle">
+          A visual Kanban board tracks every RFP requirement.
+        </p>
+
+        <div class="cards cols-4">
+          <div
+            class="card"
+            style="border-left: 3px solid var(--green); text-align: center"
+          >
+            <h3 style="color: var(--green)">Met</h3>
+            <p>Fully addressed</p>
+          </div>
+          <div
+            class="card"
+            style="border-left: 3px solid var(--amber); text-align: center"
+          >
+            <h3 style="color: var(--amber)">Partial</h3>
+            <p>Needs work</p>
+          </div>
+          <div
+            class="card"
+            style="border-left: 3px solid var(--red); text-align: center"
+          >
+            <h3 style="color: var(--red)">Not Met</h3>
+            <p>Not yet covered</p>
+          </div>
+          <div
+            class="card"
+            style="border-left: 3px solid var(--text3); text-align: center"
+          >
+            <h3 style="color: var(--text3)">N/A</h3>
+            <p>Not applicable</p>
+          </div>
+        </div>
+
+        <p style="font-size: 14px; color: var(--text2); margin-bottom: 16px">
+          Drag cards between columns as you address each requirement. Each card
+          shows its priority (<strong style="color: var(--text)"
+            >Mandatory</strong
+          >, <strong style="color: var(--text)">Desirable</strong>, or
+          <strong style="color: var(--text)">Info</strong>) and maps to a
+          specific proposal section.
+        </p>
+
+        <div class="callout warn">
+          <div class="callout-label">Export gate</div>
+          <p>
+            When you export, IntentWin warns you about unaddressed
+            <strong>mandatory</strong> requirements before proceeding —
+            preventing accidental submission with compliance gaps.
+          </p>
+        </div>
+      </div>
+
+      <!-- ═══════════════ 9. EXPORT ═══════════════ -->
+      <div class="section" id="export">
+        <div class="section-label">09 &mdash; Export</div>
+        <h2>Export &amp; share</h2>
+        <p class="subtitle">
+          Download in 5 formats or deploy as a live web page.
+        </p>
+
+        <div class="exports">
+          <div class="export rec">
+            <div class="badge">TOP PICK</div>
+            <div class="ico">&#x1F3AC;</div>
+            <div class="name">Web Slides</div>
+            <div class="ext">Interactive HTML</div>
+          </div>
+          <div class="export">
+            <div class="ico">&#x1F4CA;</div>
+            <div class="name">PowerPoint</div>
+            <div class="ext">.pptx</div>
+          </div>
+          <div class="export">
+            <div class="ico">&#x1F310;</div>
+            <div class="name">Landing Page</div>
+            <div class="ext">.html</div>
+          </div>
+          <div class="export">
+            <div class="ico">&#x1F4C4;</div>
+            <div class="name">Word</div>
+            <div class="ext">.docx</div>
+          </div>
+          <div class="export">
+            <div class="ico">&#x1F4D5;</div>
+            <div class="name">PDF</div>
+            <div class="ext">.pdf</div>
+          </div>
+        </div>
+
+        <div class="callout success">
+          <div class="callout-label">Deploy to web</div>
+          <p>
+            Web Presentations and Landing Pages can be published as
+            <strong>live, shareable URLs</strong> you can send directly to
+            clients.
+          </p>
+        </div>
+      </div>
+
+      <!-- ═══════════════ 10. KNOWLEDGE BASE ═══════════════ -->
+      <div class="section" id="knowledge">
+        <div class="section-label">10 &mdash; Knowledge</div>
+        <h2>Knowledge base</h2>
+        <p class="subtitle">
+          Two layers work together to make proposals smarter.
+        </p>
+
+        <div class="cards cols-2">
+          <div class="card" style="border-left: 3px solid var(--accent)">
+            <h3>&#x1F512; L1: Company Truth</h3>
+            <p>
+              Verified, structured data — your profile, certifications,
+              products, capabilities, and case studies. The "source of truth"
+              for every claim.
+            </p>
+          </div>
+          <div class="card" style="border-left: 3px solid var(--green)">
+            <h3>&#x1F4DA; L2: Document Library</h3>
+            <p>
+              Uploaded documents — past proposals, white papers, capability
+              statements. Chunked and indexed for AI-powered retrieval during
+              generation.
+            </p>
+          </div>
+        </div>
+
+        <div class="callout tip">
+          <div class="callout-label">Best documents to upload</div>
+          <p>
+            Start with <strong>winning past proposals</strong>,
+            <strong>capability statements</strong>,
+            <strong>case studies</strong>, and <strong>team bios</strong>.
+            Supports PDF, DOCX, PPTX, and TXT up to 50MB.
+          </p>
+        </div>
+      </div>
+
+      <!-- ═══════════════ 11. SETTINGS ═══════════════ -->
+      <div class="section" id="settings">
+        <div class="section-label">11 &mdash; Settings</div>
+        <h2>Company settings</h2>
+        <p class="subtitle">Configure the data that powers every proposal.</p>
+
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>Tab</th>
+              <th>What to set up</th>
+              <th>Why it matters</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Company Profile</strong></td>
+              <td>Name, description, industries, services</td>
+              <td>Foundation for all AI content</td>
+            </tr>
+            <tr>
+              <td><strong>Differentiators</strong></td>
+              <td>3+ unique strengths</td>
+              <td>Woven into "Why Us" sections</td>
+            </tr>
+            <tr>
+              <td><strong>Certifications</strong></td>
+              <td>ISO, SOC 2, AWS Partner, etc.</td>
+              <td>Trust signals in compliance sections</td>
+            </tr>
+            <tr>
+              <td><strong>Products &amp; Services</strong></td>
+              <td>Offerings with capabilities &amp; outcome tags</td>
+              <td>AI matches capabilities to client needs</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout success">
+          <div class="callout-label">Pro tip</div>
+          <p>
+            The more complete your settings, the better your proposals.
+            <strong>Products & Services</strong> with detailed outcome tags
+            (Cost Optimization, Speed to Value, etc.) produce noticeably more
+            persuasive content.
+          </p>
+        </div>
+      </div>
+
+      <!-- ═══════════════ QUICK REF ═══════════════ -->
+      <div class="section" id="quickref">
+        <div class="section-label">Quick Reference</div>
+        <h2>First-time checklist</h2>
+        <p class="subtitle">Get the most out of IntentWin from day one.</p>
+
+        <ol class="clean-list">
+          <li data-n="1">
+            <strong>Complete onboarding</strong> — company name, industry, 3
+            differentiators
+          </li>
+          <li data-n="2">
+            <strong>Add certifications</strong> — builds trust signals in
+            proposals
+          </li>
+          <li data-n="3">
+            <strong>Upload 3-5 documents</strong> — past proposals, case
+            studies, capability statements
+          </li>
+          <li data-n="4">
+            <strong>Add products &amp; services</strong> — with capabilities and
+            outcome tags
+          </li>
+          <li data-n="5">
+            <strong>Create your first proposal</strong> — use Upload or Paste
+            for best results
+          </li>
+          <li data-n="6">
+            <strong>Run quality review</strong> — see the 3-judge council in
+            action
+          </li>
+          <li data-n="7">
+            <strong>Export to Web Presentation</strong> — the most impressive
+            client-facing format
+          </li>
+        </ol>
+      </div>
+
+      <!-- ═══════════════ FOOTER ═══════════════ -->
+      <div class="footer">
+        <p>
+          <strong>IntentWin</strong> &mdash; AI Proposal Generation,
+          Intent-Driven
+        </p>
+        <p style="margin-top: 6px">
+          Questions? Reach out to our team for help getting started.
+        </p>
+      </div>
+    </div>
+    <!-- /wrap -->
+
+    <script>
+      // Smooth scroll for any anchor links
+      document.querySelectorAll('a[href^="#"]').forEach((a) => {
+        a.addEventListener("click", (e) => {
+          e.preventDefault();
+          document
+            .querySelector(a.getAttribute("href"))
+            ?.scrollIntoView({ behavior: "smooth" });
+        });
+      });
+    </script>
+  </body>
+</html>
