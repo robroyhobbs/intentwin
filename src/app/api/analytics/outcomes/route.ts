@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
 
     const adminClient = createAdminClient();
 
-    // Get all proposals with outcomes for this organization
+    // ── Existing query: proposals with outcomes for this organization ──
     const { data: proposals, error } = await adminClient
       .from("proposals")
       .select(`
@@ -24,7 +24,8 @@ export async function GET(request: NextRequest) {
         deal_currency,
         loss_reason_category,
         intake_data,
-        created_at
+        created_at,
+        quality_review
       `)
       .eq("organization_id", context.organizationId)
       .in("status", ["exported", "final", "review", "draft"])
@@ -34,7 +35,32 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Calculate summary stats
+    // ── Pipeline funnel: count ALL proposals (not filtered by status) ──
+    const { data: allProposals, error: funnelError } = await adminClient
+      .from("proposals")
+      .select("status")
+      .eq("organization_id", context.organizationId);
+
+    if (funnelError) {
+      return NextResponse.json({ error: funnelError.message }, { status: 500 });
+    }
+
+    const pipelineFunnel = {
+      draft: 0,
+      intake: 0,
+      generating: 0,
+      review: 0,
+      final: 0,
+      exported: 0,
+    };
+    for (const p of allProposals || []) {
+      const status = p.status as keyof typeof pipelineFunnel;
+      if (status in pipelineFunnel) {
+        pipelineFunnel[status]++;
+      }
+    }
+
+    // ── Calculate summary stats (existing) ──
     const total = proposals?.length || 0;
     const won = proposals?.filter((p) => p.deal_outcome === "won").length || 0;
     const lost = proposals?.filter((p) => p.deal_outcome === "lost").length || 0;
@@ -48,7 +74,7 @@ export async function GET(request: NextRequest) {
       ?.filter((p) => p.deal_outcome === "won" && p.deal_value)
       .reduce((sum, p) => sum + (p.deal_value || 0), 0) || 0;
 
-    // Group by industry
+    // ── Group by industry (existing) ──
     const byIndustry: Record<string, { won: number; lost: number; total: number }> = {};
     for (const p of proposals || []) {
       const industry = (p.intake_data as Record<string, string>)?.client_industry || "unknown";
@@ -60,7 +86,7 @@ export async function GET(request: NextRequest) {
       if (p.deal_outcome === "lost") byIndustry[industry].lost++;
     }
 
-    // Group by opportunity type
+    // ── Group by opportunity type (existing) ──
     const byOpportunityType: Record<string, { won: number; lost: number; total: number }> = {};
     for (const p of proposals || []) {
       const oppType = (p.intake_data as Record<string, string>)?.opportunity_type || "unknown";
@@ -72,7 +98,7 @@ export async function GET(request: NextRequest) {
       if (p.deal_outcome === "lost") byOpportunityType[oppType].lost++;
     }
 
-    // Loss reasons
+    // ── Loss reasons (existing) ──
     const lossReasons: Record<string, number> = {};
     for (const p of proposals || []) {
       if (p.deal_outcome === "lost" && p.loss_reason_category) {
@@ -80,7 +106,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Recent outcomes (last 10)
+    // ── Recent outcomes (existing, last 10) ──
     const recentOutcomes = proposals
       ?.filter((p) => p.deal_outcome && p.deal_outcome !== "pending")
       .slice(0, 10)
@@ -92,6 +118,102 @@ export async function GET(request: NextRequest) {
         industry: (p.intake_data as Record<string, string>)?.client_industry,
         date: p.deal_outcome_set_at || p.created_at,
       }));
+
+    // ── NEW: Monthly trends (last 12 months) ──
+    const now = new Date();
+    const monthlyTrends: Array<{
+      month: string;
+      proposalsCreated: number;
+      won: number;
+      lost: number;
+      winRate: number;
+      totalValue: number;
+    }> = [];
+
+    // Build map of month keys -> data
+    const monthMap: Record<string, { proposalsCreated: number; won: number; lost: number; totalValue: number }> = {};
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      monthMap[key] = { proposalsCreated: 0, won: 0, lost: 0, totalValue: 0 };
+    }
+
+    // Count proposals created per month
+    for (const p of proposals || []) {
+      if (!p.created_at) continue;
+      const createdDate = new Date(p.created_at);
+      const key = `${createdDate.getFullYear()}-${String(createdDate.getMonth() + 1).padStart(2, "0")}`;
+      if (key in monthMap) {
+        monthMap[key].proposalsCreated++;
+      }
+    }
+
+    // Count won/lost per month based on deal_outcome_set_at
+    for (const p of proposals || []) {
+      if (!p.deal_outcome_set_at) continue;
+      const outcomeDate = new Date(p.deal_outcome_set_at);
+      const key = `${outcomeDate.getFullYear()}-${String(outcomeDate.getMonth() + 1).padStart(2, "0")}`;
+      if (key in monthMap) {
+        if (p.deal_outcome === "won") {
+          monthMap[key].won++;
+          monthMap[key].totalValue += p.deal_value || 0;
+        } else if (p.deal_outcome === "lost") {
+          monthMap[key].lost++;
+        }
+      }
+    }
+
+    // Convert map to sorted array
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const data = monthMap[key];
+      const monthDecided = data.won + data.lost;
+      monthlyTrends.push({
+        month: key,
+        proposalsCreated: data.proposalsCreated,
+        won: data.won,
+        lost: data.lost,
+        winRate: monthDecided > 0 ? Math.round((data.won / monthDecided) * 100) : 0,
+        totalValue: data.totalValue,
+      });
+    }
+
+    // ── NEW: Quality correlation ──
+    const qualityCorrelation = (proposals || [])
+      .filter((p) => {
+        const qr = p.quality_review as Record<string, unknown> | null;
+        return qr && typeof qr === "object" && "overall_score" in qr;
+      })
+      .map((p) => {
+        const qr = p.quality_review as Record<string, unknown>;
+        return {
+          id: p.id,
+          title: p.title,
+          qualityScore: qr.overall_score as number,
+          outcome: p.deal_outcome || "pending",
+          dealValue: p.deal_value ?? null,
+        };
+      });
+
+    // ── NEW: Average days to close ──
+    const closedProposals = (proposals || []).filter(
+      (p) =>
+        (p.deal_outcome === "won" || p.deal_outcome === "lost") &&
+        p.created_at &&
+        p.deal_outcome_set_at
+    );
+
+    let avgDaysToClose: number | null = null;
+    if (closedProposals.length > 0) {
+      const totalDays = closedProposals.reduce((sum, p) => {
+        const created = new Date(p.created_at).getTime();
+        const closed = new Date(p.deal_outcome_set_at).getTime();
+        const diffDays = (closed - created) / (1000 * 60 * 60 * 24);
+        return sum + diffDays;
+      }, 0);
+      avgDaysToClose = Math.round((totalDays / closedProposals.length) * 10) / 10;
+    }
 
     return NextResponse.json({
       summary: {
@@ -118,6 +240,10 @@ export async function GET(request: NextRequest) {
         clientName: (p.intake_data as Record<string, string>)?.client_name,
         createdAt: p.created_at,
       })),
+      monthlyTrends,
+      pipelineFunnel,
+      qualityCorrelation,
+      avgDaysToClose,
     });
   } catch (error) {
     console.error("Analytics error:", error);
