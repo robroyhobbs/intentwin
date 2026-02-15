@@ -117,16 +117,19 @@ interface JudgeDefinition {
 /** Returns the model label for the initial "reviewing" status based on available judges. */
 export function getReviewModelLabel(): string {
   const judges = getAvailableJudges();
-  return judges.length > 1 ? "council" : judges[0]?.id || "gemini-2.0-flash";
+  return judges.length > 1
+    ? "council"
+    : judges[0]?.id || process.env.GEMINI_MODEL || "gemini-3-pro-preview";
 }
 
 function getAvailableJudges(): JudgeDefinition[] {
   const judges: JudgeDefinition[] = [];
 
-  // Gemini Flash is always available (uses same GEMINI_API_KEY as main generation)
+  // Gemini is always available (uses same GEMINI_API_KEY as main generation)
+  const geminiModel = process.env.GEMINI_MODEL || "gemini-3-pro-preview";
   judges.push({
-    id: "gemini-2.0-flash",
-    name: "Gemini Flash",
+    id: geminiModel,
+    name: "Gemini",
     provider: "google",
     reviewFn: reviewWithGemini,
   });

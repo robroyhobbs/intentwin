@@ -6,6 +6,8 @@
 
 set -e
 
+export PATH="$HOME/.bun/bin:$HOME/.local/bin:/usr/local/bin:/opt/homebrew/bin:$PATH"
+
 PROJECT_DIR="$HOME/projects/capgemini-proposal-generator"
 LOG_FILE="$PROJECT_DIR/logs/compound-review-$(date +%Y%m%d).log"
 
