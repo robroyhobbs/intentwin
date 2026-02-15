@@ -48,6 +48,7 @@ import { VersionHistory } from "@/components/proposals/version-history";
 import { QualityReport } from "@/components/proposals/quality-report";
 import { DealOutcomeSetter } from "@/components/ui/deal-outcome-setter";
 import { ComplianceBoard } from "@/components/compliance/compliance-board";
+import { StageReviewDashboard } from "@/components/review-workflow/stage-review-dashboard";
 import type { ProposalReview, ReviewSummary } from "@/types/review";
 import { exportAnnotationsAsMarkdown } from "@/lib/review/export-annotations";
 
@@ -89,8 +90,13 @@ export default function ProposalPage() {
   const searchParams = useSearchParams();
   const id = params.id as string;
 
+  const tabParam = searchParams.get("tab");
   const initialTab =
-    searchParams.get("tab") === "compliance" ? "compliance" : "sections";
+    tabParam === "compliance"
+      ? "compliance"
+      : tabParam === "review"
+        ? "review"
+        : "sections";
 
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [sections, setSections] = useState<Section[]>([]);
@@ -114,9 +120,9 @@ export default function ProposalPage() {
     null,
   );
   const [savingSection, setSavingSection] = useState(false);
-  const [activeTab, setActiveTab] = useState<"sections" | "compliance">(
-    initialTab,
-  );
+  const [activeTab, setActiveTab] = useState<
+    "sections" | "compliance" | "review"
+  >(initialTab);
   const authFetch = useAuthFetch();
   const initialSectionSet = useRef(false);
   const regenIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -580,11 +586,37 @@ export default function ProposalPage() {
             <ShieldCheck className="h-3.5 w-3.5 inline mr-1.5 -mt-0.5" />
             Compliance
           </button>
+          <button
+            onClick={() => setActiveTab("review")}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === "review"
+                ? "border-[var(--accent)] text-[var(--accent)]"
+                : "border-transparent text-[var(--foreground-muted)] hover:text-[var(--foreground)]"
+            }`}
+          >
+            <Eye className="h-3.5 w-3.5 inline mr-1.5 -mt-0.5" />
+            Review
+          </button>
         </div>
       )}
 
-      {/* Compliance tab content */}
-      {sections.length > 0 && activeTab === "compliance" ? (
+      {/* Review tab content */}
+      {sections.length > 0 && activeTab === "review" ? (
+        <div
+          style={{ minHeight: "calc(100vh - 220px)" }}
+          className="bg-[var(--background-secondary)]"
+        >
+          <StageReviewDashboard
+            proposalId={id}
+            sections={sections.map((s) => ({
+              id: s.id,
+              title: s.title,
+              section_type: s.section_type,
+            }))}
+          />
+        </div>
+      ) : /* Compliance tab content */
+      sections.length > 0 && activeTab === "compliance" ? (
         <div
           style={{ minHeight: "calc(100vh - 220px)" }}
           className="bg-[var(--background-secondary)]"
