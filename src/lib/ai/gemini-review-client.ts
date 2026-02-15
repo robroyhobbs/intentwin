@@ -14,12 +14,10 @@ function getClient(): GoogleGenerativeAI {
 }
 
 /**
- * Review a proposal section using Gemini 2.0 Flash.
+ * Review a proposal section using Gemini.
  * Returns structured scores across 4 quality dimensions + feedback.
  */
-export async function reviewWithGemini(
-  prompt: string,
-): Promise<{
+export async function reviewWithGemini(prompt: string): Promise<{
   content_quality: number;
   client_fit: number;
   evidence: number;
@@ -28,7 +26,7 @@ export async function reviewWithGemini(
 }> {
   const client = getClient();
   const model = client.getGenerativeModel({
-    model: "gemini-2.0-flash",
+    model: process.env.GEMINI_MODEL || "gemini-3-pro-preview",
     generationConfig: {
       temperature: 0.3,
       maxOutputTokens: 1024,

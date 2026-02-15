@@ -40,7 +40,7 @@ IntentWin ingests an RFP or solicitation document, cross-references it against y
 │  - Analytics │  - /api/bulk-import│                           │
 ├──────────────┴────────────────────┴──────────────────────────┤
 │                        AI Layer                               │
-│   Google Gemini 2.5 Pro (generation + quality review)         │
+│   Google Gemini 3 Pro (generation + quality review)            │
 │   Voyage AI voyage-3 (1024d vector embeddings)                │
 │   15 section prompts + 3-judge quality council                │
 │   Industry intelligence + persuasion engine                   │
@@ -58,20 +58,20 @@ IntentWin ingests an RFP or solicitation document, cross-references it against y
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | Next.js 16, React 19, TypeScript 5 |
-| Styling | Tailwind CSS 4, Framer Motion |
-| AI Generation | Google Gemini 2.5 Pro |
-| Embeddings | Voyage AI (voyage-3, 1024d) |
-| Database | Supabase (PostgreSQL 15 + pgvector) |
-| Auth | Supabase Auth with SSR cookies + RLS policies |
-| Payments | Stripe (subscriptions + usage metering) |
-| Email | Resend (transactional) |
-| Editor | TipTap (rich text editing) |
-| Export | Puppeteer (PDF), docx (DOCX), pptxgenjs (PPTX), Google Slides API |
-| Testing | Vitest + Playwright |
-| Deployment | Vercel (with `@sparticuz/chromium` for serverless PDF) |
+| Layer         | Technology                                                        |
+| ------------- | ----------------------------------------------------------------- |
+| Framework     | Next.js 16, React 19, TypeScript 5                                |
+| Styling       | Tailwind CSS 4, Framer Motion                                     |
+| AI Generation | Google Gemini 3 Pro                                               |
+| Embeddings    | Voyage AI (voyage-3, 1024d)                                       |
+| Database      | Supabase (PostgreSQL 15 + pgvector)                               |
+| Auth          | Supabase Auth with SSR cookies + RLS policies                     |
+| Payments      | Stripe (subscriptions + usage metering)                           |
+| Email         | Resend (transactional)                                            |
+| Editor        | TipTap (rich text editing)                                        |
+| Export        | Puppeteer (PDF), docx (DOCX), pptxgenjs (PPTX), Google Slides API |
+| Testing       | Vitest + Playwright                                               |
+| Deployment    | Vercel (with `@sparticuz/chromium` for serverless PDF)            |
 
 ## Project Structure
 
@@ -163,38 +163,38 @@ New accounts start with a completely clean slate — zero documents, zero L1 con
 
 Managed through Settings and the L1 Sources browser. Structured, curated data that the AI uses as ground truth:
 
-| Table | Purpose |
-|-------|---------|
-| `company_context` | Brand, values, certifications, differentiators, methodology |
-| `product_contexts` | Service lines with capabilities, specs, and pricing models |
+| Table              | Purpose                                                               |
+| ------------------ | --------------------------------------------------------------------- |
+| `company_context`  | Brand, values, certifications, differentiators, methodology           |
+| `product_contexts` | Service lines with capabilities, specs, and pricing models            |
 | `evidence_library` | Case studies, metrics, testimonials, certifications with verification |
 
 ### L2 Content (Knowledge Base)
 
 Uploaded documents (PDF, DOCX, PPTX) that are chunked, embedded, and retrieved via RAG during proposal generation:
 
-| Table | Purpose |
-|-------|---------|
-| `documents` | File metadata, processing status, chunk count |
+| Table             | Purpose                                              |
+| ----------------- | ---------------------------------------------------- |
+| `documents`       | File metadata, processing status, chunk count        |
 | `document_chunks` | Extracted text segments with 1024d vector embeddings |
 
 ### Proposals
 
-| Table | Purpose |
-|-------|---------|
-| `proposals` | Core proposal data, status, client info, metadata |
-| `proposal_sections` | Generated content per section type |
-| `proposal_versions` | Version history with full snapshot + restore |
-| `proposal_reviews` | Quality scores, dimension breakdowns, and feedback |
+| Table               | Purpose                                            |
+| ------------------- | -------------------------------------------------- |
+| `proposals`         | Core proposal data, status, client info, metadata  |
+| `proposal_sections` | Generated content per section type                 |
+| `proposal_versions` | Version history with full snapshot + restore       |
+| `proposal_reviews`  | Quality scores, dimension breakdowns, and feedback |
 
 ### Access Control
 
-| Table | Purpose |
-|-------|---------|
-| `organizations` | Tenant container with plan tier + usage limits |
-| `profiles` | User profile linked to org with role (admin/manager/member) |
-| `allowed_emails` | Emails permitted to sign up (waitlist gate) |
-| `waitlist` | Access request submissions |
+| Table            | Purpose                                                     |
+| ---------------- | ----------------------------------------------------------- |
+| `organizations`  | Tenant container with plan tier + usage limits              |
+| `profiles`       | User profile linked to org with role (admin/manager/member) |
+| `allowed_emails` | Emails permitted to sign up (waitlist gate)                 |
+| `waitlist`       | Access request submissions                                  |
 
 ## AI Pipeline
 
@@ -213,13 +213,13 @@ Each proposal generation runs through specialized prompt chains:
 
 ## Export Formats
 
-| Format | Technology | Notes |
-|--------|-----------|-------|
-| HTML | Server-rendered + Mermaid diagrams | Includes inline CSS for email-safe output |
-| DOCX | `docx` library | Structured sections with headers and formatting |
-| PPTX | `pptxgenjs` | Rich-text multi-slide rendering with markdown parsing |
-| Google Slides | Google Slides API | Requires Google OAuth credentials |
-| PDF | Puppeteer + Chrome/Edge | Uses `@sparticuz/chromium` on Vercel, local browser on dev |
+| Format        | Technology                         | Notes                                                      |
+| ------------- | ---------------------------------- | ---------------------------------------------------------- |
+| HTML          | Server-rendered + Mermaid diagrams | Includes inline CSS for email-safe output                  |
+| DOCX          | `docx` library                     | Structured sections with headers and formatting            |
+| PPTX          | `pptxgenjs`                        | Rich-text multi-slide rendering with markdown parsing      |
+| Google Slides | Google Slides API                  | Requires Google OAuth credentials                          |
+| PDF           | Puppeteer + Chrome/Edge            | Uses `@sparticuz/chromium` on Vercel, local browser on dev |
 
 ## Getting Started
 
@@ -255,16 +255,16 @@ Open [http://localhost:3000](http://localhost:3000) to access the app.
 
 ### Environment Variables
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase anon/public key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Supabase service role key (server-only) |
-| `GOOGLE_AI_API_KEY` | Yes | Google Gemini API key |
-| `VOYAGE_API_KEY` | Yes | Voyage AI embedding key |
-| `STRIPE_SECRET_KEY` | No | Stripe billing key |
-| `STRIPE_WEBHOOK_SECRET` | No | Stripe webhook verification |
-| `RESEND_API_KEY` | No | Resend transactional email key |
+| Variable                        | Required | Description                             |
+| ------------------------------- | -------- | --------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Yes      | Supabase project URL                    |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes      | Supabase anon/public key                |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Yes      | Supabase service role key (server-only) |
+| `GOOGLE_AI_API_KEY`             | Yes      | Google Gemini API key                   |
+| `VOYAGE_API_KEY`                | Yes      | Voyage AI embedding key                 |
+| `STRIPE_SECRET_KEY`             | No       | Stripe billing key                      |
+| `STRIPE_WEBHOOK_SECRET`         | No       | Stripe webhook verification             |
+| `RESEND_API_KEY`                | No       | Resend transactional email key          |
 
 ### New Account Setup
 
