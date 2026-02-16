@@ -121,6 +121,16 @@ All tables now have `organization_id` columns with RLS policies:
 
 <!-- Updated nightly by compound review -->
 
+### 2026-02-15 - Race Conditions, Data Normalization & DevOps
+
+- **Race condition between regenerate and quality review**: Fire-and-forget async operations (regenerate section, quality review) can run simultaneously, leaving sections stuck in `generating` state. Fix: add mutual exclusion checks (query current status before proceeding) and use Next.js `after()` instead of detached promises for background work
+- **ExtractedIntake nesting gotcha**: Copy-pasted RFP content arrives as a nested `ExtractedIntake` object (`.extracted.field.value` wrappers) but `buildRfpSummary()` expected flat top-level fields, producing 0/0 bid scores with no data. Fix: normalize the structure before scoring, and add a `source_text` fallback when structured fields are sparse (< 3 sections extracted)
+- **Vercel maxDuration default is too low for AI workflows**: 60s timeout kills long-running quality review API calls. Bumped to 300s. Always set `maxDuration` explicitly for AI-heavy routes
+- **Gemini judge ID drift**: Hardcoded model IDs (`gemini-2.0-flash`) in quality overseer didn't match actual model being used, causing misleading audit trails. Fix: read from `GEMINI_MODEL` env var so judge ID stays in sync with deployment config
+- **launchd PATH issues**: Cron-like scripts run via macOS launchd don't inherit user shell PATH. The `claude` CLI wasn't found during automated compound review. Fix: explicitly export PATH including `~/.bun/bin`, `~/.local/bin`, `/opt/homebrew/bin` at script top
+- **Color team review (Pink→Red→Gold→White)**: Large feature (9 API routes, 6 UI components, 3 DB tables, email notifications) landed cleanly using IDD intent→plan→build pipeline. Key pattern: stage gate advancement requires minimum reviewer consensus before proceeding
+- **Recharts integration**: Replaced CSS-only bar charts in analytics dashboard with interactive recharts components (AreaChart, BarChart, PieChart, ScatterChart). Much better UX for win/loss trend analysis
+
 ### 2026-01-30 - Security & Multi-Tenancy
 
 - **CRITICAL**: `adminClient` bypasses RLS! Always add `.eq('organization_id', context.organizationId)` to queries
