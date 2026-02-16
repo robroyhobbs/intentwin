@@ -1,17 +1,19 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   getUserContext,
   checkPlanLimit,
   incrementUsage,
 } from "@/lib/supabase/auth-api";
+import { unauthorized, badRequest, forbidden, serverError, ok, created } from "@/lib/api/response";
+import { sanitizeTitle } from "@/lib/security/sanitize";
 
 export async function GET(request: NextRequest) {
   try {
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const adminClient = createAdminClient();
@@ -23,16 +25,13 @@ export async function GET(request: NextRequest) {
       .order("created_at", { ascending: false });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return serverError("Failed to fetch proposals", error);
     }
 
-    return NextResponse.json({ proposals });
+    return ok({ proposals });
   } catch (error) {
     console.error("Get proposals error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return serverError("Failed to fetch proposals", error);
   }
 }
 
@@ -41,7 +40,7 @@ export async function POST(request: NextRequest) {
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     // Check plan limits before creating
@@ -50,10 +49,7 @@ export async function POST(request: NextRequest) {
       "proposals_per_month",
     );
     if (!limitCheck.allowed) {
-      return NextResponse.json(
-        { error: limitCheck.message || "Proposal limit reached" },
-        { status: 403 },
-      );
+      return forbidden(limitCheck.message || "Proposal limit reached");
     }
 
     const body = await request.json();
@@ -67,14 +63,17 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!title) {
-      return NextResponse.json({ error: "Title is required" }, { status: 400 });
+      return badRequest("Title is required");
     }
 
     const adminClient = createAdminClient();
 
+    // Sanitize user text input
+    const sanitizedTitle = sanitizeTitle(title);
+
     // Build proposal data with IDD fields and organization scoping
     const proposalData: Record<string, unknown> = {
-      title,
+      title: sanitizedTitle,
       intake_data: intake_data || {},
       win_strategy_data: win_strategy_data || {},
       status: "intake",
@@ -105,21 +104,15 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json(
-        { error: `Failed to create proposal: ${error.message}` },
-        { status: 500 },
-      );
+      return serverError("Failed to create proposal", error);
     }
 
     // Increment usage counter
     await incrementUsage(context.organizationId, "proposals_created");
 
-    return NextResponse.json({ proposal }, { status: 201 });
+    return created({ proposal });
   } catch (error) {
     console.error("Create proposal error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return serverError("Failed to create proposal", error);
   }
 }

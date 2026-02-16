@@ -1,6 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext } from "@/lib/supabase/auth-api";
+import { unauthorized, notFound, badRequest, serverError, ok, created, conflict } from "@/lib/api/response";
+import { sanitizeTitle, sanitizeString } from "@/lib/security/sanitize";
 
 const VALID_OUTCOMES = [
   "cost_optimization",
@@ -65,7 +67,7 @@ export async function GET(request: NextRequest) {
   try {
     const context = await getUserContext(request);
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const adminClient = createAdminClient();
@@ -76,18 +78,12 @@ export async function GET(request: NextRequest) {
       .order("product_name", { ascending: true });
 
     if (error) {
-      return NextResponse.json(
-        { error: "Failed to fetch products" },
-        { status: 500 }
-      );
+      return serverError("Failed to fetch products", error);
     }
 
-    return NextResponse.json({ products: products || [] });
-  } catch {
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return ok({ products: products || [] });
+  } catch (error) {
+    return serverError("Failed to fetch products", error);
   }
 }
 
@@ -99,7 +95,7 @@ export async function POST(request: NextRequest) {
   try {
     const context = await getUserContext(request);
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const body = await request.json();
@@ -110,49 +106,41 @@ export async function POST(request: NextRequest) {
       typeof product_name !== "string" ||
       !product_name.trim()
     ) {
-      return NextResponse.json(
-        { error: "product_name is required" },
-        { status: 400 }
-      );
+      return badRequest("product_name is required");
     }
 
     if (capabilities !== undefined) {
       const validation = validateCapabilities(capabilities);
       if (!validation.valid) {
-        return NextResponse.json(
-          { error: validation.error },
-          { status: 400 }
-        );
+        return badRequest(validation.error!);
       }
     }
 
     const adminClient = createAdminClient();
-    const trimmedName = product_name.trim();
-    const svcLine = service_line || "";
+    const sanitizedName = sanitizeTitle(product_name);
+    const sanitizedSvcLine = sanitizeTitle(service_line || "");
+    const sanitizedDescription = sanitizeString(description || "");
 
     // Check for duplicate (product_name, service_line) within org
     const { data: existing } = await adminClient
       .from("product_contexts")
       .select("id")
       .eq("organization_id", context.organizationId)
-      .eq("product_name", trimmedName)
-      .eq("service_line", svcLine)
+      .eq("product_name", sanitizedName)
+      .eq("service_line", sanitizedSvcLine)
       .single();
 
     if (existing) {
-      return NextResponse.json(
-        { error: "A product with this name and service line already exists" },
-        { status: 409 }
-      );
+      return conflict("A product with this name and service line already exists");
     }
 
     const { data: product, error } = await adminClient
       .from("product_contexts")
       .insert({
         organization_id: context.organizationId,
-        product_name: trimmedName,
-        service_line: svcLine,
-        description: description || "",
+        product_name: sanitizedName,
+        service_line: sanitizedSvcLine,
+        description: sanitizedDescription,
         capabilities: capabilities || [],
         specifications: {},
         pricing_models: [],
@@ -163,18 +151,12 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json(
-        { error: "Failed to create product" },
-        { status: 500 }
-      );
+      return serverError("Failed to create product", error);
     }
 
-    return NextResponse.json({ product }, { status: 201 });
-  } catch {
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return created({ product });
+  } catch (error) {
+    return serverError("Failed to create product", error);
   }
 }
 
@@ -186,39 +168,30 @@ export async function PATCH(request: NextRequest) {
   try {
     const context = await getUserContext(request);
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const body = await request.json();
     const { id, ...fields } = body;
 
     if (!id) {
-      return NextResponse.json(
-        { error: "id is required in request body" },
-        { status: 400 }
-      );
+      return badRequest("id is required in request body");
     }
 
     if (fields.capabilities !== undefined) {
       const validation = validateCapabilities(fields.capabilities);
       if (!validation.valid) {
-        return NextResponse.json(
-          { error: validation.error },
-          { status: 400 }
-        );
+        return badRequest(validation.error!);
       }
     }
 
     const updateData: Record<string, unknown> = {};
     if (fields.product_name !== undefined)
-      updateData.product_name =
-        typeof fields.product_name === "string"
-          ? fields.product_name.trim()
-          : fields.product_name;
+      updateData.product_name = sanitizeTitle(fields.product_name);
     if (fields.service_line !== undefined)
-      updateData.service_line = fields.service_line;
+      updateData.service_line = sanitizeTitle(fields.service_line);
     if (fields.description !== undefined)
-      updateData.description = fields.description;
+      updateData.description = sanitizeString(fields.description);
     if (fields.capabilities !== undefined)
       updateData.capabilities = fields.capabilities;
 
@@ -233,23 +206,14 @@ export async function PATCH(request: NextRequest) {
 
     if (error || !product) {
       if (error?.code === "PGRST116" || !product) {
-        return NextResponse.json(
-          { error: "Product not found" },
-          { status: 404 }
-        );
+        return notFound("Product not found");
       }
-      return NextResponse.json(
-        { error: "Failed to update product" },
-        { status: 500 }
-      );
+      return serverError("Failed to update product", error);
     }
 
-    return NextResponse.json({ product });
-  } catch {
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return ok({ product });
+  } catch (error) {
+    return serverError("Failed to update product", error);
   }
 }
 
@@ -261,15 +225,12 @@ export async function DELETE(request: NextRequest) {
   try {
     const context = await getUserContext(request);
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const id = request.nextUrl.searchParams.get("id");
     if (!id) {
-      return NextResponse.json(
-        { error: "id query parameter is required" },
-        { status: 400 }
-      );
+      return badRequest("id query parameter is required");
     }
 
     const adminClient = createAdminClient();
@@ -283,10 +244,7 @@ export async function DELETE(request: NextRequest) {
       .single();
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Product not found" },
-        { status: 404 }
-      );
+      return notFound("Product not found");
     }
 
     const { error } = await adminClient
@@ -296,17 +254,11 @@ export async function DELETE(request: NextRequest) {
       .eq("organization_id", context.organizationId);
 
     if (error) {
-      return NextResponse.json(
-        { error: "Failed to delete product" },
-        { status: 500 }
-      );
+      return serverError("Failed to delete product", error);
     }
 
-    return NextResponse.json({ deleted: true });
-  } catch {
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return ok({ deleted: true });
+  } catch (error) {
+    return serverError("Failed to delete product", error);
   }
 }

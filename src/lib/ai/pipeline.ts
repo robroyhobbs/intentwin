@@ -28,7 +28,7 @@ import {
 } from "./persuasion";
 import { getIndustryConfig, buildIndustryContext } from "./industry-configs";
 import { createLogger } from "@/lib/utils/logger";
-import { createPipelineMetrics } from "@/lib/observability/metrics";
+import { createPipelineMetrics, logRegenerationMetric } from "@/lib/observability/metrics";
 import type { WinStrategyData } from "@/types/outcomes";
 import type {
   OutcomeContract,
@@ -358,6 +358,150 @@ function buildL1ContextString(l1Context: L1Context): string {
     : "";
 }
 
+// ── Shared Pipeline Context ──────────────────────────────────────────────────
+
+/**
+ * Everything needed by both generateProposal and regenerateSection.
+ * Extracted to eliminate ~80 lines of duplication between the two functions.
+ */
+interface PipelineContext {
+  proposal: Record<string, unknown>;
+  organizationId: string;
+  intakeData: Record<string, unknown>;
+  winStrategy: WinStrategyData | null;
+  outcomeContract: OutcomeContract | null;
+  companyInfo: CompanyInfo;
+  brandVoice: BrandVoice | null;
+  systemPrompt: string;
+  enhancedAnalysis: string;
+  serviceLine: string | undefined;
+  industry: string | undefined;
+  industryConfig: ReturnType<typeof getIndustryConfig>;
+}
+
+/**
+ * Build the shared pipeline context for a proposal.
+ * Fetches proposal data, organization info, L1 context, static sources,
+ * and runs structured analysis. Used by both generateProposal and regenerateSection.
+ */
+async function buildPipelineContext(
+  supabase: ReturnType<typeof createAdminClient>,
+  proposalId: string,
+): Promise<PipelineContext> {
+  // Fetch proposal with organization
+  const { data: proposal, error: fetchError } = await supabase
+    .from("proposals")
+    .select("*, organizations(name, settings)")
+    .eq("id", proposalId)
+    .single();
+
+  if (fetchError || !proposal) {
+    throw new Error(`Proposal not found: ${proposalId}`);
+  }
+
+  const intakeData = proposal.intake_data as Record<string, unknown>;
+  const winStrategy = (proposal.win_strategy_data as WinStrategyData) || null;
+  const outcomeContract =
+    (proposal.outcome_contract as OutcomeContract) || null;
+
+  // Get company info from organization
+  const orgData = proposal.organizations as {
+    name: string;
+    settings?: Record<string, unknown>;
+  } | null;
+  const companyInfo: CompanyInfo = {
+    name: orgData?.name || "Our Company",
+    description: (orgData?.settings?.description as string) || undefined,
+    industry: (orgData?.settings?.industry as string) || undefined,
+  };
+
+  // Extract brand voice from org settings (L2 persuasion layer)
+  const brandVoice: BrandVoice | null = orgData?.settings?.brand_voice
+    ? (orgData.settings.brand_voice as BrandVoice)
+    : null;
+
+  // Build organization-aware system prompt with brand voice
+  const systemPrompt = buildSystemPrompt({
+    name: companyInfo.name,
+    description: companyInfo.description,
+    brandVoice,
+  });
+
+  // IDD Stage 0: Fetch L1 Context (Company Truth)
+  const serviceLine = (intakeData.opportunity_type as string) || undefined;
+  const industry = (intakeData.client_industry as string) || undefined;
+  const industryConfig = getIndustryConfig(industry || "");
+  const l1Context = await fetchL1Context(
+    supabase,
+    serviceLine,
+    industry,
+    proposal.organization_id,
+  );
+
+  const ctxLog = createLogger({
+    operation: "buildPipelineContext",
+    proposalId,
+    organizationId: proposal.organization_id,
+  });
+  ctxLog.debug("Fetched L1 context", {
+    companyContextCount: l1Context.companyContext.length,
+    productContextCount: l1Context.productContexts.length,
+    evidenceCount: l1Context.evidenceLibrary.length,
+  });
+
+  // Load static sources from sources/ directory
+  let staticSourcesContext = "";
+  try {
+    const staticSources = await loadSources();
+    staticSourcesContext = formatSourcesAsL1Context(staticSources, {
+      opportunityType: serviceLine,
+      industry: industry,
+    });
+    ctxLog.debug("Loaded static sources", {
+      totalFiles: staticSources.all.length,
+      methodologies: staticSources.methodologies.length,
+      caseStudies: staticSources.caseStudies.length,
+    });
+  } catch (sourceError) {
+    // Non-critical - static sources are supplementary
+    ctxLog.warn("Failed to load static sources, continuing with database context only", {
+      error: sourceError instanceof Error ? sourceError.message : String(sourceError),
+    });
+  }
+
+  // Build context strings for prompts
+  const outcomeContractContext = buildOutcomeContractContext(outcomeContract);
+  const l1ContextString =
+    buildL1ContextString(l1Context) + staticSourcesContext;
+
+  // Stage 1: Strategic Analysis (incorporating win strategy and outcome contract)
+  const analysis = await generateStructuredAnalysis(
+    intakeData,
+    proposal.rfp_extracted_requirements as
+      | Record<string, unknown>
+      | undefined,
+    winStrategy,
+  );
+
+  // Enhanced analysis with IDD context
+  const enhancedAnalysis = `${analysis}\n${outcomeContractContext}\n${l1ContextString}`;
+
+  return {
+    proposal: proposal as Record<string, unknown>,
+    organizationId: proposal.organization_id as string,
+    intakeData,
+    winStrategy,
+    outcomeContract,
+    companyInfo,
+    brandVoice,
+    systemPrompt,
+    enhancedAnalysis,
+    serviceLine,
+    industry,
+    industryConfig,
+  };
+}
+
 // Document types to exclude from evidence retrieval (not useful as proposal evidence)
 const EXCLUDED_DOC_TYPES = new Set(["rfp", "template"]);
 
@@ -442,104 +586,21 @@ export async function generateProposal(proposalId: string): Promise<void> {
     if (timeoutController.signal.aborted) {
       throw new Error("Generation timed out");
     }
-    // Fetch proposal with organization
-    const { data: proposal, error: fetchError } = await supabase
-      .from("proposals")
-      .select("*, organizations(name, settings)")
-      .eq("id", proposalId)
-      .single();
 
-    if (fetchError || !proposal) {
-      throw new Error(`Proposal not found: ${proposalId}`);
-    }
-
-    const intakeData = proposal.intake_data as Record<string, unknown>;
-    const winStrategy = (proposal.win_strategy_data as WinStrategyData) || null;
-    const outcomeContract =
-      (proposal.outcome_contract as OutcomeContract) || null;
-
-    // Get company info from organization
-    const orgData = proposal.organizations as {
-      name: string;
-      settings?: Record<string, unknown>;
-    } | null;
-    const companyInfo: CompanyInfo = {
-      name: orgData?.name || "Our Company",
-      description: (orgData?.settings?.description as string) || undefined,
-      industry: (orgData?.settings?.industry as string) || undefined,
-    };
-
-    // Extract brand voice from org settings (L2 persuasion layer)
-    const brandVoice: BrandVoice | null = orgData?.settings?.brand_voice
-      ? (orgData.settings.brand_voice as BrandVoice)
-      : null;
-
-    // Build organization-aware system prompt with brand voice
-    const systemPrompt = buildSystemPrompt({
-      name: companyInfo.name,
-      description: companyInfo.description,
+    // Build shared pipeline context (proposal fetch, L1, analysis, etc.)
+    const ctx = await buildPipelineContext(supabase, proposalId);
+    const {
+      organizationId,
+      intakeData,
+      winStrategy,
+      companyInfo,
       brandVoice,
-    });
-
-    // IDD Stage 0: Fetch L1 Context (Company Truth)
-    const serviceLine = (intakeData.opportunity_type as string) || undefined;
-    const industry = (intakeData.client_industry as string) || undefined;
-    const industryConfig = getIndustryConfig(industry || "");
-    const l1Context = await fetchL1Context(
-      supabase,
+      systemPrompt,
+      enhancedAnalysis,
       serviceLine,
       industry,
-      proposal.organization_id,
-    );
-
-    // Debug log for L1 context
-    const pipelineLog = createLogger({
-      operation: "generateProposal",
-      proposalId,
-      organizationId: proposal.organization_id,
-    });
-    pipelineLog.debug("Fetched L1 context", {
-      companyContextCount: l1Context.companyContext.length,
-      productContextCount: l1Context.productContexts.length,
-      evidenceCount: l1Context.evidenceLibrary.length,
-    });
-
-    // Load static sources from sources/ directory
-    let staticSourcesContext = "";
-    try {
-      const staticSources = await loadSources();
-      staticSourcesContext = formatSourcesAsL1Context(staticSources, {
-        opportunityType: serviceLine,
-        industry: industry,
-      });
-      pipelineLog.debug("Loaded static sources", {
-        totalFiles: staticSources.all.length,
-        methodologies: staticSources.methodologies.length,
-        caseStudies: staticSources.caseStudies.length,
-      });
-    } catch (sourceError) {
-      // Non-critical - static sources are supplementary
-      pipelineLog.warn("Failed to load static sources, continuing with database context only", {
-        error: sourceError instanceof Error ? sourceError.message : String(sourceError),
-      });
-    }
-
-    // Build context strings for prompts
-    const outcomeContractContext = buildOutcomeContractContext(outcomeContract);
-    const l1ContextString =
-      buildL1ContextString(l1Context) + staticSourcesContext;
-
-    // Stage 1: Strategic Analysis (incorporating win strategy and outcome contract)
-    const analysis = await generateStructuredAnalysis(
-      intakeData,
-      proposal.rfp_extracted_requirements as
-        | Record<string, unknown>
-        | undefined,
-      winStrategy,
-    );
-
-    // Enhanced analysis with IDD context
-    const enhancedAnalysis = `${analysis}\n${outcomeContractContext}\n${l1ContextString}`;
+      industryConfig,
+    } = ctx;
 
     // Create all section rows (pending)
     const sectionInserts = SECTION_CONFIGS.map((config) => ({
@@ -565,10 +626,10 @@ export async function generateProposal(proposalId: string): Promise<void> {
     const log = createLogger({
       operation: "generateProposal",
       proposalId,
-      organizationId: proposal.organization_id,
+      organizationId,
       concurrency: PIPELINE_CONCURRENCY,
     });
-    const metrics = createPipelineMetrics(proposalId, proposal.organization_id, {
+    const metrics = createPipelineMetrics(proposalId, organizationId, {
       industry: industry,
       opportunityType: serviceLine,
     });
@@ -780,6 +841,7 @@ export async function regenerateSection(
   sectionId: string,
   qualityFeedback?: string | null,
 ): Promise<void> {
+  const regenStartTime = performance.now();
   const supabase = createAdminClient();
 
   // Fetch the section to get its type
@@ -806,75 +868,17 @@ export async function regenerateSection(
     .eq("id", sectionId);
 
   try {
-    // Fetch proposal with organization
-    const { data: proposal, error: fetchError } = await supabase
-      .from("proposals")
-      .select("*, organizations(name, settings)")
-      .eq("id", proposalId)
-      .single();
-
-    if (fetchError || !proposal) {
-      throw new Error(`Proposal not found: ${proposalId}`);
-    }
-
-    const intakeData = proposal.intake_data as Record<string, unknown>;
-    const winStrategy = (proposal.win_strategy_data as WinStrategyData) || null;
-    const outcomeContract =
-      (proposal.outcome_contract as OutcomeContract) || null;
-
-    const orgData = proposal.organizations as {
-      name: string;
-      settings?: Record<string, unknown>;
-    } | null;
-    const companyInfo: CompanyInfo = {
-      name: orgData?.name || "Our Company",
-      description: (orgData?.settings?.description as string) || undefined,
-      industry: (orgData?.settings?.industry as string) || undefined,
-    };
-
-    const brandVoice: BrandVoice | null = orgData?.settings?.brand_voice
-      ? (orgData.settings.brand_voice as BrandVoice)
-      : null;
-
-    const systemPrompt = buildSystemPrompt({
-      name: companyInfo.name,
-      description: companyInfo.description,
-      brandVoice,
-    });
-
-    // Fetch L1 context
-    const serviceLine = (intakeData.opportunity_type as string) || undefined;
-    const industry = (intakeData.client_industry as string) || undefined;
-    const l1Context = await fetchL1Context(
-      supabase,
-      serviceLine,
-      industry,
-      proposal.organization_id,
-    );
-
-    let staticSourcesContext = "";
-    try {
-      const staticSources = await loadSources();
-      staticSourcesContext = formatSourcesAsL1Context(staticSources, {
-        opportunityType: serviceLine,
-        industry,
-      });
-    } catch {
-      // Non-critical
-    }
-
-    const outcomeContractContext = buildOutcomeContractContext(outcomeContract);
-    const l1ContextString =
-      buildL1ContextString(l1Context) + staticSourcesContext;
-
-    const analysis = await generateStructuredAnalysis(
+    // Build shared pipeline context (reuses same setup as generateProposal)
+    const ctx = await buildPipelineContext(supabase, proposalId);
+    const {
+      organizationId,
       intakeData,
-      proposal.rfp_extracted_requirements as
-        | Record<string, unknown>
-        | undefined,
       winStrategy,
-    );
-    const enhancedAnalysis = `${analysis}\n${outcomeContractContext}\n${l1ContextString}`;
+      companyInfo,
+      brandVoice,
+      systemPrompt,
+      enhancedAnalysis,
+    } = ctx;
 
     // Generate section content
     const searchQuery = config.searchQuery(intakeData);
@@ -955,6 +959,21 @@ export async function regenerateSection(
       }));
       await supabase.from("section_sources").insert(sourceInserts);
     }
+
+    // Log regeneration metric (non-critical — never break main flow)
+    try {
+      logRegenerationMetric({
+        proposalId,
+        sectionId,
+        sectionType: section.section_type,
+        organizationId,
+        durationMs: Math.round(performance.now() - regenStartTime),
+        status: "success",
+        hadQualityFeedback: !!qualityFeedback,
+      });
+    } catch {
+      // Metric logging must never break regeneration
+    }
   } catch (sectionErr) {
     const errorMessage =
       sectionErr instanceof Error ? sectionErr.message : "Unknown error";
@@ -966,6 +985,22 @@ export async function regenerateSection(
         generation_error: errorMessage,
       })
       .eq("id", sectionId);
+
+    // Log regeneration failure metric (non-critical)
+    try {
+      logRegenerationMetric({
+        proposalId,
+        sectionId,
+        sectionType: section.section_type,
+        organizationId: "",  // proposal may not have been fetched yet
+        durationMs: Math.round(performance.now() - regenStartTime),
+        status: "failure",
+        hadQualityFeedback: !!qualityFeedback,
+        error: errorMessage,
+      });
+    } catch {
+      // Metric logging must never break regeneration
+    }
 
     throw sectionErr;
   }

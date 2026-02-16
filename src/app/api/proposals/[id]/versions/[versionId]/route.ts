@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
+import { unauthorized, notFound, serverError, ok } from "@/lib/api/response";
 
 /**
  * GET /api/proposals/[id]/versions/[versionId]
@@ -15,13 +16,13 @@ export async function GET(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     // Verify proposal belongs to user's organization
     const proposal = await verifyProposalAccess(context, id);
     if (!proposal) {
-      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+      return notFound("Proposal not found");
     }
 
     const supabase = createAdminClient();
@@ -35,7 +36,7 @@ export async function GET(
       .single();
 
     if (versionError || !version) {
-      return NextResponse.json({ error: "Version not found" }, { status: 404 });
+      return notFound("Version not found");
     }
 
     // Get sections for this version
@@ -45,18 +46,14 @@ export async function GET(
       .eq("proposal_version_id", versionId)
       .order("section_order", { ascending: true });
 
-    return NextResponse.json({
+    return ok({
       version: {
         ...version,
         sections: sections || [],
       },
     });
   } catch (error) {
-    console.error("Version get error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return serverError("Failed to get version", error);
   }
 }
 
@@ -73,13 +70,13 @@ export async function PATCH(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     // Verify proposal belongs to user's organization
     const proposal = await verifyProposalAccess(context, id);
     if (!proposal) {
-      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+      return notFound("Proposal not found");
     }
 
     const body = await request.json();
@@ -101,16 +98,11 @@ export async function PATCH(
       .single();
 
     if (error) {
-      console.error("Error updating version:", error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return serverError("Failed to update version", error);
     }
 
-    return NextResponse.json({ version });
+    return ok({ version });
   } catch (error) {
-    console.error("Version update error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return serverError("Failed to update version", error);
   }
 }

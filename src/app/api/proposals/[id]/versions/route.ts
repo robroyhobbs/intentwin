@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
+import { unauthorized, notFound, serverError, ok, created } from "@/lib/api/response";
 
 /**
  * GET /api/proposals/[id]/versions
@@ -15,13 +16,13 @@ export async function GET(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     // Verify proposal belongs to user's organization
     const proposal = await verifyProposalAccess(context, id);
     if (!proposal) {
-      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+      return notFound("Proposal not found");
     }
 
     const supabase = createAdminClient();
@@ -37,8 +38,7 @@ export async function GET(
       .order("version_number", { ascending: false });
 
     if (error) {
-      console.error("Error fetching versions:", error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return serverError("Failed to fetch versions", error);
     }
 
     // Transform to include section count
@@ -48,13 +48,9 @@ export async function GET(
       section_versions: undefined,
     }));
 
-    return NextResponse.json({ versions: versionsWithCount || [] });
+    return ok({ versions: versionsWithCount || [] });
   } catch (error) {
-    console.error("Versions list error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return serverError("Failed to list versions", error);
   }
 }
 
@@ -71,13 +67,13 @@ export async function POST(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     // Verify proposal belongs to user's organization
     const proposal = await verifyProposalAccess(context, id);
     if (!proposal) {
-      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+      return notFound("Proposal not found");
     }
 
     const body = await request.json();
@@ -95,8 +91,7 @@ export async function POST(
     });
 
     if (error) {
-      console.error("Error creating version:", error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return serverError("Failed to create version", error);
     }
 
     // Fetch the created version
@@ -106,12 +101,8 @@ export async function POST(
       .eq("id", data)
       .single();
 
-    return NextResponse.json({ version }, { status: 201 });
+    return created({ version });
   } catch (error) {
-    console.error("Version create error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return serverError("Failed to create version", error);
   }
 }

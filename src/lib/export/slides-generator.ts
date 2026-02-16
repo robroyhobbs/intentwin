@@ -5,6 +5,8 @@
  * Think McKinsey deck meets Apple keynote - dark, confident, sophisticated
  */
 
+import { escapeHtml } from "@/lib/email/escape-html";
+
 interface ProposalSection {
   title: string;
   content: string;
@@ -596,13 +598,7 @@ function transformToSlides(
   return slides;
 }
 
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
+// escapeHtml imported from @/lib/email/escape-html
 
 // Additional SVG icons for new slide types
 const ICONS_EXTENDED = {

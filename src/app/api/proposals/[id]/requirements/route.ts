@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
+import { unauthorized, notFound, badRequest, serverError, ok, created } from "@/lib/api/response";
 
 const VALID_CATEGORIES = ["mandatory", "desirable", "informational"] as const;
 const VALID_STATUSES = ["met", "partially_met", "not_addressed", "not_applicable"] as const;
@@ -18,12 +19,12 @@ export async function GET(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const proposal = await verifyProposalAccess(context, id);
     if (!proposal) {
-      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+      return notFound("Proposal not found");
     }
 
     const adminClient = createAdminClient();
@@ -35,7 +36,7 @@ export async function GET(
       .order("created_at", { ascending: true });
 
     if (error) {
-      return NextResponse.json({ error: "Failed to fetch requirements" }, { status: 500 });
+      return serverError("Failed to fetch requirements", error);
     }
 
     // Sort by category priority: mandatory first, then desirable, then informational
@@ -56,10 +57,9 @@ export async function GET(
       mandatory_gaps: sorted.filter(r => r.category === "mandatory" && r.compliance_status === "not_addressed").length,
     };
 
-    return NextResponse.json({ requirements: sorted, summary });
+    return ok({ requirements: sorted, summary });
   } catch (error) {
-    console.error("Fetch requirements error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return serverError("Failed to fetch requirements", error);
   }
 }
 
@@ -76,26 +76,23 @@ export async function POST(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const proposal = await verifyProposalAccess(context, id);
     if (!proposal) {
-      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+      return notFound("Proposal not found");
     }
 
     const body = await request.json();
     const { requirement_text, source_reference, category, mapped_section_id, notes } = body;
 
     if (!requirement_text || typeof requirement_text !== "string" || !requirement_text.trim()) {
-      return NextResponse.json({ error: "requirement_text is required" }, { status: 400 });
+      return badRequest("requirement_text is required");
     }
 
     if (category && !VALID_CATEGORIES.includes(category)) {
-      return NextResponse.json(
-        { error: `Invalid category. Must be one of: ${VALID_CATEGORIES.join(", ")}` },
-        { status: 400 }
-      );
+      return badRequest(`Invalid category. Must be one of: ${VALID_CATEGORIES.join(", ")}`);
     }
 
     const adminClient = createAdminClient();
@@ -115,13 +112,12 @@ export async function POST(
       .single();
 
     if (error) {
-      return NextResponse.json({ error: "Failed to create requirement" }, { status: 500 });
+      return serverError("Failed to create requirement", error);
     }
 
-    return NextResponse.json({ requirement }, { status: 201 });
+    return created({ requirement });
   } catch (error) {
-    console.error("Create requirement error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return serverError("Failed to create requirement", error);
   }
 }
 
@@ -138,37 +134,31 @@ export async function PATCH(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const proposal = await verifyProposalAccess(context, id);
     if (!proposal) {
-      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+      return notFound("Proposal not found");
     }
 
     const body = await request.json();
     const { updates } = body;
 
     if (!Array.isArray(updates)) {
-      return NextResponse.json({ error: "updates must be an array" }, { status: 400 });
+      return badRequest("updates must be an array");
     }
 
     // Validate all updates before applying
     for (const update of updates) {
       if (!update.id) {
-        return NextResponse.json({ error: "Each update must have an id" }, { status: 400 });
+        return badRequest("Each update must have an id");
       }
       if (update.compliance_status && !VALID_STATUSES.includes(update.compliance_status)) {
-        return NextResponse.json(
-          { error: `Invalid compliance_status. Must be one of: ${VALID_STATUSES.join(", ")}` },
-          { status: 400 }
-        );
+        return badRequest(`Invalid compliance_status. Must be one of: ${VALID_STATUSES.join(", ")}`);
       }
       if (update.category && !VALID_CATEGORIES.includes(update.category)) {
-        return NextResponse.json(
-          { error: `Invalid category. Must be one of: ${VALID_CATEGORIES.join(", ")}` },
-          { status: 400 }
-        );
+        return badRequest(`Invalid category. Must be one of: ${VALID_CATEGORIES.join(", ")}`);
       }
     }
 
@@ -194,16 +184,15 @@ export async function PATCH(
         .single();
 
       if (error) {
-        return NextResponse.json({ error: `Failed to update requirement ${reqId}` }, { status: 500 });
+        return serverError(`Failed to update requirement ${reqId}`, error);
       }
 
       results.push(data);
     }
 
-    return NextResponse.json({ requirements: results });
+    return ok({ requirements: results });
   } catch (error) {
-    console.error("Update requirements error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return serverError("Failed to update requirements", error);
   }
 }
 
@@ -220,17 +209,17 @@ export async function DELETE(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const proposal = await verifyProposalAccess(context, id);
     if (!proposal) {
-      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+      return notFound("Proposal not found");
     }
 
     const reqId = request.nextUrl.searchParams.get("reqId");
     if (!reqId) {
-      return NextResponse.json({ error: "reqId query parameter is required" }, { status: 400 });
+      return badRequest("reqId query parameter is required");
     }
 
     const adminClient = createAdminClient();
@@ -244,7 +233,7 @@ export async function DELETE(
       .single();
 
     if (!existing) {
-      return NextResponse.json({ error: "Requirement not found" }, { status: 404 });
+      return notFound("Requirement not found");
     }
 
     const { error } = await adminClient
@@ -254,12 +243,11 @@ export async function DELETE(
       .eq("organization_id", context.organizationId);
 
     if (error) {
-      return NextResponse.json({ error: "Failed to delete requirement" }, { status: 500 });
+      return serverError("Failed to delete requirement", error);
     }
 
-    return NextResponse.json({ deleted: true });
+    return ok({ deleted: true });
   } catch (error) {
-    console.error("Delete requirement error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return serverError("Failed to delete requirement", error);
   }
 }

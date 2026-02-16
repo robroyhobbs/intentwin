@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
+import { unauthorized, notFound, serverError, ok } from "@/lib/api/response";
 
 export async function GET(
   request: NextRequest,
@@ -11,13 +12,13 @@ export async function GET(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     // Verify proposal belongs to user's organization
     const proposal = await verifyProposalAccess(context, id);
     if (!proposal) {
-      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+      return notFound("Proposal not found");
     }
 
     // Return just the outcome fields
@@ -35,13 +36,9 @@ export async function GET(
       promoted_to_case_study: proposal.promoted_to_case_study,
     };
 
-    return NextResponse.json({ outcome });
+    return ok({ outcome });
   } catch (error) {
-    console.error("Get outcome error:", error);
-    return NextResponse.json(
-      { error: "Failed to get outcome" },
-      { status: 500 }
-    );
+    return serverError("Failed to get outcome", error);
   }
 }
 
@@ -52,7 +49,7 @@ export async function PATCH(
   try {
     const context = await getUserContext(request);
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const { id } = await params;
@@ -60,7 +57,7 @@ export async function PATCH(
     // Verify proposal belongs to user's organization
     const existingProposal = await verifyProposalAccess(context, id);
     if (!existingProposal) {
-      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+      return notFound("Proposal not found");
     }
 
     const body = await request.json();
@@ -99,7 +96,7 @@ export async function PATCH(
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return serverError("Failed to update outcome", error);
     }
 
     // Record in history
@@ -115,12 +112,8 @@ export async function PATCH(
       changed_by: context.user.id,
     });
 
-    return NextResponse.json({ proposal });
+    return ok({ proposal });
   } catch (error) {
-    console.error("Update outcome error:", error);
-    return NextResponse.json(
-      { error: "Failed to update outcome" },
-      { status: 500 }
-    );
+    return serverError("Failed to update outcome", error);
   }
 }

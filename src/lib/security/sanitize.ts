@@ -7,19 +7,8 @@
  * @module security/sanitize
  */
 
-/**
- * Escape HTML special characters to prevent XSS.
- * Handles the OWASP-recommended minimum set.
- */
-export function escapeHtml(input: string): string {
-  return input
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#x27;")
-    .replace(/\//g, "&#x2F;");
-}
+// Re-export canonical escapeHtml from email module
+export { escapeHtml } from "@/lib/email/escape-html";
 
 /**
  * Strip HTML tags from a string (preserves text content).

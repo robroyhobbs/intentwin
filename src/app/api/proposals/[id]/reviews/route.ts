@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
+import { unauthorized, notFound, badRequest, serverError, ok } from "@/lib/api/response";
 
 export async function GET(
   request: NextRequest,
@@ -11,13 +12,13 @@ export async function GET(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     // Verify proposal belongs to user's organization
     const proposal = await verifyProposalAccess(context, id);
     if (!proposal) {
-      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+      return notFound("Proposal not found");
     }
 
     const adminClient = createAdminClient();
@@ -28,7 +29,7 @@ export async function GET(
       .order("created_at", { ascending: false });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return serverError("Failed to fetch reviews", error);
     }
 
     // Compute summary
@@ -41,13 +42,10 @@ export async function GET(
         reviews?.filter((r) => r.annotation_type === "approval").length || 0,
     };
 
-    return NextResponse.json({ reviews, summary });
+    return ok({ reviews, summary });
   } catch (error) {
     console.error("Fetch reviews error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return serverError("Failed to fetch reviews", error);
   }
 }
 
@@ -60,13 +58,13 @@ export async function POST(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     // Verify proposal belongs to user's organization
     const proposal = await verifyProposalAccess(context, id);
     if (!proposal) {
-      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+      return notFound("Proposal not found");
     }
 
     const body = await request.json();
@@ -79,10 +77,7 @@ export async function POST(
     } = body;
 
     if (!content) {
-      return NextResponse.json(
-        { error: "Content is required" },
-        { status: 400 }
-      );
+      return badRequest("Content is required");
     }
 
     const adminClient = createAdminClient();
@@ -102,16 +97,13 @@ export async function POST(
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return serverError("Failed to create review", error);
     }
 
-    return NextResponse.json({ review });
+    return ok({ review });
   } catch (error) {
     console.error("Create review error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return serverError("Failed to create review", error);
   }
 }
 
@@ -124,23 +116,20 @@ export async function PATCH(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     // Verify proposal belongs to user's organization
     const proposal = await verifyProposalAccess(context, id);
     if (!proposal) {
-      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+      return notFound("Proposal not found");
     }
 
     const body = await request.json();
     const { review_id, status } = body;
 
     if (!review_id || !status) {
-      return NextResponse.json(
-        { error: "review_id and status are required" },
-        { status: 400 }
-      );
+      return badRequest("review_id and status are required");
     }
 
     const adminClient = createAdminClient();
@@ -152,15 +141,12 @@ export async function PATCH(
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return serverError("Failed to update review", error);
     }
 
-    return NextResponse.json({ review });
+    return ok({ review });
   } catch (error) {
     console.error("Update review error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return serverError("Failed to update review", error);
   }
 }

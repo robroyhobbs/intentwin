@@ -1,5 +1,6 @@
 import { extractMermaidBlocks } from "@/lib/diagrams/extract-mermaid";
 import { batchMermaidToImages } from "@/lib/diagrams/mermaid-to-svg";
+import { escapeHtml } from "@/lib/email/escape-html";
 
 interface ProposalSection {
   title: string;
@@ -167,13 +168,7 @@ function slugify(text: string): string {
     .replace(/^-|-$/g, "");
 }
 
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
+// escapeHtml imported from @/lib/email/escape-html
 
 const ACCENT_COLORS = ["#0070AD", "#12ABDB", "#1B365D", "#0070AD", "#12ABDB"];
 

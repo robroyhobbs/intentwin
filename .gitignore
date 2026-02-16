@@ -51,3 +51,12 @@ sources/pdfs/
 
 # Operational logs (auto-compound, cron reviews)
 logs/
+
+# Workspace scratch files (prototypes, temp data)
+workspace/
+
+# Task files
+tasks/
+
+# IDD planning documents (process artifacts, not source code)
+.intent/

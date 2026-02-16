@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext, verifyDocumentAccess } from "@/lib/supabase/auth-api";
+import { unauthorized, notFound, serverError, ok } from "@/lib/api/response";
 
 export async function GET(
   request: NextRequest,
@@ -11,13 +12,13 @@ export async function GET(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     // Verify document belongs to user's organization
     const document = await verifyDocumentAccess(context, id);
     if (!document) {
-      return NextResponse.json({ error: "Document not found" }, { status: 404 });
+      return notFound("Document not found");
     }
 
     // Fetch chunk count
@@ -27,13 +28,9 @@ export async function GET(
       .select("*", { count: "exact", head: true })
       .eq("document_id", id);
 
-    return NextResponse.json({ ...document, chunk_count: count });
+    return ok({ ...document, chunk_count: count });
   } catch (error) {
-    console.error("Get document error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return serverError("Failed to get document", error);
   }
 }
 
@@ -46,13 +43,13 @@ export async function DELETE(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     // Verify document belongs to user's organization
     const document = await verifyDocumentAccess(context, id);
     if (!document) {
-      return NextResponse.json({ error: "Document not found" }, { status: 404 });
+      return notFound("Document not found");
     }
 
     const adminClient = createAdminClient();
@@ -72,18 +69,11 @@ export async function DELETE(
       .eq("organization_id", context.organizationId);
 
     if (error) {
-      return NextResponse.json(
-        { error: `Delete failed: ${error.message}` },
-        { status: 500 }
-      );
+      return serverError("Failed to delete document", error);
     }
 
-    return NextResponse.json({ success: true });
+    return ok({ success: true });
   } catch (error) {
-    console.error("Delete document error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return serverError("Failed to delete document", error);
   }
 }

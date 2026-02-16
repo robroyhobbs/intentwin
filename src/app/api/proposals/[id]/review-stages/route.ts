@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
+import { unauthorized, notFound, badRequest, serverError, ok, created, conflict } from "@/lib/api/response";
 
 /**
  * GET /api/proposals/[id]/review-stages
@@ -15,12 +16,12 @@ export async function GET(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const proposal = await verifyProposalAccess(context, id);
     if (!proposal) {
-      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+      return notFound("Proposal not found");
     }
 
     const adminClient = createAdminClient();
@@ -33,7 +34,7 @@ export async function GET(
 
     if (error) {
       console.error("Fetch review stages error:", error);
-      return NextResponse.json({ error: "Failed to fetch review stages" }, { status: 500 });
+      return serverError("Failed to fetch review stages", error);
     }
 
     // For each stage, fetch reviewer counts and status breakdown
@@ -63,10 +64,10 @@ export async function GET(
 
     const currentStage = stagesWithReviewers.find((s) => s.status === "active") || null;
 
-    return NextResponse.json({ stages: stagesWithReviewers, currentStage });
+    return ok({ stages: stagesWithReviewers, currentStage });
   } catch (error) {
     console.error("Fetch review stages error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return serverError("Failed to fetch review stages", error);
   }
 }
 
@@ -83,12 +84,12 @@ export async function POST(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const proposal = await verifyProposalAccess(context, id);
     if (!proposal) {
-      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+      return notFound("Proposal not found");
     }
 
     const adminClient = createAdminClient();
@@ -103,14 +104,11 @@ export async function POST(
 
     if (checkError) {
       console.error("Check existing stages error:", checkError);
-      return NextResponse.json({ error: "Failed to check existing stages" }, { status: 500 });
+      return serverError("Failed to check existing stages", checkError);
     }
 
     if (existing && existing.length > 0) {
-      return NextResponse.json(
-        { error: "Review stages already exist for this proposal" },
-        { status: 409 }
-      );
+      return conflict("Review stages already exist for this proposal");
     }
 
     const now = new Date().toISOString();
@@ -154,12 +152,12 @@ export async function POST(
 
     if (insertError) {
       console.error("Insert review stages error:", insertError);
-      return NextResponse.json({ error: "Failed to create review stages" }, { status: 500 });
+      return serverError("Failed to create review stages", insertError);
     }
 
-    return NextResponse.json({ stages: stages || [] }, { status: 201 });
+    return created({ stages: stages || [] });
   } catch (error) {
     console.error("Create review stages error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return serverError("Failed to create review stages", error);
   }
 }

@@ -14,6 +14,7 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logger } from "@/lib/utils/logger";
+import { logQualityReviewMetric } from "@/lib/observability/metrics";
 import { reviewWithGemini } from "./gemini-review-client";
 import { reviewWithGroq } from "./groq-client";
 import { reviewWithMistral } from "./mistral-client";
@@ -328,6 +329,7 @@ export async function runQualityReview(
   proposalId: string,
   trigger: "auto_post_generation" | "manual",
 ): Promise<QualityReviewResult> {
+  const reviewStartTime = performance.now();
   const supabase = createAdminClient();
   const runAt = new Date().toISOString();
   const judges = getAvailableJudges();
@@ -568,6 +570,25 @@ export async function runQualityReview(
     result.consensus = calculateConsensus(sectionReviews);
     result.status = "completed";
 
+    // Log quality review metric (non-critical — never break main flow)
+    try {
+      const sectionScores: Record<string, number> = {};
+      for (const sr of sectionReviews) {
+        sectionScores[sr.section_type] = sr.score;
+      }
+      logQualityReviewMetric({
+        proposalId,
+        organizationId: proposal.organization_id,
+        durationMs: Math.round(performance.now() - reviewStartTime),
+        status: "success",
+        overallScore: result.overall_score,
+        sectionScores,
+        judgesUsed: judges.length,
+      });
+    } catch {
+      // Metric logging must never break quality review
+    }
+
     // Store result
     await storeResult(supabase, proposalId, result);
 
@@ -585,6 +606,21 @@ export async function runQualityReview(
   } catch (err) {
     logger.error("Quality review error", err);
     result.status = "failed";
+
+    // Log quality review failure metric (non-critical)
+    try {
+      logQualityReviewMetric({
+        proposalId,
+        organizationId: "",  // proposal may not have been fetched
+        durationMs: Math.round(performance.now() - reviewStartTime),
+        status: "failure",
+        judgesUsed: judges.length,
+        error: err instanceof Error ? err.message : "Unknown error",
+      });
+    } catch {
+      // Metric logging must never break quality review
+    }
+
     await storeResult(supabase, proposalId, result).catch(() => {});
     return result;
   }

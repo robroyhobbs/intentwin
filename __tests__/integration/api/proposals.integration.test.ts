@@ -120,7 +120,7 @@ describe("GET /api/proposals", () => {
     const { status, body } = await parseResponse(response);
 
     expect(status).toBe(500);
-    expect(body.error).toBe("Database connection failed");
+    expect(body.error).toBe("Failed to fetch proposals");
   });
 
   it("returns empty array when org has no proposals", async () => {
