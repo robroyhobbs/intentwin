@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { logger } from "@/lib/utils/logger";
 import { generateText } from "./claude";
 
 // Fixed scoring factors and weights
@@ -205,7 +206,7 @@ Based on the above, score each of the 5 bid evaluation factors (0-100) with rati
     .eq("id", proposalId);
 
   if (updateError) {
-    console.error("Failed to store bid evaluation:", updateError.message);
+    logger.error("Failed to store bid evaluation", updateError);
     throw new Error("Failed to store bid evaluation");
   }
 
@@ -338,7 +339,7 @@ async function fetchL1ContextForScoring(
       evidenceLibrary: evidenceLibrary || [],
     };
   } catch (error) {
-    console.error("Error fetching L1 context for scoring:", error);
+    logger.error("Error fetching L1 context for scoring", error);
     return { companyContext: [], productContexts: [], evidenceLibrary: [] };
   }
 }
@@ -462,10 +463,7 @@ function parseScoresFromResponse(
   try {
     parsed = JSON.parse(jsonStr.trim());
   } catch {
-    console.error(
-      "Failed to parse bid scoring response, using defaults. Response preview:",
-      response.slice(0, 200),
-    );
+    logger.error("Failed to parse bid scoring response, using defaults", { detail: response.slice(0, 200) });
     // Return neutral scores as fallback
     const defaults: Record<string, FactorScore> = {};
     for (const factor of SCORING_FACTORS) {

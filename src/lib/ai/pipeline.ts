@@ -27,6 +27,8 @@ import {
   type BrandVoice,
 } from "./persuasion";
 import { getIndustryConfig, buildIndustryContext } from "./industry-configs";
+import { createLogger } from "@/lib/utils/logger";
+import { createPipelineMetrics } from "@/lib/observability/metrics";
 import type { WinStrategyData } from "@/types/outcomes";
 import type {
   OutcomeContract,
@@ -35,6 +37,45 @@ import type {
   EvidenceLibraryEntry,
   CompanyInfo,
 } from "@/types/idd";
+
+/**
+ * Concurrency limit for parallel section generation.
+ * Controls how many AI generation calls run simultaneously.
+ * Set via PIPELINE_CONCURRENCY env var, default 3.
+ *
+ * - 1 = fully sequential (original behavior)
+ * - 3 = balanced parallelism (default, ~3x speedup)
+ * - 5 = aggressive (may hit API rate limits)
+ * - 10 = fully parallel (all sections at once)
+ */
+const PIPELINE_CONCURRENCY = Math.max(
+  1,
+  parseInt(process.env.PIPELINE_CONCURRENCY || "3", 10),
+);
+
+/**
+ * Process items in batches with a concurrency limit.
+ * Returns results in the same order as input.
+ */
+async function parallelBatch<T, R>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T, index: number) => Promise<R>,
+): Promise<PromiseSettledResult<R>[]> {
+  const results: PromiseSettledResult<R>[] = new Array(items.length);
+
+  for (let i = 0; i < items.length; i += concurrency) {
+    const batch = items.slice(i, i + concurrency);
+    const batchResults = await Promise.allSettled(
+      batch.map((item, batchIdx) => fn(item, i + batchIdx)),
+    );
+    for (let j = 0; j < batchResults.length; j++) {
+      results[i + j] = batchResults[j];
+    }
+  }
+
+  return results;
+}
 
 // L1 Context: Company Truth
 interface L1Context {
@@ -195,7 +236,8 @@ async function fetchL1Context(
       evidenceLibrary: (evidenceLibrary || []) as EvidenceLibraryEntry[],
     };
   } catch (error) {
-    console.error("Error fetching L1 context:", error);
+    const l1Log = createLogger({ operation: "fetchL1Context" });
+    l1Log.error("Error fetching L1 context", error);
     return {
       companyContext: [],
       productContexts: [],
@@ -366,7 +408,8 @@ async function retrieveContext(
 
     return { context, chunkIds };
   } catch (error) {
-    console.error("Context retrieval error:", error);
+    const ragLog = createLogger({ operation: "retrieveContext" });
+    ragLog.error("Context retrieval error", error);
     return {
       context: "Reference material temporarily unavailable.",
       chunkIds: [],
@@ -449,12 +492,17 @@ export async function generateProposal(proposalId: string): Promise<void> {
       proposal.organization_id,
     );
 
-    // Debug log for L1 context - only in development
-    if (process.env.NODE_ENV === "development") {
-      console.log(
-        `[IDD] Fetched L1 context: ${l1Context.companyContext.length} company, ${l1Context.productContexts.length} products, ${l1Context.evidenceLibrary.length} evidence`,
-      );
-    }
+    // Debug log for L1 context
+    const pipelineLog = createLogger({
+      operation: "generateProposal",
+      proposalId,
+      organizationId: proposal.organization_id,
+    });
+    pipelineLog.debug("Fetched L1 context", {
+      companyContextCount: l1Context.companyContext.length,
+      productContextCount: l1Context.productContexts.length,
+      evidenceCount: l1Context.evidenceLibrary.length,
+    });
 
     // Load static sources from sources/ directory
     let staticSourcesContext = "";
@@ -464,19 +512,16 @@ export async function generateProposal(proposalId: string): Promise<void> {
         opportunityType: serviceLine,
         industry: industry,
       });
-      if (process.env.NODE_ENV === "development") {
-        console.log(
-          `[IDD] Loaded static sources: ${staticSources.all.length} files (${staticSources.methodologies.length} methodologies, ${staticSources.caseStudies.length} case studies)`,
-        );
-      }
+      pipelineLog.debug("Loaded static sources", {
+        totalFiles: staticSources.all.length,
+        methodologies: staticSources.methodologies.length,
+        caseStudies: staticSources.caseStudies.length,
+      });
     } catch (sourceError) {
       // Non-critical - static sources are supplementary
-      if (process.env.NODE_ENV === "development") {
-        console.warn(
-          "[IDD] Failed to load static sources, continuing with database context only:",
-          sourceError,
-        );
-      }
+      pipelineLog.warn("Failed to load static sources, continuing with database context only", {
+        error: sourceError instanceof Error ? sourceError.message : String(sourceError),
+      });
     }
 
     // Build context strings for prompts
@@ -514,141 +559,177 @@ export async function generateProposal(proposalId: string): Promise<void> {
       throw new Error(`Failed to create sections: ${sectionError?.message}`);
     }
 
-    // Stage 2 & 3: Retrieve context and generate each section
-    for (const config of SECTION_CONFIGS) {
-      // Check timeout before each section
-      if (timeoutController.signal.aborted) {
-        throw new Error("Generation timed out");
-      }
+    // Stage 2 & 3: Retrieve context and generate sections in parallel batches
+    // Sections are independent — no cross-section dependencies — so we can
+    // safely generate multiple sections concurrently for ~3x speedup.
+    const log = createLogger({
+      operation: "generateProposal",
+      proposalId,
+      organizationId: proposal.organization_id,
+      concurrency: PIPELINE_CONCURRENCY,
+    });
+    const metrics = createPipelineMetrics(proposalId, proposal.organization_id, {
+      industry: industry,
+      opportunityType: serviceLine,
+    });
 
-      const section = sections.find((s) => s.section_type === config.type);
-      if (!section) continue;
+    log.info("Starting parallel section generation", {
+      sectionCount: SECTION_CONFIGS.length,
+      concurrency: PIPELINE_CONCURRENCY,
+    });
 
-      // Update section status to generating
-      await supabase
-        .from("proposal_sections")
-        .update({ generation_status: "generating" })
-        .eq("id", section.id);
+    // Build the list of section work items
+    const sectionWork = SECTION_CONFIGS.map((config) => ({
+      config,
+      section: sections.find((s) => s.section_type === config.type),
+    })).filter((item) => item.section !== undefined);
 
-      try {
-        // Retrieve relevant context
-        const searchQuery = config.searchQuery(intakeData);
-        const { context, chunkIds } = await retrieveContext(
-          supabase,
-          searchQuery,
-        );
+    await parallelBatch(
+      sectionWork,
+      PIPELINE_CONCURRENCY,
+      async ({ config, section }) => {
+        // Check timeout before each section
+        if (timeoutController.signal.aborted) {
+          throw new Error("Generation timed out");
+        }
 
-        // Build the base prompt (with win strategy, outcome contract, L1 context, and company info for IDD)
-        const basePrompt = config.buildPrompt(
-          intakeData,
-          enhancedAnalysis,
-          context,
-          winStrategy,
-          companyInfo,
-        );
+        const sectionTracker = metrics.trackSection(config.type);
 
-        // Build persuasion layers for this section type
-        const persuasionFramework = getPersuasionPrompt(config.type);
-        const bestPractices = getBestPracticesPrompt(config.type);
-        const winThemesPrompt = winStrategy?.win_themes
-          ? buildWinThemesPrompt(winStrategy.win_themes)
-          : "";
-        const competitivePrompt = winStrategy?.differentiators
-          ? buildCompetitivePrompt(winStrategy.differentiators, [])
-          : "";
+        // Update section status to generating
+        await supabase
+          .from("proposal_sections")
+          .update({ generation_status: "generating" })
+          .eq("id", section!.id);
 
-        // Combine base prompt with persuasion context
-        const persuasionContext = [
-          persuasionFramework,
-          bestPractices,
-          winThemesPrompt,
-          competitivePrompt,
-        ]
-          .filter(Boolean)
-          .join("\n\n");
-
-        // Build industry intelligence context for this section
-        const industryContext = buildIndustryContext(
-          industryConfig,
-          config.type,
-        );
-
-        const prompt = [
-          basePrompt,
-          industryContext ? `\n\n---\n\n${industryContext}` : "",
-          persuasionContext
-            ? `\n\n---\n\n## Persuasion & Quality Guidance\n\n${persuasionContext}`
-            : "",
-        ]
-          .filter(Boolean)
-          .join("");
-
-        // Generate the section content with organization-aware system prompt
-        const generatedContent = await generateText(prompt, {
-          systemPrompt,
-        });
-
-        // Run quality checks (advisory — log results, don't block generation)
         try {
-          const avoidTerms = brandVoice?.terminology?.avoid ?? [];
-          const themes = winStrategy?.win_themes ?? [];
-          const qualityResult = runQualityChecks(
-            generatedContent,
+          // Retrieve relevant context
+          const searchQuery = config.searchQuery(intakeData);
+          const { context, chunkIds } = await retrieveContext(
+            supabase,
+            searchQuery,
+          );
+
+          // Build the base prompt (with win strategy, outcome contract, L1 context, and company info for IDD)
+          const basePrompt = config.buildPrompt(
+            intakeData,
+            enhancedAnalysis,
+            context,
+            winStrategy,
+            companyInfo,
+          );
+
+          // Build persuasion layers for this section type
+          const persuasionFramework = getPersuasionPrompt(config.type);
+          const bestPractices = getBestPracticesPrompt(config.type);
+          const winThemesPrompt = winStrategy?.win_themes
+            ? buildWinThemesPrompt(winStrategy.win_themes)
+            : "";
+          const competitivePrompt = winStrategy?.differentiators
+            ? buildCompetitivePrompt(winStrategy.differentiators, [])
+            : "";
+
+          // Combine base prompt with persuasion context
+          const persuasionContext = [
+            persuasionFramework,
+            bestPractices,
+            winThemesPrompt,
+            competitivePrompt,
+          ]
+            .filter(Boolean)
+            .join("\n\n");
+
+          // Build industry intelligence context for this section
+          const industryContext = buildIndustryContext(
+            industryConfig,
             config.type,
-            themes,
-            avoidTerms,
-          );
-          if (process.env.NODE_ENV === "development") {
-            console.log(
-              `[IMF] Quality check for ${config.type}:`,
-              JSON.stringify(qualityResult),
-            );
-          }
-        } catch (qcError) {
-          if (process.env.NODE_ENV === "development") {
-            console.warn(
-              `[IMF] Quality check failed for ${config.type}:`,
-              qcError,
-            );
-          }
-        }
-
-        // Update section with generated content
-        await supabase
-          .from("proposal_sections")
-          .update({
-            generated_content: generatedContent,
-            generation_status: "completed",
-            generation_prompt: prompt.slice(0, 2000), // Store truncated prompt for debugging
-            retrieved_context_ids: chunkIds,
-          })
-          .eq("id", section.id);
-
-        // Store source references
-        if (chunkIds.length > 0) {
-          const sourceInserts = chunkIds.map(
-            (chunkId: string, idx: number) => ({
-              section_id: section.id,
-              chunk_id: chunkId,
-              relevance_score: 1 - idx * 0.1, // Approximate scoring by rank
-            }),
           );
 
-          await supabase.from("section_sources").insert(sourceInserts);
-        }
-      } catch (sectionErr) {
-        const errorMessage =
-          sectionErr instanceof Error ? sectionErr.message : "Unknown error";
+          const prompt = [
+            basePrompt,
+            industryContext ? `\n\n---\n\n${industryContext}` : "",
+            persuasionContext
+              ? `\n\n---\n\n## Persuasion & Quality Guidance\n\n${persuasionContext}`
+              : "",
+          ]
+            .filter(Boolean)
+            .join("");
 
-        await supabase
-          .from("proposal_sections")
-          .update({
-            generation_status: "failed",
-            generation_error: errorMessage,
-          })
-          .eq("id", section.id);
-      }
-    }
+          // Generate the section content with organization-aware system prompt
+          const generatedContent = await generateText(prompt, {
+            systemPrompt,
+          });
+
+          // Run quality checks (advisory — log results, don't block generation)
+          try {
+            const avoidTerms = brandVoice?.terminology?.avoid ?? [];
+            const themes = winStrategy?.win_themes ?? [];
+            const qualityResult = runQualityChecks(
+              generatedContent,
+              config.type,
+              themes,
+              avoidTerms,
+            );
+            log.debug(`Quality check for ${config.type}`, {
+              sectionType: config.type,
+              qualityResult,
+            });
+          } catch (qcError) {
+            log.warn(`Quality check failed for ${config.type}`, {
+              sectionType: config.type,
+              error: qcError instanceof Error ? qcError.message : String(qcError),
+            });
+          }
+
+          // Update section with generated content
+          await supabase
+            .from("proposal_sections")
+            .update({
+              generated_content: generatedContent,
+              generation_status: "completed",
+              generation_prompt: prompt.slice(0, 2000), // Store truncated prompt for debugging
+              retrieved_context_ids: chunkIds,
+            })
+            .eq("id", section!.id);
+
+          // Store source references
+          if (chunkIds.length > 0) {
+            const sourceInserts = chunkIds.map(
+              (chunkId: string, idx: number) => ({
+                section_id: section!.id,
+                chunk_id: chunkId,
+                relevance_score: 1 - idx * 0.1, // Approximate scoring by rank
+              }),
+            );
+
+            await supabase.from("section_sources").insert(sourceInserts);
+          }
+
+          sectionTracker.success({ ragChunks: chunkIds.length });
+        } catch (sectionErr) {
+          const errorMessage =
+            sectionErr instanceof Error ? sectionErr.message : "Unknown error";
+
+          await supabase
+            .from("proposal_sections")
+            .update({
+              generation_status: "failed",
+              generation_error: errorMessage,
+            })
+            .eq("id", section!.id);
+
+          sectionTracker.failure(errorMessage);
+        }
+      },
+    );
+
+    const pipelineResult = metrics.finish();
+    log.info("Section generation complete", {
+      status: pipelineResult.status,
+      generated: pipelineResult.sectionsGenerated,
+      failed: pipelineResult.sectionsFailed,
+      totalDurationMs: pipelineResult.totalDurationMs,
+      totalTokens: pipelineResult.totalTokens,
+    });
 
     // Update proposal status to review
     await supabase
@@ -669,19 +750,15 @@ export async function generateProposal(proposalId: string): Promise<void> {
 
     // Auto-trigger quality review after generation completes (fire-and-forget)
     runQualityReview(proposalId, "auto_post_generation").catch((err) => {
-      console.error(
-        `Auto quality review failed for proposal ${proposalId}:`,
-        err,
-      );
+      const reviewLog = createLogger({ operation: "qualityReview", proposalId });
+      reviewLog.error("Auto quality review failed", err);
       // Don't throw — user can manually trigger if auto-trigger fails
     });
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
-    console.error(
-      `Proposal generation failed for ${proposalId}:`,
-      errorMessage,
-    );
+    const errorLog = createLogger({ operation: "generateProposal", proposalId });
+    errorLog.error("Proposal generation failed", error);
 
     await supabase
       .from("proposals")

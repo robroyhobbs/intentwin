@@ -2,9 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendWaitlistConfirmation } from "@/lib/email/send-waitlist-email";
 import { sendAdminWaitlistNotification } from "@/lib/email/send-admin-notification";
+import { rateLimitCheck, PUBLIC_LIMIT } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: public endpoint, per-IP
+    const blocked = rateLimitCheck(request, PUBLIC_LIMIT, { keyByIp: true });
+    if (blocked) return blocked;
+
     const body = await request.json();
     const { name, email, company, company_size } = body;
 

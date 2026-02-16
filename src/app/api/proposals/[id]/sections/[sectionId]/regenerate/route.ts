@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse, after } from "next/server";
+import { rateLimitCheck, AI_GENERATION_LIMIT } from "@/lib/rate-limit";
 import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
 import { regenerateSection } from "@/lib/ai/pipeline";
 import { getQualityFeedbackForSection } from "@/lib/ai/quality-overseer";
@@ -8,6 +9,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string; sectionId: string }> },
 ) {
   try {
+    const blocked = rateLimitCheck(request, AI_GENERATION_LIMIT);
+    if (blocked) return blocked;
+
     const { id, sectionId } = await params;
     const context = await getUserContext(request);
 

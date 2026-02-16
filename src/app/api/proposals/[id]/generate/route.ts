@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
 import { generateProposal } from "@/lib/ai/pipeline";
+import { rateLimitCheck, AI_GENERATION_LIMIT } from "@/lib/rate-limit";
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Rate limit: AI generation is expensive
+    const blocked = rateLimitCheck(request, AI_GENERATION_LIMIT);
+    if (blocked) return blocked;
+
     const { id } = await params;
     const context = await getUserContext(request);
 

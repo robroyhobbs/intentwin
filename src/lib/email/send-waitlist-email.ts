@@ -1,5 +1,6 @@
 import { resend } from "./resend";
 import { waitlistConfirmationEmail } from "./templates/waitlist-confirmation";
+import { logger } from "@/lib/utils/logger";
 
 export async function sendWaitlistConfirmation(params: {
   name: string;
@@ -8,7 +9,7 @@ export async function sendWaitlistConfirmation(params: {
 }): Promise<void> {
   try {
     if (!resend) {
-      console.warn(
+      logger.warn(
         "[EMAIL] RESEND_API_KEY not configured — skipping waitlist confirmation email",
       );
       return;
@@ -29,14 +30,14 @@ export async function sendWaitlistConfirmation(params: {
     });
 
     if (error) {
-      console.error("[EMAIL] Failed to send waitlist confirmation:", error);
+      logger.error("[EMAIL] Failed to send waitlist confirmation", error);
       return;
     }
 
-    console.log("[EMAIL] Waitlist confirmation sent to", params.email);
+    logger.info("[EMAIL] Waitlist confirmation sent successfully");
   } catch (err) {
-    console.error(
-      "[EMAIL] Unexpected error sending waitlist confirmation:",
+    logger.error(
+      "[EMAIL] Unexpected error sending waitlist confirmation",
       err,
     );
   }

@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { logger } from "@/lib/utils/logger";
 import type { WinStrategyData } from "@/types/outcomes";
 import type { BrandVoice } from "./persuasion";
 import { buildBrandVoiceSystemPrompt } from "./persuasion";
@@ -125,9 +126,7 @@ export async function generateText(
         lastError.message.includes("high demand");
 
       if (isRetryable && modelName !== FALLBACK_MODEL) {
-        console.warn(
-          `[AI] ${modelName} unavailable (503), falling back to ${FALLBACK_MODEL}`,
-        );
+        logger.warn(`[AI] ${modelName} unavailable (503), falling back to ${FALLBACK_MODEL}`);
         continue;
       }
       throw lastError;

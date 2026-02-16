@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync, existsSync, statSync } from 'fs';
 import { join, basename } from 'path';
+import { logger } from "@/lib/utils/logger";
 import {
   parseSourceDocument,
   ParsedSourceDocument,
@@ -98,7 +99,7 @@ function loadDirectory(dirPath: string, category: SourceCategory): LoadedSource[
           document,
         });
       } catch (error) {
-        console.error(`Failed to parse source file: ${filePath}`, error);
+        logger.error(`Failed to parse source file: ${filePath}`, error);
       }
     }
   }

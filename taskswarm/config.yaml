@@ -1,0 +1,36 @@
+taskswarm:
+  tasks:
+    paths:
+      - .intent/robustness-phase-*
+    logs_dir: logs/taskswarm
+
+  git:
+    branch: main
+    auto_commit: true
+    auto_push: true
+
+  run_all:
+    scan_interval: 60s
+    max_interval: 300s
+    backoff_multiplier: 2
+    quick_check: true
+    compact_between_tasks: true
+    git_pull: true
+    git_pull_interval: 5m
+    max_execution_time: 4h
+
+  heartbeat:
+    interval: 5m
+    stale_timeout: 30m
+
+  locking:
+    use_local_lock: true
+    lock_dir: ~/.taskswarm/locks
+    lock_expire: 30m
+    cleanup_interval: 5m
+
+  execution:
+    on_test_fail: block
+    require_e2e: true
+    test_command: npm test
+    e2e_command: npx playwright test

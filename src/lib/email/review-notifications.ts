@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { logger } from "@/lib/utils/logger";
 
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
@@ -21,14 +22,14 @@ export async function sendReviewerAssignedEmail(params: {
 }): Promise<void> {
   try {
     if (!resend) {
-      console.warn(
+      logger.warn(
         "[REVIEW-EMAIL] RESEND_API_KEY not configured — skipping reviewer assigned email",
       );
       return;
     }
 
     if (!params.reviewerEmail) {
-      console.warn(
+      logger.warn(
         "[REVIEW-EMAIL] No reviewer email provided — skipping",
       );
       return;
@@ -54,19 +55,19 @@ export async function sendReviewerAssignedEmail(params: {
     });
 
     if (error) {
-      console.error(
-        "[REVIEW-EMAIL] Failed to send reviewer assigned email:",
+      logger.error(
+        "[REVIEW-EMAIL] Failed to send reviewer assigned email",
         error,
       );
       return;
     }
 
-    console.log(
+    logger.info(
       `[REVIEW-EMAIL] Reviewer assigned email sent to ${params.reviewerEmail}`,
     );
   } catch (err) {
-    console.error(
-      "[REVIEW-EMAIL] Unexpected error sending reviewer assigned email:",
+    logger.error(
+      "[REVIEW-EMAIL] Unexpected error sending reviewer assigned email",
       err,
     );
   }
@@ -83,14 +84,14 @@ export async function sendStageCompleteEmail(params: {
 }): Promise<void> {
   try {
     if (!resend) {
-      console.warn(
+      logger.warn(
         "[REVIEW-EMAIL] RESEND_API_KEY not configured — skipping stage complete email",
       );
       return;
     }
 
     if (!params.ownerEmail) {
-      console.warn(
+      logger.warn(
         "[REVIEW-EMAIL] No owner email provided — skipping",
       );
       return;
@@ -119,19 +120,19 @@ export async function sendStageCompleteEmail(params: {
     });
 
     if (error) {
-      console.error(
-        "[REVIEW-EMAIL] Failed to send stage complete email:",
+      logger.error(
+        "[REVIEW-EMAIL] Failed to send stage complete email",
         error,
       );
       return;
     }
 
-    console.log(
+    logger.info(
       `[REVIEW-EMAIL] Stage complete email sent to ${params.ownerEmail}`,
     );
   } catch (err) {
-    console.error(
-      "[REVIEW-EMAIL] Unexpected error sending stage complete email:",
+    logger.error(
+      "[REVIEW-EMAIL] Unexpected error sending stage complete email",
       err,
     );
   }
@@ -145,7 +146,7 @@ export async function sendStageAdvancedEmail(params: {
 }): Promise<void> {
   try {
     if (!resend) {
-      console.warn(
+      logger.warn(
         "[REVIEW-EMAIL] RESEND_API_KEY not configured — skipping stage advanced email",
       );
       return;
@@ -175,26 +176,26 @@ export async function sendStageAdvancedEmail(params: {
         });
 
         if (error) {
-          console.error(
-            `[REVIEW-EMAIL] Failed to send stage advanced email to ${reviewer.email}:`,
+          logger.error(
+            `[REVIEW-EMAIL] Failed to send stage advanced email to ${reviewer.email}`,
             error,
           );
           continue;
         }
 
-        console.log(
+        logger.info(
           `[REVIEW-EMAIL] Stage advanced email sent to ${reviewer.email}`,
         );
       } catch (err) {
-        console.error(
-          `[REVIEW-EMAIL] Unexpected error sending stage advanced email to ${reviewer.email}:`,
-          err,
-        );
+          logger.error(
+            `[REVIEW-EMAIL] Unexpected error sending stage advanced email to ${reviewer.email}`,
+            err,
+          );
       }
     }
   } catch (err) {
-    console.error(
-      "[REVIEW-EMAIL] Unexpected error in sendStageAdvancedEmail:",
+    logger.error(
+      "[REVIEW-EMAIL] Unexpected error in sendStageAdvancedEmail",
       err,
     );
   }

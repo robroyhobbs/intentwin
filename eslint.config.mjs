@@ -16,7 +16,7 @@ const eslintConfig = defineConfig([
     "logs/**",
     "*.log",
   ]),
-  // Custom rules for code consistency
+  // Custom rules for code consistency and quality
   {
     rules: {
       // Allow unused vars that start with underscore (common pattern for ignored params)
@@ -32,6 +32,26 @@ const eslintConfig = defineConfig([
       "prefer-const": "warn",
       // Consistent spacing
       "no-multiple-empty-lines": ["warn", { max: 2, maxEOF: 1 }],
+      // Enforce structured logger instead of console.log
+      // Warn on console usage — use logger from @/lib/utils/logger instead.
+      // console.error is allowed in catch blocks but logger.error is preferred.
+      "no-console": ["warn", { allow: ["warn", "error"] }],
+      // Prevent debugger statements in production code
+      "no-debugger": "error",
+      // Enforce strict equality checks
+      eqeqeq: ["warn", "always", { null: "ignore" }],
+      // Prevent accidental variable shadowing
+      "no-shadow": "off",
+      "@typescript-eslint/no-shadow": "warn",
+    },
+  },
+  // Relax rules for test files
+  {
+    files: ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.spec.tsx", "**/test-utils/**"],
+    rules: {
+      "no-console": "off",
+      "@typescript-eslint/no-shadow": "off",
+      "@typescript-eslint/no-explicit-any": "off",
     },
   },
 ]);

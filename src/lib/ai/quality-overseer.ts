@@ -13,6 +13,7 @@
  */
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { logger } from "@/lib/utils/logger";
 import { reviewWithGemini } from "./gemini-review-client";
 import { reviewWithGroq } from "./groq-client";
 import { reviewWithMistral } from "./mistral-client";
@@ -451,7 +452,7 @@ export async function runQualityReview(
           });
         }
       } catch (err) {
-        console.error(`Council review failed for section ${section.id}:`, err);
+        logger.error(`Council review failed for section ${section.id}`, err);
         result.status = "failed";
         result.sections = sectionReviews;
         // Update judge statuses based on what we know
@@ -539,7 +540,7 @@ export async function runQualityReview(
           new_score: newAvg,
         });
       } catch (err) {
-        console.error(`Remediation failed for section ${weak.sectionId}:`, err);
+        logger.error(`Remediation failed for section ${weak.sectionId}`, err);
         result.remediation.push({
           section_id: weak.sectionId,
           round: 1,
@@ -582,7 +583,7 @@ export async function runQualityReview(
 
     return result;
   } catch (err) {
-    console.error("Quality review error:", err);
+    logger.error("Quality review error", err);
     result.status = "failed";
     await storeResult(supabase, proposalId, result).catch(() => {});
     return result;

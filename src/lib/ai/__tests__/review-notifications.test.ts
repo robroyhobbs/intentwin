@@ -2,13 +2,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Mock the resend module before imports
 const mockSend = vi.fn();
-vi.mock("resend", () => ({
-  Resend: vi.fn().mockImplementation(() => ({
-    emails: {
-      send: mockSend,
-    },
-  })),
-}));
+vi.mock("resend", () => {
+  // Use a real class so `new Resend(...)` works across module resets
+  class MockResend {
+    emails = { send: mockSend };
+  }
+  return { Resend: MockResend };
+});
 
 // Store original env so we can restore
 const originalEnv = { ...process.env };

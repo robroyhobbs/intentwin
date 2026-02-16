@@ -4,6 +4,7 @@
  */
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { logger } from "@/lib/utils/logger";
 
 const IMAGE_MODEL = "gemini-3-pro-image-preview";
 
@@ -51,7 +52,7 @@ ${mermaidCode}`;
         }
       }
     } catch (err) {
-      console.warn("Gemini diagram generation failed, falling back to mermaid.ink:", err);
+      logger.warn("Gemini diagram generation failed, falling back to mermaid.ink", { detail: err });
     }
   }
 
@@ -69,12 +70,9 @@ ${mermaidCode}`;
       return { type: "svg", data: svg };
     }
 
-    console.error(
-      `Mermaid.ink returned ${response.status} for diagram`,
-      mermaidCode.slice(0, 80),
-    );
+    logger.error(`Mermaid.ink returned ${response.status} for diagram`, { detail: mermaidCode.slice(0, 80) });
   } catch (error) {
-    console.error("Mermaid.ink fallback also failed:", error);
+    logger.error("Mermaid.ink fallback also failed", error);
   }
 
   return null;

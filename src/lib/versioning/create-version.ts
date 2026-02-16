@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { logger } from "@/lib/utils/logger";
 
 export type VersionTriggerEvent =
   | "intent_approved"
@@ -40,13 +41,13 @@ export async function createProposalVersion({
     });
 
     if (error) {
-      console.error("Error creating version:", error);
+      logger.error("Error creating version", error);
       return { versionId: null, error: error.message };
     }
 
     return { versionId: data as string, error: null };
   } catch (error) {
-    console.error("Version creation failed:", error);
+    logger.error("Version creation failed", error);
     return {
       versionId: null,
       error: error instanceof Error ? error.message : "Unknown error",

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { createClient } from "./server";
 import { createAdminClient } from "./admin";
+import { logger } from "@/lib/utils/logger";
 import type { User } from "@supabase/supabase-js";
 
 /**
@@ -28,7 +29,7 @@ export async function getAuthUser(
     } = await supabase.auth.getUser();
     if (user) return user;
   } catch (e) {
-    console.warn("Server client auth check failed:", e);
+    logger.warn("Server client auth check failed", { detail: e });
   }
 
   // 2. Fallback: Authorization Bearer token
@@ -41,7 +42,7 @@ export async function getAuthUser(
         const { data } = await adminClient.auth.getUser(token);
         if (data.user) return data.user;
       } catch (e) {
-        console.warn("Bearer token auth check failed:", e);
+        logger.warn("Bearer token auth check failed", { detail: e });
       }
     }
   }
@@ -67,7 +68,7 @@ export async function getUserContext(
     .single();
 
   if (error || !profile?.organization_id) {
-    console.warn("Failed to get user profile/organization:", error);
+    logger.warn("Failed to get user profile/organization", { detail: error });
     return null;
   }
 

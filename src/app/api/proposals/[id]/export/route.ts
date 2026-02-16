@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimitCheck, EXPORT_LIMIT } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext } from "@/lib/supabase/auth-api";
 import { generateDocx } from "@/lib/export/docx-generator";
@@ -15,6 +16,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const blocked = rateLimitCheck(request, EXPORT_LIMIT);
+    if (blocked) return blocked;
+
     const { id } = await params;
     const context = await getUserContext(request);
 

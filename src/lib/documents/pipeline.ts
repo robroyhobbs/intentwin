@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { logger } from "@/lib/utils/logger";
 import { parseDocument } from "./parser";
 import { chunkSections } from "./chunker";
 import { generateEmbeddings } from "@/lib/ai/embeddings";
@@ -40,9 +41,7 @@ export async function processDocument(documentId: string): Promise<void> {
     const sections = await parseDocument(buffer, doc.file_type);
 
     if (sections.length === 0) {
-      console.warn(
-        `[Pipeline] Document ${documentId} parsed but produced 0 sections (file type: ${doc.file_type})`,
-      );
+      logger.warn(`[Pipeline] Document ${documentId} parsed but produced 0 sections (file type: ${doc.file_type})`);
     }
 
     // Chunk sections

@@ -3,6 +3,7 @@ import { nurtureDay1Email } from "./templates/nurture-day1";
 import { nurtureDay3Email } from "./templates/nurture-day3";
 import { nurtureDay7Email } from "./templates/nurture-day7";
 import { nurtureDay14Email } from "./templates/nurture-day14";
+import { logger } from "@/lib/utils/logger";
 
 type NurtureStep = 1 | 2 | 3 | 4;
 
@@ -35,7 +36,7 @@ export async function sendNurtureEmail(
 ): Promise<{ success: boolean }> {
   try {
     if (!resend) {
-      console.warn(
+      logger.warn(
         "[NURTURE] RESEND_API_KEY not configured — skipping nurture email",
       );
       return { success: false };
@@ -58,18 +59,18 @@ export async function sendNurtureEmail(
     });
 
     if (error) {
-      console.error(
-        `[NURTURE] Failed to send step ${params.step} to ${params.email}:`,
+      logger.error(
+        `[NURTURE] Failed to send step ${params.step} to ${params.email}`,
         error,
       );
       return { success: false };
     }
 
-    console.log(`[NURTURE] Step ${params.step} sent to ${params.email}`);
+    logger.info(`[NURTURE] Step ${params.step} sent successfully`);
     return { success: true };
   } catch (err) {
-    console.error(
-      `[NURTURE] Unexpected error sending step ${params.step} to ${params.email}:`,
+    logger.error(
+      `[NURTURE] Unexpected error sending step ${params.step}`,
       err,
     );
     return { success: false };

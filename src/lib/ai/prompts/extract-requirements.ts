@@ -4,6 +4,8 @@
  * Part of IMF Phase 2 (L0: Requirements Truth).
  */
 
+import { logger } from "@/lib/utils/logger";
+
 export const VALID_SECTION_TYPES = [
   "executive_summary",
   "understanding",
@@ -105,12 +107,12 @@ export function parseExtractionResponse(response: string): RequirementExtraction
   try {
     parsed = JSON.parse(jsonStr);
   } catch {
-    console.warn("Failed to parse requirements extraction response as JSON");
+    logger.warn("Failed to parse requirements extraction response as JSON");
     return [];
   }
 
   if (!Array.isArray(parsed)) {
-    console.warn("Requirements extraction response is not an array");
+    logger.warn("Requirements extraction response is not an array");
     return [];
   }
 

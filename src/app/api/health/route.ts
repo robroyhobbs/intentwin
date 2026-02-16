@@ -1,12 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext } from "@/lib/supabase/auth-api";
+import { logger } from "@/lib/utils/logger";
+
+interface HealthCheck {
+  ok: boolean;
+  message: string;
+  responseTimeMs?: number;
+}
 
 /**
  * Health check endpoint that tests all pipeline dependencies.
  * GET /api/health
+ *
+ * Unauthenticated: returns minimal status.
+ * Authenticated: returns detailed component health with response times.
  */
 export async function GET(request: NextRequest) {
+  const overallStart = performance.now();
+
   // Check authentication - unauthenticated users get minimal response
   const context = await getUserContext(request);
   if (!context) {
@@ -15,77 +27,127 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   }
-  const checks: Record<string, { ok: boolean; message: string }> = {};
 
-  // 1. Supabase connection
+  const checks: Record<string, HealthCheck> = {};
+
+  // Run independent checks in parallel for faster response
+  const [supabaseCheck, storageCheck, documentsCheck, vectorCheck, voyageCheck] =
+    await Promise.allSettled([
+      checkSupabase(),
+      checkStorage(),
+      checkDocuments(),
+      checkVectorSearch(),
+      checkVoyageAI(),
+    ]);
+
+  // Collect results
+  checks.supabase =
+    supabaseCheck.status === "fulfilled"
+      ? supabaseCheck.value
+      : { ok: false, message: `${supabaseCheck.reason}` };
+
+  checks.storage =
+    storageCheck.status === "fulfilled"
+      ? storageCheck.value
+      : { ok: false, message: `${storageCheck.reason}` };
+
+  checks.documents =
+    documentsCheck.status === "fulfilled"
+      ? documentsCheck.value
+      : { ok: false, message: `${documentsCheck.reason}` };
+
+  checks.vector_search =
+    vectorCheck.status === "fulfilled"
+      ? vectorCheck.value
+      : { ok: false, message: `${vectorCheck.reason}` };
+
+  checks.voyage =
+    voyageCheck.status === "fulfilled"
+      ? voyageCheck.value
+      : { ok: false, message: `${voyageCheck.reason}` };
+
+  // Env var checks (instant)
+  checks.gemini = process.env.GEMINI_API_KEY
+    ? { ok: true, message: "Key configured" }
+    : { ok: false, message: "GEMINI_API_KEY not set" };
+
+  checks.claude = process.env.ANTHROPIC_API_KEY
+    ? { ok: true, message: "Key configured" }
+    : { ok: false, message: "ANTHROPIC_API_KEY not set" };
+
+  const allOk = Object.values(checks).every((c) => c.ok);
+  const failedChecks = Object.entries(checks)
+    .filter(([, c]) => !c.ok)
+    .map(([name]) => name);
+
+  const totalResponseTimeMs = Math.round(performance.now() - overallStart);
+
+  const status = allOk ? "healthy" : "degraded";
+
+  // Log health check result
+  logger.event("health.check", {
+    status,
+    totalResponseTimeMs,
+    failedChecks: failedChecks.length > 0 ? failedChecks : undefined,
+  });
+
+  return NextResponse.json(
+    {
+      status,
+      timestamp: new Date().toISOString(),
+      responseTimeMs: totalResponseTimeMs,
+      checks,
+      ...(failedChecks.length > 0 ? { failedChecks } : {}),
+    },
+    { status: allOk ? 200 : 503 },
+  );
+}
+
+// ─── Individual Check Functions ─────────────────────────────────────────────
+
+async function checkSupabase(): Promise<HealthCheck> {
+  const start = performance.now();
   try {
     const supabase = createAdminClient();
-    const { error } = await supabase
-      .from("organizations")
-      .select("id")
-      .limit(1);
-    checks.supabase = error
-      ? { ok: false, message: `DB error: ${error.message}` }
-      : { ok: true, message: "Connected" };
+    const { error } = await supabase.from("organizations").select("id").limit(1);
+    const responseTimeMs = Math.round(performance.now() - start);
+    return error
+      ? { ok: false, message: `DB error: ${error.message}`, responseTimeMs }
+      : { ok: true, message: "Connected", responseTimeMs };
   } catch (e) {
-    checks.supabase = { ok: false, message: `${e}` };
+    const responseTimeMs = Math.round(performance.now() - start);
+    return { ok: false, message: `${e}`, responseTimeMs };
   }
+}
 
-  // 2. Storage bucket exists
+async function checkStorage(): Promise<HealthCheck> {
+  const start = performance.now();
   try {
     const supabase = createAdminClient();
     const { data, error } = await supabase.storage.getBucket(
       "knowledge-base-documents",
     );
+    const responseTimeMs = Math.round(performance.now() - start);
     if (error || !data) {
-      checks.storage = {
+      return {
         ok: false,
         message: `Bucket "knowledge-base-documents" not found: ${error?.message}. Create it in Supabase Dashboard > Storage.`,
-      };
-    } else {
-      checks.storage = {
-        ok: true,
-        message: `Bucket exists (public: ${data.public})`,
+        responseTimeMs,
       };
     }
+    return {
+      ok: true,
+      message: `Bucket exists (public: ${data.public})`,
+      responseTimeMs,
+    };
   } catch (e) {
-    checks.storage = { ok: false, message: `${e}` };
+    const responseTimeMs = Math.round(performance.now() - start);
+    return { ok: false, message: `${e}`, responseTimeMs };
   }
+}
 
-  // 3. Gemini API key
-  checks.gemini = process.env.GEMINI_API_KEY
-    ? { ok: true, message: "Key configured" }
-    : { ok: false, message: "GEMINI_API_KEY not set" };
-
-  // 4. Voyage AI API key
-  if (process.env.VOYAGE_API_KEY) {
-    try {
-      const res = await fetch("https://api.voyageai.com/v1/embeddings", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.VOYAGE_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: process.env.EMBEDDING_MODEL || "voyage-3",
-          input: ["health check"],
-          input_type: "document",
-        }),
-      });
-      checks.voyage = res.ok
-        ? { ok: true, message: "Embeddings working" }
-        : {
-            ok: false,
-            message: `Voyage API error (${res.status}): ${await res.text()}`,
-          };
-    } catch (e) {
-      checks.voyage = { ok: false, message: `${e}` };
-    }
-  } else {
-    checks.voyage = { ok: false, message: "VOYAGE_API_KEY not set" };
-  }
-
-  // 5. Documents table + any stuck documents
+async function checkDocuments(): Promise<HealthCheck> {
+  const start = performance.now();
   try {
     const supabase = createAdminClient();
     const { data: stuck } = await supabase
@@ -94,18 +156,22 @@ export async function GET(request: NextRequest) {
       .in("processing_status", ["pending", "processing", "failed"])
       .order("created_at", { ascending: false })
       .limit(5);
-
-    checks.documents = {
+    const responseTimeMs = Math.round(performance.now() - start);
+    return {
       ok: true,
       message: stuck?.length
         ? `${stuck.length} document(s) not completed: ${stuck.map((d) => `${d.title} (${d.processing_status}${d.processing_error ? `: ${d.processing_error}` : ""})`).join("; ")}`
         : "No stuck documents",
+      responseTimeMs,
     };
   } catch (e) {
-    checks.documents = { ok: false, message: `${e}` };
+    const responseTimeMs = Math.round(performance.now() - start);
+    return { ok: false, message: `${e}`, responseTimeMs };
   }
+}
 
-  // 6. Check for match_document_chunks RPC
+async function checkVectorSearch(): Promise<HealthCheck> {
+  const start = performance.now();
   try {
     const supabase = createAdminClient();
     const { error } = await supabase.rpc("match_document_chunks", {
@@ -113,17 +179,45 @@ export async function GET(request: NextRequest) {
       match_threshold: 0.5,
       match_count: 1,
     });
-    checks.vector_search = error
-      ? { ok: false, message: `RPC error: ${error.message}` }
-      : { ok: true, message: "Vector search working" };
+    const responseTimeMs = Math.round(performance.now() - start);
+    return error
+      ? { ok: false, message: `RPC error: ${error.message}`, responseTimeMs }
+      : { ok: true, message: "Vector search working", responseTimeMs };
   } catch (e) {
-    checks.vector_search = { ok: false, message: `${e}` };
+    const responseTimeMs = Math.round(performance.now() - start);
+    return { ok: false, message: `${e}`, responseTimeMs };
+  }
+}
+
+async function checkVoyageAI(): Promise<HealthCheck> {
+  if (!process.env.VOYAGE_API_KEY) {
+    return { ok: false, message: "VOYAGE_API_KEY not set" };
   }
 
-  const allOk = Object.values(checks).every((c) => c.ok);
-
-  return NextResponse.json(
-    { status: allOk ? "healthy" : "degraded", checks },
-    { status: allOk ? 200 : 503 },
-  );
+  const start = performance.now();
+  try {
+    const res = await fetch("https://api.voyageai.com/v1/embeddings", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.VOYAGE_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: process.env.EMBEDDING_MODEL || "voyage-3",
+        input: ["health check"],
+        input_type: "document",
+      }),
+    });
+    const responseTimeMs = Math.round(performance.now() - start);
+    return res.ok
+      ? { ok: true, message: "Embeddings working", responseTimeMs }
+      : {
+          ok: false,
+          message: `Voyage API error (${res.status}): ${await res.text()}`,
+          responseTimeMs,
+        };
+  } catch (e) {
+    const responseTimeMs = Math.round(performance.now() - start);
+    return { ok: false, message: `${e}`, responseTimeMs };
+  }
 }

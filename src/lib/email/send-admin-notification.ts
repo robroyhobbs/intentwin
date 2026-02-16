@@ -1,5 +1,6 @@
 import { resend } from "./resend";
 import { adminWaitlistNotificationEmail } from "./templates/admin-waitlist-notification";
+import { logger } from "@/lib/utils/logger";
 
 export async function sendAdminWaitlistNotification(params: {
   name: string;
@@ -9,7 +10,7 @@ export async function sendAdminWaitlistNotification(params: {
 }): Promise<void> {
   try {
     if (!resend) {
-      console.warn(
+      logger.warn(
         "[ADMIN-EMAIL] RESEND_API_KEY not configured — skipping admin notification",
       );
       return;
@@ -35,14 +36,14 @@ export async function sendAdminWaitlistNotification(params: {
     });
 
     if (error) {
-      console.error("[ADMIN-EMAIL] Failed to send admin notification:", error);
+      logger.error("[ADMIN-EMAIL] Failed to send admin notification", error);
       return;
     }
 
-    console.log("[ADMIN-EMAIL] Admin notification sent for", params.email);
+    logger.info("[ADMIN-EMAIL] Admin notification sent successfully");
   } catch (err) {
-    console.error(
-      "[ADMIN-EMAIL] Unexpected error sending admin notification:",
+    logger.error(
+      "[ADMIN-EMAIL] Unexpected error sending admin notification",
       err,
     );
   }
