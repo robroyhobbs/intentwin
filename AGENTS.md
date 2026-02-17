@@ -121,6 +121,18 @@ All tables now have `organization_id` columns with RLS policies:
 
 <!-- Updated nightly by compound review -->
 
+### 2026-02-16 - Code Quality Enforcement, Bloat Reduction & Component Architecture
+
+- **ESLint as architectural guardrails**: Added `max-lines` (300 src / 600 pages), `max-lines-per-function` (50 / 150 for page exports), `max-depth` (4), `max-params` (5) as warnings. Separate rule overrides for test files, scripts, and export modules prevent false positives. Starting from 26 errors → 0 errors in one pass; 237 warnings remain as intentional guardrails for legacy code
+- **God component splitting pattern**: 6 page components (1,000+ lines each) split into 36 sub-components using `_components/` directories co-located with each page. Pattern: extract types.ts first, then stateless presentational sub-components, keep orchestration/state in page.tsx. Biggest win: `proposals/new/page.tsx` went from 1,494 → 614 lines
+- **Slides generator monolith**: 3,158-line `slides-generator.ts` split into `slides/` directory (types, constants, icons, styles, templates, slide-builder). Main file became a thin 141-line facade. Key: separate concerns by domain (visual styles vs. content templates vs. builder logic)
+- **Dead code is security surface**: Removed ~800 lines of unused modules (error-boundary, validators, error-tracking, request-validation, barrel re-exports). Several had no imports anywhere. Barrel `index.ts` files that only re-export create phantom dependencies — delete them
+- **Wire before you write**: Found 4 existing modules (`response.ts`, `sanitize.ts`, `logRegenerationMetric`, `logQualityReviewMetric`) that were built but never called. Wiring `apiError()` into 10 API routes fixed 8+ `error.message` client leaks (information disclosure). Always check if infra already exists before building new
+- **Marketing page cleanup**: Deleted ~2,800 lines across About, Capabilities, Blog, Pricing pages. When cutting pages, check 6 dependency types: nav links, signup flows, email templates, middleware allowlists, payment flows, sitemap
+- **Unused npm dependencies accumulate silently**: Removed framer-motion, puppeteer, pdf-parse-new, unpdf, @sparticuz/chromium — all installed but zero imports. Run periodic `depcheck` or equivalent
+- **Review client factory pattern**: 3 near-identical AI client files (groq, mistral, openai) shared 80% code. Extracted `review-client-factory.ts` to eliminate duplication. Pattern: when 3+ files share structure, extract the common shape into a factory
+- **Project CLAUDE.md as agent guardrails**: Created project-level `CLAUDE.md` documenting code quality constraints, architecture reminders, and testing conventions. This ensures all agents (human and AI) follow the same rules without re-reading AGENTS.md
+
 ### 2026-02-15 - Race Conditions, Data Normalization & DevOps
 
 - **Race condition between regenerate and quality review**: Fire-and-forget async operations (regenerate section, quality review) can run simultaneously, leaving sections stuck in `generating` state. Fix: add mutual exclusion checks (query current status before proceeding) and use Next.js `after()` instead of detached promises for background work
