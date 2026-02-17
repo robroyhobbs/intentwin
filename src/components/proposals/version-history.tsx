@@ -75,6 +75,7 @@ export function VersionHistory({ proposalId, onRestore }: VersionHistoryProps) {
 
   useEffect(() => {
     fetchVersions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetch on proposalId change only
   }, [proposalId]);
 
   async function fetchVersions() {

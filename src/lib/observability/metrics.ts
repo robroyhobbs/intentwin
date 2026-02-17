@@ -213,4 +213,3 @@ export function logQualityReviewMetric(metric: QualityReviewMetric): void {
   });
 }
 
-

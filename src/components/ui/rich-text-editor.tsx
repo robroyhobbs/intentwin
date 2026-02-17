@@ -39,8 +39,8 @@ export function RichTextEditor({
           "prose prose-sm max-w-none focus:outline-none min-h-[200px] px-5 py-4",
       },
     },
-    onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
+    onUpdate: ({ editor: editorInstance }) => {
+      onChange(editorInstance.getHTML());
     },
   });
 

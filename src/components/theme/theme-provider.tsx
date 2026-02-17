@@ -34,7 +34,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const resolved = getResolvedTheme(initialTheme);
 
     setThemeState(initialTheme); // eslint-disable-line react-hooks/set-state-in-effect
-    setResolvedTheme(resolved); // eslint-disable-line react-hooks/set-state-in-effect
+    setResolvedTheme(resolved);  
 
     // Apply theme to DOM
     if (resolved === "dark") {
@@ -43,7 +43,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       document.documentElement.classList.remove("dark");
     }
 
-    setMounted(true); // eslint-disable-line react-hooks/set-state-in-effect
+    setMounted(true);  
   }, []);
 
   // Handle theme changes after mount

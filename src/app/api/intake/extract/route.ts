@@ -8,6 +8,30 @@ import { logger } from "@/lib/utils/logger";
 
 const EXTRACTION_SYSTEM_PROMPT = `You are an expert at analyzing business documents and extracting structured information. You are precise, thorough, and honest about confidence levels. You always respond with valid JSON only.`;
 
+/**
+ * Poll a document until processing completes or timeout (~45s).
+ * Returns the settled document data, or null if still processing.
+ */
+async function waitForDocumentProcessing(
+  adminClient: ReturnType<typeof createAdminClient>,
+  docId: string,
+): Promise<{ processing_status: string; parsed_text_preview?: string; file_name?: string } | null> {
+  const delays = [2000, 3000, 5000, 5000, 10000, 10000, 10000];
+  for (const delay of delays) {
+    await new Promise((resolve) => setTimeout(resolve, delay));
+    const { data: docRetry } = await adminClient
+      .from("documents")
+      .select("processing_status, parsed_text_preview, file_name")
+      .eq("id", docId)
+      .single();
+
+    if (docRetry?.processing_status === "completed" || docRetry?.processing_status === "failed") {
+      return docRetry;
+    }
+  }
+  return null; // Still processing after timeout
+}
+
 export async function POST(request: NextRequest) {
   try {
     const context = await getUserContext(request);
@@ -70,49 +94,16 @@ export async function POST(request: NextRequest) {
           doc?.processing_status === "pending" ||
           doc?.processing_status === "processing"
         ) {
-          // Document is still being processed — poll with backoff up to ~45 seconds
-          let settled = false;
-          const delays = [2000, 3000, 5000, 5000, 10000, 10000, 10000];
-          for (const delay of delays) {
-            await new Promise((resolve) => setTimeout(resolve, delay));
-            const { data: docRetry } = await adminClient
-              .from("documents")
-              .select("processing_status, parsed_text_preview")
-              .eq("id", docId)
-              .single();
-
-            if (
-              docRetry?.processing_status === "completed" ||
-              docRetry?.processing_status === "failed"
-            ) {
-              settled = true;
-              break;
-            }
-          }
-
-          if (!settled) {
+          const settledDoc = await waitForDocumentProcessing(adminClient, docId);
+          if (!settledDoc) {
             // Still processing after ~45s — use preview if available
-            const { data: docFinal } = await adminClient
-              .from("documents")
-              .select("processing_status, parsed_text_preview")
-              .eq("id", docId)
-              .single();
-            if (docFinal?.parsed_text_preview) {
-              combinedContent += `\n\n--- Document: ${doc.file_name} (partial) ---\n${docFinal.parsed_text_preview}`;
+            if (doc?.parsed_text_preview) {
+              combinedContent += `\n\n--- Document: ${doc.file_name} (partial) ---\n${doc.parsed_text_preview}`;
             }
             continue;
           }
-          // Re-read the document status after settling for the flow below
-          const { data: docSettled } = await adminClient
-            .from("documents")
-            .select("processing_status, parsed_text_preview, file_name")
-            .eq("id", docId)
-            .eq("organization_id", context.organizationId)
-            .single();
-          if (docSettled) {
-            // Override doc reference for the remaining logic
-            Object.assign(doc, docSettled);
-          }
+          // Override doc reference for the remaining logic
+          Object.assign(doc, settledDoc);
         }
 
         if (doc?.processing_status === "failed") {

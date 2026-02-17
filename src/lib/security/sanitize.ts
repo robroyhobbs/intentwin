@@ -36,4 +36,3 @@ export function sanitizeTitle(input: unknown): string {
   return sanitizeString(input, 500);
 }
 
-

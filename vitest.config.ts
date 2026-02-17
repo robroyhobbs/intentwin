@@ -38,6 +38,7 @@ export default defineConfig({
       ".next",
       "cypress",
       "**/*.e2e.{test,spec}.{js,ts}",
+      "__tests__/e2e/**",
     ],
   },
 });

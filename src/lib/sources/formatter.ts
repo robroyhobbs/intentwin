@@ -166,11 +166,12 @@ function formatCertifications(
 
       // Extract from tables
       const tables = extractTables(doc.content);
-      for (const table of tables) {
-        if (table.headers.some(h => h.toLowerCase().includes('certification') || h.toLowerCase().includes('vehicle'))) {
-          for (const row of table.rows) {
-            lines.push(`- **${row[0]}**: ${row.slice(1).join(' - ')}`);
-          }
+      const certTables = tables.filter(t =>
+        t.headers.some(h => h.toLowerCase().includes('certification') || h.toLowerCase().includes('vehicle'))
+      );
+      for (const table of certTables) {
+        for (const row of table.rows) {
+          lines.push(`- **${row[0]}**: ${row.slice(1).join(' - ')}`);
         }
       }
     }

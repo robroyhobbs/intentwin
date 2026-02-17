@@ -58,6 +58,7 @@ export default function BrandingSettingsPage() {
 
   useEffect(() => {
     loadBranding();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load once on mount
   }, []);
 
   async function loadBranding() {

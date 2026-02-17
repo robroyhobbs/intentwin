@@ -91,6 +91,7 @@ export function MermaidRenderer({ chart, className }: MermaidRendererProps) {
     return (
       <div className={`my-4 ${className || ""}`}>
         <div className="flex justify-center overflow-x-auto rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-4">
+          {/* eslint-disable-next-line @next/next/no-img-element -- data URI from AI generation, not a static asset */}
           <img src={geminiImage} alt="Generated diagram" className="max-w-full h-auto" />
         </div>
       </div>

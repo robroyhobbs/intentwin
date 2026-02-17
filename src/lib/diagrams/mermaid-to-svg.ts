@@ -37,19 +37,12 @@ Mermaid definition:
 ${mermaidCode}`;
 
       const result = await model.generateContent(prompt);
-      const response = result.response;
-      const parts = response.candidates?.[0]?.content?.parts;
+      const parts = result.response.candidates?.[0]?.content?.parts;
+      const imagePart = parts?.find((p: { inlineData?: unknown }) => p.inlineData);
 
-      if (parts) {
-        for (const part of parts) {
-          if (part.inlineData) {
-            const { mimeType, data } = part.inlineData;
-            return {
-              type: "image",
-              data: `data:${mimeType};base64,${data}`,
-            };
-          }
-        }
+      if (imagePart?.inlineData) {
+        const { mimeType, data } = imagePart.inlineData;
+        return { type: "image", data: `data:${mimeType};base64,${data}` };
       }
     } catch (err) {
       logger.warn("Gemini diagram generation failed, falling back to mermaid.ink", { detail: err });

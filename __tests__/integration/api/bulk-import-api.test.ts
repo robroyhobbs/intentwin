@@ -72,7 +72,10 @@ vi.mock("@/lib/ai/l1-extractor", () => ({
 }));
 
 let mockParseResult = [
-  { heading: "Test Section", content: "Acme Corp is a cloud solutions provider." },
+  {
+    heading: "Test Section",
+    content: "Acme Corp is a cloud solutions provider.",
+  },
 ];
 let mockParseError = false;
 
@@ -85,13 +88,13 @@ vi.mock("@/lib/documents/parser", () => ({
   }),
 }));
 
-// Track supabase calls
-let upsertCalls: Array<{
-  table: string;
-  data: unknown;
-  onConflict?: string;
-}> = [];
-let selectResults: Record<string, unknown[]> = {};
+vi.mock("@/lib/documents/pipeline", () => ({
+  processDocument: vi.fn(async () => {}),
+}));
+
+vi.mock("nanoid", () => ({
+  nanoid: vi.fn(() => "mock-nanoid-123"),
+}));
 
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: vi.fn(() => mockSupabaseClient),
@@ -99,6 +102,7 @@ vi.mock("@/lib/supabase/admin", () => ({
 
 vi.mock("@/lib/supabase/auth-api", () => ({
   getUserContext: vi.fn(),
+  incrementUsage: vi.fn(async () => {}),
 }));
 
 import { NextRequest } from "next/server";
@@ -129,7 +133,6 @@ function makeExtractRequest(
 }
 
 function makeExtractRequestEmpty() {
-  // FormData with no file
   const formData = new FormData();
   return new NextRequest(
     new URL("http://localhost:3000/api/bulk-import/extract"),
@@ -151,28 +154,64 @@ function makeCommitRequest(body: unknown) {
   );
 }
 
-// Mock Supabase client with configurable behavior
+// ── Mock Supabase ──────────────────────────────────────────────────────────
+// The extract route does:
+//   1. supabase.storage.from("knowledge-base-documents").upload(...)
+//   2. supabase.from("documents").insert({...}).select("id").single()
+//   3. supabase.from("company_context").select("*").eq("organization_id", orgId)
+//   4. supabase.from("product_contexts").select("*").eq("organization_id", orgId)
+//   5. supabase.from("evidence_library").select("*").eq("organization_id", orgId)
+// The commit route does:
+//   1. supabase.from("company_context").upsert(data, { onConflict })
+//   2. supabase.from("product_contexts").upsert(data, { onConflict })
+//   3. supabase.from("evidence_library").upsert(data, { onConflict })
+
+// Track upsert calls for commit assertions
+let upsertCalls: Array<{
+  table: string;
+  data: unknown;
+  onConflict?: string;
+}> = [];
+
+// Configurable per-table select results for conflict detection
+let selectResults: Record<string, unknown[]> = {};
+
 const mockSupabaseClient = {
   from: vi.fn((table: string) => {
     const chain: Record<string, unknown> = {};
 
+    // select(...) returns chain for further chaining
     chain.select = vi.fn(() => chain);
+
+    // eq() for conflict detection queries — returns { data, error }
     chain.eq = vi.fn(() => {
-      // Return pre-configured select results for conflict detection
       const data = selectResults[table] || [];
       return { data, error: null };
     });
+
+    // insert(...) returns chain for .select().single()
+    chain.insert = vi.fn(() => {
+      const insertChain: Record<string, unknown> = {};
+      insertChain.select = vi.fn(() => insertChain);
+      insertChain.single = vi.fn(() =>
+        Promise.resolve({ data: { id: "doc-mock-id" }, error: null }),
+      );
+      return insertChain;
+    });
+
+    // upsert for commit route
     chain.upsert = vi.fn((data: unknown, opts?: { onConflict?: string }) => {
       upsertCalls.push({ table, data, onConflict: opts?.onConflict });
-      return Promise.resolve({ data, error: null });
-    });
-    chain.insert = vi.fn((data: unknown) => {
-      upsertCalls.push({ table, data });
       return Promise.resolve({ data, error: null });
     });
 
     return chain;
   }),
+  storage: {
+    from: vi.fn(() => ({
+      upload: vi.fn(() => Promise.resolve({ data: { path: "mock" }, error: null })),
+    })),
+  },
 };
 
 // ── Setup ──────────────────────────────────────────────────────────────────
@@ -184,7 +223,10 @@ beforeEach(() => {
   mockExtractError = false;
   mockParseError = false;
   mockParseResult = [
-    { heading: "Test Section", content: "Acme Corp is a cloud solutions provider." },
+    {
+      heading: "Test Section",
+      content: "Acme Corp is a cloud solutions provider.",
+    },
   ];
   mockExtractionResult = {
     data: {
@@ -224,6 +266,7 @@ beforeEach(() => {
     user: { id: "user-1", email: "test@example.com" },
     organizationId: TEST_ORG_ID,
     role: "admin" as const,
+    teamId: "team-1",
   });
 });
 
@@ -399,7 +442,7 @@ describe("Bulk Import Commit API — Happy Path", () => {
     expect(elUpsert).toBeDefined();
   });
 
-  it("commit upserts company_context on conflict (category, key)", async () => {
+  it("commit upserts company_context on conflict (category, key, organization_id)", async () => {
     await commitPOST(
       makeCommitRequest({
         company_context: [
@@ -420,7 +463,7 @@ describe("Bulk Import Commit API — Happy Path", () => {
     expect(ccUpsert?.onConflict).toContain("key");
   });
 
-  it("commit upserts product_contexts on conflict (product_name, service_line)", async () => {
+  it("commit upserts product_contexts on conflict (product_name, service_line, organization_id)", async () => {
     await commitPOST(
       makeCommitRequest({
         company_context: [],
@@ -441,7 +484,7 @@ describe("Bulk Import Commit API — Happy Path", () => {
     expect(pcUpsert?.onConflict).toContain("service_line");
   });
 
-  it("commit upserts evidence_library on conflict (title)", async () => {
+  it("commit upserts evidence_library on conflict (title, organization_id)", async () => {
     await commitPOST(
       makeCommitRequest({
         company_context: [],
@@ -571,7 +614,7 @@ describe("Bulk Import API — Bad Path", () => {
     expect(res.status).toBe(401);
   });
 
-  it("extract when Gemini fails returns 500 with safe message", async () => {
+  it("extract when AI extraction fails returns 500 with safe message", async () => {
     mockExtractError = true;
 
     const res = await extractPOST(makeExtractRequest("file.md"));
@@ -740,7 +783,18 @@ describe("Bulk Import API — Edge Cases", () => {
   });
 
   it("extract with .txt file works", async () => {
-    const res = await extractPOST(makeExtractRequest("notes.txt", "Some notes about our company."));
+    const formData = new FormData();
+    const file = new File(["Some notes about our company."], "notes.txt", {
+      type: "text/plain",
+    });
+    formData.append("file", file);
+
+    const res = await extractPOST(
+      new NextRequest(
+        new URL("http://localhost:3000/api/bulk-import/extract"),
+        { method: "POST", body: formData },
+      ),
+    );
     expect(res.status).toBe(200);
   });
 
@@ -854,12 +908,19 @@ describe("Bulk Import API — Security", () => {
     expect(res.status).toBe(200);
   });
 
-  it("cannot extract using another org's context for conflict check", async () => {
+  it("extract conflict check queries use org-scoped supabase calls", async () => {
     const res = await extractPOST(makeExtractRequest("file.md"));
 
-    const fromCalls = mockSupabaseClient.from.mock.calls;
     expect(res.status).toBe(200);
+    // Verify supabase.from was called for conflict queries
+    const fromCalls = mockSupabaseClient.from.mock.calls;
     expect(fromCalls.length).toBeGreaterThan(0);
+
+    // At a minimum it should query company_context, product_contexts, evidence_library
+    const queriedTables = fromCalls.map((c: string[]) => c[0]);
+    expect(queriedTables).toContain("company_context");
+    expect(queriedTables).toContain("product_contexts");
+    expect(queriedTables).toContain("evidence_library");
   });
 });
 
@@ -868,7 +929,7 @@ describe("Bulk Import API — Security", () => {
 // ════════════════════════════════════════════════════════════════════════════
 
 describe("Bulk Import API — Data Leak", () => {
-  it("extract error response doesn't expose Gemini raw response", async () => {
+  it("extract error response doesn't expose AI raw response", async () => {
     mockExtractError = true;
 
     const res = await extractPOST(makeExtractRequest("file.md"));
@@ -901,13 +962,16 @@ describe("Bulk Import API — Data Leak", () => {
     expect(JSON.stringify(json)).not.toContain("org-other");
   });
 
-  it("conflict detection doesn't reveal full content of existing entries to unauthorized users", async () => {
+  it("conflict detection returns limited existingValue (not full row)", async () => {
     selectResults.company_context = [
       {
         category: "brand",
         key: "overview",
         title: "Existing Title",
         content: "SECRET INTERNAL CONTENT",
+        organization_id: TEST_ORG_ID,
+        id: "row-123",
+        created_at: "2026-01-01",
       },
     ];
 
@@ -918,9 +982,13 @@ describe("Bulk Import API — Data Leak", () => {
     const conflict = json.company_context.find(
       (i: Record<string, unknown>) => i.isConflict,
     );
-    if (conflict) {
-      expect(conflict.existingValue).toBeDefined();
-    }
+    expect(conflict).toBeDefined();
+    expect(conflict.existingValue).toBeDefined();
+    // existingValue should contain title/content but not raw db fields like id or organization_id
+    expect(conflict.existingValue.title).toBe("Existing Title");
+    expect(conflict.existingValue.content).toBe("SECRET INTERNAL CONTENT");
+    expect(conflict.existingValue.id).toBeUndefined();
+    expect(conflict.existingValue.organization_id).toBeUndefined();
   });
 });
 
@@ -940,9 +1008,10 @@ describe("Bulk Import API — Data Damage", () => {
       }),
     );
 
+    // Ensure no .delete() calls were made
     const fromCalls = mockSupabaseClient.from.mock.results;
     fromCalls.forEach((result: { value: Record<string, unknown> }) => {
-      expect(result.value.delete).toBeUndefined;
+      expect(result.value.delete).toBeUndefined();
     });
   });
 

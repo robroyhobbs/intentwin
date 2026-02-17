@@ -78,27 +78,28 @@ export async function GET(request: NextRequest) {
           company: entry.company,
         });
 
-        if (success) {
-          // Update nurture tracking
-          const { error: updateError } = await supabase
-            .from("waitlist")
-            .update({
-              nurture_step: step,
-              nurture_last_sent_at: new Date().toISOString(),
-            })
-            .eq("id", entry.id);
-
-          if (updateError) {
-            console.error(
-              `[NURTURE-CRON] Failed to update nurture_step for ${entry.email}:`,
-              updateError,
-            );
-            totalErrors++;
-          } else {
-            totalSent++;
-          }
-        } else {
+        if (!success) {
           totalErrors++;
+          continue;
+        }
+
+        // Update nurture tracking
+        const { error: updateError } = await supabase
+          .from("waitlist")
+          .update({
+            nurture_step: step,
+            nurture_last_sent_at: new Date().toISOString(),
+          })
+          .eq("id", entry.id);
+
+        if (updateError) {
+          console.error(
+            `[NURTURE-CRON] Failed to update nurture_step for ${entry.email}:`,
+            updateError,
+          );
+          totalErrors++;
+        } else {
+          totalSent++;
         }
       }
     } catch (err) {

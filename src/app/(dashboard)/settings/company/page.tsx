@@ -70,6 +70,7 @@ export default function CompanySettingsPage() {
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load once on mount
   }, []);
 
   async function loadData() {

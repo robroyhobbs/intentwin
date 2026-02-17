@@ -12,7 +12,7 @@ import { test as base, expect, Page } from "@playwright/test";
 export const test = base.extend<{
   authenticatedPage: Page;
 }>({
-  // eslint-disable-next-line react-hooks/rules-of-hooks -- Playwright fixture, not a React hook
+   
   authenticatedPage: async ({ page }, use) => {
     // Login before test
     await page.goto("/login");

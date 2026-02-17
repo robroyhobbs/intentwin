@@ -98,7 +98,7 @@ export function createCrudMockDb() {
   function createChain(table: string) {
     let filterField: string | null = null;
     let filterValue: unknown = null;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const chain: any = {};
 
     const methods = [
@@ -120,7 +120,7 @@ export function createCrudMockDb() {
     chain.single = vi.fn(() => {
       const rows = tableData[table] || [];
       const match = filterField
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         ? rows.find((r: any) => r[filterField!] === filterValue)
         : rows[0];
       return Promise.resolve({

@@ -45,6 +45,7 @@ export function FlexibleIntake({
       const droppedFiles = Array.from(e.dataTransfer.files);
       await handleFiles(droppedFiles);
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleFiles is stable
     [],
   );
 
@@ -55,6 +56,7 @@ export function FlexibleIntake({
         await handleFiles(selectedFiles);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleFiles is stable
     [],
   );
 

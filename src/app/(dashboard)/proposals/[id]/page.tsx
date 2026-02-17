@@ -134,6 +134,7 @@ export default function ProposalPage() {
     } catch {
       // Reviews are optional
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- authFetch returns new ref each render
   }, [id]);
 
   useEffect(() => {
