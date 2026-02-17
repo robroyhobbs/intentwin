@@ -70,6 +70,9 @@ export async function GET(request: NextRequest) {
         `[NURTURE-CRON] Step ${step}: found ${entries.length} eligible entries`,
       );
 
+      // Send emails and collect successful IDs for batch DB update
+      const successfulIds: string[] = [];
+
       for (const entry of entries) {
         const { success } = await sendNurtureEmail({
           step,
@@ -78,28 +81,31 @@ export async function GET(request: NextRequest) {
           company: entry.company,
         });
 
-        if (!success) {
+        if (success) {
+          successfulIds.push(entry.id);
+        } else {
           totalErrors++;
-          continue;
         }
+      }
 
-        // Update nurture tracking
+      // Batch update all successful entries in one query instead of N individual updates
+      if (successfulIds.length > 0) {
         const { error: updateError } = await supabase
           .from("waitlist")
           .update({
             nurture_step: step,
             nurture_last_sent_at: new Date().toISOString(),
           })
-          .eq("id", entry.id);
+          .in("id", successfulIds);
 
         if (updateError) {
           console.error(
-            `[NURTURE-CRON] Failed to update nurture_step for ${entry.email}:`,
+            `[NURTURE-CRON] Failed to batch update nurture_step for ${successfulIds.length} entries:`,
             updateError,
           );
-          totalErrors++;
+          totalErrors += successfulIds.length;
         } else {
-          totalSent++;
+          totalSent += successfulIds.length;
         }
       }
     } catch (err) {

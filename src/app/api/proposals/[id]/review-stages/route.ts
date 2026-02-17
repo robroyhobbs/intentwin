@@ -37,30 +37,35 @@ export async function GET(
       return serverError("Failed to fetch review stages", error);
     }
 
-    // For each stage, fetch reviewer counts and status breakdown
-    const stagesWithReviewers = await Promise.all(
-      (stages || []).map(async (stage) => {
-        const { data: reviewers, error: revError } = await adminClient
+    // Fetch all reviewers for all stages in a single query (eliminates N+1)
+    const stageIds = (stages || []).map((s) => s.id);
+    const { data: allReviewers } = stageIds.length > 0
+      ? await adminClient
           .from("stage_reviewers")
-          .select("id, status")
-          .eq("stage_id", stage.id);
+          .select("id, status, stage_id")
+          .in("stage_id", stageIds)
+      : { data: [] };
 
-        if (revError) {
-          return { ...stage, reviewerCount: 0, reviewerStatusBreakdown: {} };
-        }
+    // Group reviewers by stage_id
+    const reviewersByStage = new Map<string, { id: string; status: string }[]>();
+    for (const r of allReviewers || []) {
+      const list = reviewersByStage.get(r.stage_id) || [];
+      list.push(r);
+      reviewersByStage.set(r.stage_id, list);
+    }
 
-        const statusBreakdown: Record<string, number> = {};
-        for (const r of reviewers || []) {
-          statusBreakdown[r.status] = (statusBreakdown[r.status] || 0) + 1;
-        }
-
-        return {
-          ...stage,
-          reviewerCount: (reviewers || []).length,
-          reviewerStatusBreakdown: statusBreakdown,
-        };
-      })
-    );
+    const stagesWithReviewers = (stages || []).map((stage) => {
+      const reviewers = reviewersByStage.get(stage.id) || [];
+      const statusBreakdown: Record<string, number> = {};
+      for (const r of reviewers) {
+        statusBreakdown[r.status] = (statusBreakdown[r.status] || 0) + 1;
+      }
+      return {
+        ...stage,
+        reviewerCount: reviewers.length,
+        reviewerStatusBreakdown: statusBreakdown,
+      };
+    });
 
     const currentStage = stagesWithReviewers.find((s) => s.status === "active") || null;
 

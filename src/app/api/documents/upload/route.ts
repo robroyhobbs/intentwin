@@ -7,7 +7,6 @@ import {
 } from "@/lib/supabase/auth-api";
 import { nanoid } from "nanoid";
 import { processDocument } from "@/lib/documents/pipeline";
-import { rateLimitCheck, UPLOAD_LIMIT } from "@/lib/rate-limit";
 
 const ALLOWED_TYPES: Record<string, string> = {
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
@@ -39,10 +38,6 @@ function verifyMagicBytes(buffer: ArrayBuffer, fileType: string): boolean {
 
 export async function POST(request: NextRequest) {
   try {
-    // Rate limit: file uploads
-    const blocked = rateLimitCheck(request, UPLOAD_LIMIT);
-    if (blocked) return blocked;
-
     const context = await getUserContext(request);
 
     if (!context) {

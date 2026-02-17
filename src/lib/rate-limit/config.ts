@@ -127,6 +127,9 @@ export const ROUTE_LIMITS: Array<{
   // Stripe webhooks — no rate limit (Stripe handles its own retry logic)
   { pattern: /^\/api\/stripe\/webhook/, config: { windowMs: MINUTE, maxRequests: 1000, keyPrefix: "rl:webhook" } },
 
+  // Cron jobs — authenticated by CRON_SECRET, generous limit
+  { pattern: /^\/api\/cron\//, config: HEALTH_LIMIT, keyByIp: true },
+
   // Default: general API limit for everything else
   { pattern: /^\/api\//, config: API_LIMIT },
 ];

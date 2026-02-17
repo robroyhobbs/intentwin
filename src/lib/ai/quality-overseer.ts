@@ -15,6 +15,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logger } from "@/lib/utils/logger";
 import { logQualityReviewMetric } from "@/lib/observability/metrics";
+import { parallelBatch, PIPELINE_CONCURRENCY } from "./pipeline/retrieval";
 import { reviewWithGemini } from "./gemini-review-client";
 import { reviewWithGroq } from "./groq-client";
 import { reviewWithMistral } from "./mistral-client";
@@ -402,8 +403,11 @@ export async function runQualityReview(
       feedback: string;
     }[] = [];
 
-    for (const section of sections) {
-      try {
+    // Parallelize section reviews (each section's judges already run in parallel internally)
+    const sectionResults = await parallelBatch(
+      sections,
+      PIPELINE_CONCURRENCY,
+      async (section) => {
         const prompt = buildQualityReviewPrompt({
           sectionContent: section.generated_content || "",
           sectionType: section.section_type,
@@ -432,8 +436,6 @@ export async function runQualityReview(
           judge_reviews: judgeResults,
         };
 
-        sectionReviews.push(review);
-
         // Council consensus for remediation: 2+ judges must score below threshold
         const successfulJudges = judgeResults.filter(
           (r) => r.status === "completed",
@@ -442,25 +444,39 @@ export async function runQualityReview(
           (r) => r.score < REGEN_THRESHOLD,
         ).length;
 
-        if (
+        const isWeak =
           weakJudgeCount >= 2 ||
-          (successfulJudges.length === 1 && weakJudgeCount === 1)
-        ) {
+          (successfulJudges.length === 1 && weakJudgeCount === 1);
+
+        return { review, isWeak, aggregatedScore, feedback: aggregated.feedback };
+      },
+    );
+
+    // Collect results, treating any rejected section as a fatal error
+    let hasFatalError = false;
+    for (let i = 0; i < sectionResults.length; i++) {
+      const settled = sectionResults[i];
+      if (settled.status === "fulfilled") {
+        sectionReviews.push(settled.value.review);
+        if (settled.value.isWeak) {
           weakSections.push({
-            sectionId: section.id,
-            sectionType: section.section_type,
-            score: aggregatedScore,
-            feedback: aggregated.feedback,
+            sectionId: sections[i].id,
+            sectionType: sections[i].section_type,
+            score: settled.value.aggregatedScore,
+            feedback: settled.value.feedback,
           });
         }
-      } catch (err) {
-        logger.error(`Council review failed for section ${section.id}`, err);
-        result.status = "failed";
-        result.sections = sectionReviews;
-        // Update judge statuses based on what we know
-        await storeResult(supabase, proposalId, result);
-        return result;
+      } else {
+        logger.error(`Council review failed for section ${sections[i].id}`, settled.reason);
+        hasFatalError = true;
       }
+    }
+
+    if (hasFatalError && sectionReviews.length === 0) {
+      result.status = "failed";
+      result.sections = sectionReviews;
+      await storeResult(supabase, proposalId, result);
+      return result;
     }
 
     // Update judge info with actual statuses from the last section reviewed
