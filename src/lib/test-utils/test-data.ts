@@ -9,7 +9,7 @@ import { nanoid } from "nanoid";
 export interface MockOrganization {
   id: string;
   name: string;
-  plan_tier: "starter" | "pro" | "business";
+  plan_tier: "invite" | "starter" | "pro" | "business";
   created_at: string;
   updated_at: string;
 }
@@ -53,7 +53,7 @@ export function createMockOrganization(
   return {
     id: nanoid(),
     name: "Test Organization",
-    plan_tier: "starter",
+    plan_tier: "invite",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     ...overrides,

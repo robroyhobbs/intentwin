@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Update organization with subscription info
-        const tierConfig = PRICING_TIERS[tier] || PRICING_TIERS.starter;
+        const tierConfig = PRICING_TIERS[tier] || PRICING_TIERS.invite;
 
         await adminClient
           .from("organizations")
@@ -81,9 +81,9 @@ export async function POST(request: NextRequest) {
         // Get tier from subscription metadata or price metadata
         const tier = (subscription.metadata?.tier ||
           subscription.items.data[0]?.price.metadata?.tier ||
-          "starter") as PricingTier;
+          "invite") as PricingTier;
 
-        const tierConfig = PRICING_TIERS[tier] || PRICING_TIERS.starter;
+        const tierConfig = PRICING_TIERS[tier] || PRICING_TIERS.invite;
 
         // Get billing cycle from subscription items (API 2025+)
         const subscriptionItem = subscription.items.data[0];

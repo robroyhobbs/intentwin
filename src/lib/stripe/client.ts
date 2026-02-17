@@ -24,92 +24,31 @@ export const stripe = process.env.STRIPE_SECRET_KEY
     })
   : (null as unknown as Stripe);
 
-// Pricing configuration - matches the tiers in our database
+// Pricing configuration — $999/mo invite-only model.
+// Single tier: everything included, no upsells.
+// NOTE: Multi-tier structure retained for Stripe webhook/checkout compatibility.
+// When/if tiered pricing is introduced, add tiers here.
 export const PRICING_TIERS = {
-  starter: {
-    name: "Starter",
-    description: "Perfect for freelancers and solopreneurs",
-    monthlyPrice: 29,
-    annualPrice: 290, // 2 months free
-    features: [
-      "5 proposals per month",
-      "50K AI tokens",
-      "1 user",
-      "10 knowledge base documents",
-      "Export to DOCX, PDF, PPTX",
-      "Email support",
-    ],
-    limits: {
-      proposals_per_month: 5,
-      ai_tokens_per_month: 50000,
-      max_users: 1,
-      max_documents: 10,
-    },
-  },
-  pro: {
-    name: "Pro",
-    description: "For growing sales teams",
-    monthlyPrice: 79,
-    annualPrice: 790,
-    features: [
-      "20 proposals per month",
-      "250K AI tokens",
-      "5 users",
-      "50 knowledge base documents",
-      "Export to all formats",
-      "Priority support",
-      "Version history",
-      "Team collaboration",
-    ],
-    limits: {
-      proposals_per_month: 20,
-      ai_tokens_per_month: 250000,
-      max_users: 5,
-      max_documents: 50,
-    },
-  },
-  business: {
-    name: "Business",
-    description: "For established companies",
-    monthlyPrice: 199,
-    annualPrice: 1990,
+  invite: {
+    name: "IntentWin",
+    description: "Everything included. Invite-only.",
+    monthlyPrice: 999,
+    annualPrice: 9990, // ~2 months free
     features: [
       "Unlimited proposals",
-      "1M AI tokens",
-      "15 users",
-      "Unlimited documents",
-      "Export to all formats",
-      "Dedicated support",
-      "Advanced analytics",
-      "Custom templates",
-      "API access",
+      "Unlimited AI tokens",
+      "10 users",
+      "Unlimited knowledge base documents",
+      "Export to DOCX, PDF, PPTX, HTML",
+      "6-layer persuasion framework",
+      "3-judge quality council",
+      "Priority support",
     ],
     limits: {
-      proposals_per_month: 999999, // Effectively unlimited
-      ai_tokens_per_month: 1000000,
-      max_users: 15,
-      max_documents: 999999,
-    },
-  },
-  enterprise: {
-    name: "Enterprise",
-    description: "Custom solutions for large organizations",
-    monthlyPrice: null, // Custom pricing
-    annualPrice: null,
-    features: [
-      "Unlimited everything",
-      "Unlimited users",
-      "SSO/SAML",
-      "Dedicated account manager",
-      "Custom integrations",
-      "SLA guarantee",
-      "On-premise option",
-    ],
-    limits: {
-      proposals_per_month: 999999999,
+      proposals_per_month: 999999,
       ai_tokens_per_month: 999999999,
-      max_users: 999999,
-      max_documents: 999999999,
+      max_users: 10,
+      max_documents: 999999,
     },
   },
 } as const;

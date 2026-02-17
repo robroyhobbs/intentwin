@@ -37,13 +37,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (tier === "enterprise") {
-      return NextResponse.json(
-        { error: "Please contact sales for enterprise pricing" },
-        { status: 400 },
-      );
-    }
-
     const adminClient = createAdminClient();
 
     // Get organization details
