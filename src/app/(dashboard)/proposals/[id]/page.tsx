@@ -5,50 +5,23 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
   Loader2,
-  Clock,
-  RefreshCw,
-  Download,
-  Edit3,
-  Eye,
-  MessageSquare,
-  FileDown,
   Sparkles,
-  Wand2,
-  ArrowRight,
-  ChevronRight,
-  History,
-  ShieldCheck,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
-const ProposalContentRenderer = dynamic(
-  () =>
-    import("@/components/proposal-content-renderer").then(
-      (mod) => mod.ProposalContentRenderer,
-    ),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex items-center gap-2 text-xs text-[var(--foreground-subtle)] py-4">
-        <div className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--border)] border-t-[var(--accent)]" />
-        Loading content...
-      </div>
-    ),
-  },
-);
 import { SectionNavSidebar } from "@/components/ui/section-nav-sidebar";
-import { SectionStatusBadge } from "@/components/ui/section-status-badge";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { SkeletonSection } from "@/components/ui/skeleton";
-import { AgentationWrapper } from "@/components/review/agentation-wrapper";
 import { DealOutcomeSetter } from "@/components/ui/deal-outcome-setter";
+import type { ProposalReview, ReviewSummary } from "@/types/review";
+import { exportAnnotationsAsMarkdown } from "@/lib/review/export-annotations";
+
+import type { Proposal, Section } from "./_components/types";
+import { ProposalTopBar } from "./_components/proposal-top-bar";
+import { TabBar } from "./_components/tab-bar";
+import { SectionContentPane } from "./_components/section-content-pane";
 
 // Dynamic imports for heavy components that are only shown conditionally
 // (tab-based rendering). This reduces the initial page bundle by ~250-350KB.
-const RichTextEditor = dynamic(
-  () => import("@/components/ui/rich-text-editor").then((m) => m.RichTextEditor),
-  { ssr: false, loading: () => <SkeletonSection /> },
-);
 const ReviewCommentsPanel = dynamic(
   () => import("@/components/review/review-comments-panel").then((m) => m.ReviewCommentsPanel),
   { ssr: false },
@@ -73,40 +46,6 @@ const StageReviewDashboard = dynamic(
   () => import("@/components/review-workflow/stage-review-dashboard").then((m) => m.StageReviewDashboard),
   { ssr: false },
 );
-import type { ProposalReview, ReviewSummary } from "@/types/review";
-import { exportAnnotationsAsMarkdown } from "@/lib/review/export-annotations";
-
-interface Section {
-  id: string;
-  section_type: string;
-  title: string;
-  section_order: number;
-  generated_content: string | null;
-  edited_content: string | null;
-  is_edited: boolean;
-  generation_status: string;
-  generation_error: string | null;
-  review_status: string;
-}
-
-interface QualityReviewSection {
-  section_id: string;
-  score: number;
-}
-
-interface Proposal {
-  id: string;
-  title: string;
-  status: string;
-  intake_data: Record<string, unknown>;
-  created_at: string;
-  deal_outcome?: string;
-  deal_value?: number;
-  quality_review?: {
-    status: string;
-    sections?: QualityReviewSection[];
-  } | null;
-}
 
 export default function ProposalPage() {
   const params = useParams();
@@ -432,196 +371,30 @@ export default function ProposalPage() {
   return (
     <div className="-m-6">
       {/* Top bar */}
-      <div className="border-b border-[var(--border)] bg-[var(--card-bg)] px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <Breadcrumb
-              items={[
-                { label: "Dashboard", href: "/proposals" },
-                { label: proposal.title },
-              ]}
-            />
-            <div className="mt-1.5 flex items-center gap-2">
-              <span className="text-xs text-[var(--foreground-muted)]">
-                {(proposal.intake_data as Record<string, string>)
-                  ?.client_name || "Client"}
-              </span>
-              <ChevronRight className="h-3 w-3 text-[var(--foreground-subtle)]" />
-              <SectionStatusBadge
-                generationStatus={
-                  proposal.status as
-                    | "pending"
-                    | "generating"
-                    | "completed"
-                    | "failed"
-                }
-              />
-            </div>
-          </div>
-
-          <div className="flex gap-2">
-            {/* Deal Outcome Setter - shown for review/exported proposals */}
-            {isReviewMode && (
-              <DealOutcomeSetter
-                proposalId={id}
-                currentOutcome={proposal.deal_outcome}
-                currentValue={proposal.deal_value}
-                onUpdate={() => fetchProposal()}
-              />
-            )}
-
-            {/* Version History Toggle */}
-            <button
-              onClick={() => setShowVersionHistory(!showVersionHistory)}
-              className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-all ${
-                showVersionHistory
-                  ? "border-[var(--accent)] bg-[var(--accent-subtle)] text-[var(--accent)]"
-                  : "border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-tertiary)]"
-              }`}
-            >
-              <History className="h-4 w-4" />
-              <span className="hidden sm:inline">Versions</span>
-            </button>
-
-            {(proposal.status === "intake" || proposal.status === "draft") && (
-              <button
-                onClick={handleGenerate}
-                disabled={generating}
-                className="btn-primary"
-              >
-                {generating ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="h-4 w-4" />
-                )}
-                Generate Proposal
-              </button>
-            )}
-            {isReviewMode && (
-              <>
-                <button
-                  onClick={() => setShowReviewPanel(!showReviewPanel)}
-                  className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-all ${
-                    showReviewPanel
-                      ? "border-[var(--accent)] bg-[var(--accent)] text-white shadow-md"
-                      : "border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-tertiary)]"
-                  }`}
-                >
-                  <MessageSquare className="h-4 w-4" />
-                  Review
-                  {reviewSummary.open > 0 && (
-                    <span
-                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                        showReviewPanel
-                          ? "bg-white/20 text-white"
-                          : "bg-[var(--warning-subtle)] text-[var(--warning)]"
-                      }`}
-                    >
-                      {reviewSummary.open}
-                    </span>
-                  )}
-                </button>
-                {reviews.length > 0 && (
-                  <button
-                    onClick={handleExportFeedback}
-                    className="btn-secondary"
-                  >
-                    <FileDown className="h-4 w-4" />
-                    Feedback
-                  </button>
-                )}
-                <button
-                  onClick={() => router.push(`/proposals/${id}/export`)}
-                  className="inline-flex items-center gap-2 rounded-lg bg-[var(--success)] px-4 py-2 text-sm font-medium text-white shadow-sm hover:opacity-90 transition-all"
-                >
-                  <Download className="h-4 w-4" />
-                  Export
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Review summary */}
-        {isReviewMode && reviewSummary.total > 0 && (
-          <div className="mt-4">
-            <ReviewSummaryBar summary={reviewSummary} />
-          </div>
-        )}
-
-        {/* Generation Progress */}
-        {proposal.status === "generating" && (
-          <div className="mt-4 rounded-lg border border-[var(--accent-muted)] bg-[var(--accent-subtle)] p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent-subtle)]">
-                <Loader2 className="h-4 w-4 animate-spin text-[var(--accent)]" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-[var(--foreground)]">
-                  Generating proposal sections...
-                </p>
-                <p className="text-xs text-[var(--foreground-muted)]">
-                  {completedCount} of {sections.length || "..."} sections
-                  complete
-                </p>
-              </div>
-              <span className="text-lg font-bold text-[var(--accent)]">
-                {sections.length
-                  ? `${Math.round((completedCount / sections.length) * 100)}%`
-                  : "..."}
-              </span>
-            </div>
-            <div className="mt-3 progress-bar h-2">
-              <div
-                className="progress-bar-fill"
-                style={{
-                  width: sections.length
-                    ? `${(completedCount / sections.length) * 100}%`
-                    : "0%",
-                }}
-              />
-            </div>
-          </div>
-        )}
-      </div>
+      <ProposalTopBar
+        proposal={proposal}
+        sections={sections}
+        id={id}
+        isReviewMode={isReviewMode}
+        showReviewPanel={showReviewPanel}
+        setShowReviewPanel={setShowReviewPanel}
+        showVersionHistory={showVersionHistory}
+        setShowVersionHistory={setShowVersionHistory}
+        generating={generating}
+        handleGenerate={handleGenerate}
+        reviewSummary={reviewSummary}
+        completedCount={completedCount}
+        handleExportFeedback={handleExportFeedback}
+        reviews={reviews}
+        fetchProposal={fetchProposal}
+        router={router}
+        ReviewSummaryBar={ReviewSummaryBar}
+        DealOutcomeSetter={DealOutcomeSetter}
+      />
 
       {/* Tab bar */}
       {sections.length > 0 && (
-        <div className="border-b border-[var(--border)] bg-[var(--card-bg)] px-6 flex gap-1">
-          <button
-            onClick={() => setActiveTab("sections")}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === "sections"
-                ? "border-[var(--accent)] text-[var(--accent)]"
-                : "border-transparent text-[var(--foreground-muted)] hover:text-[var(--foreground)]"
-            }`}
-          >
-            <Edit3 className="h-3.5 w-3.5 inline mr-1.5 -mt-0.5" />
-            Sections
-          </button>
-          <button
-            onClick={() => setActiveTab("compliance")}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === "compliance"
-                ? "border-[var(--accent)] text-[var(--accent)]"
-                : "border-transparent text-[var(--foreground-muted)] hover:text-[var(--foreground)]"
-            }`}
-          >
-            <ShieldCheck className="h-3.5 w-3.5 inline mr-1.5 -mt-0.5" />
-            Compliance
-          </button>
-          <button
-            onClick={() => setActiveTab("review")}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === "review"
-                ? "border-[var(--accent)] text-[var(--accent)]"
-                : "border-transparent text-[var(--foreground-muted)] hover:text-[var(--foreground)]"
-            }`}
-          >
-            <Eye className="h-3.5 w-3.5 inline mr-1.5 -mt-0.5" />
-            Review
-          </button>
-        </div>
+        <TabBar activeTab={activeTab} setActiveTab={setActiveTab} />
       )}
 
       {/* Review tab content */}
@@ -683,222 +456,26 @@ export default function ProposalPage() {
               />
             </div>
 
-            {currentSection ? (
-              <div className="p-8 max-w-4xl mx-auto">
-                {/* Section header */}
-                <div className="mb-6 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <h2 className="text-xl font-bold text-[var(--foreground)]">
-                      {currentSection.title}
-                    </h2>
-                    <SectionStatusBadge
-                      generationStatus={
-                        currentSection.generation_status as
-                          | "pending"
-                          | "generating"
-                          | "completed"
-                          | "failed"
-                      }
-                    />
-                    {currentSection.is_edited && (
-                      <span className="badge badge-warning">Edited</span>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    {/* AI Auto-Fix button */}
-                    {isReviewMode &&
-                      openSectionReviews.length > 0 &&
-                      editingSection !== currentSection.id && (
-                        <button
-                          onClick={() => handleApplyAIFixes(currentSection.id)}
-                          disabled={applyingFixes}
-                          className="inline-flex items-center gap-2 rounded-lg border border-[var(--info)] bg-[var(--info-subtle)] px-3 py-1.5 text-xs font-medium text-[var(--info)] hover:opacity-80 transition-all disabled:opacity-50"
-                        >
-                          {applyingFixes ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Wand2 className="h-3.5 w-3.5" />
-                          )}
-                          Apply AI Fixes
-                          <span className="badge badge-info text-[10px]">
-                            {openSectionReviews.length}
-                          </span>
-                        </button>
-                      )}
-
-                    {currentSection.generated_content &&
-                      editingSection !== currentSection.id && (
-                        <button
-                          onClick={() => {
-                            setEditingSection(currentSection.id);
-                            setEditContent(
-                              currentSection.edited_content ||
-                                currentSection.generated_content ||
-                                "",
-                            );
-                          }}
-                          className="btn-secondary text-xs py-1.5"
-                        >
-                          <Edit3 className="h-3.5 w-3.5" />
-                          Edit
-                        </button>
-                      )}
-                    {editingSection === currentSection.id && (
-                      <button
-                        onClick={() => setEditingSection(null)}
-                        className="btn-secondary text-xs py-1.5"
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                        Preview
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleRegenerate(currentSection.id)}
-                      disabled={regeneratingSection === currentSection.id}
-                      className="btn-secondary text-xs py-1.5"
-                    >
-                      {regeneratingSection === currentSection.id ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <RefreshCw className="h-3.5 w-3.5" />
-                      )}
-                      {regeneratingSection === currentSection.id
-                        ? "Regenerating..."
-                        : proposal?.quality_review?.status === "completed" &&
-                            proposal.quality_review.sections?.some(
-                              (s) => s.section_id === currentSection.id,
-                            )
-                          ? "Regenerate with Feedback"
-                          : "Regenerate"}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Error */}
-                {currentSection.generation_status === "failed" && (
-                  <div className="mb-6 rounded-lg border border-[var(--danger-muted)] bg-[var(--danger-subtle)] p-4 text-sm text-[var(--danger)]">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="font-semibold">Generation Failed</p>
-                        <p className="mt-1 text-xs opacity-80">
-                          {currentSection.generation_error}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => handleRegenerate(currentSection.id)}
-                        disabled={regeneratingSection === currentSection.id}
-                        className="btn-secondary text-xs py-1.5 shrink-0"
-                      >
-                        {regeneratingSection === currentSection.id ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <RefreshCw className="h-3.5 w-3.5" />
-                        )}
-                        Retry
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Content */}
-                {currentSection.generated_content ? (
-                  editingSection === currentSection.id ? (
-                    <div className="animate-fade-in">
-                      <RichTextEditor
-                        content={editContent}
-                        onChange={setEditContent}
-                        placeholder="Edit section content..."
-                      />
-                      <div className="mt-4 flex gap-2">
-                        <button
-                          onClick={() => handleSaveEdit(currentSection.id)}
-                          disabled={savingSection}
-                          className="btn-primary"
-                        >
-                          {savingSection ? (
-                            <>
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                              Saving...
-                            </>
-                          ) : (
-                            "Save Changes"
-                          )}
-                        </button>
-                        <button
-                          onClick={() => setEditingSection(null)}
-                          disabled={savingSection}
-                          className="btn-secondary"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : isReviewMode ? (
-                    <AgentationWrapper
-                      proposalId={id}
-                      sectionId={currentSection.id}
-                      authFetch={authFetch}
-                      onAnnotationAdded={() => fetchReviews()}
-                    >
-                      <div className="card p-6">
-                        <ProposalContentRenderer
-                          content={
-                            currentSection.edited_content ||
-                            currentSection.generated_content ||
-                            ""
-                          }
-                          className="text-sm leading-relaxed text-[var(--foreground)]"
-                        />
-                      </div>
-                    </AgentationWrapper>
-                  ) : (
-                    <div className="card p-6">
-                      <ProposalContentRenderer
-                        content={
-                          currentSection.edited_content ||
-                          currentSection.generated_content ||
-                          ""
-                        }
-                        className="text-sm leading-relaxed text-[var(--foreground)]"
-                      />
-                    </div>
-                  )
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-16 text-[var(--foreground-muted)]">
-                    {currentSection.generation_status === "generating" ? (
-                      <>
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--accent-subtle)] mb-4">
-                          <Loader2 className="h-6 w-6 animate-spin text-[var(--accent)]" />
-                        </div>
-                        <p className="text-sm font-medium text-[var(--foreground)]">
-                          Generating this section...
-                        </p>
-                        <p className="mt-1 text-xs text-[var(--foreground-muted)]">
-                          AI is crafting your content
-                        </p>
-                      </>
-                    ) : (
-                      <>
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--background-tertiary)] mb-4">
-                          <Clock className="h-6 w-6 text-[var(--foreground-muted)]" />
-                        </div>
-                        <p className="text-sm font-medium text-[var(--foreground)]">
-                          Not yet generated
-                        </p>
-                        <p className="mt-1 text-xs text-[var(--foreground-muted)]">
-                          Click Generate to create this section
-                        </p>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-20 text-[var(--foreground-muted)]">
-                <ArrowRight className="h-6 w-6 mb-2" />
-                <p className="text-sm">Select a section from the sidebar</p>
-              </div>
-            )}
+            <SectionContentPane
+              currentSection={currentSection}
+              editingSection={editingSection}
+              setEditingSection={setEditingSection}
+              editContent={editContent}
+              setEditContent={setEditContent}
+              savingSection={savingSection}
+              handleSaveEdit={handleSaveEdit}
+              handleRegenerate={handleRegenerate}
+              regeneratingSection={regeneratingSection}
+              handleApplyAIFixes={handleApplyAIFixes}
+              applyingFixes={applyingFixes}
+              isReviewMode={isReviewMode}
+              openSectionReviews={openSectionReviews}
+              proposal={proposal}
+              id={id}
+              authFetch={authFetch}
+              fetchProposal={fetchProposal}
+              fetchReviews={fetchReviews}
+            />
           </div>
 
           {/* Review comments panel */}

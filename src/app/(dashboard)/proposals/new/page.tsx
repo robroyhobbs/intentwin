@@ -9,25 +9,11 @@ import {
   ArrowRight,
   Send,
   Sparkles,
-  X,
-  Plus,
-  Check,
-  Target,
-  AlertTriangle,
-  CheckCircle2,
-  Building2,
   FileText,
-  Shield,
-  Trophy,
   Zap,
-  ChevronDown,
-  ChevronUp,
-  HelpCircle,
-  Lightbulb,
 } from "lucide-react";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
 import type { WinStrategyData } from "@/types/outcomes";
-import { OUTCOME_CATEGORIES } from "@/types/outcomes";
 import type { OutcomeContract, SuccessMetric } from "@/types/idd";
 import type { ExtractedIntake, ClientResearch } from "@/types/intake";
 import { FlexibleIntake } from "@/components/intake/flexible-intake";
@@ -35,30 +21,12 @@ import { ExtractionReview } from "@/components/intake/extraction-review";
 import type { BidEvaluation, FactorKey } from "@/lib/ai/bid-scoring";
 import { SCORING_FACTORS } from "@/lib/ai/bid-scoring";
 
-// Simplified 3-phase flow
-const PHASES = [
-  {
-    id: "context",
-    name: "Define Context",
-    description: "Client, challenges, and desired outcomes",
-    icon: Building2,
-    color: "var(--accent)",
-  },
-  {
-    id: "strategy",
-    name: "Win Strategy",
-    description: "AI-generated approach based on your context",
-    icon: Trophy,
-    color: "var(--warning)",
-  },
-  {
-    id: "review",
-    name: "Review & Create",
-    description: "Confirm intent and generate proposal",
-    icon: CheckCircle2,
-    color: "var(--success)",
-  },
-];
+import { PHASES, PhaseProgressBar } from "./_components/phase-progress";
+import { BidEvaluationScreen } from "./_components/bid-evaluation-screen";
+import { ContextPhase } from "./_components/context-phase";
+import { WinStrategyPhase } from "./_components/win-strategy-phase";
+import { ReviewPhase } from "./_components/review-phase";
+import { ProposalSidebar } from "./_components/proposal-sidebar";
 
 export default function NewProposalPage() {
   const router = useRouter();
@@ -466,218 +434,19 @@ export default function NewProposalPage() {
 
   // Bid evaluation screen
   if (intakeMode === "bid-evaluation") {
-    const currentTotal = bidEvaluation
-      ? Object.keys(bidOverrides).length > 0
-        ? computeWeightedTotalClient(bidEvaluation.ai_scores, bidOverrides)
-        : bidEvaluation.weighted_total
-      : 0;
-    const currentRec = getRecommendationClient(currentTotal);
-    const recConfig = {
-      bid: {
-        label: "Recommended to Bid",
-        color: "var(--success)",
-        bg: "bg-emerald-50 dark:bg-emerald-950/30",
-        border: "border-emerald-200 dark:border-emerald-800",
-      },
-      evaluate: {
-        label: "Evaluate Further",
-        color: "var(--warning)",
-        bg: "bg-amber-50 dark:bg-amber-950/30",
-        border: "border-amber-200 dark:border-amber-800",
-      },
-      pass: {
-        label: "Recommended to Pass",
-        color: "var(--danger)",
-        bg: "bg-red-50 dark:bg-red-950/30",
-        border: "border-red-200 dark:border-red-800",
-      },
-    };
-    const rec = recConfig[currentRec];
-
     return (
-      <div className="h-full flex flex-col">
-        <div className="flex-shrink-0 mb-8">
-          <h1 className="text-3xl font-bold text-[var(--foreground)] flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--accent)] to-[var(--accent-hover)] text-white shadow-lg">
-              <Target className="h-6 w-6" />
-            </div>
-            Bid / No-Bid Evaluation
-          </h1>
-          <p className="mt-2 text-[var(--foreground-muted)]">
-            AI-assisted scoring to help you decide whether to pursue this
-            opportunity
-          </p>
-        </div>
-
-        <div className="flex-1 overflow-auto">
-          <div className="max-w-3xl mx-auto space-y-6">
-            {/* Loading state */}
-            {bidScoring && (
-              <div className="flex flex-col items-center justify-center py-16 gap-4">
-                <Loader2 className="h-8 w-8 animate-spin text-[var(--accent)]" />
-                <p className="text-[var(--foreground-muted)]">
-                  Analyzing opportunity against your capabilities...
-                </p>
-              </div>
-            )}
-
-            {/* Error state */}
-            {bidError && !bidScoring && (
-              <div className="rounded-xl border border-[var(--danger)] bg-red-50 dark:bg-red-950/20 p-6 text-center space-y-4">
-                <AlertTriangle className="h-8 w-8 text-[var(--danger)] mx-auto" />
-                <p className="text-[var(--foreground)]">{bidError}</p>
-                <div className="flex items-center justify-center gap-3">
-                  <button
-                    onClick={() => triggerBidScoring(buildIntakeData())}
-                    className="btn-primary inline-flex items-center gap-2"
-                  >
-                    Retry Scoring
-                  </button>
-                  <button
-                    onClick={() => handleBidDecision("skip")}
-                    className="btn-secondary inline-flex items-center gap-2"
-                  >
-                    Skip Evaluation
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Scores display */}
-            {bidEvaluation && !bidScoring && (
-              <>
-                {/* Recommendation banner */}
-                <div
-                  className={`rounded-xl border ${rec.border} ${rec.bg} p-6 flex items-center justify-between`}
-                >
-                  <div>
-                    <p className="text-sm font-medium text-[var(--foreground-muted)]">
-                      Overall Score
-                    </p>
-                    <p
-                      className="text-3xl font-bold mt-1"
-                      style={{ color: rec.color }}
-                    >
-                      {currentTotal.toFixed(1)}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p
-                      className="text-lg font-bold"
-                      style={{ color: rec.color }}
-                    >
-                      {rec.label}
-                    </p>
-                    <p className="text-sm text-[var(--foreground-muted)] mt-1">
-                      Based on 5-factor weighted analysis
-                    </p>
-                  </div>
-                </div>
-
-                {/* Factor scores */}
-                <div className="space-y-4">
-                  {SCORING_FACTORS.map((factor) => {
-                    const aiScore =
-                      bidEvaluation.ai_scores[factor.key]?.score ?? 50;
-                    const rationale =
-                      bidEvaluation.ai_scores[factor.key]?.rationale ?? "";
-                    const overrideValue = bidOverrides[factor.key];
-                    const displayScore = overrideValue ?? aiScore;
-
-                    return (
-                      <div
-                        key={factor.key}
-                        className="rounded-xl border border-[var(--border)] bg-[var(--background-elevated)] p-5"
-                      >
-                        <div className="flex items-center justify-between mb-3">
-                          <div>
-                            <span className="font-semibold text-[var(--foreground)]">
-                              {factor.label}
-                            </span>
-                            <span className="ml-2 text-xs text-[var(--foreground-muted)]">
-                              ({factor.weight}% weight)
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            {overrideValue !== undefined && (
-                              <button
-                                onClick={() => {
-                                  const next = { ...bidOverrides };
-                                  delete next[factor.key];
-                                  setBidOverrides(next);
-                                }}
-                                className="text-xs text-[var(--accent)] hover:underline"
-                              >
-                                Reset
-                              </button>
-                            )}
-                            <input
-                              type="number"
-                              min={0}
-                              max={100}
-                              value={displayScore}
-                              onChange={(e) => {
-                                const val = Math.max(
-                                  0,
-                                  Math.min(100, parseInt(e.target.value) || 0),
-                                );
-                                setBidOverrides((prev) => ({
-                                  ...prev,
-                                  [factor.key]: val,
-                                }));
-                              }}
-                              className="w-16 rounded-lg border border-[var(--border)] bg-[var(--input-bg)] px-2 py-1 text-center text-sm font-bold"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Score bar */}
-                        <div className="w-full h-2 rounded-full bg-[var(--border)] mb-3">
-                          <div
-                            className="h-2 rounded-full transition-all"
-                            style={{
-                              width: `${displayScore}%`,
-                              backgroundColor:
-                                displayScore > 70
-                                  ? "var(--success)"
-                                  : displayScore >= 40
-                                    ? "var(--warning)"
-                                    : "var(--danger)",
-                            }}
-                          />
-                        </div>
-
-                        {/* Rationale */}
-                        <p className="text-sm text-[var(--foreground-muted)]">
-                          {rationale}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Action buttons */}
-                <div className="flex items-center justify-between pt-4 pb-8">
-                  <button
-                    onClick={() => handleBidDecision("skip")}
-                    className="inline-flex items-center gap-2 rounded-xl border border-[var(--border)] px-6 py-3 text-sm font-medium text-[var(--foreground-muted)] hover:bg-[var(--background-elevated)] transition-all"
-                  >
-                    <X className="h-4 w-4" />
-                    Skip This Opportunity
-                  </button>
-                  <button
-                    onClick={() => handleBidDecision("proceed")}
-                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hover)] px-6 py-3 text-sm font-bold text-white hover:shadow-lg transition-all"
-                  >
-                    <ArrowRight className="h-4 w-4" />
-                    Proceed to Proposal
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
+      <BidEvaluationScreen
+        bidEvaluation={bidEvaluation}
+        bidScoring={bidScoring}
+        bidError={bidError}
+        bidOverrides={bidOverrides}
+        setBidOverrides={setBidOverrides}
+        triggerBidScoring={triggerBidScoring}
+        handleBidDecision={handleBidDecision}
+        buildIntakeData={buildIntakeData}
+        computeWeightedTotalClient={computeWeightedTotalClient}
+        getRecommendationClient={getRecommendationClient}
+      />
     );
   }
 
@@ -704,54 +473,7 @@ export default function NewProposalPage() {
         </div>
 
         {/* Phase progress bar */}
-        <div className="flex items-center gap-4">
-          {PHASES.map((p, i) => {
-            const Icon = p.icon;
-            const isActive = i === phase;
-            const isComplete = i < phase;
-
-            return (
-              <button
-                key={p.id}
-                onClick={() => i <= phase && setPhase(i)}
-                disabled={i > phase}
-                className={`flex-1 relative flex items-center gap-3 p-4 rounded-xl transition-all ${
-                  isActive
-                    ? "bg-[var(--background-elevated)] border-2 border-[var(--accent)] shadow-lg"
-                    : isComplete
-                      ? "bg-[var(--background-tertiary)] border border-[var(--success-muted)] hover:bg-[var(--background-secondary)] cursor-pointer"
-                      : "bg-[var(--background-tertiary)] border border-[var(--border)] opacity-50 cursor-not-allowed"
-                }`}
-              >
-                <div
-                  className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
-                    isActive
-                      ? "bg-[var(--accent)] text-white"
-                      : isComplete
-                        ? "bg-[var(--success)] text-white"
-                        : "bg-[var(--background-secondary)] text-[var(--foreground-muted)]"
-                  }`}
-                >
-                  {isComplete ? (
-                    <Check className="h-5 w-5" />
-                  ) : (
-                    <Icon className="h-5 w-5" />
-                  )}
-                </div>
-                <div className="text-left">
-                  <p
-                    className={`text-sm font-semibold ${isActive ? "text-[var(--foreground)]" : "text-[var(--foreground-muted)]"}`}
-                  >
-                    {p.name}
-                  </p>
-                  <p className="text-xs text-[var(--foreground-subtle)] hidden lg:block">
-                    Phase {i + 1}
-                  </p>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+        <PhaseProgressBar phase={phase} onPhaseClick={setPhase} />
       </div>
 
       {/* Main content */}
@@ -761,675 +483,73 @@ export default function NewProposalPage() {
           <div className="card p-6 animate-fade-in">
             {/* Phase 1: Context */}
             {phase === 0 && (
-              <div className="space-y-8">
-                {/* Essential Info */}
-                <section>
-                  <h3 className="text-lg font-bold text-[var(--foreground)] mb-4 flex items-center gap-2">
-                    <Building2 className="h-5 w-5 text-[var(--accent)]" />
-                    Client Information
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="col-span-2">
-                      <label className={labelClass}>
-                        Client Name{" "}
-                        <span className="text-[var(--danger)]">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={clientName}
-                        onChange={(e) => setClientName(e.target.value)}
-                        className={fieldClass}
-                        placeholder="e.g. Acme Corporation"
-                      />
-                    </div>
-                    <div>
-                      <label className={labelClass}>Industry</label>
-                      <select
-                        value={clientIndustry}
-                        onChange={(e) => setClientIndustry(e.target.value)}
-                        className={fieldClass}
-                      >
-                        <option value="">Select industry...</option>
-                        <option value="financial_services">
-                          Financial Services
-                        </option>
-                        <option value="healthcare">Healthcare</option>
-                        <option value="manufacturing">Manufacturing</option>
-                        <option value="retail">Retail</option>
-                        <option value="energy">Energy & Utilities</option>
-                        <option value="public_sector">Public Sector</option>
-                        <option value="telecom">Telecom</option>
-                        <option value="technology">Technology</option>
-                        <option value="other">Other</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className={labelClass}>Opportunity Type</label>
-                      <select
-                        value={opportunityType}
-                        onChange={(e) => setOpportunityType(e.target.value)}
-                        className={fieldClass}
-                      >
-                        <option value="cloud_migration">Cloud Migration</option>
-                        <option value="app_modernization">
-                          App Modernization
-                        </option>
-                        <option value="data_analytics">Data & Analytics</option>
-                        <option value="ai_ml">AI / Machine Learning</option>
-                        <option value="both">Migration + Modernization</option>
-                        <option value="other">Other</option>
-                      </select>
-                    </div>
-                  </div>
-                </section>
-
-                {/* Challenges */}
-                <section>
-                  <h3 className="text-lg font-bold text-[var(--foreground)] mb-4 flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5 text-[var(--warning)]" />
-                    What challenges are they facing?
-                    <span className="text-[var(--danger)]">*</span>
-                  </h3>
-                  <p className="text-sm text-[var(--foreground-muted)] mb-4">
-                    Describe the pain points. These drive the proposal
-                    narrative.
-                  </p>
-                  <div className="space-y-3">
-                    {currentStatePains.map((pain, idx) => (
-                      <div key={idx} className="flex gap-3">
-                        <span className="flex-shrink-0 w-8 h-10 flex items-center justify-center rounded-lg bg-[var(--warning-subtle)] text-sm font-bold text-[var(--warning)]">
-                          {idx + 1}
-                        </span>
-                        <input
-                          type="text"
-                          value={pain}
-                          onChange={(e) =>
-                            updateArrayItem(
-                              setCurrentStatePains,
-                              idx,
-                              e.target.value,
-                            )
-                          }
-                          className={`${fieldClass} flex-1`}
-                          placeholder="e.g. Legacy systems causing $2M/year in downtime"
-                        />
-                        {currentStatePains.length > 1 && (
-                          <button
-                            onClick={() =>
-                              removeFromArray(setCurrentStatePains, idx)
-                            }
-                            className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-[var(--danger)] hover:bg-[var(--danger-subtle)] transition-colors"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                    <button
-                      onClick={() => addToArray(setCurrentStatePains)}
-                      className="inline-flex items-center gap-2 px-4 py-2 text-sm text-[var(--accent)] hover:bg-[var(--accent-subtle)] rounded-lg transition-colors"
-                    >
-                      <Plus className="h-4 w-4" /> Add another
-                    </button>
-                  </div>
-                </section>
-
-                {/* Outcomes */}
-                <section>
-                  <h3 className="text-lg font-bold text-[var(--foreground)] mb-4 flex items-center gap-2">
-                    <Target className="h-5 w-5 text-[var(--accent)]" />
-                    What outcomes do they want?
-                    <span className="text-[var(--danger)]">*</span>
-                  </h3>
-                  <p className="text-sm text-[var(--foreground-muted)] mb-4">
-                    Define success. Be specific about measurable results.
-                  </p>
-                  <div className="space-y-3">
-                    {desiredOutcomes.map((outcome, idx) => (
-                      <div key={idx} className="flex gap-3">
-                        <span className="flex-shrink-0 w-8 h-10 flex items-center justify-center rounded-lg bg-[var(--accent-subtle)] text-sm font-bold text-[var(--accent)]">
-                          {idx + 1}
-                        </span>
-                        <input
-                          type="text"
-                          value={outcome}
-                          onChange={(e) =>
-                            updateArrayItem(
-                              setDesiredOutcomes,
-                              idx,
-                              e.target.value,
-                            )
-                          }
-                          className={`${fieldClass} flex-1`}
-                          placeholder="e.g. Reduce infrastructure costs by 40% in 12 months"
-                        />
-                        {desiredOutcomes.length > 1 && (
-                          <button
-                            onClick={() =>
-                              removeFromArray(setDesiredOutcomes, idx)
-                            }
-                            className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-[var(--danger)] hover:bg-[var(--danger-subtle)] transition-colors"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                    <button
-                      onClick={() => addToArray(setDesiredOutcomes)}
-                      className="inline-flex items-center gap-2 px-4 py-2 text-sm text-[var(--accent)] hover:bg-[var(--accent-subtle)] rounded-lg transition-colors"
-                    >
-                      <Plus className="h-4 w-4" /> Add another
-                    </button>
-                  </div>
-                </section>
-
-                {/* Scope description */}
-                <section>
-                  <label className={labelClass}>
-                    Scope Description
-                    <span className="font-normal text-[var(--foreground-muted)] ml-2">
-                      (Optional)
-                    </span>
-                  </label>
-                  <textarea
-                    value={scopeDescription}
-                    onChange={(e) => setScopeDescription(e.target.value)}
-                    rows={3}
-                    className={fieldClass}
-                    placeholder="Any additional context about what they need..."
-                  />
-                </section>
-
-                {/* Advanced options (collapsed) */}
-                <section>
-                  <button
-                    onClick={() => setShowAdvanced(!showAdvanced)}
-                    className="flex items-center gap-2 text-sm font-medium text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors"
-                  >
-                    {showAdvanced ? (
-                      <ChevronUp className="h-4 w-4" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4" />
-                    )}
-                    Advanced Options
-                    <span className="text-xs text-[var(--foreground-subtle)]">
-                      (budget, timeline, constraints)
-                    </span>
-                  </button>
-
-                  {showAdvanced && (
-                    <div className="mt-4 p-4 rounded-xl bg-[var(--background-tertiary)] space-y-4 animate-fade-in">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-sm font-medium text-[var(--foreground-muted)] mb-1 block">
-                            Budget Range
-                          </label>
-                          <input
-                            type="text"
-                            value={budgetRange}
-                            onChange={(e) => setBudgetRange(e.target.value)}
-                            className={fieldClass}
-                            placeholder="e.g. $2M-$5M"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-[var(--foreground-muted)] mb-1 block">
-                            Timeline
-                          </label>
-                          <input
-                            type="text"
-                            value={timelineExpectation}
-                            onChange={(e) =>
-                              setTimelineExpectation(e.target.value)
-                            }
-                            className={fieldClass}
-                            placeholder="e.g. 6-12 months"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-[var(--foreground-muted)] mb-1 block">
-                          Technical Environment
-                        </label>
-                        <textarea
-                          value={technicalEnvironment}
-                          onChange={(e) =>
-                            setTechnicalEnvironment(e.target.value)
-                          }
-                          rows={2}
-                          className={fieldClass}
-                          placeholder="Current tech stack, cloud providers..."
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-[var(--foreground-muted)] mb-1 block">
-                          Compliance Requirements
-                        </label>
-                        <input
-                          type="text"
-                          value={complianceRequirements}
-                          onChange={(e) =>
-                            setComplianceRequirements(e.target.value)
-                          }
-                          className={fieldClass}
-                          placeholder="HIPAA, SOC 2, GDPR..."
-                        />
-                      </div>
-                    </div>
-                  )}
-                </section>
-              </div>
+              <ContextPhase
+                clientName={clientName}
+                setClientName={setClientName}
+                clientIndustry={clientIndustry}
+                setClientIndustry={setClientIndustry}
+                opportunityType={opportunityType}
+                setOpportunityType={setOpportunityType}
+                currentStatePains={currentStatePains}
+                setCurrentStatePains={setCurrentStatePains}
+                desiredOutcomes={desiredOutcomes}
+                setDesiredOutcomes={setDesiredOutcomes}
+                scopeDescription={scopeDescription}
+                setScopeDescription={setScopeDescription}
+                showAdvanced={showAdvanced}
+                setShowAdvanced={setShowAdvanced}
+                budgetRange={budgetRange}
+                setBudgetRange={setBudgetRange}
+                timelineExpectation={timelineExpectation}
+                setTimelineExpectation={setTimelineExpectation}
+                technicalEnvironment={technicalEnvironment}
+                setTechnicalEnvironment={setTechnicalEnvironment}
+                complianceRequirements={complianceRequirements}
+                setComplianceRequirements={setComplianceRequirements}
+                fieldClass={fieldClass}
+                labelClass={labelClass}
+                addToArray={addToArray}
+                updateArrayItem={updateArrayItem}
+                removeFromArray={removeFromArray}
+              />
             )}
 
             {/* Phase 2: Win Strategy */}
             {phase === 1 && (
-              <>
-                {loadingStrategy ? (
-                  <div className="flex flex-col items-center justify-center py-20 space-y-6">
-                    <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-[var(--accent)] to-[var(--accent-hover)] flex items-center justify-center shadow-lg animate-pulse">
-                      <Sparkles className="h-10 w-10 text-white" />
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xl font-bold text-[var(--foreground)]">
-                        Generating Win Strategy
-                      </p>
-                      <p className="text-[var(--foreground-muted)] mt-2">
-                        AI is analyzing your context and creating themes...
-                      </p>
-                    </div>
-                    <Loader2 className="h-8 w-8 animate-spin text-[var(--accent)]" />
-                  </div>
-                ) : winStrategy ? (
-                  <div className="space-y-8">
-                    <div className="flex items-start gap-4 p-4 rounded-xl bg-[var(--info-subtle)] border border-[var(--info-muted)]">
-                      <Lightbulb className="h-6 w-6 text-[var(--info)] mt-0.5" />
-                      <div>
-                        <p className="font-semibold text-[var(--foreground)]">
-                          AI-Generated Strategy
-                        </p>
-                        <p className="text-sm text-[var(--foreground-muted)] mt-1">
-                          Based on your context, we suggest these win themes.
-                          Edit as needed.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Win Themes */}
-                    <section>
-                      <h3 className="text-lg font-bold text-[var(--foreground)] mb-4">
-                        Win Themes
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {winStrategy.win_themes.map((theme, idx) => (
-                          <span
-                            key={idx}
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--accent-subtle)] border border-[var(--accent-muted)] text-sm font-medium text-[var(--accent)]"
-                          >
-                            {theme}
-                            <button
-                              onClick={() => {
-                                setWinStrategy({
-                                  ...winStrategy,
-                                  win_themes: winStrategy.win_themes.filter(
-                                    (_, i) => i !== idx,
-                                  ),
-                                });
-                              }}
-                              className="hover:text-[var(--danger)]"
-                            >
-                              <X className="h-3.5 w-3.5" />
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                    </section>
-
-                    {/* Target Outcomes */}
-                    <section>
-                      <h3 className="text-lg font-bold text-[var(--foreground)] mb-4">
-                        Target Outcomes
-                      </h3>
-                      <div className="space-y-3">
-                        {winStrategy.target_outcomes.map((outcome) => (
-                          <div
-                            key={outcome.id}
-                            className="flex items-center gap-4 p-4 rounded-xl border border-[var(--border)] bg-[var(--background-tertiary)]"
-                          >
-                            <div className="flex-1">
-                              <p className="text-sm text-[var(--foreground)]">
-                                {outcome.outcome}
-                              </p>
-                              <span className="inline-block mt-1 text-xs text-[var(--foreground-subtle)] bg-[var(--background-secondary)] px-2 py-0.5 rounded">
-                                {OUTCOME_CATEGORIES.find(
-                                  (c) => c.value === outcome.category,
-                                )?.label || outcome.category}
-                              </span>
-                            </div>
-                            <select
-                              value={outcome.priority}
-                              onChange={(e) => {
-                                setWinStrategy({
-                                  ...winStrategy,
-                                  target_outcomes:
-                                    winStrategy.target_outcomes.map((o) =>
-                                      o.id === outcome.id
-                                        ? {
-                                            ...o,
-                                            priority: e.target.value as
-                                              | "high"
-                                              | "medium"
-                                              | "low",
-                                          }
-                                        : o,
-                                    ),
-                                });
-                              }}
-                              className={`text-xs font-semibold rounded-lg px-3 py-1.5 ${
-                                outcome.priority === "high"
-                                  ? "bg-[var(--danger-subtle)] text-[var(--danger)]"
-                                  : outcome.priority === "medium"
-                                    ? "bg-[var(--warning-subtle)] text-[var(--warning)]"
-                                    : "bg-[var(--success-subtle)] text-[var(--success)]"
-                              }`}
-                            >
-                              <option value="high">High</option>
-                              <option value="medium">Medium</option>
-                              <option value="low">Low</option>
-                            </select>
-                          </div>
-                        ))}
-                      </div>
-                    </section>
-
-                    {/* Differentiators */}
-                    <section>
-                      <h3 className="text-lg font-bold text-[var(--foreground)] mb-4">
-                        Key Differentiators
-                      </h3>
-                      <div className="grid grid-cols-2 gap-3">
-                        {winStrategy.differentiators.map((diff, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center gap-3 p-3 rounded-lg bg-[var(--background-tertiary)]"
-                          >
-                            <span className="h-2 w-2 rounded-full bg-[var(--accent)]" />
-                            <span className="flex-1 text-sm text-[var(--foreground-muted)]">
-                              {diff}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </section>
-
-                    {/* Competitive Intel */}
-                    <section>
-                      <label className={labelClass}>
-                        Competitive Intelligence (Optional)
-                      </label>
-                      <textarea
-                        value={competitiveIntel}
-                        onChange={(e) => setCompetitiveIntel(e.target.value)}
-                        rows={3}
-                        className={fieldClass}
-                        placeholder="Known competitors, incumbent vendors, decision influencers..."
-                      />
-                    </section>
-
-                    <button
-                      onClick={() => {
-                        setWinStrategy(null);
-                        setLoadingStrategy(false);
-                        generateWinStrategy();
-                      }}
-                      disabled={loadingStrategy}
-                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[var(--foreground-muted)] hover:text-[var(--accent)] transition-colors disabled:opacity-50"
-                    >
-                      {loadingStrategy ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Sparkles className="h-4 w-4" />
-                      )}
-                      Regenerate Strategy
-                    </button>
-                  </div>
-                ) : null}
-              </>
+              <WinStrategyPhase
+                loadingStrategy={loadingStrategy}
+                winStrategy={winStrategy}
+                setWinStrategy={setWinStrategy}
+                competitiveIntel={competitiveIntel}
+                setCompetitiveIntel={setCompetitiveIntel}
+                generateWinStrategy={generateWinStrategy}
+                fieldClass={fieldClass}
+                labelClass={labelClass}
+              />
             )}
 
             {/* Phase 3: Review & Approve */}
             {phase === 2 && (
-              <div className="space-y-6">
-                <div className="p-4 rounded-xl bg-[var(--warning-subtle)] border border-[var(--warning-muted)]">
-                  <div className="flex items-start gap-3">
-                    <Shield className="h-5 w-5 text-[var(--warning)] mt-0.5" />
-                    <div>
-                      <p className="font-semibold text-[var(--foreground)]">
-                        Intent Approval Required
-                      </p>
-                      <p className="text-sm text-[var(--foreground-muted)] mt-1">
-                        Review the summary below. Once approved, AI will
-                        generate your proposal.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Summary Grid */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 rounded-xl border border-[var(--border)]">
-                    <h4 className="text-sm font-semibold text-[var(--warning)] mb-2 flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4" /> Pain Points
-                    </h4>
-                    <ul className="space-y-1">
-                      {currentStatePains
-                        .filter((p) => p.trim())
-                        .map((p, i) => (
-                          <li
-                            key={i}
-                            className="text-sm text-[var(--foreground-muted)] flex items-start gap-2"
-                          >
-                            <span className="h-1.5 w-1.5 rounded-full bg-[var(--warning)] mt-2" />
-                            {p}
-                          </li>
-                        ))}
-                    </ul>
-                  </div>
-
-                  <div className="p-4 rounded-xl border border-[var(--border)]">
-                    <h4 className="text-sm font-semibold text-[var(--accent)] mb-2 flex items-center gap-2">
-                      <Target className="h-4 w-4" /> Desired Outcomes
-                    </h4>
-                    <ul className="space-y-1">
-                      {desiredOutcomes
-                        .filter((o) => o.trim())
-                        .map((o, i) => (
-                          <li
-                            key={i}
-                            className="text-sm text-[var(--foreground-muted)] flex items-start gap-2"
-                          >
-                            <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)] mt-2" />
-                            {o}
-                          </li>
-                        ))}
-                    </ul>
-                  </div>
-                </div>
-
-                {winStrategy && (
-                  <div className="p-4 rounded-xl border border-[var(--border)]">
-                    <h4 className="text-sm font-semibold text-[var(--foreground)] mb-3">
-                      Win Strategy
-                    </h4>
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      {winStrategy.win_themes.map((theme, i) => (
-                        <span
-                          key={i}
-                          className="px-3 py-1 text-xs font-medium bg-[var(--accent-subtle)] text-[var(--accent)] rounded-full"
-                        >
-                          {theme}
-                        </span>
-                      ))}
-                    </div>
-                    <p className="text-xs text-[var(--foreground-subtle)]">
-                      {winStrategy.target_outcomes.length} outcomes •{" "}
-                      {winStrategy.differentiators.length} differentiators
-                    </p>
-                  </div>
-                )}
-
-                {/* Approval checkbox */}
-                <div className="p-6 rounded-xl border-2 border-[var(--border)] hover:border-[var(--accent)] transition-colors">
-                  <label className="flex items-start gap-4 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={intentApproved}
-                      onChange={(e) => setIntentApproved(e.target.checked)}
-                      className="mt-1 h-5 w-5 rounded border-[var(--border)] text-[var(--accent)] focus:ring-[var(--accent)]"
-                    />
-                    <div>
-                      <span className="text-lg font-bold text-[var(--foreground)]">
-                        I approve this Intent
-                      </span>
-                      <p className="text-sm text-[var(--foreground-muted)] mt-1">
-                        AI will generate proposal content that delivers these
-                        specific outcomes, verified against your company&apos;s
-                        capabilities and case studies.
-                      </p>
-                    </div>
-                  </label>
-                </div>
-
-                {intentApproved && (
-                  <div className="flex items-center gap-3 p-4 rounded-xl bg-[var(--success-subtle)] border border-[var(--success-muted)] animate-fade-in">
-                    <CheckCircle2 className="h-6 w-6 text-[var(--success)]" />
-                    <div>
-                      <p className="font-semibold text-[var(--foreground)]">
-                        Ready to create your proposal
-                      </p>
-                      <p className="text-sm text-[var(--foreground-muted)]">
-                        Click &quot;Create Proposal&quot; to proceed
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
+              <ReviewPhase
+                currentStatePains={currentStatePains}
+                desiredOutcomes={desiredOutcomes}
+                winStrategy={winStrategy}
+                intentApproved={intentApproved}
+                setIntentApproved={setIntentApproved}
+              />
             )}
           </div>
         </div>
 
         {/* Sidebar */}
-        <div className="col-span-4 space-y-4">
-          {/* Context summary */}
-          {clientName && (
-            <div className="card p-4">
-              <p className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide mb-3">
-                Summary
-              </p>
-              <div className="space-y-3 text-sm">
-                <div>
-                  <p className="text-[var(--foreground-subtle)]">Client</p>
-                  <p className="font-medium text-[var(--foreground)]">
-                    {clientName}
-                  </p>
-                </div>
-                {clientIndustry && (
-                  <div>
-                    <p className="text-[var(--foreground-subtle)]">Industry</p>
-                    <p className="text-[var(--foreground-muted)]">
-                      {clientIndustry.replace(/_/g, " ")}
-                    </p>
-                  </div>
-                )}
-                <div>
-                  <p className="text-[var(--foreground-subtle)]">Opportunity</p>
-                  <p className="text-[var(--foreground-muted)]">
-                    {opportunityType.replace(/_/g, " ")}
-                  </p>
-                </div>
-                {currentStatePains.some((p) => p.trim()) && (
-                  <div>
-                    <p className="text-[var(--foreground-subtle)]">
-                      Pain Points
-                    </p>
-                    <p className="text-[var(--warning)]">
-                      {currentStatePains.filter((p) => p.trim()).length}{" "}
-                      identified
-                    </p>
-                  </div>
-                )}
-                {desiredOutcomes.some((o) => o.trim()) && (
-                  <div>
-                    <p className="text-[var(--foreground-subtle)]">Outcomes</p>
-                    <p className="text-[var(--accent)]">
-                      {desiredOutcomes.filter((o) => o.trim()).length} defined
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Tips */}
-          <div className="card p-4 bg-[var(--background-tertiary)] border-dashed">
-            <div className="flex items-center gap-2 mb-3">
-              <HelpCircle className="h-4 w-4 text-[var(--accent)]" />
-              <p className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide">
-                Tips
-              </p>
-            </div>
-            <ul className="space-y-2 text-xs text-[var(--foreground-muted)]">
-              {phase === 0 && (
-                <>
-                  <li className="flex items-start gap-2">
-                    <span className="text-[var(--accent)]">•</span>
-                    Be specific about pain points - they drive the narrative
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-[var(--accent)]">•</span>
-                    Define measurable outcomes for stronger proposals
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-[var(--accent)]">•</span>
-                    AI will find relevant case studies automatically
-                  </li>
-                </>
-              )}
-              {phase === 1 && (
-                <>
-                  <li className="flex items-start gap-2">
-                    <span className="text-[var(--accent)]">•</span>
-                    Win themes run throughout the proposal
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-[var(--accent)]">•</span>
-                    High priority outcomes get more emphasis
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-[var(--accent)]">•</span>
-                    Add competitive intel for sharper positioning
-                  </li>
-                </>
-              )}
-              {phase === 2 && (
-                <>
-                  <li className="flex items-start gap-2">
-                    <span className="text-[var(--accent)]">•</span>
-                    Review all details before approving
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-[var(--accent)]">•</span>
-                    You can edit the proposal after generation
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-[var(--accent)]">•</span>
-                    All claims will be verified against sources
-                  </li>
-                </>
-              )}
-            </ul>
-          </div>
-        </div>
+        <ProposalSidebar
+          clientName={clientName}
+          clientIndustry={clientIndustry}
+          opportunityType={opportunityType}
+          currentStatePains={currentStatePains}
+          desiredOutcomes={desiredOutcomes}
+          phase={phase}
+        />
       </div>
 
       {/* Navigation footer */}

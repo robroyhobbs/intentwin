@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
         },
       ],
       success_url: `${origin}/settings?session_id={CHECKOUT_SESSION_ID}&success=true`,
-      cancel_url: `${origin}/pricing?canceled=true`,
+      cancel_url: `${origin}/settings?canceled=true`,
       subscription_data: {
         metadata: {
           organization_id: org.id,

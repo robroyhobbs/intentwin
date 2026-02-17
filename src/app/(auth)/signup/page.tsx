@@ -470,14 +470,7 @@ export default function SignupPage() {
                 </p>
                 <div className="bg-[var(--background-secondary)] rounded-lg p-4 text-left">
                   <p className="text-xs text-[var(--foreground-muted)]">
-                    In the meantime, check out our{" "}
-                    <Link
-                      href="/blog"
-                      className="text-[var(--accent)] hover:underline"
-                    >
-                      blog
-                    </Link>{" "}
-                    for proposal writing tips and AI insights.
+                    We&apos;ll be in touch soon with next steps and proposal writing tips.
                   </p>
                 </div>
               </div>

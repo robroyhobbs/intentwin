@@ -36,43 +36,4 @@ export function sanitizeTitle(input: unknown): string {
   return sanitizeString(input, 500);
 }
 
-/**
- * Sanitize an email address.
- * Returns empty string if invalid format.
- */
-export function sanitizeEmail(input: unknown): string {
-  if (typeof input !== "string") return "";
-  const trimmed = input.trim().toLowerCase();
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(trimmed) ? trimmed : "";
-}
 
-/**
- * Sanitize an object by recursively sanitizing all string values.
- * Preserves structure, limits depth to prevent circular references.
- */
-export function sanitizeObject<T>(
-  obj: T,
-  maxDepth: number = 10,
-): T {
-  if (maxDepth <= 0) return obj;
-  if (obj === null || obj === undefined) return obj;
-
-  if (typeof obj === "string") {
-    return sanitizeString(obj) as unknown as T;
-  }
-
-  if (Array.isArray(obj)) {
-    return obj.map((item) => sanitizeObject(item, maxDepth - 1)) as unknown as T;
-  }
-
-  if (typeof obj === "object") {
-    const sanitized: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
-      sanitized[key] = sanitizeObject(value, maxDepth - 1);
-    }
-    return sanitized as T;
-  }
-
-  return obj;
-}

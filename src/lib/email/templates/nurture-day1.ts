@@ -76,8 +76,8 @@ export function nurtureDay1Email(params: {
               <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 28px 0;">
                 <tr>
                   <td align="center" style="border-radius:8px;background-color:#7c3aed;">
-                    <a href="https://intentwin.com/about" target="_blank" style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">
-                      Learn more about the Intent Framework &rarr;
+                    <a href="https://intentwin.com/request-access" target="_blank" style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">
+                      Get started with IntentWin &rarr;
                     </a>
                   </td>
                 </tr>

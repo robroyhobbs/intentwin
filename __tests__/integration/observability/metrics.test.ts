@@ -22,8 +22,6 @@ import {
   createPipelineMetrics,
   logRegenerationMetric,
   logQualityReviewMetric,
-  logRagMetric,
-  logApiMetric,
 } from "@/lib/observability/metrics";
 import { logger } from "@/lib/utils/logger";
 
@@ -172,72 +170,4 @@ describe("Pipeline Metrics", () => {
     });
   });
 
-  describe("logRagMetric", () => {
-    it("should log a RAG retrieval event", () => {
-      logRagMetric({
-        proposalId: "p-1",
-        sectionType: "case_studies",
-        query: "healthcare case study outcomes",
-        chunksRetrieved: 5,
-        embeddingDurationMs: 200,
-        searchDurationMs: 150,
-      });
-
-      expect(logger.info).toHaveBeenCalledWith("rag.retrieval", expect.objectContaining({
-        proposalId: "p-1",
-        sectionType: "case_studies",
-        chunksRetrieved: 5,
-        totalDurationMs: 350,
-      }));
-    });
-  });
-
-  describe("logApiMetric", () => {
-    it("should log successful API requests at info level", () => {
-      logApiMetric({
-        method: "GET",
-        path: "/api/proposals",
-        statusCode: 200,
-        durationMs: 50,
-        userId: "user-1",
-        organizationId: "org-1",
-      });
-
-      expect(logger.info).toHaveBeenCalledWith("api.request", expect.objectContaining({
-        method: "GET",
-        path: "/api/proposals",
-        statusCode: 200,
-      }));
-    });
-
-    it("should log 4xx errors at warn level", () => {
-      logApiMetric({
-        method: "POST",
-        path: "/api/proposals",
-        statusCode: 400,
-        durationMs: 10,
-        error: "Validation error",
-      });
-
-      expect(logger.warn).toHaveBeenCalledWith("api.request", expect.objectContaining({
-        statusCode: 400,
-        error: "Validation error",
-      }));
-    });
-
-    it("should log 5xx errors at error level", () => {
-      logApiMetric({
-        method: "POST",
-        path: "/api/proposals/generate",
-        statusCode: 500,
-        durationMs: 1000,
-        error: "Internal server error",
-      });
-
-      expect(logger.error).toHaveBeenCalledWith("api.request", undefined, expect.objectContaining({
-        statusCode: 500,
-        error: "Internal server error",
-      }));
-    });
-  });
 });

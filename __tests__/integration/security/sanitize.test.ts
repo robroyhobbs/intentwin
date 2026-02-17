@@ -4,8 +4,6 @@ import {
   stripHtml,
   sanitizeString,
   sanitizeTitle,
-  sanitizeEmail,
-  sanitizeObject,
 } from "@/lib/security/sanitize";
 
 describe("escapeHtml", () => {
@@ -78,59 +76,4 @@ describe("sanitizeTitle", () => {
   });
 });
 
-describe("sanitizeEmail", () => {
-  it("accepts valid email", () => {
-    expect(sanitizeEmail("test@example.com")).toBe("test@example.com");
-  });
 
-  it("lowercases email", () => {
-    expect(sanitizeEmail("Test@EXAMPLE.com")).toBe("test@example.com");
-  });
-
-  it("trims whitespace", () => {
-    expect(sanitizeEmail("  test@example.com  ")).toBe("test@example.com");
-  });
-
-  it("returns empty for invalid email", () => {
-    expect(sanitizeEmail("not-an-email")).toBe("");
-    expect(sanitizeEmail("@no-local.com")).toBe("");
-  });
-
-  it("returns empty for non-string input", () => {
-    expect(sanitizeEmail(null)).toBe("");
-    expect(sanitizeEmail(123)).toBe("");
-  });
-});
-
-describe("sanitizeObject", () => {
-  it("sanitizes string values in objects", () => {
-    const obj = { name: "<b>Test</b>", count: 42 };
-    const sanitized = sanitizeObject(obj);
-    expect(sanitized.name).toBe("Test");
-    expect(sanitized.count).toBe(42);
-  });
-
-  it("sanitizes nested objects", () => {
-    const obj = { inner: { value: "<script>xss</script>" } };
-    const sanitized = sanitizeObject(obj);
-    expect(sanitized.inner.value).toBe("xss");
-  });
-
-  it("sanitizes arrays", () => {
-    const arr = ["<b>a</b>", "<i>b</i>"];
-    const sanitized = sanitizeObject(arr);
-    expect(sanitized).toEqual(["a", "b"]);
-  });
-
-  it("preserves null and undefined", () => {
-    expect(sanitizeObject(null)).toBeNull();
-    expect(sanitizeObject(undefined)).toBeUndefined();
-  });
-
-  it("limits recursion depth", () => {
-    const deep = { a: { b: { c: { d: "  <b>deep</b>  " } } } };
-    const sanitized = sanitizeObject(deep, 2);
-    // At depth 2, the inner object is returned as-is
-    expect(sanitized.a.b).toEqual({ c: { d: "  <b>deep</b>  " } });
-  });
-});
