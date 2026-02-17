@@ -1,9 +1,13 @@
 /**
- * Rate Limiter — Sliding Window with In-Memory Store
+ * Rate Limiter — Sliding Window with Pluggable Store
  *
  * Provides per-key rate limiting using a sliding window algorithm.
  * Uses in-memory Map by default (works in Vercel serverless with warm instances).
- * Can be swapped to Upstash Redis for distributed limiting.
+ *
+ * To switch to distributed rate limiting (Upstash Redis):
+ * 1. Install @upstash/redis and @upstash/ratelimit
+ * 2. Implement RateLimitStore using Upstash's sliding window
+ * 3. Set the store via setRateLimitStore()
  *
  * @module rate-limit/limiter
  */
@@ -30,8 +34,36 @@ export interface RateLimitConfig {
   keyPrefix?: string;
 }
 
-// Global store (survives across requests in the same serverless instance)
-const store = new Map<string, RateLimitEntry>();
+/**
+ * Abstraction for rate limit storage backend.
+ * Implement this interface to swap in Upstash Redis or any external store.
+ */
+export interface RateLimitStore {
+  get(key: string): RateLimitEntry | undefined;
+  set(key: string, entry: RateLimitEntry): void;
+  delete(key: string): void;
+  entries(): IterableIterator<[string, RateLimitEntry]>;
+  readonly size: number;
+}
+
+// In-memory store adapter (default)
+class InMemoryStore implements RateLimitStore {
+  private map = new Map<string, RateLimitEntry>();
+  get(key: string) { return this.map.get(key); }
+  set(key: string, entry: RateLimitEntry) { this.map.set(key, entry); }
+  delete(key: string) { this.map.delete(key); }
+  entries() { return this.map.entries(); }
+  get size() { return this.map.size; }
+}
+
+// Global store (survives across requests in the same serverless instance).
+// Replace via setRateLimitStore() to use a distributed backend.
+let store: RateLimitStore = new InMemoryStore();
+
+/** Swap the rate limit backend (e.g., to Upstash Redis adapter) */
+export function setRateLimitStore(newStore: RateLimitStore): void {
+  store = newStore;
+}
 
 // Periodic cleanup to prevent memory leaks (every 60 seconds)
 let cleanupTimer: ReturnType<typeof setInterval> | null = null;
@@ -162,5 +194,7 @@ export function getRateLimitStatus(
   };
 }
 
-// Export for testing
-export const _testStore = store;
+// Export for testing (returns the current store instance)
+export function _getTestStore(): RateLimitStore {
+  return store;
+}

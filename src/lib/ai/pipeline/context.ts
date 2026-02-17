@@ -3,18 +3,34 @@ import { generateStructuredAnalysis, buildSystemPrompt } from "../claude";
 import { loadSources, formatSourcesAsL1Context } from "@/lib/sources";
 import { getIndustryConfig } from "../industry-configs";
 import { createLogger } from "@/lib/utils/logger";
+import { TtlCache } from "@/lib/utils/ttl-cache";
 import type { WinStrategyData } from "@/types/outcomes";
 import type { OutcomeContract, CompanyContext, ProductContext, EvidenceLibraryEntry, CompanyInfo } from "@/types/idd";
 import type { BrandVoice } from "../persuasion";
 import type { L1Context, PipelineContext } from "./types";
 
-/** Fetch L1 Context: Company Truth from the database */
+// L1 context changes rarely (admin-only updates). Cache for 5 minutes
+// to avoid redundant DB queries during concurrent proposal generations.
+const l1Cache = new TtlCache<L1Context>({ ttlMs: 5 * 60 * 1000, maxSize: 50 });
+
+/** Clear the L1 context cache (used in tests and after L1 data updates) */
+export function clearL1Cache(): void {
+  l1Cache.clear();
+}
+
+/** Fetch L1 Context: Company Truth from the database.
+ * Results are cached in-memory for 5 minutes keyed by org+serviceLine+industry. */
 export async function fetchL1Context(
   supabase: ReturnType<typeof createAdminClient>,
   serviceLine?: string,
   industry?: string,
   organizationId?: string,
 ): Promise<L1Context> {
+  // Check cache first
+  const cacheKey = `${organizationId || "none"}:${serviceLine || "all"}:${industry || "all"}`;
+  const cached = l1Cache.get(cacheKey);
+  if (cached) return cached;
+
   try {
     // Fetch company context (brand, values, certifications, legal)
     let companyQuery = supabase
@@ -54,11 +70,16 @@ export async function fetchL1Context(
     }
     const { data: evidenceLibrary } = await evidenceQuery.limit(10);
 
-    return {
+    const result: L1Context = {
       companyContext: (companyContext || []) as CompanyContext[],
       productContexts: (productContexts || []) as ProductContext[],
       evidenceLibrary: (evidenceLibrary || []) as EvidenceLibraryEntry[],
     };
+
+    // Cache the result for subsequent calls with same params
+    l1Cache.set(cacheKey, result);
+
+    return result;
   } catch (error) {
     const l1Log = createLogger({ operation: "fetchL1Context" });
     l1Log.error("Error fetching L1 context", error);

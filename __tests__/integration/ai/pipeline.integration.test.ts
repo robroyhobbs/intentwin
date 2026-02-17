@@ -84,6 +84,7 @@ import { runQualityReview } from "@/lib/ai/quality-overseer";
 import { createProposalVersion } from "@/lib/versioning/create-version";
 import { loadSources, formatSourcesAsL1Context } from "@/lib/sources";
 import { generateProposal, regenerateSection } from "@/lib/ai/pipeline";
+import { clearL1Cache } from "@/lib/ai/pipeline/context";
 
 // ──────────────────────────────────────────────────────────
 // Helpers
@@ -202,6 +203,7 @@ let mockFromFn: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  clearL1Cache();
 
   chain = createChainableMock();
   mockFromFn = vi.fn(() => chain);

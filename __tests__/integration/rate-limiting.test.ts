@@ -3,7 +3,7 @@ import {
   checkRateLimit,
   resetRateLimit,
   getRateLimitStatus,
-  _testStore,
+  _getTestStore,
   type RateLimitConfig,
 } from "@/lib/rate-limit/limiter";
 import { getRouteLimit, AI_GENERATION_LIMIT, AUTH_LIMIT, API_LIMIT, PUBLIC_LIMIT } from "@/lib/rate-limit/config";
@@ -17,7 +17,12 @@ const testConfig: RateLimitConfig = {
 
 beforeEach(() => {
   // Clear the store between tests
-  _testStore.clear();
+  // Clear via resetRateLimit for each possible key, or use store's clear-like behavior
+  const store = _getTestStore();
+  // Iterate and delete all entries
+  for (const [key] of store.entries()) {
+    store.delete(key);
+  }
 });
 
 // ──────────────────────────────────────────────────────────

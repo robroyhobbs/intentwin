@@ -1,16 +1,26 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 // Service-role client for backend operations (bypasses RLS).
 // NEVER expose this client or the service role key to the browser.
-export function createAdminClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    }
-  );
+//
+// Module-level singleton: the Supabase JS client is stateless (each .from()
+// call makes an independent HTTP request), so reusing a single instance
+// avoids ~3-5 redundant object allocations per request with zero risk of
+// connection leakage or shared state issues.
+let _adminClient: SupabaseClient | null = null;
+
+export function createAdminClient(): SupabaseClient {
+  if (!_adminClient) {
+    _adminClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    );
+  }
+  return _adminClient;
 }
