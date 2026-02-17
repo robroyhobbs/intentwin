@@ -47,16 +47,19 @@ const EXCLUDED_DOC_TYPES = new Set(["rfp", "template"]);
 export async function retrieveContext(
   supabase: ReturnType<typeof createAdminClient>,
   searchQuery: string,
+  organizationId: string,
   limit: number = 5,
 ): Promise<{ context: string; chunkIds: string[] }> {
   try {
     const queryEmbedding = await generateQueryEmbedding(searchQuery);
 
     // Over-fetch to compensate for filtering out RFP/template docs
-    const { data: results } = await supabase.rpc("match_document_chunks", {
+    // Use org-scoped RPC to enforce multi-tenant isolation
+    const { data: results } = await supabase.rpc("match_document_chunks_org", {
       query_embedding: JSON.stringify(queryEmbedding),
       match_threshold: 0.5,
       match_count: limit * 3,
+      filter_organization_id: organizationId,
     });
 
     if (!results || results.length === 0) {

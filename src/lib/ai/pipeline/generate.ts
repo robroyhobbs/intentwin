@@ -118,11 +118,12 @@ export async function generateProposal(proposalId: string): Promise<void> {
           .eq("id", section!.id);
 
         try {
-          // Retrieve relevant context
+          // Retrieve relevant context (org-scoped to prevent cross-tenant leakage)
           const searchQuery = config.searchQuery(intakeData);
           const { context, chunkIds } = await retrieveContext(
             supabase,
             searchQuery,
+            organizationId,
           );
 
           // Build the base prompt (with win strategy, outcome contract, L1 context, and company info for IDD)

@@ -60,9 +60,9 @@ export async function regenerateSection(
       enhancedAnalysis,
     } = ctx;
 
-    // Generate section content
+    // Generate section content (org-scoped retrieval to prevent cross-tenant leakage)
     const searchQuery = config.searchQuery(intakeData);
-    const { context, chunkIds } = await retrieveContext(supabase, searchQuery);
+    const { context, chunkIds } = await retrieveContext(supabase, searchQuery, organizationId);
 
     const basePrompt = config.buildPrompt(
       intakeData,

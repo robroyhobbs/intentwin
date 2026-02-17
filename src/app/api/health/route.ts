@@ -174,10 +174,13 @@ async function checkVectorSearch(): Promise<HealthCheck> {
   const start = performance.now();
   try {
     const supabase = createAdminClient();
-    const { error } = await supabase.rpc("match_document_chunks", {
+    // Use org-scoped RPC to verify the production code path works
+    // A nil UUID ensures no real data is returned (health check only)
+    const { error } = await supabase.rpc("match_document_chunks_org", {
       query_embedding: JSON.stringify(new Array(1024).fill(0)),
       match_threshold: 0.5,
       match_count: 1,
+      filter_organization_id: "00000000-0000-0000-0000-000000000000",
     });
     const responseTimeMs = Math.round(performance.now() - start);
     return error

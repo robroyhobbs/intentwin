@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
 import { generateProposal } from "@/lib/ai/pipeline";
 import { rateLimitCheck, AI_GENERATION_LIMIT } from "@/lib/rate-limit";
@@ -35,9 +35,13 @@ export async function POST(
       );
     }
 
-    // Trigger generation in the background
-    generateProposal(id).catch((err) => {
-      console.error(`Generation failed for proposal ${id}:`, err);
+    // Run generation after response is sent (extends serverless function lifetime)
+    after(async () => {
+      try {
+        await generateProposal(id);
+      } catch (err) {
+        console.error(`Generation failed for proposal ${id}:`, err);
+      }
     });
 
     return NextResponse.json({
