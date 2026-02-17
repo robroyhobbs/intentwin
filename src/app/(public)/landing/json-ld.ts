@@ -13,10 +13,7 @@ export function getJsonLd() {
       priceCurrency: "USD",
       priceValidUntil: "2027-12-31",
     },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "4.9",
-      reviewCount: "47",
-    },
+    // Note: aggregateRating removed — no verified reviews yet.
+    // Add back when real customer reviews are collected.
   };
 }

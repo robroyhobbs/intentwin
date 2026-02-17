@@ -10,6 +10,7 @@ import { BenefitsSection } from "./_components/benefits-section";
 import { CalculatorSection } from "./_components/calculator-section";
 import { SocialProofSection } from "./_components/social-proof-section";
 import { GovSection } from "./_components/gov-section";
+import { CompetitorSection } from "./_components/competitor-section";
 import { PricingFooterSection } from "./_components/pricing-footer-section";
 import { LandingStyles } from "./_components/landing-styles";
 
@@ -79,6 +80,7 @@ export default function LandingContent() {
         <BenefitsSection />
         <CalculatorSection />
         <SocialProofSection />
+        <CompetitorSection />
         <GovSection />
         <PricingFooterSection />
       </div>

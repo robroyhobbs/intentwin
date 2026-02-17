@@ -102,6 +102,17 @@ export function nurtureDay7Email(params: {
                 <strong style="color:#ffffff;">We review every waitlist request personally because this tool isn't for everyone.</strong> It's for teams that can't afford to lose.
               </p>
 
+              <!-- CTA Button -->
+              <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 28px 0;">
+                <tr>
+                  <td align="center" style="border-radius:8px;background-color:#7c3aed;">
+                    <a href="https://intentwin.com/request-access?ref=email" target="_blank" style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">
+                      Request access now &rarr;
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
               <!-- Divider -->
               <hr style="border:none;border-top:1px solid #27272a;margin:28px 0;" />
 

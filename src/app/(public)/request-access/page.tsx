@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState, FormEvent } from "react";
+import { useState, useEffect, FormEvent } from "react";
+import { trackEvent } from "@/lib/analytics/track";
 
 export default function RequestAccessPage() {
   const [name, setName] = useState("");
@@ -11,6 +12,24 @@ export default function RequestAccessPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState("");
+
+  // Track form start on first interaction
+  const [formStarted, setFormStarted] = useState(false);
+  function handleFormInteraction() {
+    if (!formStarted) {
+      setFormStarted(true);
+      trackEvent("waitlist_form_start", { location: "request-access" });
+    }
+  }
+
+  // Track email CTA clicks (from nurture emails with ?ref=email param)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref");
+    if (ref === "email") {
+      trackEvent("email_cta_click", { location: "request-access" });
+    }
+  }, []);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -41,6 +60,10 @@ export default function RequestAccessPage() {
       }
 
       setIsSuccess(true);
+      trackEvent("waitlist_form_submit", {
+        location: "request-access",
+        value: companySize || "not-specified",
+      });
     } catch {
       setError("Network error. Please check your connection and try again.");
     } finally {
@@ -121,7 +144,7 @@ export default function RequestAccessPage() {
                   </p>
                 </div>
 
-                <form className="ra-form" onSubmit={handleSubmit}>
+                <form className="ra-form" onSubmit={handleSubmit} onFocus={handleFormInteraction}>
                   {error && (
                     <div className="ra-error">
                       <svg

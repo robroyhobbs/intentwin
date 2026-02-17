@@ -14,6 +14,7 @@ export function HeroSection() {
           <div className="vf-nav-links">
             <a href="#compare">Compare</a>
             <a href="#framework">Framework</a>
+            <a href="#why-intentwin">Why Us</a>
             <a href="#gov">Gov</a>
             <a href="#pricing">Pricing</a>
             <Link href="/request-access" className="vf-nav-cta">

@@ -797,6 +797,121 @@ export function LandingStyles() {
         margin-bottom: 36px;
       }
 
+      /* Competitor Comparison */
+      .vf-competitor {
+        padding: 120px 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .vf-comp-categories {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        margin-bottom: 56px;
+      }
+      .vf-comp-card {
+        padding: 28px 24px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        transition: border-color 0.3s ease;
+      }
+      .vf-comp-card:hover {
+        border-color: rgba(239, 68, 68, 0.15);
+      }
+      .vf-comp-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 8px;
+      }
+      .vf-comp-card-name {
+        font-size: 16px;
+        font-weight: 700;
+        color: #e4e4e7;
+      }
+      .vf-comp-card-price {
+        font-size: 12px;
+        color: #71717a;
+        font-weight: 500;
+      }
+      .vf-comp-card-examples {
+        font-size: 12px;
+        color: #a1a1aa;
+        margin: 0 0 12px;
+        font-style: italic;
+      }
+      .vf-comp-card-approach {
+        font-size: 13px;
+        color: #71717a;
+        margin: 0 0 8px;
+      }
+      .vf-comp-card-weakness {
+        font-size: 13px;
+        color: #ef4444;
+        margin: 0;
+        font-weight: 500;
+      }
+      .vf-comp-table {
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 14px;
+        overflow: hidden;
+      }
+      .vf-comp-table-header {
+        display: grid;
+        grid-template-columns: 160px 1fr 1fr;
+        background: rgba(255, 255, 255, 0.03);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .vf-comp-table-header > div {
+        padding: 14px 20px;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #a1a1aa;
+      }
+      .vf-comp-table-header .vf-comp-table-us {
+        color: #a78bfa;
+      }
+      .vf-comp-table-row {
+        display: grid;
+        grid-template-columns: 160px 1fr 1fr;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        transition: background 0.2s ease;
+      }
+      .vf-comp-table-row:last-child {
+        border-bottom: none;
+      }
+      .vf-comp-table-row:hover {
+        background: rgba(255, 255, 255, 0.015);
+      }
+      .vf-comp-table-row > div {
+        padding: 16px 20px;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+      .vf-comp-table-row .vf-comp-table-label {
+        font-weight: 600;
+        color: #e4e4e7;
+        font-size: 13px;
+      }
+      .vf-comp-table-row .vf-comp-table-them {
+        color: #71717a;
+      }
+      .vf-comp-table-row .vf-comp-table-us {
+        color: #d4d4d8;
+      }
+      .vf-comp-table-row .vf-compare-x {
+        color: #ef4444;
+        margin-right: 8px;
+        font-weight: 700;
+      }
+      .vf-comp-table-row .vf-compare-check {
+        color: #22c55e;
+        margin-right: 8px;
+        font-weight: 700;
+      }
+
       /* Footer */
       .vf-footer {
         padding: 160px 0 80px;
@@ -846,6 +961,26 @@ export function LandingStyles() {
         .vf-compare-header,
         .vf-compare-row {
           grid-template-columns: 100px 1fr 1fr;
+        }
+        .vf-comp-categories {
+          grid-template-columns: 1fr;
+        }
+        .vf-comp-table-header,
+        .vf-comp-table-row {
+          grid-template-columns: 1fr;
+          gap: 0;
+        }
+        .vf-comp-table-header .vf-comp-table-label,
+        .vf-comp-table-row .vf-comp-table-label {
+          padding-bottom: 4px;
+          font-size: 12px;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+        .vf-comp-table-row .vf-comp-table-them,
+        .vf-comp-table-row .vf-comp-table-us {
+          padding-top: 4px;
+          padding-bottom: 8px;
         }
       }
       @media (max-width: 768px) {
