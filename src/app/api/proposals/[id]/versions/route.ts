@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
+import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
 import { unauthorized, notFound, serverError, ok, created } from "@/lib/api/response";
 
 /**
@@ -20,8 +20,8 @@ export async function GET(
     }
 
     // Verify proposal belongs to user's organization
-    const proposal = await verifyProposalAccess(context, id);
-    if (!proposal) {
+    const hasAccess = await checkProposalAccess(context, id);
+    if (!hasAccess) {
       return notFound("Proposal not found");
     }
 
@@ -71,8 +71,8 @@ export async function POST(
     }
 
     // Verify proposal belongs to user's organization
-    const proposal = await verifyProposalAccess(context, id);
-    if (!proposal) {
+    const hasAccess = await checkProposalAccess(context, id);
+    if (!hasAccess) {
       return notFound("Proposal not found");
     }
 

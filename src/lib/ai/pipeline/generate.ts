@@ -28,8 +28,9 @@ export async function generateProposal(proposalId: string): Promise<void> {
     })
     .eq("id", proposalId);
 
-  // Safety timeout: if generation takes longer than 10 minutes, abort and reset
-  const GENERATION_TIMEOUT_MS = 10 * 60 * 1000;
+  // Safety timeout: must fit within Vercel's maxDuration (300s).
+  // Use 280s to leave 20s buffer for cleanup and status updates.
+  const GENERATION_TIMEOUT_MS = 280 * 1000;
   const timeoutController = new AbortController();
   const timeoutId = setTimeout(
     () => timeoutController.abort(),

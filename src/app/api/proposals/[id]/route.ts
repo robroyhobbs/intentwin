@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
+import { getUserContext, verifyProposalAccess, checkProposalAccess } from "@/lib/supabase/auth-api";
 
 export async function GET(
   request: NextRequest,
@@ -53,9 +53,9 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Verify user has access to this proposal (organization check)
-    const existingProposal = await verifyProposalAccess(context, id);
-    if (!existingProposal) {
+    // Lightweight access check — PATCH doesn't need proposal data
+    const hasAccess = await checkProposalAccess(context, id);
+    if (!hasAccess) {
       return NextResponse.json(
         { error: "Proposal not found" },
         { status: 404 }
@@ -109,9 +109,9 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Verify user has access to this proposal (organization check)
-    const existingProposal = await verifyProposalAccess(context, id);
-    if (!existingProposal) {
+    // Lightweight access check — DELETE doesn't need proposal data
+    const hasAccess = await checkProposalAccess(context, id);
+    if (!hasAccess) {
       return NextResponse.json(
         { error: "Proposal not found" },
         { status: 404 }

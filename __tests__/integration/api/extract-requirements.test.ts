@@ -22,6 +22,8 @@ vi.mock("@/lib/supabase/admin", () => ({
 
 vi.mock("@/lib/supabase/auth-api", () => ({
   getUserContext: vi.fn(),
+  checkProposalAccess: vi.fn(),
+  checkDocumentAccess: vi.fn(),
   verifyProposalAccess: vi.fn(),
 }));
 
@@ -44,7 +46,7 @@ import {
 } from "@/lib/ai/prompts/extract-requirements";
 import { POST } from "@/app/api/proposals/[id]/requirements/extract/route";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
+import { getUserContext, checkProposalAccess, checkDocumentAccess } from "@/lib/supabase/auth-api";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -158,10 +160,8 @@ beforeEach(() => {
     organizationId: TEST_ORG_ID,
     role: "admin" as const,
   });
-  (verifyProposalAccess as ReturnType<typeof vi.fn>).mockResolvedValue({
-    id: TEST_PROPOSAL_ID,
-    organization_id: TEST_ORG_ID,
-  });
+  (checkProposalAccess as ReturnType<typeof vi.fn>).mockResolvedValue(true);
+  (checkDocumentAccess as ReturnType<typeof vi.fn>).mockResolvedValue(true);
 });
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -568,7 +568,7 @@ describe("Requirements Extraction — Security", () => {
   });
 
   it("extraction endpoint validates user owns the proposal", async () => {
-    (verifyProposalAccess as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+    (checkProposalAccess as ReturnType<typeof vi.fn>).mockResolvedValue(false);
     setupMockSupabase();
 
     const res = await POST(

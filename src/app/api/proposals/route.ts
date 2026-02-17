@@ -17,18 +17,37 @@ export async function GET(request: NextRequest) {
     }
 
     const adminClient = createAdminClient();
-    // Get all proposals for the organization (not just user's own)
-    const { data: proposals, error } = await adminClient
+
+    // Parse optional pagination params (default: page 1, 50 per page)
+    const url = new URL(request.url);
+    const page = Math.max(1, parseInt(url.searchParams.get("page") || "1", 10));
+    const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get("limit") || "50", 10)));
+    const offset = (page - 1) * limit;
+
+    // Select only list-view columns (exclude large JSONB blobs like intake_data, quality_review)
+    const { data: proposals, error, count } = await adminClient
       .from("proposals")
-      .select("*")
+      .select(
+        "id, title, status, created_at, updated_at, created_by, organization_id, intent_status, deal_outcome",
+        { count: "exact" }
+      )
       .eq("organization_id", context.organizationId)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit - 1);
 
     if (error) {
       return serverError("Failed to fetch proposals", error);
     }
 
-    return ok({ proposals });
+    return ok({
+      proposals,
+      pagination: {
+        page,
+        limit,
+        total: count ?? 0,
+        totalPages: count ? Math.ceil(count / limit) : 0,
+      },
+    });
   } catch (error) {
     console.error("Get proposals error:", error);
     return serverError("Failed to fetch proposals", error);

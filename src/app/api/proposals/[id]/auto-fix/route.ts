@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
+import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
 import { generateText } from "@/lib/ai/claude";
 import { buildAutoFixPrompt } from "@/lib/ai/prompts/auto-fix";
 import { getQualityFeedbackForSection } from "@/lib/ai/quality-overseer";
@@ -18,8 +18,8 @@ export async function POST(
     }
 
     // Verify proposal belongs to user's organization
-    const proposal = await verifyProposalAccess(context, id);
-    if (!proposal) {
+    const hasAccess = await checkProposalAccess(context, id);
+    if (!hasAccess) {
       return NextResponse.json(
         { error: "Proposal not found" },
         { status: 404 },

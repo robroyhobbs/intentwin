@@ -49,6 +49,7 @@ vi.mock("@/lib/supabase/admin", () => ({
 
 vi.mock("@/lib/supabase/auth-api", () => ({
   getUserContext: vi.fn(),
+  checkProposalAccess: vi.fn(),
   verifyProposalAccess: vi.fn(),
 }));
 
@@ -60,7 +61,7 @@ import {
   DELETE,
 } from "@/app/api/proposals/[id]/requirements/route";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
+import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -269,9 +270,7 @@ beforeEach(() => {
   (getUserContext as ReturnType<typeof vi.fn>).mockResolvedValue(
     mockUserContext(),
   );
-  (verifyProposalAccess as ReturnType<typeof vi.fn>).mockResolvedValue(
-    mockProposal(),
-  );
+  (checkProposalAccess as ReturnType<typeof vi.fn>).mockResolvedValue(true);
 });
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -646,7 +645,7 @@ describe("Compliance API — Bad Path", () => {
   });
 
   it("GET for non-existent proposal returns 404", async () => {
-    (verifyProposalAccess as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+    (checkProposalAccess as ReturnType<typeof vi.fn>).mockResolvedValue(false);
     setupMockSupabase();
 
     const res = await GET(makeRequest("GET"), makeParams());
@@ -744,7 +743,7 @@ describe("Compliance API — Security", () => {
   });
 
   it("returns 404 when user does not have access to proposal", async () => {
-    (verifyProposalAccess as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+    (checkProposalAccess as ReturnType<typeof vi.fn>).mockResolvedValue(false);
     setupMockSupabase();
 
     const res = await POST(
@@ -809,7 +808,7 @@ describe("Compliance API — Data Leak", () => {
   });
 
   it("404 response does not reveal whether proposal exists in another org", async () => {
-    (verifyProposalAccess as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+    (checkProposalAccess as ReturnType<typeof vi.fn>).mockResolvedValue(false);
     setupMockSupabase();
 
     const res = await GET(makeRequest("GET"), makeParams());
@@ -845,7 +844,7 @@ describe("Compliance API — Data Leak", () => {
 
 describe("Compliance API — Data Damage", () => {
   it("POST with invalid proposal_id is caught by verifyProposalAccess", async () => {
-    (verifyProposalAccess as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+    (checkProposalAccess as ReturnType<typeof vi.fn>).mockResolvedValue(false);
     setupMockSupabase();
 
     const res = await POST(

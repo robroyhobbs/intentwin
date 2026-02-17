@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserContext, verifyDocumentAccess } from "@/lib/supabase/auth-api";
+import { getUserContext, checkDocumentAccess } from "@/lib/supabase/auth-api";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateText } from "@/lib/ai/claude";
 import { buildExtractionPrompt } from "@/lib/ai/prompts/extract-intake";
@@ -74,8 +74,8 @@ export async function POST(request: NextRequest) {
 
       for (const docId of document_ids) {
         // Verify document belongs to user's organization
-        const verifiedDoc = await verifyDocumentAccess(context, docId);
-        if (!verifiedDoc) {
+        const hasDocAccess = await checkDocumentAccess(context, docId);
+        if (!hasDocAccess) {
           return NextResponse.json(
             { error: `Document ${docId} not found or access denied` },
             { status: 404 },

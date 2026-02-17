@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
+import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
 
 export async function PATCH(
   request: NextRequest,
@@ -14,8 +14,8 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const proposal = await verifyProposalAccess(context, id);
-    if (!proposal) {
+    const hasAccess = await checkProposalAccess(context, id);
+    if (!hasAccess) {
       return NextResponse.json(
         { error: "Proposal not found" },
         { status: 404 }

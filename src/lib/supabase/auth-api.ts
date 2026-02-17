@@ -155,9 +155,30 @@ export async function incrementUsage(
 }
 
 /**
+ * Lightweight access check — only fetches id + organization_id.
+ * Use when the caller only needs to confirm the proposal belongs to the org
+ * and does NOT need any proposal data beyond that.
+ */
+export async function checkProposalAccess(
+  context: UserContext,
+  proposalId: string
+): Promise<boolean> {
+  const adminClient = createAdminClient();
+  const { data, error } = await adminClient
+    .from("proposals")
+    .select("id")
+    .eq("id", proposalId)
+    .eq("organization_id", context.organizationId)
+    .single();
+
+  return !error && !!data;
+}
+
+/**
  * Verify user has access to a resource (proposal or document) in their organization.
- * Returns the resource if access is granted, null otherwise.
- * IMPORTANT: Use this for all routes that access resources by ID with adminClient.
+ * Returns the full resource if access is granted, null otherwise.
+ * Use when the caller needs proposal data (status, quality_review, title, etc.).
+ * For pure access checks, prefer checkProposalAccess() to avoid fetching large JSONB blobs.
  */
 export async function verifyProposalAccess(
   context: UserContext,
@@ -179,7 +200,29 @@ export async function verifyProposalAccess(
 }
 
 /**
+ * Lightweight access check — only fetches id + organization_id.
+ * Use when the caller only needs to confirm the document belongs to the org
+ * and does NOT need any document data beyond that.
+ */
+export async function checkDocumentAccess(
+  context: UserContext,
+  documentId: string
+): Promise<boolean> {
+  const adminClient = createAdminClient();
+  const { data, error } = await adminClient
+    .from("documents")
+    .select("id")
+    .eq("id", documentId)
+    .eq("organization_id", context.organizationId)
+    .single();
+
+  return !error && !!data;
+}
+
+/**
  * Verify user has access to a document in their organization.
+ * Returns the full document if access is granted, null otherwise.
+ * For pure access checks, prefer checkDocumentAccess().
  */
 export async function verifyDocumentAccess(
   context: UserContext,

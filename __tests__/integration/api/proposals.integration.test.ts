@@ -91,10 +91,13 @@ describe("GET /api/proposals", () => {
 
     (getUserContext as ReturnType<typeof vi.fn>).mockResolvedValue(mockContext);
 
-    // Mock the chained query to resolve with proposals
-    mockQuery.order = vi.fn().mockResolvedValue({
-      data: proposals,
-      error: null,
+    // Mock the chained query: .select().eq().order().range()
+    mockQuery.order = vi.fn().mockReturnValue({
+      range: vi.fn().mockResolvedValue({
+        data: proposals,
+        error: null,
+        count: 3,
+      }),
     });
 
     const request = makeRequest("GET");
@@ -103,6 +106,8 @@ describe("GET /api/proposals", () => {
 
     expect(status).toBe(200);
     expect(body.proposals).toHaveLength(3);
+    expect(body.pagination).toBeDefined();
+    expect(body.pagination.total).toBe(3);
     // Verify org scoping was applied
     expect(mockQuery.eq).toHaveBeenCalledWith("organization_id", org.id);
   });
@@ -110,9 +115,12 @@ describe("GET /api/proposals", () => {
   it("returns 500 when database query fails", async () => {
     (getUserContext as ReturnType<typeof vi.fn>).mockResolvedValue(mockContext);
 
-    mockQuery.order = vi.fn().mockResolvedValue({
-      data: null,
-      error: { message: "Database connection failed" },
+    mockQuery.order = vi.fn().mockReturnValue({
+      range: vi.fn().mockResolvedValue({
+        data: null,
+        error: { message: "Database connection failed" },
+        count: null,
+      }),
     });
 
     const request = makeRequest("GET");
@@ -126,9 +134,12 @@ describe("GET /api/proposals", () => {
   it("returns empty array when org has no proposals", async () => {
     (getUserContext as ReturnType<typeof vi.fn>).mockResolvedValue(mockContext);
 
-    mockQuery.order = vi.fn().mockResolvedValue({
-      data: [],
-      error: null,
+    mockQuery.order = vi.fn().mockReturnValue({
+      range: vi.fn().mockResolvedValue({
+        data: [],
+        error: null,
+        count: 0,
+      }),
     });
 
     const request = makeRequest("GET");
@@ -137,6 +148,7 @@ describe("GET /api/proposals", () => {
 
     expect(status).toBe(200);
     expect(body.proposals).toEqual([]);
+    expect(body.pagination.total).toBe(0);
   });
 });
 
