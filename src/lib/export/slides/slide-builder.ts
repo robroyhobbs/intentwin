@@ -12,7 +12,7 @@ import type { ProposalData, ProposalSection, SlideContent } from "./types";
 // Content extraction helpers
 // ────────────────────────────────────────────────────────────────
 
-function categorizeSection(section: ProposalSection): string {
+function _categorizeSection(section: ProposalSection): string {
   const type = section.section_type.toLowerCase().replace(/\s+/g, "_");
   const title = section.title.toLowerCase();
 

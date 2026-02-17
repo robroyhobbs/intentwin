@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
-import { unauthorized, notFound, badRequest, serverError, ok, created, conflict } from "@/lib/api/response";
+import { unauthorized, notFound, serverError, ok, created, conflict } from "@/lib/api/response";
 
 /**
  * GET /api/proposals/[id]/review-stages

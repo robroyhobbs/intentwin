@@ -11,7 +11,6 @@ import {
   AlertTriangle,
   CheckCircle2,
   XCircle,
-  Bot,
   Users,
 } from "lucide-react";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";

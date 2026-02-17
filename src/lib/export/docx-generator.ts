@@ -1,5 +1,5 @@
-import Docxtemplater from "docxtemplater";
-import PizZip from "pizzip";
+// Docxtemplater and PizZip are require()'d dynamically in buildDocxContent()
+
 
 interface ProposalSection {
   title: string;

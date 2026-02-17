@@ -1,7 +1,7 @@
 "use client";
 
 import { Check } from "lucide-react";
-import { Step, STEPS } from "./constants";
+import { Step } from "./constants";
 
 interface ProgressIndicatorProps {
   steps: Step[];

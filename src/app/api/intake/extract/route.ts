@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { generateText } from "@/lib/ai/claude";
 import { buildExtractionPrompt } from "@/lib/ai/prompts/extract-intake";
 import type { ExtractedIntake } from "@/types/intake";
+import { logger } from "@/lib/utils/logger";
 
 const EXTRACTION_SYSTEM_PROMPT = `You are an expert at analyzing business documents and extracting structured information. You are precise, thorough, and honest about confidence levels. You always respond with valid JSON only.`;
 
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
     }
     const { content, document_ids, content_type = "pasted" } = body;
 
-    console.log("Extract request:", {
+    logger.info("Extract request:", {
       hasContent: !!content,
       contentLength: content?.length ?? 0,
       documentIds: document_ids ?? "none",

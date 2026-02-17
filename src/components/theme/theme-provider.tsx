@@ -25,14 +25,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("system");
   const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
 
-  // Initialize theme from localStorage on mount
+  // Initialize theme from localStorage on mount.
+  // setState in effect is intentional here — we need to sync with localStorage
+  // and DOM after hydration to prevent flash of wrong theme.
   useEffect(() => {
     const stored = localStorage.getItem("theme") as Theme | null;
     const initialTheme = stored || "system";
     const resolved = getResolvedTheme(initialTheme);
 
-    setThemeState(initialTheme);
-    setResolvedTheme(resolved);
+    setThemeState(initialTheme); // eslint-disable-line react-hooks/set-state-in-effect
+    setResolvedTheme(resolved); // eslint-disable-line react-hooks/set-state-in-effect
 
     // Apply theme to DOM
     if (resolved === "dark") {
@@ -41,7 +43,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       document.documentElement.classList.remove("dark");
     }
 
-    setMounted(true);
+    setMounted(true); // eslint-disable-line react-hooks/set-state-in-effect
   }, []);
 
   // Handle theme changes after mount

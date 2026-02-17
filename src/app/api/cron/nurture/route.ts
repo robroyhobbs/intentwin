@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendNurtureEmail } from "@/lib/email/send-nurture-email";
+import { logger } from "@/lib/utils/logger";
 
 // Vercel cron configuration
 export const dynamic = "force-dynamic";
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
       const windowStart = new Date(Date.now() - (daysAgo + 1) * 86400000);
       const windowEnd = new Date(Date.now() - daysAgo * 86400000);
 
-      console.log(
+      logger.info(
         `[NURTURE-CRON] Step ${step}: checking for entries created between ${windowStart.toISOString()} and ${windowEnd.toISOString()}`,
       );
 
@@ -61,11 +62,11 @@ export async function GET(request: NextRequest) {
       }
 
       if (!entries || entries.length === 0) {
-        console.log(`[NURTURE-CRON] Step ${step}: no eligible entries`);
+        logger.info(`[NURTURE-CRON] Step ${step}: no eligible entries`);
         continue;
       }
 
-      console.log(
+      logger.info(
         `[NURTURE-CRON] Step ${step}: found ${entries.length} eligible entries`,
       );
 
@@ -106,7 +107,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  console.log(
+  logger.info(
     `[NURTURE-CRON] Complete: sent=${totalSent}, errors=${totalErrors}`,
   );
 

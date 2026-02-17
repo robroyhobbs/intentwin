@@ -75,7 +75,7 @@ export function SectionContentPane({
   proposal,
   id,
   authFetch,
-  fetchProposal,
+  fetchProposal: _fetchProposal,
   fetchReviews,
 }: SectionContentPaneProps) {
   if (!currentSection) {

@@ -13,7 +13,7 @@ import type { RateLimitConfig } from "./limiter";
 const SECOND = 1_000;
 const MINUTE = 60 * SECOND;
 const HOUR = 60 * MINUTE;
-const DAY = 24 * HOUR;
+const _DAY = 24 * HOUR;
 
 // ── Route-Specific Configurations ──────────────────────────────────
 

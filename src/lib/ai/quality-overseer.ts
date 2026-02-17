@@ -288,7 +288,7 @@ function calculateConsensus(
 
   // Look at individual judge pass/fail across all sections
   let unanimousCount = 0;
-  let majorityCount = 0;
+  let _majorityCount = 0;
   let splitCount = 0;
 
   for (const section of sectionReviews) {
@@ -306,7 +306,7 @@ function calculateConsensus(
     if (passes === successful.length || fails === successful.length) {
       unanimousCount++;
     } else if (passes > fails || fails > passes) {
-      majorityCount++;
+      _majorityCount++;
     } else {
       splitCount++;
     }

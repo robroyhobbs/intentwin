@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendWaitlistConfirmation } from "@/lib/email/send-waitlist-email";
 import { sendAdminWaitlistNotification } from "@/lib/email/send-admin-notification";
 import { rateLimitCheck, PUBLIC_LIMIT } from "@/lib/rate-limit";
+import { logger } from "@/lib/utils/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Log for Vercel log monitoring
-    console.log("[WAITLIST]", {
+    logger.info("[WAITLIST]", {
       name: name.trim(),
       email: email.toLowerCase().trim(),
       company: company.trim(),

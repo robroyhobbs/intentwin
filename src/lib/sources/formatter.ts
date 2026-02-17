@@ -4,7 +4,6 @@ import {
   extractMetrics,
   extractCaseStudy,
   extractMethodology,
-  filterVerified,
 } from './loader';
 import { getSection, extractBulletPoints, extractTables } from './parser';
 

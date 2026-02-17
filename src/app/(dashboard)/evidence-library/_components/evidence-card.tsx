@@ -16,7 +16,7 @@ export function EvidenceCard({
   onEdit,
   onDelete,
   onToggleVerify,
-  deleteConfirm,
+  deleteConfirm: _deleteConfirm,
 }: EvidenceCardProps) {
   return (
     <div

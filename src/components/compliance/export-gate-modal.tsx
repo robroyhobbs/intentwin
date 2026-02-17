@@ -5,7 +5,6 @@ import {
   AlertTriangle,
   ShieldCheck,
   X,
-  ArrowRight,
   Download,
 } from "lucide-react";
 
@@ -55,7 +54,7 @@ const CATEGORY_STYLES: Record<
 export function ExportGateModal({
   proposalId,
   requirements,
-  format,
+  format: _format,
   onExportAnyway,
   onCancel,
 }: ExportGateModalProps) {

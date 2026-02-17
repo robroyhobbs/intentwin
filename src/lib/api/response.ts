@@ -157,7 +157,7 @@ export function withErrorHandler(
     try {
       return await handler(request, context);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
+      const _message = error instanceof Error ? error.message : "Unknown error";
       logger.error("[Unhandled API Error]", error);
       return serverError();
     }

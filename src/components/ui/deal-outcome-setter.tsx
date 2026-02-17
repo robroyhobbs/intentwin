@@ -46,7 +46,7 @@ export function DealOutcomeSetter({
   const [isOpen, setIsOpen] = useState(false);
   const [outcome, setOutcome] = useState(currentOutcome);
   const [dealValue, setDealValue] = useState(currentValue?.toString() || "");
-  const [lossReason, setLossReason] = useState("");
+  const [lossReason, _setLossReason] = useState("");
   const [lossReasonCategory, setLossReasonCategory] = useState("");
   const [competitor, setCompetitor] = useState("");
   const [notes, setNotes] = useState("");
@@ -80,7 +80,7 @@ export function DealOutcomeSetter({
       setShowForm(false);
       setIsOpen(false);
       onUpdate?.(outcome);
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to update outcome");
     } finally {
       setSaving(false);

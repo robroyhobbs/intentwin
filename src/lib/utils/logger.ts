@@ -102,6 +102,7 @@ function createLoggerInstance(baseContext?: LogContext) {
      */
     debug: (message: string, context?: LogContext) => {
       if (shouldLog("debug")) {
+        // eslint-disable-next-line no-console
         console.log(formatMessage("debug", message, context, baseContext));
       }
     },
@@ -111,6 +112,7 @@ function createLoggerInstance(baseContext?: LogContext) {
      */
     info: (message: string, context?: LogContext) => {
       if (shouldLog("info")) {
+        // eslint-disable-next-line no-console
         console.log(formatMessage("info", message, context, baseContext));
       }
     },
@@ -160,6 +162,7 @@ function createLoggerInstance(baseContext?: LogContext) {
       };
 
       if (isDev) {
+        // eslint-disable-next-line no-console
         console.log(
           `[EVENT] ${entry.timestamp} | ${eventType}`,
           Object.keys(mergedDetails).length > 0
@@ -167,6 +170,7 @@ function createLoggerInstance(baseContext?: LogContext) {
             : "",
         );
       } else {
+        // eslint-disable-next-line no-console
         console.log(JSON.stringify(entry));
       }
     },
@@ -184,6 +188,7 @@ function createLoggerInstance(baseContext?: LogContext) {
         const durationMs = Math.round(performance.now() - start);
         const mergedCtx = { ...baseContext, ...context, ...endContext, duration_ms: durationMs };
         if (shouldLog("info")) {
+          // eslint-disable-next-line no-console
           console.log(formatMessage("info", `${label} completed`, mergedCtx));
         }
         return durationMs;

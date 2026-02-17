@@ -10,7 +10,7 @@ interface MermaidRendererProps {
 export function MermaidRenderer({ chart, className }: MermaidRendererProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState(false);
-  const [rendered, setRendered] = useState(false);
+  const [_rendered, setRendered] = useState(false);
   const [geminiImage, setGeminiImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 

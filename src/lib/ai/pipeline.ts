@@ -816,7 +816,7 @@ export async function generateProposal(proposalId: string): Promise<void> {
       // Don't throw — user can manually trigger if auto-trigger fails
     });
   } catch (error) {
-    const errorMessage =
+    const _errorMessage =
       error instanceof Error ? error.message : "Unknown error";
     const errorLog = createLogger({ operation: "generateProposal", proposalId });
     errorLog.error("Proposal generation failed", error);

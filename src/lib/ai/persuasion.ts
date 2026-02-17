@@ -41,7 +41,7 @@ export const SECTION_TYPES = [
   "why_us",
 ] as const;
 
-type SectionType = (typeof SECTION_TYPES)[number];
+type _SectionType = (typeof SECTION_TYPES)[number];
 
 const PERSUASION_FRAMEWORKS: Record<string, string> = {
   executive_summary: `### Persuasion Framework: AIDA (Attention-Interest-Desire-Action)

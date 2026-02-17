@@ -89,7 +89,7 @@ export function ReviewerAssignment({
       if (!res.ok) throw new Error("Failed to load members");
       const data = await res.json();
       setOrgMembers(data.members ?? data ?? []);
-    } catch (err) {
+    } catch (_err) {
       toast.error("Could not load organization members");
     } finally {
       setLoadingMembers(false);
