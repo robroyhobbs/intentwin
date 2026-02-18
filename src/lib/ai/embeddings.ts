@@ -9,7 +9,7 @@ export async function generateEmbeddings(
   texts: string[],
   inputType: "document" | "query" = "document"
 ): Promise<number[][]> {
-  const model = process.env.EMBEDDING_MODEL || "voyage-3";
+  const model = (process.env.EMBEDDING_MODEL || "voyage-3").trim();
   const apiKey = process.env.VOYAGE_API_KEY;
 
   if (!apiKey) {
