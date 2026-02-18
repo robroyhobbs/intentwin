@@ -1,8 +1,12 @@
 import { defineConfig } from "vitest/config";
-import tsconfigPaths from "vite-tsconfig-paths";
+import path from "path";
 
 export default defineConfig({
-  plugins: [tsconfigPaths()],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
+  },
   test: {
     globals: true,
     environment: "node",
@@ -24,9 +28,6 @@ export default defineConfig({
         statements: 70,
       },
     },
-    // Use forks for better isolation with Supabase
-    pool: "forks",
-    singleFork: true,
     // Test file patterns
     include: [
       "src/**/*.{test,spec}.{js,ts,jsx,tsx}",
