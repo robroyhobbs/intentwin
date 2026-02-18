@@ -121,6 +121,19 @@ All tables now have `organization_id` columns with RLS policies:
 
 <!-- Updated nightly by compound review -->
 
+### 2026-02-17 - Performance Sprint: Caching, Query Optimization & Multi-Tenant Security
+
+- **RAG retrieval was leaking cross-tenant data**: `match_document_chunks` RPC had no org filter — any org's embeddings could surface in another org's proposal generation. Fix: created `match_document_chunks_org` RPC with `filter_organization_id` parameter and passed `organizationId` through the entire retrieval pipeline. Every RPC that touches user data must accept and enforce org scoping
+- **`select("*")` on list endpoints fetches massive JSONB blobs**: The proposals list route was pulling `intake_data`, `quality_review`, and other large JSONB columns for every row. Fix: explicit column selection (`id, title, status, created_at, ...`) + server-side pagination with `range()`. Added `{ count: "exact" }` for total count without fetching all rows
+- **Lightweight vs full access checks**: `verifyProposalAccess()` fetches the entire proposal row (including JSONB). Many routes only need to confirm ownership. Added `checkProposalAccess()` / `checkDocumentAccess()` that select only `id` — use these when you don't need the row data
+- **Supabase admin client is stateless — singleton is safe**: Each `.from()` call makes an independent HTTP request with no shared connection state. Converting `createAdminClient()` to a module-level singleton eliminates ~3-5 redundant object allocations per request with zero risk of connection leakage
+- **L1 context (Company Truth) rarely changes — cache it**: L1 data is admin-only updates, but `fetchL1Context()` was hitting the DB on every section generation. Added `TtlCache<L1Context>` (5-min TTL, 50 entries max, LRU eviction) keyed by `org:serviceLine:industry`. On Vercel each serverless instance keeps its own cache — no cross-instance coordination needed
+- **Rate limiting belongs in middleware, not per-route**: Had `checkRateLimit()` calls scattered across 8+ API routes with inconsistent configs. Moved to a single middleware check (`pathname.startsWith("/api")`) that runs before session refresh. Per-route configs live in `rate-limit/config.ts`. Removed duplicate per-route calls
+- **Quality council reviews can parallelize across sections**: Section reviews were sequential (`for...of` loop) but each section's judges already ran in parallel. Wrapped in `parallelBatch()` with `PIPELINE_CONCURRENCY` limit. Fatal errors now only abort if zero sections succeed (partial results are still useful)
+- **Batch DB updates beat N+1 loops**: Nurture cron was doing individual `UPDATE` per waitlist entry. Collected successful IDs, then did a single `.in("id", successfulIds)` update. Same pattern applies anywhere you're updating multiple rows with the same values
+- **Broken migration index syntax**: Migration 00031 had a `CREATE INDEX IF NOT EXISTS` on a column that didn't exist in `deal_outcome_history`. Fix: corrected the column reference. Always verify migration SQL against the actual table schema before committing
+- **`after()` for fire-and-forget generation**: Replaced detached `Promise` calls in the generate route with Next.js `after()` to ensure background work completes even if the response stream closes. `after()` runs after the response is sent but within the function's lifetime
+
 ### 2026-02-16 - Code Quality Enforcement, Bloat Reduction & Component Architecture
 
 - **ESLint as architectural guardrails**: Added `max-lines` (300 src / 600 pages), `max-lines-per-function` (50 / 150 for page exports), `max-depth` (4), `max-params` (5) as warnings. Separate rule overrides for test files, scripts, and export modules prevent false positives. Starting from 26 errors → 0 errors in one pass; 237 warnings remain as intentional guardrails for legacy code
