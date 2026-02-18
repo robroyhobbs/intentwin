@@ -315,10 +315,46 @@ Primary differentiator: Only vendor with FedRAMP High + healthcare experience...
 
 ---
 
+## Multi-Document Support
+
+Proposals support multiple source documents with role-based classification and incremental addition:
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  PROPOSAL DOCUMENT LIFECYCLE                                      │
+│                                                                  │
+│  Initial Intake:                                                 │
+│  1. Upload 1-N documents (PDF, DOCX, PPTX, TXT, MD)            │
+│  2. Classify each document's role:                               │
+│     - primary_rfp, amendment, attachment, qa_addendum,           │
+│       incumbent_info, evaluation_criteria, template, supplemental│
+│  3. Extract from all documents with role-based precedence        │
+│  4. Persist document associations in proposal_documents table    │
+│                                                                  │
+│  Mid-Proposal Addition:                                          │
+│  1. Upload new document, assign role                             │
+│  2. Incremental extraction (new doc only)                        │
+│  3. Semantic merge: compare against existing requirements        │
+│     - NEW: requirement not in existing set                       │
+│     - UPDATED: similar requirement with changed wording          │
+│     - COVERED: already captured                                  │
+│  4. User reviews merge plan, approves/rejects each change        │
+│  5. Affected sections flagged for regeneration (manual trigger)  │
+│                                                                  │
+│  Key Safety Rules:                                               │
+│  - Manual requirements (is_extracted=false) are NEVER modified   │
+│  - Compliance statuses are preserved during merge                │
+│  - Sections are never auto-regenerated without user confirmation │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+See `~/intent/intentwin-multi-document/intent.md` for full design.
+
+---
+
 ## Out of Scope
 
 - Real-time collaboration (future enhancement)
-- Automated RFP parsing (separate intake tool)
 - Competitor intelligence gathering (manual input)
 - Contract generation (legal review required)
 

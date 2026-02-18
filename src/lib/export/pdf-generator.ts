@@ -32,6 +32,7 @@ async function findBrowser(): Promise<{
 
   if (isVercel) {
     try {
+      // @ts-expect-error — @sparticuz/chromium is only installed in Vercel runtime
       const chromium = await import("@sparticuz/chromium");
       const execPath = await chromium.default.executablePath();
       if (execPath) {

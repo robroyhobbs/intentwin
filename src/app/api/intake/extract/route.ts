@@ -2,8 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUserContext, checkDocumentAccess } from "@/lib/supabase/auth-api";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateText } from "@/lib/ai/claude";
-import { buildExtractionPrompt } from "@/lib/ai/prompts/extract-intake";
+import {
+  buildExtractionPrompt,
+  buildMultiDocumentContent,
+} from "@/lib/ai/prompts/extract-intake";
+import type { DocumentForExtraction } from "@/lib/ai/prompts/extract-intake";
 import type { ExtractedIntake } from "@/types/intake";
+import type { DocumentRole } from "@/types/proposal-documents";
 import { logger } from "@/lib/utils/logger";
 
 const EXTRACTION_SYSTEM_PROMPT = `You are an expert at analyzing business documents and extracting structured information. You are precise, thorough, and honest about confidence levels. You always respond with valid JSON only.`;
@@ -49,12 +54,18 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-    const { content, document_ids, content_type = "pasted" } = body;
+    const {
+      content,
+      document_ids,
+      document_roles,  // Optional: { [document_id]: DocumentRole }
+      content_type = "pasted",
+    } = body;
 
     logger.info("Extract request:", {
       hasContent: !!content,
       contentLength: content?.length ?? 0,
       documentIds: document_ids ?? "none",
+      hasRoles: !!document_roles,
       contentType: content_type,
     });
 
@@ -67,6 +78,11 @@ export async function POST(request: NextRequest) {
     }
 
     let combinedContent = content || "";
+
+    // Track documents with roles for role-aware extraction
+    const documentsForExtraction: DocumentForExtraction[] = [];
+    const roleMap: Record<string, DocumentRole> = document_roles || {};
+    const hasRoles = Object.keys(roleMap).length > 0;
 
     // If document IDs provided, fetch their content (with org verification)
     if (document_ids && document_ids.length > 0) {
@@ -98,7 +114,17 @@ export async function POST(request: NextRequest) {
           if (!settledDoc) {
             // Still processing after ~45s — use preview if available
             if (doc?.parsed_text_preview) {
-              combinedContent += `\n\n--- Document: ${doc.file_name} (partial) ---\n${doc.parsed_text_preview}`;
+              const previewContent = doc.parsed_text_preview;
+              if (hasRoles) {
+                documentsForExtraction.push({
+                  id: docId,
+                  name: `${doc.file_name} (partial)`,
+                  role: roleMap[docId] || "supplemental",
+                  content: previewContent,
+                });
+              } else {
+                combinedContent += `\n\n--- Document: ${doc.file_name} (partial) ---\n${previewContent}`;
+              }
             }
             continue;
           }
@@ -109,7 +135,16 @@ export async function POST(request: NextRequest) {
         if (doc?.processing_status === "failed") {
           // Processing failed - try to use preview text if available
           if (doc?.parsed_text_preview) {
-            combinedContent += `\n\n--- Document: ${doc.file_name} ---\n${doc.parsed_text_preview}`;
+            if (hasRoles) {
+              documentsForExtraction.push({
+                id: docId,
+                name: doc.file_name || docId,
+                role: roleMap[docId] || "supplemental",
+                content: doc.parsed_text_preview,
+              });
+            } else {
+              combinedContent += `\n\n--- Document: ${doc.file_name} ---\n${doc.parsed_text_preview}`;
+            }
           }
           continue;
         }
@@ -131,11 +166,34 @@ export async function POST(request: NextRequest) {
             })
             .join("\n\n");
 
-          combinedContent += `\n\n--- Document Content ---\n${docContent}`;
+          if (hasRoles) {
+            documentsForExtraction.push({
+              id: docId,
+              name: doc?.file_name || docId,
+              role: roleMap[docId] || "supplemental",
+              content: docContent,
+            });
+          } else {
+            combinedContent += `\n\n--- Document Content ---\n${docContent}`;
+          }
         } else if (doc?.parsed_text_preview) {
           // Fallback to preview text
-          combinedContent += `\n\n--- Document: ${doc.file_name} ---\n${doc.parsed_text_preview}`;
+          if (hasRoles) {
+            documentsForExtraction.push({
+              id: docId,
+              name: doc.file_name || docId,
+              role: roleMap[docId] || "supplemental",
+              content: doc.parsed_text_preview,
+            });
+          } else {
+            combinedContent += `\n\n--- Document: ${doc.file_name} ---\n${doc.parsed_text_preview}`;
+          }
         }
+      }
+
+      // If we have role-aware documents, build the combined content with role labels
+      if (hasRoles && documentsForExtraction.length > 0) {
+        combinedContent = buildMultiDocumentContent(documentsForExtraction);
       }
 
       // Auto-tag intake documents as 'rfp' so they're excluded from evidence retrieval

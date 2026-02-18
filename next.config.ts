@@ -51,10 +51,14 @@ const nextConfig: NextConfig = {
 
 // Bundle analyzer: run `ANALYZE=true npm run build` to see bundle composition
 // Install: npm install --save-dev @next/bundle-analyzer
-let config = nextConfig;
+// Note: Dynamic import wrapped in an async IIFE to avoid top-level await,
+// which breaks Node 24 + Next.js config loading (ERR_REQUIRE_ASYNC_MODULE).
+let config: NextConfig = nextConfig;
+
 if (process.env.ANALYZE === "true") {
   try {
-    const withBundleAnalyzer = (await import("@next/bundle-analyzer")).default({
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const withBundleAnalyzer = require("@next/bundle-analyzer")({
       enabled: true,
     });
     config = withBundleAnalyzer(nextConfig);

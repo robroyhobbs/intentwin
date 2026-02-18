@@ -1,7 +1,46 @@
 /**
  * Extraction Prompt Builder
- * Analyzes any input (RFP, email, notes, verbal) and extracts structured intake data
+ * Analyzes any input (RFP, email, notes, verbal) and extracts structured intake data.
+ * Supports multi-document extraction with role-based precedence.
  */
+
+import type { DocumentRole } from "@/types/proposal-documents";
+
+/** Metadata for a document being sent to extraction */
+export interface DocumentForExtraction {
+  id: string;
+  name: string;
+  role: DocumentRole;
+  content: string;
+}
+
+/**
+ * Build content block for multi-document extraction with role labels and precedence.
+ * Used by the intake extract route when documents have role classifications.
+ */
+export function buildMultiDocumentContent(
+  documents: DocumentForExtraction[]
+): string {
+  const docBlocks = documents.map((doc, idx) => {
+    const roleLabel = doc.role.toUpperCase().replace(/_/g, " ");
+    return `=== DOCUMENT ${idx + 1}: ${doc.name} (Role: ${roleLabel}, ID: ${doc.id}) ===\n${doc.content}`;
+  });
+
+  const precedenceRules = `
+=== DOCUMENT PRECEDENCE RULES ===
+- PRIMARY_RFP: Anchors the extraction. Core requirements, client info, and scope come from here.
+- AMENDMENT: Overrides or supplements the primary RFP. When an amendment contradicts the primary, the amendment takes precedence. Note which amendment introduced the change.
+- ATTACHMENT: Provides supplemental detail referenced by the primary (SOW, specs, etc.). Adds granularity to requirements.
+- QA_ADDENDUM: Clarifies ambiguities from the primary RFP. Treat as authoritative for the specific questions addressed.
+- EVALUATION_CRITERIA: Contains scoring rubric and decision criteria. Primary source for decision_criteria field.
+- TEMPLATE: Required response format/structure. May contain implicit requirements about what must be addressed.
+- INCUMBENT_INFO: Background on current provider. Useful for competitive positioning, not primary requirements.
+- SUPPLEMENTAL: Additional context. Lower precedence than all other document types.
+
+When extracting, always attribute each field to the specific document it came from using source_document_id and source_document_name.`;
+
+  return docBlocks.join("\n\n") + "\n\n" + precedenceRules;
+}
 
 export function buildExtractionPrompt(
   content: string,
@@ -9,7 +48,7 @@ export function buildExtractionPrompt(
 ): string {
   const contextHint =
     contentType === "file"
-      ? "This content was extracted from uploaded document(s). It may be a formal RFP, a client brief, or other business document."
+      ? "This content was extracted from uploaded document(s). It may be a formal RFP, a client brief, or other business document. Documents may have role labels (PRIMARY_RFP, AMENDMENT, ATTACHMENT, etc.) — respect precedence rules if present."
       : contentType === "pasted"
         ? "This content was pasted by the user. It could be an email thread, meeting notes, a Slack message, or any other text."
         : "This is a verbal description provided by the user about an opportunity they're pursuing.";
@@ -39,7 +78,9 @@ Respond with a JSON object matching this exact structure:
     "client_name": {
       "value": "extracted client/company name",
       "confidence": 0.0-1.0,
-      "source": "quote or reference from the content"
+      "source": "quote or reference from the content",
+      "source_document_id": "document ID if from a labeled document (omit if N/A)",
+      "source_document_name": "document filename if from a labeled document (omit if N/A)"
     },
     "client_industry": {
       "value": "industry sector",
@@ -139,16 +180,18 @@ Respond with a JSON object matching this exact structure:
 
 2. **Source Quotes**: Always include a brief quote or reference from the content that supports your extraction. Keep quotes under 50 words.
 
-3. **Omit Empty Fields**: If you cannot extract or infer a field with any confidence, omit it entirely from the extracted section.
+3. **Source Document Attribution**: When content is labeled with document roles (e.g., "DOCUMENT 1: filename.pdf (Role: PRIMARY_RFP, ID: abc-123)"), include source_document_id and source_document_name on each extracted field to indicate which document the value came from. If multiple documents contribute to a field, cite the highest-precedence source.
 
-4. **Inferred Section**: Only populate when you're making educated guesses not directly supported by the text. Always explain your reasoning.
+4. **Omit Empty Fields**: If you cannot extract or infer a field with any confidence, omit it entirely from the extracted section.
 
-5. **Gap Importance**:
-   - critical: Must have to create a proposal (e.g., client name, what they need)
-   - helpful: Would significantly improve proposal quality
-   - nice_to_have: Would be useful but can work without
+5. **Inferred Section**: Only populate when you're making educated guesses not directly supported by the text. Always explain your reasoning.
 
-6. **Input Type Detection**:
+6. **Gap Importance**:
+    - critical: Must have to create a proposal (e.g., client name, what they need)
+    - helpful: Would significantly improve proposal quality
+    - nice_to_have: Would be useful but can work without
+
+7. **Input Type Detection**:
    - formal_rfp: Structured document with sections, requirements, evaluation criteria
    - email: Email format, conversational, may have forwarding/reply chains
    - meeting_notes: Bullet points, action items, discussion summaries

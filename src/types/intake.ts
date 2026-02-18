@@ -5,6 +5,8 @@ export interface ExtractedField<T> {
   value: T;
   confidence: number; // 0.0 - 1.0
   source: string; // Quote or reference from input
+  source_document_id?: string; // Which document this was extracted from
+  source_document_name?: string; // Human-readable document filename
 }
 
 export interface InferredField<T> {

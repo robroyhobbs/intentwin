@@ -90,6 +90,7 @@ CREATE INDEX IF NOT EXISTS idx_proposal_versions_proposal
 -- ═══════════════════════════════════════════════════════════════════════════
 -- DEAL_OUTCOMES: Analytics queries
 -- Used by: Win/loss analytics dashboard
+-- NOTE: Original referenced "deal_outcomes" which doesn't exist.
+-- Corrected to "deal_outcome_history" (see migration 00031 for fix).
 -- ═══════════════════════════════════════════════════════════════════════════
-CREATE INDEX IF NOT EXISTS idx_deal_outcomes_org
-  ON deal_outcomes (organization_id, created_at DESC);
+-- Skipped: index created in 00031_fix_deal_outcome_history_index.sql

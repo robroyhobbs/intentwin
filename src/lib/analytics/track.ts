@@ -28,12 +28,12 @@ export function trackEvent(event: ConversionEvent, properties?: TrackProperties)
   try {
     // Vercel Analytics track() is injected by the <Analytics /> component
     // It's available on window.va if the script has loaded
-    const va = (window as Record<string, unknown>).va as
+    const va = (window as unknown as Record<string, unknown>).va as
       | ((cmd: string, event: string, props?: Record<string, unknown>) => void)
       | undefined;
 
     if (typeof va === "function") {
-      va("event", event, properties);
+      va("event", event, properties ? { ...properties } : undefined);
     }
   } catch {
     // Silent fail — analytics should never break the app
