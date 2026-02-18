@@ -88,13 +88,17 @@ export async function POST(
       );
     }
 
-    // Create a version snapshot before export
-    await createProposalVersion({
-      proposalId: id,
-      triggerEvent: "pre_export",
-      changeSummary: `Exported as ${formatType.toUpperCase()}`,
-      userId: context.user.id,
-    });
+    // Create a version snapshot before export (non-blocking)
+    try {
+      await createProposalVersion({
+        proposalId: id,
+        triggerEvent: "pre_export",
+        changeSummary: `Exported as ${formatType.toUpperCase()}`,
+        userId: context.user.id,
+      });
+    } catch (versionError) {
+      console.warn("Version snapshot failed (non-blocking):", versionError);
+    }
 
     const intakeData = proposal.intake_data as Record<string, string>;
     const proposalData = {
@@ -175,9 +179,12 @@ export async function POST(
       format: formatType,
     });
   } catch (error) {
-    console.error("Export error:", error);
+    const message =
+      error instanceof Error ? error.message : "Unknown export error";
+    const stack = error instanceof Error ? error.stack : undefined;
+    console.error("Export error:", message, stack);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: `Export failed: ${message}` },
       { status: 500 },
     );
   }
