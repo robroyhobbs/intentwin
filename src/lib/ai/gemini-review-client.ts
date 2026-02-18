@@ -34,7 +34,17 @@ export async function reviewWithGemini(prompt: string): Promise<{
     },
   });
 
-  const result = await model.generateContent(prompt);
+  // Race against a 45s timeout to prevent hanging
+  const GEMINI_REVIEW_TIMEOUT_MS = 45_000;
+  const result = await Promise.race([
+    model.generateContent(prompt),
+    new Promise<never>((_, reject) =>
+      setTimeout(
+        () => reject(new Error(`Gemini review timed out after ${GEMINI_REVIEW_TIMEOUT_MS / 1000}s`)),
+        GEMINI_REVIEW_TIMEOUT_MS,
+      ),
+    ),
+  ]);
   const content = result.response.text();
 
   if (!content) {

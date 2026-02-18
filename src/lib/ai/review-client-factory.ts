@@ -70,15 +70,29 @@ export function createReviewClient<TClient>(config: ReviewClientConfig<TClient>)
     return instance;
   }
 
+  /** Per-call timeout for review API calls (45 seconds). */
+  const REVIEW_CALL_TIMEOUT_MS = 45_000;
+
   /**
    * Send a prompt to the provider and return normalized quality scores.
+   * Enforces a per-call timeout to prevent hanging on slow providers.
    */
   async function review(
     prompt: string,
     options: ReviewCallOptions = {},
   ): Promise<ReviewScores> {
     const client = getClient();
-    const content = await config.callApi(client, prompt, options);
+
+    // Race the API call against a timeout
+    const content = await Promise.race([
+      config.callApi(client, prompt, options),
+      new Promise<never>((_, reject) =>
+        setTimeout(
+          () => reject(new Error(`${config.providerName} review timed out after ${REVIEW_CALL_TIMEOUT_MS / 1000}s`)),
+          REVIEW_CALL_TIMEOUT_MS,
+        ),
+      ),
+    ]);
 
     if (!content) {
       throw new Error(`${config.providerName} returned empty response`);

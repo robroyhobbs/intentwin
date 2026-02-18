@@ -6,6 +6,31 @@ import {
 } from "@/lib/ai/quality-overseer";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+export const maxDuration = 300;
+
+/** Max wall-clock time for the quality review background task (seconds). */
+const REVIEW_TIMEOUT_MS = 270_000; // 270s — leaves 30s buffer before Vercel's 300s hard kill
+
+/** If a review has been "reviewing" for longer than this, treat it as stale/zombie. */
+const STALE_REVIEW_MS = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Reset a stuck quality_review status to "failed" so future reviews can proceed.
+ */
+async function resetStaleReview(proposalId: string, existingReview: Record<string, unknown>) {
+  const supabase = createAdminClient();
+  await supabase
+    .from("proposals")
+    .update({
+      quality_review: {
+        ...existingReview,
+        status: "failed",
+        error: "Review timed out and was automatically reset.",
+      },
+    })
+    .eq("id", proposalId);
+}
+
 /**
  * POST /api/proposals/[id]/quality-review
  * Triggers async quality review. Returns immediately.
@@ -64,12 +89,28 @@ export async function POST(
     }
 
     // Check if review is already in progress (prevent concurrent reviews)
-    const qualityReview = proposal.quality_review as { status?: string } | null;
+    const qualityReview = proposal.quality_review as {
+      status?: string;
+      run_at?: string;
+    } | null;
+
     if (qualityReview?.status === "reviewing") {
-      return NextResponse.json(
-        { error: "Quality review is already in progress" },
-        { status: 409 },
+      // Auto-reset stale/zombie reviews instead of permanently blocking
+      const runAt = qualityReview.run_at ? new Date(qualityReview.run_at).getTime() : 0;
+      const elapsed = Date.now() - runAt;
+
+      if (elapsed < STALE_REVIEW_MS) {
+        return NextResponse.json(
+          { error: "Quality review is already in progress" },
+          { status: 409 },
+        );
+      }
+
+      // Stale review — reset it and allow re-trigger
+      console.warn(
+        `[QualityReview] Resetting stale review for proposal ${id} (elapsed: ${Math.round(elapsed / 1000)}s)`,
       );
+      await resetStaleReview(id, qualityReview as Record<string, unknown>);
     }
 
     // Block reviews while any section is being regenerated
@@ -112,9 +153,46 @@ export async function POST(
     // Run quality review after response is sent (extends serverless function lifetime)
     after(async () => {
       try {
-        await runQualityReview(id, trigger);
+        // Race the review against a safety timeout
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(
+            () => reject(new Error("Quality review timed out")),
+            REVIEW_TIMEOUT_MS,
+          );
+        });
+
+        await Promise.race([
+          runQualityReview(id, trigger),
+          timeoutPromise,
+        ]);
       } catch (err) {
         console.error(`Quality review failed for proposal ${id}:`, err);
+
+        // Ensure we don't leave the DB in "reviewing" state
+        try {
+          const cleanup = createAdminClient();
+          const { data: current } = await cleanup
+            .from("proposals")
+            .select("quality_review")
+            .eq("id", id)
+            .single();
+
+          const qr = (current?.quality_review as Record<string, unknown>) || {};
+          if (qr.status === "reviewing") {
+            await cleanup
+              .from("proposals")
+              .update({
+                quality_review: {
+                  ...qr,
+                  status: "failed",
+                  error: err instanceof Error ? err.message : "Review failed unexpectedly",
+                },
+              })
+              .eq("id", id);
+          }
+        } catch (cleanupErr) {
+          console.error(`Failed to clean up review status for ${id}:`, cleanupErr);
+        }
       }
     });
 
