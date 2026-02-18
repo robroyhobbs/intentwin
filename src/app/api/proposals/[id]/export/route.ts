@@ -10,6 +10,8 @@ import { createProposalVersion } from "@/lib/versioning/create-version";
 import { nanoid } from "nanoid";
 import { format } from "date-fns";
 
+export const maxDuration = 120; // PDF generation with Chromium can take 30-60s
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
