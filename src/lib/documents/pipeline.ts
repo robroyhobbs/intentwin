@@ -3,6 +3,7 @@ import { logger } from "@/lib/utils/logger";
 import { parseDocument } from "./parser";
 import { chunkSections } from "./chunker";
 import { generateEmbeddings } from "@/lib/ai/embeddings";
+import { PdfParseError } from "./parsers/pdf";
 
 export async function processDocument(documentId: string): Promise<void> {
   const supabase = createAdminClient();
@@ -102,8 +103,13 @@ export async function processDocument(documentId: string): Promise<void> {
       })
       .eq("id", documentId);
   } catch (error) {
+    // Surface user-friendly message from PdfParseError when available
     const errorMessage =
-      error instanceof Error ? error.message : "Unknown error";
+      error instanceof PdfParseError
+        ? error.userMessage
+        : error instanceof Error
+          ? error.message
+          : "Unknown error";
 
     await supabase
       .from("documents")

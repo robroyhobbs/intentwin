@@ -61,22 +61,29 @@ export function FlexibleIntake({
   );
 
   // Poll for document processing completion
+  // Returns { success, error? } so the caller can surface server-side messages
   const pollDocumentStatus = async (
     docId: string,
     fileName: string,
-  ): Promise<boolean> => {
+  ): Promise<{ success: boolean; error?: string }> => {
     const maxAttempts = 30; // 30 seconds max
     for (let i = 0; i < maxAttempts; i++) {
       try {
         const response = await fetch(`/api/documents/${docId}`);
         if (response.ok) {
           const data = await response.json();
-          if (data.document?.processing_status === "completed") {
-            return true;
+          if (data.processing_status === "completed") {
+            return { success: true };
           }
-          if (data.document?.processing_status === "failed") {
-            console.error(`Document processing failed: ${fileName}`);
-            return false;
+          if (data.processing_status === "failed") {
+            console.error(
+              `Document processing failed: ${fileName}`,
+              data.processing_error,
+            );
+            return {
+              success: false,
+              error: data.processing_error || undefined,
+            };
           }
         }
       } catch (e) {
@@ -84,7 +91,7 @@ export function FlexibleIntake({
       }
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
-    return false;
+    return { success: false, error: "Processing timed out" };
   };
 
   const handleFiles = async (newFiles: File[]) => {
@@ -129,14 +136,15 @@ export function FlexibleIntake({
         setUploadProgress((prev) => ({ ...prev, [file.name]: "processing" }));
 
         // Poll for processing completion
-        const success = await pollDocumentStatus(data.documentId, file.name);
-        if (success) {
+        const result = await pollDocumentStatus(data.documentId, file.name);
+        if (result.success) {
           setUploadProgress((prev) => ({ ...prev, [file.name]: "done" }));
         } else {
           setUploadProgress((prev) => ({ ...prev, [file.name]: "error" }));
-          setError(
-            `Failed to process ${file.name}. Try pasting the content directly or using a different file.`,
-          );
+          const detail = result.error
+            ? `${file.name}: ${result.error}`
+            : `Failed to process ${file.name}. Try pasting the content directly or using a different file.`;
+          setError(detail);
         }
       } catch {
         setUploadProgress((prev) => ({ ...prev, [file.name]: "error" }));
