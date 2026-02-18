@@ -128,7 +128,7 @@ export interface AddDocumentRequest {
 
 export interface AddDocumentResponse {
   proposal_document: ProposalDocument;
-  event: ProposalDocumentEvent;
+  event: ProposalDocumentEvent | null;
 }
 
 /** PATCH /api/proposals/[id]/documents/[docId] */
@@ -210,7 +210,7 @@ export interface MergeResponse {
   requirements_updated: number;
   intake_fields_updated: string[];
   sections_flagged: string[];
-  event: ProposalDocumentEvent;
+  event: ProposalDocumentEvent | null;
 }
 
 // -----------------------------------------------------------------------------

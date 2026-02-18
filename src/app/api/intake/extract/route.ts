@@ -193,7 +193,12 @@ export async function POST(request: NextRequest) {
 
       // If we have role-aware documents, build the combined content with role labels
       if (hasRoles && documentsForExtraction.length > 0) {
-        combinedContent = buildMultiDocumentContent(documentsForExtraction);
+        const multiDocContent = buildMultiDocumentContent(documentsForExtraction);
+        // Preserve any pasted content alongside role-labelled documents
+        const pastedPrefix = content?.trim()
+          ? `=== USER-PROVIDED CONTENT ===\n${content.trim()}\n\n`
+          : "";
+        combinedContent = pastedPrefix + multiDocContent;
       }
 
       // Auto-tag intake documents as 'rfp' so they're excluded from evidence retrieval

@@ -265,7 +265,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .eq("organization_id", context.organizationId);
 
     // 6. Log merge event
-    const { data: event } = await adminClient
+    const { data: event, error: eventError } = await adminClient
       .from("proposal_document_events")
       .insert({
         proposal_id: proposalId,
@@ -283,12 +283,16 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .select()
       .single();
 
+    if (eventError) {
+      console.error("Failed to log merge event:", eventError);
+    }
+
     const response: MergeResponse = {
       requirements_added: requirementsAdded,
       requirements_updated: requirementsUpdated,
       intake_fields_updated: intakeFieldsUpdated,
       sections_flagged: sectionsFlagged,
-      event: event!,
+      event: event ?? null,
     };
 
     return NextResponse.json(response);

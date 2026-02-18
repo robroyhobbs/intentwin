@@ -203,7 +203,7 @@ export async function POST(
     }
 
     // Log the event
-    const { data: event } = await adminClient
+    const { data: event, error: eventError } = await adminClient
       .from("proposal_document_events")
       .insert({
         proposal_id: proposalId,
@@ -216,9 +216,13 @@ export async function POST(
       .select()
       .single();
 
+    if (eventError) {
+      console.error("Failed to log document add event:", eventError);
+    }
+
     const response: AddDocumentResponse = {
       proposal_document: proposalDoc,
-      event: event!,
+      event: event ?? null,
     };
 
     return NextResponse.json(response, { status: 201 });
