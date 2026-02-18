@@ -33,13 +33,21 @@ async function findBrowser(): Promise<{
   if (isVercel) {
     try {
       const chromium = await import("@sparticuz/chromium");
+      console.log("[pdf-export] @sparticuz/chromium imported successfully");
       const execPath = await chromium.default.executablePath();
+      console.log("[pdf-export] executablePath:", execPath);
       if (execPath) {
         return { executablePath: execPath, args: chromium.default.args };
       }
-    } catch {
-      // Fall through to local detection
+      console.warn("[pdf-export] executablePath was falsy, falling through");
+    } catch (chromiumError) {
+      console.error(
+        "[pdf-export] @sparticuz/chromium failed:",
+        chromiumError instanceof Error ? chromiumError.message : chromiumError,
+      );
     }
+  } else {
+    console.log("[pdf-export] Not on Vercel, skipping @sparticuz/chromium");
   }
 
   // Local development: search for installed browsers

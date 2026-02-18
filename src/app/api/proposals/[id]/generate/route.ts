@@ -2,6 +2,8 @@ import { NextRequest, NextResponse, after } from "next/server";
 import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
 import { generateProposal } from "@/lib/ai/pipeline";
 
+export const maxDuration = 300; // Generation runs in after() — needs full 5 min for 10 sections
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

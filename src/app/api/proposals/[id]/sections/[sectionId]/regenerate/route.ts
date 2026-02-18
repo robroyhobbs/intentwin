@@ -3,6 +3,8 @@ import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
 import { regenerateSection } from "@/lib/ai/pipeline";
 import { getQualityFeedbackForSection } from "@/lib/ai/quality-overseer";
 
+export const maxDuration = 120; // Section regeneration runs in after() with RAG + AI call
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; sectionId: string }> },

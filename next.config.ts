@@ -3,6 +3,13 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   serverExternalPackages: ["puppeteer-core", "@sparticuz/chromium"],
 
+  // Ensure @sparticuz/chromium binary files are included in the serverless function
+  outputFileTracingIncludes: {
+    "/api/proposals/\\[id\\]/export": [
+      "./node_modules/@sparticuz/chromium/bin/**",
+    ],
+  },
+
   // Security headers
   async headers() {
     return [
