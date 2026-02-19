@@ -13,6 +13,30 @@ import { SECTION_CONFIGS } from "./section-configs";
 import { buildPipelineContext } from "./context";
 import { retrieveContext } from "./retrieval";
 
+/** Extract competitive objections from intake data for competitive positioning */
+function extractCompetitiveObjections(intakeData: Record<string, unknown>): string[] {
+  const objections: string[] = [];
+  const incumbent = intakeData.incumbent_info as string | undefined;
+  if (incumbent?.trim()) {
+    objections.push(`Current vendor context: ${incumbent.trim().slice(0, 200)}`);
+  }
+  const competitive = intakeData.competitive_landscape as string | undefined;
+  if (competitive?.trim()) {
+    objections.push(`Competitive context: ${competitive.trim().slice(0, 200)}`);
+  }
+  const concerns = intakeData.client_concerns as string | string[] | undefined;
+  if (Array.isArray(concerns)) {
+    for (const c of concerns.slice(0, 3)) {
+      if (typeof c === "string" && c.trim()) {
+        objections.push(`Client concern: ${c.trim()}`);
+      }
+    }
+  } else if (typeof concerns === "string" && concerns.trim()) {
+    objections.push(`Client concern: ${concerns.trim().slice(0, 200)}`);
+  }
+  return objections;
+}
+
 /**
  * Regenerate a single section of a proposal.
  * Reuses the same pipeline context (analysis, L1, persuasion) as full generation.
@@ -81,8 +105,10 @@ export async function regenerateSection(
     const winThemesPrompt = winStrategy?.win_themes
       ? buildWinThemesPrompt(winStrategy.win_themes)
       : "";
+    // Extract competitive objections from intake data
+    const competitiveObjections = extractCompetitiveObjections(intakeData);
     const competitivePrompt = winStrategy?.differentiators
-      ? buildCompetitivePrompt(winStrategy.differentiators, [])
+      ? buildCompetitivePrompt(winStrategy.differentiators, competitiveObjections)
       : "";
 
     const persuasionContext = [

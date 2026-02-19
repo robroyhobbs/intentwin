@@ -68,7 +68,10 @@ export async function fetchL1Context(
         `client_industry.eq.${industry},client_industry.is.null`,
       );
     }
-    const { data: evidenceLibrary } = await evidenceQuery.limit(10);
+    const { data: evidenceLibrary } = await evidenceQuery
+      .order("is_verified", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(10);
 
     const result: L1Context = {
       companyContext: (companyContext || []) as CompanyContext[],

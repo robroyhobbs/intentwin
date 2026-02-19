@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext } from "@/lib/supabase/auth-api";
 import { unauthorized, notFound, badRequest, serverError, ok, created } from "@/lib/api/response";
 import { sanitizeTitle, sanitizeString } from "@/lib/security/sanitize";
+import { clearL1Cache } from "@/lib/ai/pipeline/context";
 
 const VALID_EVIDENCE_TYPES = [
   "case_study",
@@ -177,6 +178,7 @@ export async function POST(request: NextRequest) {
       return serverError("Failed to create evidence entry", error);
     }
 
+    clearL1Cache();
     return created({ evidence: entry });
   } catch (error) {
     return serverError("Failed to create evidence entry", error);
@@ -242,6 +244,7 @@ export async function PATCH(request: NextRequest) {
       return serverError("Failed to update evidence entry", error);
     }
 
+    clearL1Cache();
     return ok({ evidence: entry });
   } catch (error) {
     return serverError("Failed to update evidence entry", error);
@@ -288,6 +291,7 @@ export async function DELETE(request: NextRequest) {
       return serverError("Failed to delete evidence entry", error);
     }
 
+    clearL1Cache();
     return ok({ deleted: true });
   } catch (error) {
     return serverError("Failed to delete evidence entry", error);

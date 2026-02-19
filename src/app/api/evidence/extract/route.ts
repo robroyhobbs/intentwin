@@ -6,6 +6,7 @@ import {
   buildEvidenceExtractionPrompt,
   parseEvidenceResponse,
 } from "@/lib/ai/prompts/extract-evidence";
+import { clearL1Cache } from "@/lib/ai/pipeline/context";
 
 /**
  * POST /api/evidence/extract
@@ -108,6 +109,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    clearL1Cache();
     return NextResponse.json({
       count: inserted?.length || 0,
       evidence: inserted || [],

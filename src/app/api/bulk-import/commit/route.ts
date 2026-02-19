@@ -12,6 +12,7 @@ import {
   VALID_COMPANY_CATEGORIES,
   VALID_EVIDENCE_TYPES,
 } from "@/lib/ai/l1-extractor";
+import { clearL1Cache } from "@/lib/ai/pipeline/context";
 
 export async function POST(request: NextRequest) {
   try {
@@ -160,6 +161,9 @@ export async function POST(request: NextRequest) {
         { status: 500 },
       );
     }
+
+    // Invalidate L1 cache so next generation uses fresh data
+    clearL1Cache();
 
     return NextResponse.json({
       counts: {

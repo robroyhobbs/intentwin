@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext } from "@/lib/supabase/auth-api";
 import { unauthorized, notFound, badRequest, serverError, ok, created, conflict } from "@/lib/api/response";
 import { sanitizeTitle, sanitizeString } from "@/lib/security/sanitize";
+import { clearL1Cache } from "@/lib/ai/pipeline/context";
 
 const VALID_OUTCOMES = [
   "cost_optimization",
@@ -154,6 +155,7 @@ export async function POST(request: NextRequest) {
       return serverError("Failed to create product", error);
     }
 
+    clearL1Cache();
     return created({ product });
   } catch (error) {
     return serverError("Failed to create product", error);
@@ -211,6 +213,7 @@ export async function PATCH(request: NextRequest) {
       return serverError("Failed to update product", error);
     }
 
+    clearL1Cache();
     return ok({ product });
   } catch (error) {
     return serverError("Failed to update product", error);
@@ -257,6 +260,7 @@ export async function DELETE(request: NextRequest) {
       return serverError("Failed to delete product", error);
     }
 
+    clearL1Cache();
     return ok({ deleted: true });
   } catch (error) {
     return serverError("Failed to delete product", error);
