@@ -81,7 +81,7 @@ const builders = [
 // HAPPY PATH — Framework Structure
 // ============================================================
 describe("Section Prompts — Framework Structure", () => {
-  it("Executive Summary includes AIDA structure markers", () => {
+  it("Executive Summary includes structured template markers", () => {
     const prompt = buildExecutiveSummaryPrompt(
       sampleIntake,
       sampleAnalysis,
@@ -89,13 +89,14 @@ describe("Section Prompts — Framework Structure", () => {
       sampleWinStrategy,
       sampleCompany,
     );
-    expect(prompt.toUpperCase()).toContain("ATTENTION");
-    expect(prompt.toUpperCase()).toContain("INTEREST");
-    expect(prompt.toUpperCase()).toContain("DESIRE");
-    expect(prompt.toUpperCase()).toContain("ACTION");
+    const upper = prompt.toUpperCase();
+    expect(upper).toContain("OPENING HOOK");
+    expect(upper).toContain("THE CHALLENGE");
+    expect(upper).toContain("THE TRANSFORMATION");
+    expect(upper).toContain("CALL TO ACTION");
   });
 
-  it("Understanding includes PAS structure markers", () => {
+  it("Understanding includes structured needs analysis markers", () => {
     const prompt = buildUnderstandingPrompt(
       sampleIntake,
       sampleAnalysis,
@@ -103,12 +104,14 @@ describe("Section Prompts — Framework Structure", () => {
       sampleWinStrategy,
       sampleCompany,
     );
-    expect(prompt.toUpperCase()).toContain("PROBLEM");
-    expect(prompt.toUpperCase()).toContain("AGITATE");
-    expect(prompt.toUpperCase()).toContain("SOLVE");
+    const upper = prompt.toUpperCase();
+    expect(upper).toContain("BUSINESS CONTEXT");
+    expect(upper).toContain("CORE CHALLENGES");
+    expect(upper).toContain("ROOT CAUSE");
+    expect(upper).toContain("BUSINESS IMPACT");
   });
 
-  it("Approach includes FAB structure markers", () => {
+  it("Approach includes phased delivery structure", () => {
     const prompt = buildApproachPrompt(
       sampleIntake,
       sampleAnalysis,
@@ -116,12 +119,13 @@ describe("Section Prompts — Framework Structure", () => {
       sampleWinStrategy,
       sampleCompany,
     );
-    expect(prompt.toUpperCase()).toContain("FEATURE");
-    expect(prompt.toUpperCase()).toContain("ADVANTAGE");
-    expect(prompt.toUpperCase()).toContain("BENEFIT");
+    const upper = prompt.toUpperCase();
+    expect(upper).toContain("PHASED DELIVERY");
+    expect(upper).toContain("CAPABILITY-TO-NEED MAPPING");
+    expect(upper).toContain("DELIVERABLES");
   });
 
-  it("Methodology includes Before-After-Bridge structure", () => {
+  it("Methodology includes governance and quality controls", () => {
     const prompt = buildMethodologyPrompt(
       sampleIntake,
       sampleAnalysis,
@@ -129,12 +133,13 @@ describe("Section Prompts — Framework Structure", () => {
       sampleWinStrategy,
       sampleCompany,
     );
-    expect(prompt.toUpperCase()).toContain("BEFORE");
-    expect(prompt.toUpperCase()).toContain("AFTER");
-    expect(prompt.toUpperCase()).toContain("BRIDGE");
+    const upper = prompt.toUpperCase();
+    expect(upper).toContain("PROCESS FRAMEWORK");
+    expect(upper).toContain("GOVERNANCE");
+    expect(upper).toContain("QUALITY GATE");
   });
 
-  it("Team includes Social Proof + Authority guidance", () => {
+  it("Team includes certifications and role structure", () => {
     const prompt = buildTeamPrompt(
       sampleIntake,
       sampleAnalysis,
@@ -143,10 +148,12 @@ describe("Section Prompts — Framework Structure", () => {
       sampleCompany,
     );
     const upper = prompt.toUpperCase();
-    expect(upper).toMatch(/SOCIAL PROOF|AUTHORITY|CREDENTIAL/);
+    expect(upper).toContain("KEY ROLES");
+    expect(upper).toContain("CERTIFICATIONS");
+    expect(upper).toContain("QUALIFICATIONS");
   });
 
-  it("Case Studies includes STAR structure", () => {
+  it("Case Studies includes structured case study format", () => {
     const prompt = buildCaseStudiesPrompt(
       sampleIntake,
       sampleAnalysis,
@@ -154,13 +161,14 @@ describe("Section Prompts — Framework Structure", () => {
       sampleWinStrategy,
       sampleCompany,
     );
-    expect(prompt.toUpperCase()).toContain("SITUATION");
-    expect(prompt.toUpperCase()).toContain("TASK");
-    expect(prompt.toUpperCase()).toContain("ACTION");
-    expect(prompt.toUpperCase()).toContain("RESULT");
+    const upper = prompt.toUpperCase();
+    expect(upper).toContain("SITUATION");
+    expect(upper).toContain("APPROACH");
+    expect(upper).toContain("RESULTS");
+    expect(upper).toContain("RELEVANCE");
   });
 
-  it("Timeline includes Certainty Framework guidance", () => {
+  it("Timeline includes milestone table and early wins", () => {
     const prompt = buildTimelinePrompt(
       sampleIntake,
       sampleAnalysis,
@@ -169,7 +177,9 @@ describe("Section Prompts — Framework Structure", () => {
       sampleCompany,
     );
     const upper = prompt.toUpperCase();
-    expect(upper).toMatch(/CERTAINTY|CONFIDENCE|PHASE.*MILESTONE/);
+    expect(upper).toContain("MILESTONE SUMMARY");
+    expect(upper).toContain("EARLY WINS");
+    expect(upper).toContain("GANTT");
   });
 
   it("Pricing includes Value Framing guidance", () => {
@@ -184,7 +194,7 @@ describe("Section Prompts — Framework Structure", () => {
     expect(upper).toMatch(/VALUE|INVESTMENT|ROI/);
   });
 
-  it("Risk Mitigation includes Acknowledge-Address-Assure structure", () => {
+  it("Risk Mitigation includes risk register structure", () => {
     const prompt = buildRiskMitigationPrompt(
       sampleIntake,
       sampleAnalysis,
@@ -192,9 +202,10 @@ describe("Section Prompts — Framework Structure", () => {
       sampleWinStrategy,
       sampleCompany,
     );
-    expect(prompt.toUpperCase()).toContain("ACKNOWLEDGE");
-    expect(prompt.toUpperCase()).toContain("ADDRESS");
-    expect(prompt.toUpperCase()).toContain("ASSURE");
+    const upper = prompt.toUpperCase();
+    expect(upper).toContain("RISK REGISTER");
+    expect(upper).toContain("LIKELIHOOD");
+    expect(upper).toContain("MITIGATION STRATEGY");
   });
 
   it("Why Us includes Competitive Differentiation guidance", () => {
@@ -206,7 +217,7 @@ describe("Section Prompts — Framework Structure", () => {
       sampleCompany,
     );
     const upper = prompt.toUpperCase();
-    expect(upper).toMatch(/UNIQUE|PROVEN|RELEVANT|DIFFERENTI/);
+    expect(upper).toMatch(/DIFFERENTI|COMPETITIVE ADVANTAGES|UNIQUE/);
   });
 });
 
@@ -249,7 +260,8 @@ describe("Section Prompts — Content Inclusion", () => {
         sampleWinStrategy,
         sampleCompany,
       );
-      expect(prompt).toContain("Past Winning Proposal");
+      // All prompts include the retrieved context string (passed as sampleContext)
+      expect(prompt).toContain(sampleContext);
     }
   });
 

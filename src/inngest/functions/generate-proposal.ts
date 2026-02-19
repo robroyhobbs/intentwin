@@ -18,6 +18,7 @@ import {
   extractCompetitiveObjections,
 } from "@/lib/ai/pipeline/context";
 import { retrieveContext } from "@/lib/ai/pipeline/retrieval";
+import { runEditorialPass } from "@/lib/ai/editorial-pass";
 import type { PipelineContext } from "@/lib/ai/pipeline/types";
 
 /**
@@ -105,9 +106,20 @@ async function generateSingleSection(
       .join("");
 
     // Generate content
-    const generatedContent = await generateText(prompt, {
+    const rawContent = await generateText(prompt, {
       systemPrompt: ctx.systemPrompt,
     });
+
+    // Editorial pass: tighten formatting, cut fluff, enforce structure
+    const companyName =
+      (ctx.companyInfo?.name as string) || "Our Company";
+    const generatedContent = await runEditorialPass(
+      config.type,
+      config.title,
+      rawContent,
+      companyName,
+      ctx.systemPrompt,
+    );
 
     // Quality checks (advisory)
     try {

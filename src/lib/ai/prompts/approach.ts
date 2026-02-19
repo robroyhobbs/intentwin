@@ -1,6 +1,7 @@
 import type { WinStrategyData } from "@/types/outcomes";
 import type { CompanyInfo } from "@/types/idd";
 import { buildWinStrategySection } from "./win-strategy-section";
+import { buildEditorialStandards } from "./editorial-standards";
 
 export function buildApproachPrompt(
   intakeData: Record<string, unknown>,
@@ -25,16 +26,37 @@ ${retrievedContext}
 ${l1Context || ""}
 ${buildWinStrategySection(winStrategy)}
 ## Instructions
-Write a clear, actionable approach section (500-700 words) that:
+Write a clear, actionable approach section (500-600 words) using this EXACT structure:
 
-1. Describes ${companyName}'s specific technical and strategic approach to solving the client's challenges
-2. Maps capabilities from the Company Context above to each client need — be explicit about WHICH capability addresses WHICH problem
-3. Outlines a phased approach with clear deliverables per phase
-4. Highlights what makes this approach better than alternatives (without naming competitors)
-5. Includes a Mermaid diagram showing the approach phases or architecture
-${winStrategy ? `6. Ties each phase explicitly to a target outcome from the win strategy` : ""}
+### Approach Overview (3 sentences max)
+One crisp paragraph stating ${companyName}'s approach philosophy for THIS engagement. What is the core strategy? Why this approach vs. alternatives?
+
+### Phased Delivery Plan
+
+For each phase, use this format:
+
+#### Phase N: [Phase Name] (Weeks X-Y)
+**Objective**: One sentence — what this phase achieves for the client.
+**Key Activities**:
+- **Activity Name**: What ${companyName} does and what the client gets (1 sentence each)
+**Deliverables**: Bullet list of tangible outputs
+**Outcome**: Which target outcome this phase advances
+
+Include 3-5 phases. Each phase should be concrete and time-bound.
+
+### Capability-to-Need Mapping
+
+| Client Need | ${companyName} Capability | How It Solves the Problem |
+|---|---|---|
+| Specific need from intake | Specific capability from Company Context | Concrete mechanism |
+
+Include at least 4 rows.
+
+### Architecture or Process Diagram
+Include a Mermaid diagram showing the approach phases, architecture, or solution design. Keep it clear and focused — 5-8 nodes maximum.
+${winStrategy ? `\nTie each phase explicitly to a target outcome from the win strategy.` : ""}
 
 IMPORTANT: Reference specific ${companyName} products, methodologies, and capabilities from the Company Context. Do not describe generic industry approaches — describe ${companyName}'s specific approach.
 
-Output only the section text, formatted in markdown.`;
+${buildEditorialStandards()}`;
 }

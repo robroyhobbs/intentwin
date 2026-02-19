@@ -1,6 +1,7 @@
 import type { WinStrategyData } from "@/types/outcomes";
 import type { CompanyInfo } from "@/types/idd";
 import { buildWinStrategySection } from "./win-strategy-section";
+import { buildEditorialStandards } from "./editorial-standards";
 
 export function buildTeamPrompt(
   intakeData: Record<string, unknown>,
@@ -25,16 +26,39 @@ ${retrievedContext}
 ${l1Context || ""}
 ${buildWinStrategySection(winStrategy)}
 ## Instructions
-Write a team and qualifications section (400-600 words) that:
+Write a team and qualifications section (400-500 words) using this EXACT structure:
 
-1. Proposes a team structure tailored to this engagement's scope and complexity
-2. Describes key roles with relevant qualifications and certifications from the Company Context
-3. Highlights the depth and breadth of ${companyName}'s talent pool
-4. References certifications and partnerships from the Company Context
-5. Includes a Mermaid org chart showing the proposed team structure
-${winStrategy ? `6. Maps team capabilities directly to the win themes and target outcomes` : ""}
+### Team Overview (2-3 sentences)
+How many people, what mix of skills, and why this team structure is right for THIS engagement's scope and complexity.
+
+### Key Roles
+
+Present each role in this format:
+
+**[Role Title]**
+- **Responsibility**: What this role owns (1 sentence)
+- **Qualifications**: Specific certifications, years of experience, clearances from Company Context
+- **Why This Matters**: How this role directly addresses a specific client need (1 sentence)
+
+Include 4-6 key roles. Tailor to the engagement type — don't use a generic org chart.
+
+### Certifications & Partnerships
+
+| Certification/Partnership | Level | Relevance to This Engagement |
+|---|---|---|
+| Specific cert from Company Context | Tier/level | How it benefits the client |
+
+Include all relevant certifications from the Company Context.
+
+### Talent Depth
+
+A short paragraph (2-3 sentences) with specific numbers: total headcount in relevant practice, bench strength, average experience level, retention rate if available. Cite Company Context.
+
+### Org Chart
+Include a Mermaid org chart showing the proposed team structure. Keep it to the key roles — 5-8 nodes maximum.
+${winStrategy ? `\nMap team capabilities directly to the win themes and target outcomes.` : ""}
 
 Reference ${companyName}'s actual certifications and partnership levels from the Company Context — do not invent credentials.
 
-Output only the section text, formatted in markdown.`;
+${buildEditorialStandards()}`;
 }

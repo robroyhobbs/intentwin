@@ -1,6 +1,7 @@
 import type { WinStrategyData } from "@/types/outcomes";
 import type { CompanyInfo } from "@/types/idd";
 import { buildWinStrategySection } from "./win-strategy-section";
+import { buildEditorialStandards } from "./editorial-standards";
 
 export function buildMethodologyPrompt(
   intakeData: Record<string, unknown>,
@@ -25,16 +26,42 @@ ${retrievedContext}
 ${l1Context || ""}
 ${buildWinStrategySection(winStrategy)}
 ## Instructions
-Write a detailed methodology section (500-700 words) that:
+Write a methodology section (500-600 words) using this EXACT structure:
 
-1. Describes ${companyName}'s proven methodology for this type of engagement
-2. References specific frameworks, tools, and accelerators from the Company Context
-3. Explains HOW the methodology delivers the promised outcomes — connect process steps to results
-4. Addresses governance, quality gates, and how risks are managed at each stage
-5. Includes a Mermaid diagram showing the methodology phases or workflow
-${winStrategy ? `6. Maps methodology phases to target outcomes and success metrics` : ""}
+### Methodology Overview (2-3 sentences)
+Name the methodology. State why it's the right fit for this engagement type. Reference where it has been successfully applied before (cite evidence).
+
+### Process Framework
+
+Present as a numbered workflow. For each step:
+
+**Step N: [Step Name]**
+- **What**: What happens in this step (1 sentence)
+- **Who**: Key roles involved
+- **Output**: Tangible deliverable produced
+- **Quality Gate**: What must be true before moving to the next step
+
+Include 4-6 steps.
+
+### Governance & Quality Controls
+
+Use a table:
+
+| Control | Frequency | Purpose | Stakeholders |
+|---|---|---|---|
+| Specific governance mechanism | How often | What it prevents/ensures | Who's involved |
+
+Include at least 4 controls (e.g., steering committee, sprint reviews, quality audits, risk reviews).
+
+### Methodology Diagram
+Include a Mermaid flowchart or sequence diagram showing the methodology phases, decision points, and quality gates. Keep it clear — 6-10 nodes maximum.
+
+### Proven Results
+
+> **Track Record**: [Specific metric] achieved using this methodology across [N] engagements — [Source from Company Context]
+${winStrategy ? `\nMap methodology phases to target outcomes and success metrics.` : ""}
 
 Use ${companyName}'s actual methodology names and frameworks from the Company Context — do not invent generic methodology names.
 
-Output only the section text, formatted in markdown.`;
+${buildEditorialStandards()}`;
 }

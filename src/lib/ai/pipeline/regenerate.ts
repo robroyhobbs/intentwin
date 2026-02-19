@@ -12,6 +12,7 @@ import { logRegenerationMetric } from "@/lib/observability/metrics";
 import { SECTION_CONFIGS } from "./section-configs";
 import { buildPipelineContext, extractCompetitiveObjections } from "./context";
 import { retrieveContext } from "./retrieval";
+import { runEditorialPass } from "../editorial-pass";
 
 /**
  * Regenerate a single section of a proposal.
@@ -112,7 +113,16 @@ export async function regenerateSection(
       prompt += `\n\n---\n\n## Quality Review Feedback (from independent reviewer council)\n\nThe previous version of this section was reviewed by a quality council. Address ALL issues identified below:\n\n${qualityFeedback}\n\nIMPORTANT: Your rewrite must specifically address each piece of feedback above. Improve specificity, evidence, client relevance, and persuasive impact based on the judges' comments.`;
     }
 
-    const generatedContent = await generateText(prompt, { systemPrompt });
+    const rawContent = await generateText(prompt, { systemPrompt });
+
+    // Editorial pass: tighten formatting, cut fluff, enforce structure
+    const generatedContent = await runEditorialPass(
+      config.type,
+      config.title,
+      rawContent,
+      companyInfo.name,
+      systemPrompt,
+    );
 
     // Quality checks (advisory)
     try {

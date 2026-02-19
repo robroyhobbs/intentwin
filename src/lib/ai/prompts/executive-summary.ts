@@ -1,6 +1,7 @@
 import type { WinStrategyData } from "@/types/outcomes";
 import type { CompanyInfo } from "@/types/idd";
 import { buildWinStrategySection } from "./win-strategy-section";
+import { buildEditorialStandards } from "./editorial-standards";
 
 export function buildExecutiveSummaryPrompt(
   intakeData: Record<string, unknown>,
@@ -28,16 +29,31 @@ ${retrievedContext}
 ${l1Context || ""}
 ${buildWinStrategySection(winStrategy)}
 ## Instructions
-Write a compelling executive summary (400-600 words) that:
+Write a compelling executive summary (400-500 words) using this EXACT structure:
 
-1. Opens with a compelling insight about the client's situation — a bold stat, an industry shift, or a critical challenge they face
-2. Shows deep understanding of their specific challenges and what's at stake
-3. Paints the transformation — current state vs. future state with ${companyName}'s solution
-4. Closes with a confident partnership statement and clear next step
-${winStrategy ? `5. Weaves win themes throughout — opens with the primary outcome and ties differentiators to specific client value` : ""}
+### Opening Hook (2-3 sentences)
+Start with a bold, specific insight about the client's situation — a concrete stat, an industry shift with real numbers, or a critical challenge with measurable stakes. Name the client. No generic openings.
 
-CRITICAL: You MUST reference specific ${companyName} capabilities and evidence from the Company Context above. Every claim must be grounded in verified data — do not invent metrics or capabilities.
+### The Challenge (1 short paragraph + bullets)
+In 2-3 sentences, frame the core problem. Then list 3-4 specific challenges as bullets with **bold lead-ins**:
+- **Challenge Name**: One sentence description tied to a specific business impact
 
-Use professional, client-focused language. Be specific, not generic. Reference the client by name.
-Output only the executive summary text, formatted in markdown.`;
+### The Transformation (1 short paragraph + table)
+Describe what changes with ${companyName}. Include a before/after comparison table:
+
+| Current State | Future State with ${companyName} |
+|---|---|
+| Specific pain point | Specific measurable outcome |
+
+### Why ${companyName} (2-3 bullets with evidence)
+Each bullet must cite a specific metric or case study from the Company Context:
+- **Differentiator**: Specific evidence (e.g., "47 similar engagements, 99.9% SLA achievement")
+
+### Call to Action (2 sentences max)
+Confident partnership statement with a specific next step.
+${winStrategy ? `\nWeave win themes throughout — open with the primary outcome and tie differentiators to specific client value.` : ""}
+
+CRITICAL: Reference specific ${companyName} capabilities and evidence from the Company Context above. Every claim must cite verified data — do not invent metrics or capabilities.
+
+${buildEditorialStandards()}`;
 }
