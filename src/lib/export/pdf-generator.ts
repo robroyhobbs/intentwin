@@ -24,8 +24,6 @@ async function findBrowser(): Promise<{
   executablePath: string;
   args: string[];
 }> {
-  // In local development, prefer local browser to avoid @sparticuz/chromium
-  // download timeout. Only use @sparticuz/chromium in production (Vercel).
   const { existsSync } = await import("fs");
   const isVercel =
     !!process.env.VERCEL || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
@@ -52,19 +50,15 @@ async function findBrowser(): Promise<{
 
   // Local development: search for installed browsers
   const candidates = [
-    // macOS
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
     "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
     "/Applications/Chromium.app/Contents/MacOS/Chromium",
     "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
     "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
-    // Linux
     "/usr/bin/google-chrome-stable",
     "/usr/bin/google-chrome",
     "/usr/bin/chromium-browser",
     "/usr/bin/chromium",
-    // Puppeteer cache
-    `${process.env.HOME}/.cache/puppeteer/chrome/*/chrome-*/chrome`,
   ];
 
   for (const candidate of candidates) {
@@ -81,25 +75,57 @@ async function findBrowser(): Promise<{
   );
 }
 
-export async function generatePdf(data: ProposalData): Promise<Buffer> {
-  const companyName = data.company_name || "IntentWin";
-
-  // Generate the full HTML first
-  const html = await generateHtml(data);
-
-  const { executablePath, args } = await findBrowser();
-
-  const browser = await puppeteerCore.launch({
+/**
+ * Launch browser with a timeout to prevent zombie processes.
+ */
+async function launchBrowser(
+  executablePath: string,
+  args: string[],
+  timeoutMs = 30000,
+): Promise<ReturnType<typeof puppeteerCore.launch>> {
+  const launchPromise = puppeteerCore.launch({
     args,
     defaultViewport: { width: 1280, height: 720 },
     executablePath,
     headless: true,
   });
 
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(
+      () => reject(new Error(`Browser launch timed out after ${timeoutMs}ms`)),
+      timeoutMs,
+    );
+  });
+
+  return Promise.race([launchPromise, timeoutPromise]);
+}
+
+export async function generatePdf(data: ProposalData): Promise<Buffer> {
+  const companyName = data.company_name || "IntentWin";
+
+  // Generate HTML with inline fonts (no external CDN requests in serverless)
+  const html = await generateHtml(data, { inlineFonts: true });
+
+  const { executablePath, args } = await findBrowser();
+
+  console.log("[pdf-export] Launching browser...");
+  const browser = await launchBrowser(executablePath, args);
+  console.log("[pdf-export] Browser launched successfully");
+
   try {
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "networkidle0" });
 
+    // Use domcontentloaded instead of networkidle0 to avoid hanging
+    // on external resource requests (fonts, images) in serverless
+    await page.setContent(html, {
+      waitUntil: "domcontentloaded",
+      timeout: 30000,
+    });
+
+    // Brief wait for any inline styles/fonts to apply
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    console.log("[pdf-export] Generating PDF...");
     const pdfBuffer = await page.pdf({
       format: "A4",
       printBackground: true,
@@ -118,10 +144,14 @@ export async function generatePdf(data: ProposalData): Promise<Buffer> {
         <div style="font-size:8px; color:#999; width:100%; text-align:center; padding:5px 0;">
           Page <span class="pageNumber"></span> of <span class="totalPages"></span>
         </div>`,
+      timeout: 60000,
     });
 
+    console.log("[pdf-export] PDF generated successfully, size:", pdfBuffer.length);
     return Buffer.from(pdfBuffer);
   } finally {
-    await browser.close();
+    await browser.close().catch((err: unknown) => {
+      console.warn("[pdf-export] Browser close error:", err);
+    });
   }
 }

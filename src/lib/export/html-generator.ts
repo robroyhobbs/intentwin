@@ -172,7 +172,10 @@ function slugify(text: string): string {
 
 const ACCENT_COLORS = ["#0070AD", "#12ABDB", "#1B365D", "#0070AD", "#12ABDB"];
 
-export async function generateHtml(data: ProposalData): Promise<string> {
+export async function generateHtml(
+  data: ProposalData,
+  options?: { inlineFonts?: boolean },
+): Promise<string> {
   const companyName = data.company_name || "IntentWin";
 
   // Collect all mermaid blocks for batch image conversion
@@ -243,9 +246,25 @@ export async function generateHtml(data: ProposalData): Promise<string> {
 <meta property="og:description" content="Proposal prepared for ${escapeHtml(data.client_name)}">
 <meta property="og:type" content="website">
 <meta name="theme-color" content="#0070AD">
-<link rel="preconnect" href="https://fonts.googleapis.com">
+${options?.inlineFonts ? `<style>
+  /* System font stack fallback for serverless PDF generation (no external network) */
+  @font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 300 800;
+    font-display: swap;
+    src: local('Inter'), local('Helvetica Neue'), local('Arial');
+  }
+  @font-face {
+    font-family: 'Playfair Display';
+    font-style: normal;
+    font-weight: 600 800;
+    font-display: swap;
+    src: local('Playfair Display'), local('Georgia'), local('Times New Roman');
+  }
+</style>` : `<link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">`}
 <style>
   :root {
     --cap-blue: #0070AD;

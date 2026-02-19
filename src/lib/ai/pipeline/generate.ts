@@ -19,15 +19,7 @@ import { retrieveContext, parallelBatch, PIPELINE_CONCURRENCY } from "./retrieva
 export async function generateProposal(proposalId: string): Promise<void> {
   const supabase = createAdminClient();
 
-  // Update proposal status
-  await supabase
-    .from("proposals")
-    .update({
-      status: "generating",
-      generation_started_at: new Date().toISOString(),
-    })
-    .eq("id", proposalId);
-
+  // Note: proposal status is already set to "generating" by the route handler's atomic claim.
   // Safety timeout: must fit within Vercel's maxDuration (300s).
   // Use 280s to leave 20s buffer for cleanup and status updates.
   const GENERATION_TIMEOUT_MS = 280 * 1000;
@@ -57,6 +49,12 @@ export async function generateProposal(proposalId: string): Promise<void> {
       industry,
       industryConfig,
     } = ctx;
+
+    // Delete any existing sections from prior attempts (idempotent generation)
+    await supabase
+      .from("proposal_sections")
+      .delete()
+      .eq("proposal_id", proposalId);
 
     // Create all section rows (pending)
     const sectionInserts = SECTION_CONFIGS.map((config) => ({
@@ -209,17 +207,23 @@ export async function generateProposal(proposalId: string): Promise<void> {
             })
             .eq("id", section!.id);
 
-          // Store source references
+          // Store source references (non-blocking — don't fail the section for metadata)
           if (chunkIds.length > 0) {
-            const sourceInserts = chunkIds.map(
-              (chunkId: string, idx: number) => ({
-                section_id: section!.id,
-                chunk_id: chunkId,
-                relevance_score: 1 - idx * 0.1, // Approximate scoring by rank
-              }),
-            );
+            try {
+              const sourceInserts = chunkIds.map(
+                (chunkId: string, idx: number) => ({
+                  section_id: section!.id,
+                  chunk_id: chunkId,
+                  relevance_score: 1 - idx * 0.1, // Approximate scoring by rank
+                }),
+              );
 
-            await supabase.from("section_sources").insert(sourceInserts);
+              await supabase.from("section_sources").insert(sourceInserts);
+            } catch (sourceErr) {
+              log.warn(`Source tracking failed for ${config.type}`, {
+                error: sourceErr instanceof Error ? sourceErr.message : String(sourceErr),
+              });
+            }
           }
 
           sectionTracker.success({ ragChunks: chunkIds.length });
@@ -241,37 +245,71 @@ export async function generateProposal(proposalId: string): Promise<void> {
     );
 
     const pipelineResult = metrics.finish();
+
+    // Count actual section outcomes from DB (source of truth, not just metrics)
+    const { data: finalSections } = await supabase
+      .from("proposal_sections")
+      .select("generation_status")
+      .eq("proposal_id", proposalId);
+
+    const completedCount = finalSections?.filter(
+      (s) => s.generation_status === "completed",
+    ).length ?? 0;
+    const failedCount = finalSections?.filter(
+      (s) => s.generation_status === "failed",
+    ).length ?? 0;
+
     log.info("Section generation complete", {
       status: pipelineResult.status,
-      generated: pipelineResult.sectionsGenerated,
-      failed: pipelineResult.sectionsFailed,
+      generated: completedCount,
+      failed: failedCount,
       totalDurationMs: pipelineResult.totalDurationMs,
       totalTokens: pipelineResult.totalTokens,
     });
 
-    // Update proposal status to review
+    if (completedCount === 0) {
+      // All sections failed — treat as a generation failure
+      throw new Error(
+        `All ${failedCount} sections failed to generate`,
+      );
+    }
+
+    // Set status to review — even partial results are useful.
+    // Store failure metadata so the UI can warn the user.
     await supabase
       .from("proposals")
       .update({
         status: "review",
         generation_completed_at: new Date().toISOString(),
+        ...(failedCount > 0
+          ? {
+              generation_error: `${failedCount} of ${completedCount + failedCount} sections failed. You can regenerate failed sections individually.`,
+            }
+          : { generation_error: null }),
       })
       .eq("id", proposalId);
 
-    // Create a version snapshot after generation completes
-    await createProposalVersion({
-      proposalId,
-      triggerEvent: "generation_complete",
-      changeSummary: "AI generation completed for all sections",
-      label: "Initial Generation",
-    });
+    // Create a version snapshot after generation completes (non-blocking)
+    try {
+      await createProposalVersion({
+        proposalId,
+        triggerEvent: "generation_complete",
+        changeSummary: `AI generation completed: ${completedCount} sections${failedCount > 0 ? `, ${failedCount} failed` : ""}`,
+        label: "Initial Generation",
+      });
+    } catch (versionErr) {
+      log.warn("Version snapshot failed (non-blocking)", {
+        error: versionErr instanceof Error ? versionErr.message : String(versionErr),
+      });
+    }
 
-    // Auto-trigger quality review after generation completes (fire-and-forget)
-    runQualityReview(proposalId, "auto_post_generation").catch((err) => {
-      const reviewLog = createLogger({ operation: "qualityReview", proposalId });
-      reviewLog.error("Auto quality review failed", err);
-      // Don't throw — user can manually trigger if auto-trigger fails
-    });
+    // Auto-trigger quality review only if all sections succeeded
+    if (failedCount === 0) {
+      runQualityReview(proposalId, "auto_post_generation").catch((err) => {
+        const reviewLog = createLogger({ operation: "qualityReview", proposalId });
+        reviewLog.error("Auto quality review failed", err);
+      });
+    }
   } catch (error) {
     const _errorMessage =
       error instanceof Error ? error.message : "Unknown error";

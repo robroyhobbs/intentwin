@@ -24,6 +24,7 @@ export interface Proposal {
   created_at: string;
   deal_outcome?: string;
   deal_value?: number;
+  generation_error?: string | null;
   quality_review?: {
     status: string;
     sections?: QualityReviewSection[];

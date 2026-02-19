@@ -180,6 +180,25 @@ export function ProposalTopBar({
         </div>
       )}
 
+      {/* Generation partial failure warning */}
+      {proposal.generation_error && proposal.status !== "generating" && (
+        <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
+          <div className="flex items-start gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/20 flex-shrink-0">
+              <span className="text-amber-600 text-sm font-bold">!</span>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">
+                Partial Generation
+              </p>
+              <p className="text-xs text-amber-600/80 dark:text-amber-300/80 mt-0.5">
+                {proposal.generation_error}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Generation Progress */}
       {proposal.status === "generating" && (
         <div className="mt-4 rounded-lg border border-[var(--accent-muted)] bg-[var(--accent-subtle)] p-4">
