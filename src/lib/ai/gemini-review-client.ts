@@ -26,7 +26,7 @@ export async function reviewWithGemini(prompt: string): Promise<{
 }> {
   const client = getClient();
   const model = client.getGenerativeModel({
-    model: process.env.GEMINI_MODEL || "gemini-3-pro-preview",
+    model: process.env.GEMINI_MODEL || "gemini-3.1-pro-preview",
     generationConfig: {
       temperature: 0.3,
       maxOutputTokens: 1024,

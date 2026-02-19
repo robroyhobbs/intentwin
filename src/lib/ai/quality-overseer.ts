@@ -122,14 +122,14 @@ export function getReviewModelLabel(): string {
   const judges = getAvailableJudges();
   return judges.length > 1
     ? "council"
-    : judges[0]?.id || process.env.GEMINI_MODEL || "gemini-3-pro-preview";
+    : judges[0]?.id || process.env.GEMINI_MODEL || "gemini-3.1-pro-preview";
 }
 
 function getAvailableJudges(): JudgeDefinition[] {
   const judges: JudgeDefinition[] = [];
 
   // Gemini is always available (uses same GEMINI_API_KEY as main generation)
-  const geminiModel = process.env.GEMINI_MODEL || "gemini-3-pro-preview";
+  const geminiModel = process.env.GEMINI_MODEL || "gemini-3.1-pro-preview";
   judges.push({
     id: geminiModel,
     name: "Gemini",

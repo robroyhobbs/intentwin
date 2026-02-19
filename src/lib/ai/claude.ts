@@ -111,7 +111,7 @@ export async function generateText(
 ): Promise<string> {
   const genAI = getClient();
   const primaryModel =
-    options.model || process.env.GEMINI_MODEL || "gemini-3-pro-preview";
+    options.model || process.env.GEMINI_MODEL || "gemini-3.1-pro-preview";
 
   const modelsToTry = [primaryModel];
   if (primaryModel !== FALLBACK_MODEL) {
