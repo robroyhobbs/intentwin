@@ -49,16 +49,16 @@ Present as bullets with **bold lead-ins**:
 ### Accelerators
 A short paragraph (2-3 sentences) or bullets describing specific ${companyName} tools, templates, or accelerators from the Company Context that reduce time-to-value. Cite actual tool names and past results.
 
-### Gantt Chart
-Include a Mermaid Gantt chart showing the project timeline. Keep it to major phases and milestones — 5-8 items maximum.
+### Project Timeline
 
-\`\`\`mermaid
-gantt
-    title Project Timeline
-    dateFormat  YYYY-MM-DD
-    section Phase 1
-    ...
-\`\`\`
+Present the timeline as a milestone table showing phases, durations, and dependencies:
+
+| Phase | Start | Duration | Key Milestone | Dependencies |
+|---|---|---|---|---|
+| Phase 1: ... | Week 1 | 4 weeks | Milestone name | None |
+| Phase 2: ... | Week 5 | 6 weeks | Milestone name | Phase 1 complete |
+
+Include 4-6 phases. Use relative timing (Week 1, Month 2) unless specific dates are available from the intake.
 ${winStrategy ? `\nMap milestones to target outcomes and success metrics — show WHEN each outcome is achieved.` : ""}
 
 Reference actual ${companyName} accelerators and tools from the Company Context that speed delivery.

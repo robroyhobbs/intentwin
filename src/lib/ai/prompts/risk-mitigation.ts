@@ -48,8 +48,16 @@ Present as bullets:
 
 Include 3-4 safeguards referencing ${companyName}'s governance frameworks, certifications, and quality processes from the Company Context.
 
-### Risk Monitoring Diagram
-Include a Mermaid diagram showing risk categories, monitoring triggers, and escalation paths. Keep it focused — 5-8 nodes maximum.
+### Risk Escalation Framework
+
+Present the escalation path as a table:
+
+| Risk Level | Trigger | Response | Escalation To | Resolution Target |
+|---|---|---|---|---|
+| Low | Metric threshold | Action | Role | Timeframe |
+| Medium | ... | ... | ... | ... |
+| High | ... | ... | ... | ... |
+| Critical | ... | ... | ... | ... |
 ${winStrategy ? `\nAddress risks that could threaten the target outcomes and explain how they're protected.` : ""}
 
 Reference ${companyName}'s actual certifications, compliance frameworks, and governance practices from the Company Context.

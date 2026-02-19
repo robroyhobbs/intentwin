@@ -53,12 +53,19 @@ Use a table:
 
 Include at least 4 controls (e.g., steering committee, sprint reviews, quality audits, risk reviews).
 
-### Methodology Diagram
-Include a Mermaid flowchart or sequence diagram showing the methodology phases, decision points, and quality gates. Keep it clear — 6-10 nodes maximum.
+### Methodology Phases
+
+Present the methodology as a structured flow using a table:
+
+| Phase | Gate Criteria | Key Decision Point | Output |
+|---|---|---|---|
+| Phase 1: ... | What must be true to proceed | Decision that gates the next phase | Deliverable |
+
+Include 4-6 phases with clear progression and quality gates.
 
 ### Proven Results
 
-> **Track Record**: [Specific metric] achieved using this methodology across [N] engagements — [Source from Company Context]
+> **Track Record**: Cite a specific metric achieved using this methodology from the Company Context
 ${winStrategy ? `\nMap methodology phases to target outcomes and success metrics.` : ""}
 
 Use ${companyName}'s actual methodology names and frameworks from the Company Context — do not invent generic methodology names.

@@ -94,11 +94,17 @@ export const ANTI_FLUFF_RULES = `
 - GOOD: "Our team has completed 200+ cloud migrations, including a 10,000-user Azure migration for the Department of Veterans Affairs that reduced infrastructure costs by 34%"
 - If specific evidence is not available in the Company Context, write a general but concrete statement WITHOUT placeholders: "Our team has delivered multiple large-scale cloud migrations for federal agencies, consistently reducing infrastructure costs by 25-40%"
 
-**NEVER USE PLACEHOLDER BRACKETS** — Do NOT write [Insert X], [Client Name], [Agency], [Case Study], [TBD], or any bracketed placeholder text. This is a hard rule with zero exceptions:
+**NEVER USE BRACKETS OF ANY KIND IN OUTPUT** — Do NOT write any text inside square brackets. This includes but is not limited to:
+- Placeholders: [Insert X], [Client Name], [Agency], [Case Study], [TBD]
+- Verification tags: [Verify], [VERIFY], [Needs Evidence], [NEEDS EVIDENCE], [Check], [Confirm]
+- Fill-in markers: [Number], [Metric], [Date], [Amount]
+This is a hard rule with ZERO exceptions. Every bracket in your output is a failure.
 - If you have the data in Company Context or Evidence Library, use it directly
 - If you don't have the data, write a confident general statement that doesn't need a fill-in
 - BAD: "In our recent engagement with [Insert Client], we achieved..."
 - GOOD: "In a recent federal engagement, we achieved..."
+- BAD: "achieving [Verify retention rate] retention"
+- GOOD: "achieving strong staff retention rates"
 - BAD: "[Number] of certified engineers on our team"
 - GOOD: "A dedicated team of certified engineers"
 

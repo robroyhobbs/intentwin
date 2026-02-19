@@ -52,8 +52,15 @@ Include 3-5 phases. Each phase should be concrete and time-bound.
 
 Include at least 4 rows.
 
-### Architecture or Process Diagram
-Include a Mermaid diagram showing the approach phases, architecture, or solution design. Keep it clear and focused — 5-8 nodes maximum.
+### Approach Phases
+
+Present the approach as a phased summary table:
+
+| Phase | Duration | Key Activities | Deliverables |
+|---|---|---|---|
+| Phase 1: ... | X weeks | ... | ... |
+
+Include 3-5 phases showing the logical flow from discovery through delivery.
 ${winStrategy ? `\nTie each phase explicitly to a target outcome from the win strategy.` : ""}
 
 IMPORTANT: Reference specific ${companyName} products, methodologies, and capabilities from the Company Context. Do not describe generic industry approaches — describe ${companyName}'s specific approach.

@@ -179,7 +179,7 @@ describe("Section Prompts — Framework Structure", () => {
     const upper = prompt.toUpperCase();
     expect(upper).toContain("MILESTONE SUMMARY");
     expect(upper).toContain("EARLY WINS");
-    expect(upper).toContain("GANTT");
+    expect(upper).toContain("PROJECT TIMELINE");
   });
 
   it("Pricing includes Value Framing guidance", () => {

@@ -33,7 +33,7 @@ export function buildAutoFixPrompt(
 
 Rules:
 - Address every piece of feedback listed below
-- Preserve the overall structure, formatting (headings, lists, paragraphs), and Mermaid diagram blocks
+- Preserve the overall structure, formatting (headings, lists, paragraphs, tables)
 - Maintain professional tone and terminology
 - Make targeted edits — do NOT rewrite content that doesn't need changing
 - If a comment references specific text, focus your revision on that text

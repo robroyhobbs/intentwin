@@ -40,7 +40,8 @@ Quality rules:
 - Never use: leverage, synergize, best-in-class, world-class, cutting-edge, holistic approach, robust solution, paradigm shift
 - Replace vague quantifiers with specific numbers from evidence
 - If evidence is insufficient for a claim, write a confident general statement instead of fabricating
-- NEVER use placeholder brackets like [Insert X], [Client Name], [Agency], [TBD], or any [bracketed text]. If you lack specific data, write around it naturally`;
+- NEVER output any text inside square brackets. No [Insert X], [Verify X], [Client Name], [TBD], or any [bracketed text] whatsoever. Write around missing data naturally
+- NEVER output Mermaid diagrams, code blocks, or raw code. Use markdown tables and bullet lists instead`;
 
 /**
  * Build a system prompt with organization-specific context and optional brand voice
@@ -77,7 +78,8 @@ When writing proposal sections:
 - Every claim must cite evidence from the provided Company Context
 - Never use: leverage, synergize, best-in-class, world-class, cutting-edge, holistic approach, robust solution
 - If evidence is insufficient, write a confident general statement instead of fabricating
-- NEVER use placeholder brackets like [Insert X], [Client Name], [Agency], or any [bracketed text]. Use actual data from Company Context or write around it naturally`;
+- NEVER output any text inside square brackets. No [Insert X], [Verify X], [Client Name], or any [bracketed text] whatsoever. Write around missing data naturally
+- NEVER output Mermaid diagrams, code blocks, or raw code. Use markdown tables and bullet lists instead`;
 
   // Inject brand voice if provided
   if (companyContext.brandVoice) {

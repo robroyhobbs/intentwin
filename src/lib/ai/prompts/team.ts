@@ -54,8 +54,16 @@ Include all relevant certifications from the Company Context.
 
 A short paragraph (2-3 sentences) with specific numbers: total headcount in relevant practice, bench strength, average experience level, retention rate if available. Cite Company Context.
 
-### Org Chart
-Include a Mermaid org chart showing the proposed team structure. Keep it to the key roles — 5-8 nodes maximum.
+### Team Structure
+
+Present the reporting structure as a markdown table:
+
+| Role | Reports To | Key Responsibility |
+|---|---|---|
+| Program Manager | Client Stakeholder | Overall delivery accountability |
+| ... | ... | ... |
+
+Include 4-6 key roles showing the hierarchy clearly.
 ${winStrategy ? `\nMap team capabilities directly to the win themes and target outcomes.` : ""}
 
 Reference ${companyName}'s actual certifications and partnership levels from the Company Context — do not invent credentials.
