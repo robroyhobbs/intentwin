@@ -7,11 +7,14 @@ import {
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
+export type RequirementType = "content" | "format" | "submission" | "certification";
+
 export interface Requirement {
   id: string;
   requirement_text: string;
   source_reference: string | null;
   category: "mandatory" | "desirable" | "informational";
+  requirement_type: RequirementType;
   compliance_status:
     | "met"
     | "partially_met"
@@ -31,6 +34,7 @@ export interface ComplianceSummary {
   not_addressed: number;
   not_applicable: number;
   mandatory_gaps: number;
+  by_type: Record<RequirementType, { total: number; met: number; gaps: number }>;
 }
 
 export interface ComplianceBoardProps {
@@ -93,3 +97,12 @@ export const CATEGORY_ORDER: Record<string, number> = {
   desirable: 1,
   informational: 2,
 };
+
+export const REQUIREMENT_TYPE_LABELS: Record<RequirementType, { label: string; icon: string; color: string }> = {
+  content: { label: "Content", icon: "FileText", color: "#8b5cf6" },
+  format: { label: "Format", icon: "Ruler", color: "#06b6d4" },
+  submission: { label: "Submission", icon: "Send", color: "#f97316" },
+  certification: { label: "Certification", icon: "Award", color: "#10b981" },
+};
+
+export const VALID_REQUIREMENT_TYPES: RequirementType[] = ["content", "format", "submission", "certification"];

@@ -283,11 +283,23 @@ export async function buildPipelineContext(
     proposalId,
     organizationId: proposal.organization_id,
   });
-  ctxLog.debug("Fetched L1 context", {
+
+  const l1Counts = {
     companyContextCount: l1Context.companyContext.length,
     productContextCount: l1Context.productContexts.length,
     evidenceCount: l1Context.evidenceLibrary.length,
-  });
+  };
+
+  // Promote to warn if L1 is completely empty — visible in production logs
+  if (
+    l1Counts.companyContextCount === 0 &&
+    l1Counts.productContextCount === 0 &&
+    l1Counts.evidenceCount === 0
+  ) {
+    ctxLog.warn("L1 context is EMPTY — proposal will generate without company grounding data. Add company context, products, and evidence in Settings.", l1Counts);
+  } else {
+    ctxLog.info("L1 context loaded", l1Counts);
+  }
 
   // Load static sources from sources/ directory
   let staticSourcesContext = "";
@@ -325,6 +337,28 @@ export async function buildPipelineContext(
 
   // Enhanced analysis with outcome contract (L1 is now passed separately)
   const enhancedAnalysis = `${analysis}\n${outcomeContractContext}`;
+
+  // Store L1 metadata on proposal for auditability (non-blocking)
+  const l1Summary = {
+    companyContextCount: l1Counts.companyContextCount,
+    productContextCount: l1Counts.productContextCount,
+    evidenceCount: l1Counts.evidenceCount,
+    evidenceIds: l1Context.evidenceLibrary.map(e => e.id),
+    productIds: l1Context.productContexts.map(p => p.id),
+    l1StringLength: l1ContextString.length,
+    staticSourcesIncluded: staticSourcesContext.length > 0,
+    fetchedAt: new Date().toISOString(),
+  };
+
+  supabase
+    .from("proposals")
+    .update({ l1_summary: l1Summary })
+    .eq("id", proposalId)
+    .then(({ error: l1Err }) => {
+      if (l1Err) {
+        ctxLog.warn("Failed to store L1 summary on proposal", { error: l1Err.message });
+      }
+    });
 
   return {
     proposal: proposal as Record<string, unknown>,

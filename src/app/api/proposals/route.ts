@@ -129,6 +129,36 @@ export async function POST(request: NextRequest) {
     // Increment usage counter
     await incrementUsage(context.organizationId, "proposals_created");
 
+    // Auto-seed compliance requirements from intake data
+    if (proposal && intake_data?.compliance_requirements) {
+      const complianceReqs = Array.isArray(intake_data.compliance_requirements)
+        ? intake_data.compliance_requirements
+        : typeof intake_data.compliance_requirements === "string"
+          ? intake_data.compliance_requirements.split(/[,;]+/).map((s: string) => s.trim()).filter(Boolean)
+          : [];
+
+      if (complianceReqs.length > 0) {
+        const seedRows = complianceReqs.map((req: string) => ({
+          proposal_id: proposal.id,
+          organization_id: context.organizationId,
+          requirement_text: req,
+          category: "mandatory",
+          requirement_type: "certification",
+          compliance_status: "not_addressed",
+          is_extracted: false,
+        }));
+
+        await adminClient
+          .from("proposal_requirements")
+          .insert(seedRows)
+          .then(({ error: seedErr }) => {
+            if (seedErr) {
+              console.error("Failed to seed compliance requirements:", seedErr);
+            }
+          });
+      }
+    }
+
     return created({ proposal });
   } catch (error) {
     console.error("Create proposal error:", error);

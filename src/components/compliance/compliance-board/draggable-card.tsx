@@ -2,7 +2,7 @@
 
 import { useDraggable } from "@dnd-kit/core";
 import { ChevronDown, ChevronUp, Trash2 } from "lucide-react";
-import { CATEGORY_COLORS, type Requirement } from "./types";
+import { CATEGORY_COLORS, REQUIREMENT_TYPE_LABELS, type Requirement } from "./types";
 
 interface DraggableCardProps {
   requirement: Requirement;
@@ -50,13 +50,24 @@ export function DraggableCard({
       {...attributes}
     >
       <div className="p-2.5" onClick={onClick}>
-        <div className="flex items-start gap-2 mb-1.5">
+        <div className="flex items-start gap-1.5 mb-1.5 flex-wrap">
           <span
             className="text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0"
             style={{ backgroundColor: cat.bg, color: cat.text }}
           >
             {cat.label}
           </span>
+          {requirement.requirement_type && requirement.requirement_type !== "content" && (
+            <span
+              className="text-[10px] font-medium px-1.5 py-0.5 rounded shrink-0"
+              style={{
+                backgroundColor: `${REQUIREMENT_TYPE_LABELS[requirement.requirement_type]?.color}15`,
+                color: REQUIREMENT_TYPE_LABELS[requirement.requirement_type]?.color,
+              }}
+            >
+              {REQUIREMENT_TYPE_LABELS[requirement.requirement_type]?.label}
+            </span>
+          )}
           {requirement.source_reference && (
             <span className="text-[10px] text-[var(--foreground-subtle)] truncate">
               {requirement.source_reference}

@@ -148,6 +148,7 @@ export async function POST(
           requirement_text: req.requirement_text,
           source_reference: req.source_reference || null,
           category: req.category,
+          requirement_type: req.requirement_type || "content",
           mapped_section_id: mappedSectionId,
           is_extracted: true,
         };

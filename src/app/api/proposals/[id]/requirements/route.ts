@@ -5,6 +5,7 @@ import { unauthorized, notFound, badRequest, serverError, ok, created } from "@/
 
 const VALID_CATEGORIES = ["mandatory", "desirable", "informational"] as const;
 const VALID_STATUSES = ["met", "partially_met", "not_addressed", "not_applicable"] as const;
+const VALID_REQUIREMENT_TYPES = ["content", "format", "submission", "certification"] as const;
 
 /**
  * GET /api/proposals/[id]/requirements
@@ -30,7 +31,7 @@ export async function GET(
     const adminClient = createAdminClient();
     const { data: requirements, error } = await adminClient
       .from("proposal_requirements")
-      .select("id, requirement_text, source_reference, category, compliance_status, mapped_section_id, notes, is_extracted, created_at, updated_at")
+      .select("id, requirement_text, source_reference, category, requirement_type, compliance_status, mapped_section_id, notes, is_extracted, created_at, updated_at")
       .eq("proposal_id", id)
       .eq("organization_id", context.organizationId)
       .order("created_at", { ascending: true });
@@ -47,7 +48,18 @@ export async function GET(
       return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
     });
 
-    // Compute summary
+    // Compute summary with type breakdown
+    const reqTypes = ["content", "format", "submission", "certification"] as const;
+    const byType: Record<string, { total: number; met: number; gaps: number }> = {};
+    for (const t of reqTypes) {
+      const ofType = sorted.filter(r => (r.requirement_type || "content") === t);
+      byType[t] = {
+        total: ofType.length,
+        met: ofType.filter(r => r.compliance_status === "met" || r.compliance_status === "not_applicable").length,
+        gaps: ofType.filter(r => r.category === "mandatory" && r.compliance_status === "not_addressed").length,
+      };
+    }
+
     const summary = {
       total: sorted.length,
       met: sorted.filter(r => r.compliance_status === "met").length,
@@ -55,6 +67,7 @@ export async function GET(
       not_addressed: sorted.filter(r => r.compliance_status === "not_addressed").length,
       not_applicable: sorted.filter(r => r.compliance_status === "not_applicable").length,
       mandatory_gaps: sorted.filter(r => r.category === "mandatory" && r.compliance_status === "not_addressed").length,
+      by_type: byType,
     };
 
     return ok({ requirements: sorted, summary });
@@ -85,7 +98,7 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { requirement_text, source_reference, category, mapped_section_id, notes } = body;
+    const { requirement_text, source_reference, category, requirement_type, mapped_section_id, notes } = body;
 
     if (!requirement_text || typeof requirement_text !== "string" || !requirement_text.trim()) {
       return badRequest("requirement_text is required");
@@ -93,6 +106,10 @@ export async function POST(
 
     if (category && !VALID_CATEGORIES.includes(category)) {
       return badRequest(`Invalid category. Must be one of: ${VALID_CATEGORIES.join(", ")}`);
+    }
+
+    if (requirement_type && !VALID_REQUIREMENT_TYPES.includes(requirement_type)) {
+      return badRequest(`Invalid requirement_type. Must be one of: ${VALID_REQUIREMENT_TYPES.join(", ")}`);
     }
 
     const adminClient = createAdminClient();
@@ -104,11 +121,12 @@ export async function POST(
         requirement_text: requirement_text.trim(),
         source_reference: source_reference || null,
         category: category || "desirable",
+        requirement_type: requirement_type || "content",
         mapped_section_id: mapped_section_id || null,
         notes: notes || null,
         is_extracted: false,
       })
-      .select("id, requirement_text, source_reference, category, compliance_status, mapped_section_id, notes, is_extracted, created_at, updated_at")
+      .select("id, requirement_text, source_reference, category, requirement_type, compliance_status, mapped_section_id, notes, is_extracted, created_at, updated_at")
       .single();
 
     if (error) {
@@ -160,6 +178,9 @@ export async function PATCH(
       if (update.category && !VALID_CATEGORIES.includes(update.category)) {
         return badRequest(`Invalid category. Must be one of: ${VALID_CATEGORIES.join(", ")}`);
       }
+      if (update.requirement_type && !VALID_REQUIREMENT_TYPES.includes(update.requirement_type)) {
+        return badRequest(`Invalid requirement_type. Must be one of: ${VALID_REQUIREMENT_TYPES.join(", ")}`);
+      }
     }
 
     const adminClient = createAdminClient();
@@ -171,6 +192,7 @@ export async function PATCH(
 
       if (fields.compliance_status) updateData.compliance_status = fields.compliance_status;
       if (fields.category) updateData.category = fields.category;
+      if (fields.requirement_type) updateData.requirement_type = fields.requirement_type;
       if (fields.mapped_section_id !== undefined) updateData.mapped_section_id = fields.mapped_section_id || null;
       if (fields.notes !== undefined) updateData.notes = fields.notes || null;
       if (fields.requirement_text) updateData.requirement_text = fields.requirement_text;
@@ -180,7 +202,7 @@ export async function PATCH(
         .update(updateData)
         .eq("id", reqId)
         .eq("organization_id", context.organizationId)
-        .select("id, requirement_text, source_reference, category, compliance_status, mapped_section_id, notes, is_extracted, created_at, updated_at")
+        .select("id, requirement_text, source_reference, category, requirement_type, compliance_status, mapped_section_id, notes, is_extracted, created_at, updated_at")
         .single();
 
       if (error) {

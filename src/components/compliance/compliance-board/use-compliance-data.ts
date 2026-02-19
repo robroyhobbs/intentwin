@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
-import type { Requirement, ComplianceSummary } from "./types";
+import type { Requirement, RequirementType, ComplianceSummary } from "./types";
 
 export function useComplianceData(proposalId: string) {
   const [requirements, setRequirements] = useState<Requirement[]>([]);
@@ -65,11 +65,74 @@ export function useComplianceData(proposalId: string) {
     }
   }
 
+  // ── Status change (for checklist view) ─────────────────────────────────
+
+  async function handleStatusChange(
+    reqId: string,
+    newStatus: Requirement["compliance_status"],
+  ) {
+    const req = requirements.find((r) => r.id === reqId);
+    if (!req || req.compliance_status === newStatus) return;
+
+    // Optimistic update
+    setRequirements((prev) =>
+      prev.map((r) =>
+        r.id === reqId ? { ...r, compliance_status: newStatus } : r,
+      ),
+    );
+
+    try {
+      const res = await authFetch(`/api/proposals/${proposalId}/requirements`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          updates: [{ id: reqId, compliance_status: newStatus }],
+        }),
+      });
+      if (!res.ok) throw new Error("Update failed");
+      fetchRequirements();
+    } catch {
+      fetchRequirements(); // revert via refetch
+      toast.error("Failed to update status");
+    }
+  }
+
+  // ── Generic field update (type, section mapping, etc.) ─────────────────
+
+  async function handleFieldUpdate(
+    reqId: string,
+    field: string,
+    value: string | null,
+  ) {
+    // Optimistic update
+    setRequirements((prev) =>
+      prev.map((r) =>
+        r.id === reqId ? { ...r, [field]: value } : r,
+      ),
+    );
+
+    try {
+      const res = await authFetch(`/api/proposals/${proposalId}/requirements`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          updates: [{ id: reqId, [field]: value }],
+        }),
+      });
+      if (!res.ok) throw new Error("Update failed");
+      fetchRequirements();
+    } catch {
+      fetchRequirements();
+      toast.error(`Failed to update ${field}`);
+    }
+  }
+
   // ── Add requirement ────────────────────────────────────────────────────
 
   async function handleAdd(
     text: string,
     category: "mandatory" | "desirable" | "informational",
+    requirementType?: RequirementType,
   ): Promise<boolean> {
     if (!text.trim()) {
       toast.error("Requirement text is required");
@@ -83,6 +146,7 @@ export function useComplianceData(proposalId: string) {
         body: JSON.stringify({
           requirement_text: text.trim(),
           category,
+          requirement_type: requirementType || "content",
         }),
       });
       if (!res.ok) throw new Error("Failed to add");
@@ -149,5 +213,7 @@ export function useComplianceData(proposalId: string) {
     handleAdd,
     handleNotesChange,
     handleDelete,
+    handleStatusChange,
+    handleFieldUpdate,
   };
 }

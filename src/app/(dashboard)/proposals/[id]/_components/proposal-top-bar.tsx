@@ -10,11 +10,13 @@ import {
   Sparkles,
   ChevronRight,
   History,
+  Database,
+  AlertTriangle,
 } from "lucide-react";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { SectionStatusBadge } from "@/components/ui/section-status-badge";
 import type { ProposalReview, ReviewSummary } from "@/types/review";
-import type { Proposal, Section } from "./types";
+import type { Proposal, Section, L1Summary } from "./types";
 
 interface ProposalTopBarProps {
   proposal: Proposal;
@@ -199,6 +201,17 @@ export function ProposalTopBar({
         </div>
       )}
 
+      {/* L1 Data Health Indicator */}
+      {proposal.l1_summary && proposal.status !== "generating" && (
+        <L1HealthBadge l1={proposal.l1_summary} />
+      )}
+      {!proposal.l1_summary && (proposal.status === "review" || proposal.status === "exported") && (
+        <div className="mt-3 flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400">
+          <AlertTriangle className="h-3.5 w-3.5" />
+          <span>L1 data unknown — proposal was generated before tracking was enabled</span>
+        </div>
+      )}
+
       {/* Generation Progress */}
       {proposal.status === "generating" && (
         <div className="mt-4 rounded-lg border border-[var(--accent-muted)] bg-[var(--accent-subtle)] p-4">
@@ -232,6 +245,44 @@ export function ProposalTopBar({
             />
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+// ── L1 Health Badge ────────────────────────────────────────────────────────
+
+function L1HealthBadge({ l1 }: { l1: L1Summary }) {
+  const total = l1.companyContextCount + l1.productContextCount + l1.evidenceCount;
+  const isEmpty = total === 0;
+
+  if (isEmpty) {
+    return (
+      <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2">
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+          <span className="text-xs text-amber-700 dark:text-amber-400 font-medium">
+            No company data was available during generation.
+          </span>
+          <span className="text-xs text-amber-600/70 dark:text-amber-300/70">
+            Add company context, products, and evidence in Settings to improve proposal quality.
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-3 flex items-center gap-3 text-xs text-[var(--foreground-muted)]">
+      <Database className="h-3.5 w-3.5 text-[var(--success)]" />
+      <span>
+        Grounded by {l1.evidenceCount} evidence
+        {l1.evidenceCount !== 1 ? " entries" : " entry"},
+        {" "}{l1.productContextCount} product{l1.productContextCount !== 1 ? "s" : ""},
+        {" "}{l1.companyContextCount} company fact{l1.companyContextCount !== 1 ? "s" : ""}
+      </span>
+      {l1.staticSourcesIncluded && (
+        <span className="text-[var(--foreground-subtle)]">+ static sources</span>
       )}
     </div>
   );

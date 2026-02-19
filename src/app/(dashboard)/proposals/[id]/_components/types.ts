@@ -16,6 +16,17 @@ export interface QualityReviewSection {
   score: number;
 }
 
+export interface L1Summary {
+  companyContextCount: number;
+  productContextCount: number;
+  evidenceCount: number;
+  evidenceIds?: string[];
+  productIds?: string[];
+  l1StringLength: number;
+  staticSourcesIncluded: boolean;
+  fetchedAt: string;
+}
+
 export interface Proposal {
   id: string;
   title: string;
@@ -25,6 +36,7 @@ export interface Proposal {
   deal_outcome?: string;
   deal_value?: number;
   generation_error?: string | null;
+  l1_summary?: L1Summary | null;
   quality_review?: {
     status: string;
     sections?: QualityReviewSection[];

@@ -12,6 +12,7 @@ interface UnaddressedRequirement {
   id: string;
   requirement_text: string;
   category: "mandatory" | "desirable" | "informational";
+  requirement_type?: "content" | "format" | "submission" | "certification";
   compliance_status: string;
   suggested_section?: string | null;
 }
@@ -132,6 +133,11 @@ export function ExportGateModal({
                   >
                     {cat.label}
                   </span>
+                  {req.requirement_type && req.requirement_type !== "content" && (
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded shrink-0 bg-[var(--background-tertiary)] text-[var(--foreground-muted)]">
+                      {req.requirement_type.charAt(0).toUpperCase() + req.requirement_type.slice(1)}
+                    </span>
+                  )}
                   <p className="text-xs text-[var(--foreground)] leading-relaxed">
                     {truncated}
                   </p>

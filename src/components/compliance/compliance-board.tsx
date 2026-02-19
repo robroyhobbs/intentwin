@@ -11,13 +11,26 @@ import {
   type DragStartEvent,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import { Plus, X, AlertTriangle, Circle, Trash2 } from "lucide-react";
+import {
+  Plus,
+  X,
+  AlertTriangle,
+  Circle,
+  Trash2,
+  LayoutGrid,
+  CheckSquare,
+  Filter,
+} from "lucide-react";
 import { DroppableColumn } from "./compliance-board/droppable-column";
 import { CardOverlay } from "./compliance-board/card-overlay";
+import { ChecklistView } from "./compliance-board/checklist-view";
 import { useComplianceData } from "./compliance-board/use-compliance-data";
 import {
   COLUMNS,
+  REQUIREMENT_TYPE_LABELS,
+  VALID_REQUIREMENT_TYPES,
   type Requirement,
+  type RequirementType,
   type ComplianceBoardProps,
 } from "./compliance-board/types";
 
@@ -39,14 +52,24 @@ export function ComplianceBoard({
     handleAdd,
     handleNotesChange,
     handleDelete,
+    handleStatusChange,
+    handleFieldUpdate,
   } = useComplianceData(proposalId);
 
+  const [viewMode, setViewMode] = useState<"checklist" | "kanban">("checklist");
   const [showAddForm, setShowAddForm] = useState(false);
   const [addText, setAddText] = useState("");
   const [addCategory, setAddCategory] = useState<
     "mandatory" | "desirable" | "informational"
-  >("desirable");
+  >("mandatory");
+  const [addType, setAddType] = useState<RequirementType>("content");
   const [activeReq, setActiveReq] = useState<Requirement | null>(null);
+
+  // Filters
+  const [filterType, setFilterType] = useState<RequirementType | "all">("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [showFilters, setShowFilters] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -70,12 +93,15 @@ export function ComplianceBoard({
   }
 
   async function submitAdd() {
-    const ok = await handleAdd(addText, addCategory);
+    const ok = await handleAdd(addText, addCategory, addType);
     if (ok) {
       setAddText("");
       setShowAddForm(false);
     }
   }
+
+  // Filter active indicator
+  const hasActiveFilters = filterType !== "all" || filterStatus !== "all" || filterCategory !== "all";
 
   // ── Render ─────────────────────────────────────────────────────────────
 
@@ -118,14 +144,141 @@ export function ComplianceBoard({
             </div>
           )}
         </div>
-        <button
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="btn-secondary text-xs py-1.5"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Add Requirement
-        </button>
+
+        <div className="flex items-center gap-2">
+          {/* View toggle */}
+          <div className="flex rounded-lg border border-[var(--border)] overflow-hidden">
+            <button
+              onClick={() => setViewMode("checklist")}
+              className={`px-2.5 py-1.5 text-xs flex items-center gap-1 transition-colors ${
+                viewMode === "checklist"
+                  ? "bg-[var(--accent-subtle)] text-[var(--accent)]"
+                  : "text-[var(--foreground-muted)] hover:text-[var(--foreground)]"
+              }`}
+              title="Checklist view"
+            >
+              <CheckSquare className="h-3.5 w-3.5" />
+              Checklist
+            </button>
+            <button
+              onClick={() => setViewMode("kanban")}
+              className={`px-2.5 py-1.5 text-xs flex items-center gap-1 transition-colors border-l border-[var(--border)] ${
+                viewMode === "kanban"
+                  ? "bg-[var(--accent-subtle)] text-[var(--accent)]"
+                  : "text-[var(--foreground-muted)] hover:text-[var(--foreground)]"
+              }`}
+              title="Kanban view"
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+              Board
+            </button>
+          </div>
+
+          {/* Filter toggle */}
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`btn-secondary text-xs py-1.5 ${hasActiveFilters ? "ring-1 ring-[var(--accent)]" : ""}`}
+          >
+            <Filter className="h-3.5 w-3.5" />
+            {hasActiveFilters ? "Filtered" : "Filter"}
+          </button>
+
+          <button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="btn-secondary text-xs py-1.5"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add
+          </button>
+        </div>
       </div>
+
+      {/* Type breakdown badges */}
+      {summary?.by_type && (
+        <div className="flex gap-2 flex-wrap">
+          {VALID_REQUIREMENT_TYPES.map(type => {
+            const info = REQUIREMENT_TYPE_LABELS[type];
+            const typeData = summary.by_type[type];
+            if (!typeData || typeData.total === 0) return null;
+            return (
+              <button
+                key={type}
+                onClick={() => setFilterType(filterType === type ? "all" : type)}
+                className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                  filterType === type
+                    ? "border-[var(--accent)] bg-[var(--accent-subtle)]"
+                    : "border-[var(--border)] hover:border-[var(--foreground-subtle)]"
+                }`}
+              >
+                <span
+                  className="h-2 w-2 rounded-full"
+                  style={{ backgroundColor: info.color }}
+                />
+                <span className="text-[var(--foreground)]">{info.label}</span>
+                <span className="text-[var(--foreground-muted)]">
+                  {typeData.met}/{typeData.total}
+                </span>
+                {typeData.gaps > 0 && (
+                  <span className="text-[var(--danger)] font-medium">
+                    ({typeData.gaps} gaps)
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Filter bar */}
+      {showFilters && (
+        <div className="card p-3 flex items-center gap-3 flex-wrap animate-fade-in">
+          <span className="text-xs text-[var(--foreground-muted)] font-medium">Filters:</span>
+          <select
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value as RequirementType | "all")}
+            className="text-xs rounded border border-[var(--border)] bg-[var(--background)] px-2 py-1.5 text-[var(--foreground)]"
+          >
+            <option value="all">All Types</option>
+            <option value="content">Content</option>
+            <option value="format">Format</option>
+            <option value="submission">Submission</option>
+            <option value="certification">Certification</option>
+          </select>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="text-xs rounded border border-[var(--border)] bg-[var(--background)] px-2 py-1.5 text-[var(--foreground)]"
+          >
+            <option value="all">All Statuses</option>
+            <option value="met">Met</option>
+            <option value="partially_met">Partially Met</option>
+            <option value="not_addressed">Not Addressed</option>
+            <option value="not_applicable">N/A</option>
+          </select>
+          <select
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value)}
+            className="text-xs rounded border border-[var(--border)] bg-[var(--background)] px-2 py-1.5 text-[var(--foreground)]"
+          >
+            <option value="all">All Categories</option>
+            <option value="mandatory">Mandatory</option>
+            <option value="desirable">Desirable</option>
+            <option value="informational">Informational</option>
+          </select>
+          {hasActiveFilters && (
+            <button
+              onClick={() => {
+                setFilterType("all");
+                setFilterStatus("all");
+                setFilterCategory("all");
+              }}
+              className="text-xs text-[var(--accent)] hover:underline"
+            >
+              Clear all
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Add Requirement Form */}
       {showAddForm && (
@@ -138,7 +291,7 @@ export function ComplianceBoard({
             onChange={(e) => setAddText(e.target.value)}
             autoFocus
           />
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <select
               value={addCategory}
               onChange={(e) =>
@@ -149,6 +302,16 @@ export function ComplianceBoard({
               <option value="mandatory">Mandatory</option>
               <option value="desirable">Desirable</option>
               <option value="informational">Informational</option>
+            </select>
+            <select
+              value={addType}
+              onChange={(e) => setAddType(e.target.value as RequirementType)}
+              className="text-xs rounded border border-[var(--border)] bg-[var(--background)] px-2 py-1.5 text-[var(--foreground)]"
+            >
+              <option value="content">Content</option>
+              <option value="format">Format</option>
+              <option value="submission">Submission</option>
+              <option value="certification">Certification</option>
             </select>
             <button onClick={submitAdd} className="btn-primary text-xs py-1.5">
               Add
@@ -178,8 +341,24 @@ export function ComplianceBoard({
         </div>
       )}
 
+      {/* Checklist View */}
+      {requirements.length > 0 && viewMode === "checklist" && (
+        <ChecklistView
+          requirements={requirements}
+          sections={sections}
+          filterType={filterType}
+          filterStatus={filterStatus}
+          filterCategory={filterCategory}
+          onStatusChange={handleStatusChange}
+          onNotesChange={handleNotesChange}
+          onDelete={handleDelete}
+          onSectionChange={(reqId, sectionId) => handleFieldUpdate(reqId, "mapped_section_id", sectionId)}
+          onTypeChange={(reqId, type) => handleFieldUpdate(reqId, "requirement_type", type)}
+        />
+      )}
+
       {/* Kanban Board */}
-      {requirements.length > 0 && (
+      {requirements.length > 0 && viewMode === "kanban" && (
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -187,25 +366,36 @@ export function ComplianceBoard({
           onDragEnd={handleDragEndEvent}
         >
           <div className="flex gap-3 overflow-x-auto pb-2">
-            {COLUMNS.map((col) => (
-              <DroppableColumn
-                key={col.id}
-                id={col.id}
-                title={col.title}
-                icon={col.icon}
-                color={col.color}
-                requirements={requirements.filter(
-                  (r) => r.compliance_status === col.id,
-                )}
-                onCardClick={(id) =>
-                  setExpandedCard(expandedCard === id ? null : id)
-                }
-                expandedCard={expandedCard}
-                sections={sections}
-                onNotesChange={handleNotesChange}
-                onDelete={handleDelete}
-              />
-            ))}
+            {COLUMNS.map((col) => {
+              // Apply filters to kanban too
+              let colReqs = requirements.filter(
+                (r) => r.compliance_status === col.id,
+              );
+              if (filterType !== "all") {
+                colReqs = colReqs.filter(r => (r.requirement_type || "content") === filterType);
+              }
+              if (filterCategory !== "all") {
+                colReqs = colReqs.filter(r => r.category === filterCategory);
+              }
+
+              return (
+                <DroppableColumn
+                  key={col.id}
+                  id={col.id}
+                  title={col.title}
+                  icon={col.icon}
+                  color={col.color}
+                  requirements={colReqs}
+                  onCardClick={(id) =>
+                    setExpandedCard(expandedCard === id ? null : id)
+                  }
+                  expandedCard={expandedCard}
+                  sections={sections}
+                  onNotesChange={handleNotesChange}
+                  onDelete={handleDelete}
+                />
+              );
+            })}
           </div>
 
           <DragOverlay>
