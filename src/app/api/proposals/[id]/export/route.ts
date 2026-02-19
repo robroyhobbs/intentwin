@@ -110,6 +110,7 @@ export async function POST(
         title: s.title,
         content: s.edited_content || s.generated_content || "",
         section_type: s.section_type,
+        diagram_image: s.diagram_image || null,
       })),
       branding,
     };

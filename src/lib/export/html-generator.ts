@@ -6,6 +6,7 @@ interface ProposalSection {
   title: string;
   content: string;
   section_type: string;
+  diagram_image?: string | null;
 }
 
 interface ProposalData {
@@ -211,6 +212,13 @@ export async function generateHtml(
         })
         .join("\n");
 
+      // Render pre-generated diagram image if available
+      const diagramHtml = section.diagram_image
+        ? `<div class="diagram-container" style="margin: 2rem 0; text-align: center;">
+            <img src="${section.diagram_image}" alt="${escapeHtml(section.title)} Diagram" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.08);" />
+          </div>`
+        : "";
+
       return `
       <section id="${slug}" class="proposal-section animate-on-scroll" data-accent="${accentColor}">
         <div class="section-inner">
@@ -219,6 +227,7 @@ export async function generateHtml(
             <h2 class="section-title" style="border-left-color: ${accentColor}">${escapeHtml(section.title)}</h2>
           </div>
           <div class="section-body">${bodyHtml}</div>
+          ${diagramHtml}
         </div>
       </section>`;
     })

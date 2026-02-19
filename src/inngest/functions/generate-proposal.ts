@@ -20,6 +20,7 @@ import {
 import { retrieveContext } from "@/lib/ai/pipeline/retrieval";
 // Editorial pass import — kept for future re-enablement
 // import { runEditorialPass } from "@/lib/ai/editorial-pass";
+import { shouldGenerateDiagram, generateDiagram } from "@/lib/ai/diagram-generator";
 import type { PipelineContext } from "@/lib/ai/pipeline/types";
 
 /**
@@ -135,6 +136,28 @@ async function generateSingleSection(
         retrieved_context_ids: chunkIds,
       })
       .eq("id", sectionId);
+
+    // Generate diagram image for applicable sections (non-blocking)
+    if (shouldGenerateDiagram(config.type)) {
+      try {
+        const companyName = (ctx.companyInfo?.name as string) || "Our Company";
+        const clientName = (ctx.intakeData?.client_name as string) || "the Client";
+        const diagramImage = await generateDiagram(
+          config.type,
+          generatedContent,
+          companyName,
+          clientName,
+        );
+        if (diagramImage) {
+          await supabase
+            .from("proposal_sections")
+            .update({ diagram_image: diagramImage })
+            .eq("id", sectionId);
+        }
+      } catch {
+        log.warn(`Diagram generation failed for ${config.type} — continuing without diagram`);
+      }
+    }
 
     // Store source references (non-blocking)
     if (chunkIds.length > 0) {
