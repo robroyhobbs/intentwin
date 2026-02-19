@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getUserContext } from "@/lib/supabase/auth-api";
 
+/** AI image generation can be slow */
+export const maxDuration = 120;
+
 const IMAGE_MODEL = "gemini-3-pro-image-preview";
 
 export async function POST(request: NextRequest) {

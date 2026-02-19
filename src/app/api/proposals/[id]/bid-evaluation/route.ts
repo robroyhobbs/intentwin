@@ -6,6 +6,9 @@ import {
   type FactorKey,
 } from "@/lib/ai/bid-scoring";
 
+/** AI scoring call + L1 context fetch */
+export const maxDuration = 120;
+
 /**
  * POST /api/proposals/[id]/bid-evaluation
  * Trigger AI bid/no-bid scoring for a proposal.

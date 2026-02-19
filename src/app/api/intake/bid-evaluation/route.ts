@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUserContext } from "@/lib/supabase/auth-api";
 import { scoreFromRequirements } from "@/lib/ai/bid-scoring";
 
+/** AI scoring call + L1 context fetch */
+export const maxDuration = 120;
+
 /**
  * POST /api/intake/bid-evaluation
  * Score extracted RFP requirements during intake (before proposal creation).
