@@ -141,6 +141,17 @@ export default function ProposalPage() {
     fetchProposal();
   }, [fetchProposal]);
 
+  // Re-fetch when user returns to tab (catches completed generation while tab was inactive)
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        fetchProposal();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [fetchProposal]);
+
   useEffect(() => {
     if (proposal?.status === "review" || proposal?.status === "exported") {
       fetchReviews();
@@ -152,20 +163,34 @@ export default function ProposalPage() {
     if (proposal?.status !== "generating") return;
     const startedAt = Date.now();
     const MAX_POLL_MS = 10 * 60 * 1000; // 10 minutes
+    let stopped = false;
 
-    const interval = setInterval(() => {
+    const poll = async () => {
+      if (stopped) return;
+
       if (Date.now() - startedAt > MAX_POLL_MS) {
-        clearInterval(interval);
+        // Before showing error, do one final check — generation may have finished
+        await fetchProposal();
+        // If still generating after 10 min, warn the user
         toast.error(
-          "Generation appears to have stalled. Please refresh or try again.",
+          "Generation is taking longer than expected. Please refresh the page.",
         );
-        // Force-refresh once more to pick up any status change we missed
-        fetchProposal();
         return;
       }
-      fetchProposal();
-    }, 3000);
-    return () => clearInterval(interval);
+
+      await fetchProposal();
+
+      if (!stopped) {
+        setTimeout(poll, 3000);
+      }
+    };
+
+    // Start first poll immediately (no 3s delay)
+    poll();
+
+    return () => {
+      stopped = true;
+    };
   }, [proposal?.status, fetchProposal]);
 
   async function handleGenerate() {
