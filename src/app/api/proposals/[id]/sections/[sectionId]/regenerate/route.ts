@@ -1,9 +1,7 @@
-import { NextRequest, NextResponse, after } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
-import { regenerateSection } from "@/lib/ai/pipeline";
 import { getQualityFeedbackForSection } from "@/lib/ai/quality-overseer";
-
-export const maxDuration = 120; // Section regeneration runs in after() with RAG + AI call
+import { inngest } from "@/inngest/client";
 
 export async function POST(
   request: NextRequest,
@@ -43,13 +41,14 @@ export async function POST(
       sectionId,
     ).catch(() => null);
 
-    // Run regeneration after response is sent (extends serverless function lifetime)
-    after(async () => {
-      try {
-        await regenerateSection(id, sectionId, qualityFeedback);
-      } catch (err) {
-        console.error(`Section regeneration failed for ${sectionId}:`, err);
-      }
+    // Send event to Inngest for durable background execution
+    await inngest.send({
+      name: "section/regenerate.requested",
+      data: {
+        proposalId: id,
+        sectionId,
+        qualityFeedback: qualityFeedback ?? null,
+      },
     });
 
     return NextResponse.json({

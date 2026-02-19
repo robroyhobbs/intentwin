@@ -1,9 +1,7 @@
-import { NextRequest, NextResponse, after } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { generateProposal } from "@/lib/ai/pipeline";
-
-export const maxDuration = 300; // Generation runs in after() — needs full 5 min for 10 sections
+import { inngest } from "@/inngest/client";
 
 export async function POST(
   request: NextRequest,
@@ -55,33 +53,11 @@ export async function POST(
       );
     }
 
-    // Run generation after response is sent (extends serverless function lifetime)
-    after(async () => {
-      try {
-        await generateProposal(id);
-      } catch (err) {
-        console.error(`Generation failed for proposal ${id}:`, err);
-        // Cleanup: reset proposal and stuck sections so user can retry
-        try {
-          const cleanup = createAdminClient();
-          await cleanup
-            .from("proposals")
-            .update({ status: "draft" })
-            .eq("id", id)
-            .eq("status", "generating");
-
-          await cleanup
-            .from("proposal_sections")
-            .update({
-              generation_status: "failed",
-              generation_error: "Generation process terminated unexpectedly",
-            })
-            .eq("proposal_id", id)
-            .in("generation_status", ["generating", "pending"]);
-        } catch (cleanupErr) {
-          console.error(`Cleanup failed for proposal ${id}:`, cleanupErr);
-        }
-      }
+    // Send event to Inngest for durable background execution.
+    // Inngest handles retries, timeouts, and step-level persistence.
+    await inngest.send({
+      name: "proposal/generate.requested",
+      data: { proposalId: id },
     });
 
     return NextResponse.json({

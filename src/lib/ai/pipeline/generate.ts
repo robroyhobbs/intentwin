@@ -1,8 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateText } from "../claude";
 import { createProposalVersion } from "@/lib/versioning/create-version";
-import { runQualityReview } from "../quality-overseer";
-import { runComplianceAssessment } from "../compliance-assessor";
 import {
   getPersuasionPrompt,
   getBestPracticesPrompt,
@@ -343,19 +341,11 @@ export async function generateProposal(proposalId: string): Promise<void> {
       });
     }
 
-    // Auto-trigger quality review only if all sections succeeded
-    if (failedCount === 0) {
-      runQualityReview(proposalId, "auto_post_generation").catch((err) => {
-        const reviewLog = createLogger({ operation: "qualityReview", proposalId });
-        reviewLog.error("Auto quality review failed", err);
-      });
-    }
-
-    // Auto-trigger compliance assessment (runs in parallel with quality review)
-    runComplianceAssessment(proposalId, "auto_post_generation").catch((err) => {
-      const assessLog = createLogger({ operation: "complianceAssessment", proposalId });
-      assessLog.error("Auto compliance assessment failed", err);
-    });
+    // NOTE: Quality review and compliance assessment are now triggered via
+    // Inngest events. The generate Inngest function sends a "proposal/generated"
+    // event which triggers both functions in parallel with durable execution.
+    // See: src/inngest/functions/quality-review.ts
+    // See: src/inngest/functions/compliance-assessment.ts
   } catch (error) {
     const _errorMessage =
       error instanceof Error ? error.message : "Unknown error";

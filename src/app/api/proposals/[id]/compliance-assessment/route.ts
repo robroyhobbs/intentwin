@@ -1,17 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
-import { runComplianceAssessment } from "@/lib/ai/compliance-assessor";
 import { createLogger } from "@/lib/utils/logger";
-
-export const maxDuration = 300;
+import { inngest } from "@/inngest/client";
 
 const STALE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
 
 /**
  * POST /api/proposals/[id]/compliance-assessment
- * Trigger compliance auto-assessment. Returns immediately; work runs in after().
+ * Trigger compliance auto-assessment via Inngest. Returns immediately.
  */
 export async function POST(
   request: NextRequest,
@@ -73,24 +70,10 @@ export async function POST(
       }
     }
 
-    // Trigger assessment in after() callback
-    after(async () => {
-      try {
-        await runComplianceAssessment(id, "manual");
-      } catch (err) {
-        log.error("after() compliance assessment failed", err);
-        // Reset status on failure
-        await supabase
-          .from("proposals")
-          .update({
-            compliance_assessment: {
-              status: "failed",
-              error: err instanceof Error ? err.message : String(err),
-              assessed_at: new Date().toISOString(),
-            },
-          })
-          .eq("id", id);
-      }
+    // Send event to Inngest for durable background execution
+    await inngest.send({
+      name: "proposal/compliance.requested",
+      data: { proposalId: id, trigger: "manual" },
     });
 
     return NextResponse.json({ status: "assessing" });

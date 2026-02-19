@@ -1,15 +1,8 @@
-import { NextRequest, NextResponse, after } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
-import {
-  runQualityReview,
-  getReviewModelLabel,
-} from "@/lib/ai/quality-overseer";
+import { getReviewModelLabel } from "@/lib/ai/quality-overseer";
 import { createAdminClient } from "@/lib/supabase/admin";
-
-export const maxDuration = 300;
-
-/** Max wall-clock time for the quality review background task (seconds). */
-const REVIEW_TIMEOUT_MS = 270_000; // 270s — leaves 30s buffer before Vercel's 300s hard kill
+import { inngest } from "@/inngest/client";
 
 /** If a review has been "reviewing" for longer than this, treat it as stale/zombie. */
 const STALE_REVIEW_MS = 5 * 60 * 1000; // 5 minutes
@@ -33,7 +26,7 @@ async function resetStaleReview(proposalId: string, existingReview: Record<strin
 
 /**
  * POST /api/proposals/[id]/quality-review
- * Triggers async quality review. Returns immediately.
+ * Triggers async quality review via Inngest. Returns immediately.
  */
 export async function POST(
   request: NextRequest,
@@ -150,50 +143,10 @@ export async function POST(
       })
       .eq("id", id);
 
-    // Run quality review after response is sent (extends serverless function lifetime)
-    after(async () => {
-      try {
-        // Race the review against a safety timeout
-        const timeoutPromise = new Promise<never>((_, reject) => {
-          setTimeout(
-            () => reject(new Error("Quality review timed out")),
-            REVIEW_TIMEOUT_MS,
-          );
-        });
-
-        await Promise.race([
-          runQualityReview(id, trigger),
-          timeoutPromise,
-        ]);
-      } catch (err) {
-        console.error(`Quality review failed for proposal ${id}:`, err);
-
-        // Ensure we don't leave the DB in "reviewing" state
-        try {
-          const cleanup = createAdminClient();
-          const { data: current } = await cleanup
-            .from("proposals")
-            .select("quality_review")
-            .eq("id", id)
-            .single();
-
-          const qr = (current?.quality_review as Record<string, unknown>) || {};
-          if (qr.status === "reviewing") {
-            await cleanup
-              .from("proposals")
-              .update({
-                quality_review: {
-                  ...qr,
-                  status: "failed",
-                  error: err instanceof Error ? err.message : "Review failed unexpectedly",
-                },
-              })
-              .eq("id", id);
-          }
-        } catch (cleanupErr) {
-          console.error(`Failed to clean up review status for ${id}:`, cleanupErr);
-        }
-      }
+    // Send event to Inngest for durable background execution
+    await inngest.send({
+      name: "proposal/quality-review.requested",
+      data: { proposalId: id, trigger },
     });
 
     return NextResponse.json({

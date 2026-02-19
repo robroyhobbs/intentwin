@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse, after } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   getUserContext,
@@ -6,7 +6,7 @@ import {
   incrementUsage,
 } from "@/lib/supabase/auth-api";
 import { nanoid } from "nanoid";
-import { processDocument } from "@/lib/documents/pipeline";
+import { inngest } from "@/inngest/client";
 
 const ALLOWED_TYPES: Record<string, string> = {
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
@@ -156,13 +156,11 @@ export async function POST(request: NextRequest) {
     // Increment usage counter
     await incrementUsage(context.organizationId, "documents_uploaded");
 
-    // Process document after response is sent (extends serverless function lifetime)
-    after(async () => {
-      try {
-        await processDocument(document.id);
-      } catch (err) {
-        console.error(`Failed to process document ${document.id}:`, err);
-      }
+    // Send event to Inngest for durable document processing.
+    // Handles parsing, chunking, embedding generation with per-batch retries.
+    await inngest.send({
+      name: "document/process.requested",
+      data: { documentId: document.id },
     });
 
     return NextResponse.json({
