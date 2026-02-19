@@ -445,7 +445,7 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
   const fontFamily = branding?.font_family || "Arial";
   const footerText = branding?.footer_text || "Confidential";
 
-  pptx.author = `${companyName} Proposal Generator`;
+  pptx.author = companyName;
   pptx.company = companyName;
   pptx.title = data.title;
 

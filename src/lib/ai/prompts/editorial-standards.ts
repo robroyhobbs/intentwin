@@ -70,7 +70,7 @@ export const FORMATTING_RULES = `
    - Evidence citations
 
 6. **Evidence citations**: When referencing company data, use this format:
-   > **Proven Result**: [Metric] — [Source from Company Context]
+   > **Proven Result**: 34% cost reduction over 18 months — Cloud Migration for Department of Veterans Affairs
 
 7. **White space**: Leave blank lines between sections. Dense text loses readers.
 
@@ -89,9 +89,18 @@ export const ANTI_FLUFF_RULES = `
 - BAD: "We have extensive experience in this space"
 - GOOD: "We have delivered 47 similar engagements across 12 federal agencies since 2019"
 
-**EVIDENCE REQUIREMENT** — Every capability claim must cite specific evidence:
+**EVIDENCE REQUIREMENT** — Every capability claim must cite specific evidence from the provided Company Context:
 - BAD: "Our team brings deep expertise in cloud migration"
-- GOOD: "Our team has completed 200+ cloud migrations, including a 10,000-user Azure migration for [Agency] that reduced infrastructure costs by 34%"
+- GOOD: "Our team has completed 200+ cloud migrations, including a 10,000-user Azure migration for the Department of Veterans Affairs that reduced infrastructure costs by 34%"
+- If specific evidence is not available in the Company Context, write a general but concrete statement WITHOUT placeholders: "Our team has delivered multiple large-scale cloud migrations for federal agencies, consistently reducing infrastructure costs by 25-40%"
+
+**NEVER USE PLACEHOLDER BRACKETS** — Do NOT write [Insert X], [Client Name], [Agency], [Case Study], [TBD], or any bracketed placeholder text. This is a hard rule with zero exceptions:
+- If you have the data in Company Context or Evidence Library, use it directly
+- If you don't have the data, write a confident general statement that doesn't need a fill-in
+- BAD: "In our recent engagement with [Insert Client], we achieved..."
+- GOOD: "In a recent federal engagement, we achieved..."
+- BAD: "[Number] of certified engineers on our team"
+- GOOD: "A dedicated team of certified engineers"
 
 **ACTIVE VOICE** — Write in active voice. "We will deliver" not "It will be delivered." "Our team migrated" not "The migration was completed."
 

@@ -761,7 +761,7 @@ ${options?.inlineFonts ? `<style>
 
 <!-- Footer -->
 <footer class="footer">
-  <p class="footer-brand"><span>${escapeHtml(companyName)}</span> Proposal Generator</p>
+  <p class="footer-brand"><span>${escapeHtml(companyName)}</span></p>
   <div class="footer-divider"></div>
   <p>${escapeHtml(data.title)}</p>
   <p>Prepared for ${escapeHtml(data.client_name)} &middot; ${escapeHtml(data.date)}</p>

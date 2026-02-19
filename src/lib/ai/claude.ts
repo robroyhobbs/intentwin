@@ -39,7 +39,8 @@ Quality rules:
 - Every capability claim must cite specific evidence (metric, case study, certification)
 - Never use: leverage, synergize, best-in-class, world-class, cutting-edge, holistic approach, robust solution, paradigm shift
 - Replace vague quantifiers with specific numbers from evidence
-- If evidence is insufficient for a claim, say so honestly rather than fabricating`;
+- If evidence is insufficient for a claim, write a confident general statement instead of fabricating
+- NEVER use placeholder brackets like [Insert X], [Client Name], [Agency], [TBD], or any [bracketed text]. If you lack specific data, write around it naturally`;
 
 /**
  * Build a system prompt with organization-specific context and optional brand voice
@@ -75,7 +76,8 @@ When writing proposal sections:
 - Reference specific ${companyContext.name} capabilities and methodologies${companyContext.capabilities ? `\n- Key capabilities: ${companyContext.capabilities.join(", ")}` : ""}${companyContext.methodologies ? `\n- Key methodologies: ${companyContext.methodologies.join(", ")}` : ""}
 - Every claim must cite evidence from the provided Company Context
 - Never use: leverage, synergize, best-in-class, world-class, cutting-edge, holistic approach, robust solution
-- If evidence is insufficient, say so honestly rather than fabricating`;
+- If evidence is insufficient, write a confident general statement instead of fabricating
+- NEVER use placeholder brackets like [Insert X], [Client Name], [Agency], or any [bracketed text]. Use actual data from Company Context or write around it naturally`;
 
   // Inject brand voice if provided
   if (companyContext.brandVoice) {

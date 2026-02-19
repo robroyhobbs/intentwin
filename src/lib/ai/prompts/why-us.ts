@@ -41,7 +41,7 @@ Present 4-5 differentiators, each in this format:
 **[Differentiator Name]**
 - **What**: The specific capability or asset (1 sentence)
 - **Evidence**: Concrete proof — certification level, case study metric, partnership tier (1 sentence citing Company Context)
-- **Client Value**: What this means for the client's specific outcome (1 sentence starting with "For [Client Name], this means...")
+- **Client Value**: What this means for the client's specific outcome (1 sentence starting with "For" + the actual client name from the opportunity details above + ", this means...")
 
 ### Competitive Advantages Table
 
