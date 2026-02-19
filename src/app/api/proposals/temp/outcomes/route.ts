@@ -5,6 +5,9 @@ import { buildOutcomesPrompt } from "@/lib/ai/prompts/outcomes";
 import { getIndustryConfig } from "@/lib/ai/industry-configs";
 import type { WinStrategyData } from "@/types/outcomes";
 
+/** AI outcome generation (pre-proposal) */
+export const maxDuration = 120;
+
 export async function POST(request: NextRequest) {
   try {
     const context = await getUserContext(request);

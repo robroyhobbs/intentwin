@@ -5,6 +5,9 @@ import { generateText } from "@/lib/ai/claude";
 import { buildAutoFixPrompt } from "@/lib/ai/prompts/auto-fix";
 import { getQualityFeedbackForSection } from "@/lib/ai/quality-overseer";
 
+/** AI-powered section rewrite */
+export const maxDuration = 120;
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },

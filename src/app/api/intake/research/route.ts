@@ -4,6 +4,9 @@ import { generateText } from "@/lib/ai/claude";
 import { buildResearchPrompt } from "@/lib/ai/prompts/extract-intake";
 import type { ClientResearch } from "@/types/intake";
 
+/** AI research call */
+export const maxDuration = 120;
+
 const RESEARCH_SYSTEM_PROMPT = `You are a business intelligence analyst with access to current information about companies. You provide thorough, accurate research to help consulting teams prepare winning proposals. You always respond with valid JSON only.`;
 
 export async function POST(request: NextRequest) {

@@ -11,6 +11,9 @@ import type { ExtractedIntake } from "@/types/intake";
 import type { DocumentRole } from "@/types/proposal-documents";
 import { logger } from "@/lib/utils/logger";
 
+/** Allow up to 5 minutes for document processing wait + AI extraction */
+export const maxDuration = 300;
+
 const EXTRACTION_SYSTEM_PROMPT = `You are an expert at analyzing business documents and extracting structured information. You are precise, thorough, and honest about confidence levels. You always respond with valid JSON only.`;
 
 /**

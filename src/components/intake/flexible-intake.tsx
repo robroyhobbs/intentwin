@@ -198,8 +198,17 @@ export function FlexibleIntake({
       });
 
       if (!extractResponse.ok) {
-        const err = await extractResponse.json();
-        throw new Error(err.error || "Extraction failed");
+        let errorMessage = "Extraction failed";
+        try {
+          const err = await extractResponse.json();
+          errorMessage = err.error || errorMessage;
+        } catch {
+          // Non-JSON response (e.g., Vercel timeout HTML page)
+          if (extractResponse.status === 504 || extractResponse.status === 502) {
+            errorMessage = "The analysis timed out. Please try again — large documents may take a moment.";
+          }
+        }
+        throw new Error(errorMessage);
       }
 
       const { extracted } = await extractResponse.json();
