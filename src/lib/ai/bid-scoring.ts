@@ -1,7 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logger } from "@/lib/utils/logger";
 import { generateText } from "./claude";
-import { fetchL1Context } from "./pipeline/context";
 import type { L1Context } from "./pipeline/types";
 
 // Fixed scoring factors and weights
@@ -95,7 +94,7 @@ export async function scoreFromRequirements(
 ): Promise<BidEvaluation> {
   const supabase = createAdminClient();
 
-  const l1Context = await fetchL1Context(
+  const l1Context = await fetchL1ContextForScoring(
     supabase,
     serviceLine,
     industry,
@@ -159,8 +158,8 @@ export async function scoreBidOpportunity(
     throw new Error("RFP extraction must complete before bid evaluation");
   }
 
-  // Fetch L1 context for the organization (uses shared pipeline fetcher with TTL cache)
-  const l1Context = await fetchL1Context(
+  // Fetch L1 context for the organization
+  const l1Context = await fetchL1ContextForScoring(
     supabase,
     proposal.intake_data?.service_line,
     proposal.intake_data?.industry,
@@ -272,8 +271,71 @@ export async function saveBidDecision(
 
 // --- Internal helpers ---
 
-// L1 context fetching is now handled by the shared fetchL1Context() from pipeline/context.ts
-// which includes TTL caching (5-min, 50 entries) and proper evidence ordering.
+/**
+ * Fetch L1 context for bid scoring.
+ *
+ * NOTE: This is intentionally a standalone copy of fetchL1Context from pipeline/context.ts.
+ * We cannot import from context.ts here because bid-scoring.ts is imported by client components
+ * (proposals/new/page.tsx) and context.ts transitively imports @/lib/sources/loader.ts which
+ * uses Node's 'fs' module — causing Turbopack build failures in the browser bundle.
+ *
+ * Includes proper evidence ordering (is_verified desc, created_at desc) before limit.
+ */
+async function fetchL1ContextForScoring(
+  supabase: ReturnType<typeof createAdminClient>,
+  serviceLine?: string,
+  industry?: string,
+  organizationId?: string,
+): Promise<L1Context> {
+  try {
+    let companyQuery = supabase
+      .from("company_context")
+      .select("*")
+      .order("category");
+    if (organizationId) {
+      companyQuery = companyQuery.eq("organization_id", organizationId);
+    }
+    const { data: companyContext } = await companyQuery;
+
+    let productQuery = supabase.from("product_contexts").select("*");
+    if (organizationId) {
+      productQuery = productQuery.eq("organization_id", organizationId);
+    }
+    if (serviceLine) {
+      productQuery = productQuery.eq("service_line", serviceLine);
+    }
+    const { data: productContexts } = await productQuery;
+
+    let evidenceQuery = supabase
+      .from("evidence_library")
+      .select("*")
+      .eq("is_verified", true);
+    if (organizationId) {
+      evidenceQuery = evidenceQuery.eq("organization_id", organizationId);
+    }
+    if (serviceLine) {
+      evidenceQuery = evidenceQuery.eq("service_line", serviceLine);
+    }
+    if (industry) {
+      evidenceQuery = evidenceQuery.or(
+        `client_industry.eq.${industry},client_industry.is.null`,
+      );
+    }
+    const { data: evidenceLibrary } = await evidenceQuery
+      .order("is_verified", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    return {
+      companyContext: (companyContext || []) as L1Context["companyContext"],
+      productContexts: (productContexts || []) as L1Context["productContexts"],
+      evidenceLibrary: (evidenceLibrary || []) as L1Context["evidenceLibrary"],
+    };
+  } catch (error) {
+    logger.error("Error fetching L1 context for scoring", error);
+    return { companyContext: [], productContexts: [], evidenceLibrary: [] };
+  }
+}
 
 function buildRfpSummary(requirements: Record<string, unknown>): string {
   const sections: string[] = [];
