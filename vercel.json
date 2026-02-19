@@ -9,12 +9,6 @@
       "maxDuration": 300
     }
   },
-  "crons": [
-    {
-      "path": "/api/cron/nurture",
-      "schedule": "0 14 * * *"
-    }
-  ],
   "headers": [
     {
       "source": "/(.*)",

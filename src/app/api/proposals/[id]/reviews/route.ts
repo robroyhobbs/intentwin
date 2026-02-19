@@ -137,6 +137,7 @@ export async function PATCH(
       .from("proposal_reviews")
       .update({ status, updated_at: new Date().toISOString() })
       .eq("id", review_id)
+      .eq("proposal_id", id)
       .select()
       .single();
 
