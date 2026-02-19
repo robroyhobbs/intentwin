@@ -51,46 +51,55 @@ export async function GET(
       return NextResponse.json({ error: "Failed to fetch reviews" }, { status: 500 });
     }
 
-    // Enrich with reviewer names and section names
-    const enrichedReviews = await Promise.all(
-      (reviews || []).map(async (review) => {
-        // Get reviewer profile via stage_reviewers
-        const { data: stageReviewer } = await adminClient
+    // Batch-fetch all related data to avoid N+1 queries
+    const reviewerIds = [...new Set((reviews || []).map((r) => r.reviewer_id))];
+    const sectionIds = [...new Set((reviews || []).map((r) => r.section_id))];
+
+    // Single query: fetch all stage_reviewers referenced by these reviews
+    const { data: stageReviewers } = reviewerIds.length > 0
+      ? await adminClient
           .from("stage_reviewers")
-          .select("reviewer_id")
-          .eq("id", review.reviewer_id)
-          .single();
+          .select("id, reviewer_id")
+          .in("id", reviewerIds)
+      : { data: [] };
 
-        let reviewerName: string | null = null;
-        let reviewerEmail: string | null = null;
+    // Single query: fetch all profiles for those reviewers
+    const profileUserIds = [...new Set((stageReviewers || []).map((sr) => sr.reviewer_id))];
+    const { data: profiles } = profileUserIds.length > 0
+      ? await adminClient
+          .from("profiles")
+          .select("id, full_name, email")
+          .in("id", profileUserIds)
+      : { data: [] };
 
-        if (stageReviewer) {
-          const { data: profile } = await adminClient
-            .from("profiles")
-            .select("full_name, email")
-            .eq("id", stageReviewer.reviewer_id)
-            .single();
-
-          reviewerName = profile?.full_name || null;
-          reviewerEmail = profile?.email || null;
-        }
-
-        // Get section info
-        const { data: section } = await adminClient
+    // Single query: fetch all sections referenced by these reviews
+    const { data: sections } = sectionIds.length > 0
+      ? await adminClient
           .from("proposal_sections")
-          .select("section_type, title")
-          .eq("id", review.section_id)
-          .single();
+          .select("id, section_type, title")
+          .in("id", sectionIds)
+          .eq("proposal_id", id)
+      : { data: [] };
 
-        return {
-          ...review,
-          reviewer_name: reviewerName,
-          reviewer_email: reviewerEmail,
-          section_type: section?.section_type || null,
-          section_title: section?.title || null,
-        };
-      })
-    );
+    // Build lookup maps for O(1) joins
+    const reviewerMap = new Map((stageReviewers || []).map((sr) => [sr.id, sr.reviewer_id]));
+    const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
+    const sectionMap = new Map((sections || []).map((s) => [s.id, s]));
+
+    // Enrich reviews using pre-fetched lookup maps (no additional queries)
+    const enrichedReviews = (reviews || []).map((review) => {
+      const userId = reviewerMap.get(review.reviewer_id);
+      const profile = userId ? profileMap.get(userId) : null;
+      const section = sectionMap.get(review.section_id);
+
+      return {
+        ...review,
+        reviewer_name: profile?.full_name || null,
+        reviewer_email: profile?.email || null,
+        section_type: section?.section_type || null,
+        section_title: section?.title || null,
+      };
+    });
 
     // Calculate per-section averages
     const sectionAverages: Record<

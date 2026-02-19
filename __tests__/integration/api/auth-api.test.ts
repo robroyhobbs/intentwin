@@ -279,53 +279,65 @@ describe("verifyDocumentAccess", () => {
 
 describe("incrementUsage", () => {
   it("increments usage counter by 1", async () => {
-    mockAdminClient.single = vi.fn().mockResolvedValue({
-      data: { usage_current_period: { proposals_created: 5 } },
-      error: null,
-    });
-
-    const mockUpdate = vi.fn().mockReturnValue({
-      eq: vi.fn().mockResolvedValue({ data: null, error: null }),
-    });
-
-    const mockFrom = vi.fn(() => ({
-      ...mockAdminClient,
-      update: mockUpdate,
-      single: mockAdminClient.single,
-    }));
+    const mockRpc = vi.fn().mockResolvedValue({ error: null });
 
     (createAdminClient as ReturnType<typeof vi.fn>).mockReturnValue({
-      from: mockFrom,
+      rpc: mockRpc,
     });
 
     await incrementUsage("org-1", "proposals_created");
 
-    expect(mockFrom).toHaveBeenCalledWith("organizations");
+    expect(mockRpc).toHaveBeenCalledWith("increment_usage_by_org", {
+      org_id: "org-1",
+      usage_key: "proposals_created",
+      amount: 1,
+    });
   });
 
   it("creates usage counter if it does not exist", async () => {
-    mockAdminClient.single = vi.fn().mockResolvedValue({
-      data: { usage_current_period: null },
-      error: null,
-    });
-
-    const mockUpdate = vi.fn().mockReturnValue({
-      eq: vi.fn().mockResolvedValue({ data: null, error: null }),
-    });
-
-    const mockFrom = vi.fn(() => ({
-      ...mockAdminClient,
-      update: mockUpdate,
-      single: mockAdminClient.single,
-    }));
+    // The RPC handles null usage_current_period via coalesce — no special case needed
+    const mockRpc = vi.fn().mockResolvedValue({ error: null });
 
     (createAdminClient as ReturnType<typeof vi.fn>).mockReturnValue({
-      from: mockFrom,
+      rpc: mockRpc,
     });
 
     await incrementUsage("org-1", "proposals_created");
 
-    // Should not throw even with null usage
-    expect(mockFrom).toHaveBeenCalled();
+    // Should not throw — RPC handles null usage internally
+    expect(mockRpc).toHaveBeenCalledWith("increment_usage_by_org", {
+      org_id: "org-1",
+      usage_key: "proposals_created",
+      amount: 1,
+    });
+  });
+
+  it("increments by custom amount", async () => {
+    const mockRpc = vi.fn().mockResolvedValue({ error: null });
+
+    (createAdminClient as ReturnType<typeof vi.fn>).mockReturnValue({
+      rpc: mockRpc,
+    });
+
+    await incrementUsage("org-1", "ai_tokens_used", 500);
+
+    expect(mockRpc).toHaveBeenCalledWith("increment_usage_by_org", {
+      org_id: "org-1",
+      usage_key: "ai_tokens_used",
+      amount: 500,
+    });
+  });
+
+  it("does not throw when RPC returns an error", async () => {
+    const mockRpc = vi.fn().mockResolvedValue({
+      error: { message: "function not found" },
+    });
+
+    (createAdminClient as ReturnType<typeof vi.fn>).mockReturnValue({
+      rpc: mockRpc,
+    });
+
+    // incrementUsage logs but does not throw on error
+    await expect(incrementUsage("org-1", "proposals_created")).resolves.not.toThrow();
   });
 });

@@ -127,7 +127,9 @@ export async function checkPlanLimit(
 }
 
 /**
- * Increment usage counter for organization
+ * Increment usage counter for organization.
+ * Uses an atomic Postgres RPC (jsonb_set) to prevent race conditions
+ * when concurrent requests increment the same counter.
  */
 export async function incrementUsage(
   organizationId: string,
@@ -136,22 +138,20 @@ export async function incrementUsage(
 ): Promise<void> {
   const adminClient = createAdminClient();
 
-  // Get current usage
-  const { data: org } = await adminClient
-    .from("organizations")
-    .select("usage_current_period")
-    .eq("id", organizationId)
-    .single();
+  const { error } = await adminClient.rpc("increment_usage_by_org", {
+    org_id: organizationId,
+    usage_key: key,
+    amount,
+  });
 
-  if (!org) return;
-
-  const currentUsage = org.usage_current_period || {};
-  currentUsage[key] = (currentUsage[key] || 0) + amount;
-
-  await adminClient
-    .from("organizations")
-    .update({ usage_current_period: currentUsage })
-    .eq("id", organizationId);
+  if (error) {
+    logger.warn("Failed to increment usage", {
+      organizationId,
+      key,
+      amount,
+      detail: error,
+    });
+  }
 }
 
 /**

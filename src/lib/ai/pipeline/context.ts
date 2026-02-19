@@ -225,6 +225,47 @@ ${sections.join("\n\n")}
 === END COMPANY CONTEXT ===\n`;
 }
 
+/**
+ * Extract competitive objections from intake data.
+ * Parses incumbent_info, competitive_landscape, and client_concerns
+ * into actionable objections for the competitive positioning prompt.
+ */
+export function extractCompetitiveObjections(
+  intakeData: Record<string, unknown>,
+): string[] {
+  const objections: string[] = [];
+
+  const incumbent = intakeData.incumbent_info as string | undefined;
+  if (incumbent?.trim()) {
+    objections.push(
+      `Current vendor context: ${incumbent.trim().slice(0, 200)}`,
+    );
+  }
+
+  const competitive = intakeData.competitive_landscape as string | undefined;
+  if (competitive?.trim()) {
+    objections.push(
+      `Competitive context: ${competitive.trim().slice(0, 200)}`,
+    );
+  }
+
+  const concerns = intakeData.client_concerns as
+    | string
+    | string[]
+    | undefined;
+  if (Array.isArray(concerns)) {
+    for (const c of concerns.slice(0, 3)) {
+      if (typeof c === "string" && c.trim()) {
+        objections.push(`Client concern: ${c.trim()}`);
+      }
+    }
+  } else if (typeof concerns === "string" && concerns.trim()) {
+    objections.push(`Client concern: ${concerns.trim().slice(0, 200)}`);
+  }
+
+  return objections;
+}
+
 /** Build the shared pipeline context for a proposal.
  * Fetches proposal data, org info, L1 context, static sources, and runs analysis. */
 export async function buildPipelineContext(

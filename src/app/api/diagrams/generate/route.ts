@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { getUserContext } from "@/lib/supabase/auth-api";
 
 const IMAGE_MODEL = "gemini-3-pro-image-preview";
 
 export async function POST(request: NextRequest) {
   try {
+    const context = await getUserContext(request);
+    if (!context) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { description, mermaidCode } = await request.json();
 
     if (!description && !mermaidCode) {

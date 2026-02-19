@@ -129,10 +129,13 @@ async function keywordSearch(
   documentType: string | null,
   limit: number,
 ): Promise<SearchResult[]> {
-  // Build a simple ilike search for each word
+  // Build a simple ilike search for each word.
+  // Sanitize words to prevent PostgREST filter injection:
+  // strip anything that isn't alphanumeric, hyphen, or underscore.
   const words = query
     .trim()
     .split(/\s+/)
+    .map((w) => w.replace(/[^a-zA-Z0-9_-]/g, ""))
     .filter((w) => w.length > 2)
     .slice(0, 5);
 
@@ -152,7 +155,7 @@ async function keywordSearch(
     q = q.eq("documents.document_type", documentType);
   }
 
-  // Use OR filter for keyword matching
+  // Use OR filter for keyword matching (words are sanitized above)
   const orFilters = words.map((w) => `content.ilike.%${w}%`).join(",");
   q = q.or(orFilters);
 

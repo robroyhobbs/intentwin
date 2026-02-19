@@ -50,12 +50,13 @@ export async function GET(
     }
 
     if (category === "service-catalog") {
-      // file is a composite slug; search by product_name or id
+      // file is a composite slug; search by id only (sanitized to prevent filter injection)
+      const sanitizedFile = file.replace(/[^a-zA-Z0-9_-]/g, "");
       const { data, error } = await adminClient
         .from("product_contexts")
         .select("*")
         .eq("organization_id", orgId)
-        .or(`id.eq.${file}`);
+        .eq("id", sanitizedFile);
 
       const product = data?.[0];
       if (error || !product) {
