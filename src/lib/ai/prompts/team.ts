@@ -8,6 +8,7 @@ export function buildTeamPrompt(
   retrievedContext: string,
   winStrategy?: WinStrategyData | null,
   companyInfo?: CompanyInfo,
+  l1Context?: string,
 ): string {
   const companyName = companyInfo?.name || "Our Company";
 
@@ -19,37 +20,21 @@ ${JSON.stringify(intakeData, null, 2)}
 ## Strategic Analysis
 ${analysis}
 
-## Reference Material from Past Winning Proposals
+## Reference Material
 ${retrievedContext}
+${l1Context || ""}
 ${buildWinStrategySection(winStrategy)}
 ## Instructions
-Write a section (400-600 words) using the Social Proof + Authority framework:
+Write a team and qualifications section (400-600 words) that:
 
-1. **CREDENTIALS**: Lead with relevant certifications, years of experience, and domain expertise — establish authority
-2. **RELEVANCE**: Connect each team member's background directly to this engagement's challenges — show why this team, for this client
-3. **SOCIAL PROOF**: Include evidence of past success — similar projects delivered, client outcomes achieved, industry recognition
+1. Proposes a team structure tailored to this engagement's scope and complexity
+2. Describes key roles with relevant qualifications and certifications from the Company Context
+3. Highlights the depth and breadth of ${companyName}'s talent pool
+4. References certifications and partnerships from the Company Context
+5. Includes a Mermaid org chart showing the proposed team structure
+${winStrategy ? `6. Maps team capabilities directly to the win themes and target outcomes` : ""}
 
-Within this framework:
-- Propose a team structure appropriate for the engagement size and type
-- Describe key roles (Engagement Lead, Solution Architect, Cloud Architects, DevOps Engineers, etc.)
-- Highlight relevant certifications (AWS, Azure, GCP partnerships)
-- Mention the depth of ${companyName}'s talent pool
-- Describe the governance model and escalation paths
-${winStrategy ? `- Map team capabilities to each key differentiator — show why this specific team is uniquely positioned to deliver the defined outcomes` : ""}
-
-Use placeholder names like [Engagement Lead Name] for specific individuals.
-
-Include a Mermaid org chart showing the team structure. Use a \`\`\`mermaid code block. Example:
-\`\`\`mermaid
-graph TD
-  EL[Engagement Lead] --> SA[Solution Architect]
-  EL --> PM[Project Manager]
-  SA --> CA1[Cloud Architect]
-  SA --> CA2[DevOps Lead]
-  PM --> D1[Dev Team 1]
-  PM --> D2[Dev Team 2]
-\`\`\`
-Reflect the actual team structure described in the section.
+Reference ${companyName}'s actual certifications and partnership levels from the Company Context — do not invent credentials.
 
 Output only the section text, formatted in markdown.`;
 }

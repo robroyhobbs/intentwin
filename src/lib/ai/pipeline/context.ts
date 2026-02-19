@@ -157,23 +157,31 @@ export function buildL1ContextString(l1Context: L1Context): string {
     sections.push(`## Certifications & Partnerships\n${certsStr}`);
   }
 
-  // Product capabilities
+  // Product capabilities (with pricing and constraints)
   if (l1Context.productContexts.length > 0) {
     const prodStr = l1Context.productContexts
       .map((p) => {
         const caps = Array.isArray(p.capabilities)
-          ? p.capabilities.map((c: { name: string }) => c.name).join(", ")
+          ? p.capabilities.map((c: { name: string; description?: string }) =>
+              c.description ? `  - ${c.name}: ${c.description}` : `  - ${c.name}`
+            ).join("\n")
           : "";
-        return `- ${p.product_name}: ${p.description}${caps ? ` (Capabilities: ${caps})` : ""}`;
+        const pricing = Array.isArray(p.pricing_models) && p.pricing_models.length > 0
+          ? `\n  Pricing: ${p.pricing_models.map((pm: { model: string; best_for?: string }) => `${pm.model}${pm.best_for ? ` (best for: ${pm.best_for})` : ""}`).join("; ")}`
+          : "";
+        const constraints = p.constraints?.not_suitable_for?.length
+          ? `\n  Not suitable for: ${p.constraints.not_suitable_for.join(", ")}`
+          : "";
+        return `### ${p.product_name}\n${p.description}${caps ? `\n  Capabilities:\n${caps}` : ""}${pricing}${constraints}`;
       })
-      .join("\n");
-    sections.push(`## Relevant Capabilities\n${prodStr}`);
+      .join("\n\n");
+    sections.push(`## Our Capabilities & Services\n${prodStr}`);
   }
 
-  // Evidence (case studies with metrics)
+  // Evidence (case studies with metrics and full content for top entries)
   if (l1Context.evidenceLibrary.length > 0) {
     const evidenceStr = l1Context.evidenceLibrary
-      .map((e) => {
+      .map((e, idx) => {
         const metrics = Array.isArray(e.metrics)
           ? e.metrics
               .map(
@@ -181,10 +189,17 @@ export function buildL1ContextString(l1Context: L1Context): string {
               )
               .join(", ")
           : "";
-        return `- ${e.title} (${e.evidence_type}): ${e.summary}${metrics ? ` [Metrics: ${metrics}]` : ""}`;
+        const outcomes = Array.isArray(e.outcomes_demonstrated) && e.outcomes_demonstrated.length > 0
+          ? `\n  Outcomes: ${e.outcomes_demonstrated.map((o: { outcome: string; description?: string }) => o.description || o.outcome).join("; ")}`
+          : "";
+        // Include full_content for top 3 entries to give the LLM concrete material
+        const detail = idx < 3 && e.full_content
+          ? `\n  Detail: ${e.full_content.slice(0, 500)}`
+          : "";
+        return `### ${e.title} (${e.evidence_type})${e.client_industry ? ` [${e.client_industry}]` : ""}\n${e.summary}${metrics ? `\nMetrics: ${metrics}` : ""}${outcomes}${detail}`;
       })
-      .join("\n");
-    sections.push(`## Verified Evidence\n${evidenceStr}`);
+      .join("\n\n");
+    sections.push(`## Verified Evidence — CITE THESE IN YOUR RESPONSE\n${evidenceStr}`);
   }
 
   // Legal constraints
@@ -194,9 +209,17 @@ export function buildL1ContextString(l1Context: L1Context): string {
     sections.push(`## Content Guidelines (Must Follow)\n${legalStr}`);
   }
 
-  return sections.length > 0
-    ? `\n\n=== COMPANY CONTEXT (L1 - Verified Truth) ===\n${sections.join("\n\n")}\n=== END COMPANY CONTEXT ===\n`
-    : "";
+  if (sections.length === 0) return "";
+
+  return `\n\n=== COMPANY CONTEXT (L1 - Verified Truth) ===
+IMPORTANT: The data below is verified company truth. You MUST:
+1. Reference specific capabilities from "Our Capabilities" when describing solutions
+2. Cite at least one entry from "Verified Evidence" with concrete metrics
+3. Never invent capabilities, metrics, or case studies not listed below
+4. Follow all "Content Guidelines" constraints
+
+${sections.join("\n\n")}
+=== END COMPANY CONTEXT ===\n`;
 }
 
 /** Build the shared pipeline context for a proposal.
@@ -300,8 +323,8 @@ export async function buildPipelineContext(
     winStrategy,
   );
 
-  // Enhanced analysis with IDD context
-  const enhancedAnalysis = `${analysis}\n${outcomeContractContext}\n${l1ContextString}`;
+  // Enhanced analysis with outcome contract (L1 is now passed separately)
+  const enhancedAnalysis = `${analysis}\n${outcomeContractContext}`;
 
   return {
     proposal: proposal as Record<string, unknown>,
@@ -313,6 +336,7 @@ export async function buildPipelineContext(
     brandVoice,
     systemPrompt,
     enhancedAnalysis,
+    l1ContextString,
     serviceLine,
     industry,
     industryConfig,

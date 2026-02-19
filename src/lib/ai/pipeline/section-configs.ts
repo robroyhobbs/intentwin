@@ -10,85 +10,96 @@ import { buildRiskMitigationPrompt } from "../prompts/risk-mitigation";
 import { buildWhyUsPrompt } from "../prompts/why-us";
 import type { SectionConfig } from "./types";
 
+/**
+ * Helper: extract top win themes as search keywords.
+ * Makes RAG retrieval context-aware instead of generic.
+ */
+function winThemeKeywords(
+  winStrategy?: { win_themes?: string[] } | null,
+): string {
+  if (!winStrategy?.win_themes?.length) return "";
+  return winStrategy.win_themes.slice(0, 2).join(" ");
+}
+
 export const SECTION_CONFIGS: SectionConfig[] = [
   {
     type: "executive_summary",
     title: "Executive Summary",
     order: 1,
     buildPrompt: buildExecutiveSummaryPrompt,
-    searchQuery: (d) =>
-      `executive summary ${d.opportunity_type} ${d.client_industry} proposal overview`,
+    searchQuery: (d, ws) =>
+      `executive summary ${d.opportunity_type} ${d.client_industry} ${winThemeKeywords(ws)} proposal overview`,
   },
   {
     type: "understanding",
     title: "Understanding of Client Needs",
     order: 2,
     buildPrompt: buildUnderstandingPrompt,
-    searchQuery: (d) =>
-      `client needs analysis ${d.client_industry} ${d.opportunity_type} business challenges`,
+    searchQuery: (d, ws) =>
+      `client needs ${d.client_industry} ${d.opportunity_type} ${winThemeKeywords(ws)} challenges pain points`,
   },
   {
     type: "approach",
     title: "Proposed Approach",
     order: 3,
     buildPrompt: buildApproachPrompt,
-    searchQuery: (d) =>
-      `technical approach ${d.opportunity_type} cloud migration modernization methodology`,
+    searchQuery: (d, ws) =>
+      `technical approach ${d.opportunity_type} ${d.client_industry} ${winThemeKeywords(ws)} methodology solution`,
   },
   {
     type: "methodology",
     title: "Methodology",
     order: 4,
     buildPrompt: buildMethodologyPrompt,
-    searchQuery: (d) =>
-      `methodology framework ${d.opportunity_type} agile devops quality assurance`,
+    searchQuery: (d, ws) =>
+      `methodology framework ${d.opportunity_type} ${winThemeKeywords(ws)} delivery governance quality`,
   },
   {
     type: "team",
     title: "Proposed Team & Qualifications",
     order: 5,
     buildPrompt: buildTeamPrompt,
-    searchQuery: (d) =>
-      `team structure qualifications certifications ${d.opportunity_type}`,
+    searchQuery: (d, ws) =>
+      `team qualifications certifications ${d.opportunity_type} ${d.client_industry} ${winThemeKeywords(ws)}`,
   },
   {
     type: "case_studies",
     title: "Relevant Experience & Case Studies",
     order: 6,
     buildPrompt: buildCaseStudiesPrompt,
-    searchQuery: (d) =>
-      `case study ${d.client_industry} ${d.opportunity_type} results outcomes metrics`,
+    searchQuery: (d, ws) =>
+      `case study ${d.client_industry} ${d.opportunity_type} ${winThemeKeywords(ws)} results outcomes metrics`,
   },
   {
     type: "timeline",
     title: "Timeline & Milestones",
     order: 7,
     buildPrompt: buildTimelinePrompt,
-    searchQuery: (d) =>
-      `project timeline milestones phases ${d.opportunity_type} delivery schedule`,
+    searchQuery: (d, ws) =>
+      `project timeline milestones ${d.opportunity_type} ${winThemeKeywords(ws)} delivery schedule phases`,
   },
   {
     type: "pricing",
     title: "Commercial Framework",
     order: 8,
     buildPrompt: buildPricingPrompt,
-    searchQuery: (d) =>
-      `pricing commercial framework ${d.opportunity_type} cost model investment`,
+    searchQuery: (d, ws) =>
+      `pricing commercial framework ${d.opportunity_type} ${winThemeKeywords(ws)} cost model value investment`,
   },
   {
     type: "risk_mitigation",
     title: "Risk Mitigation",
     order: 9,
     buildPrompt: buildRiskMitigationPrompt,
-    searchQuery: (d) =>
-      `risk mitigation ${d.opportunity_type} challenges governance`,
+    searchQuery: (d, ws) =>
+      `risk mitigation ${d.opportunity_type} ${d.client_industry} ${winThemeKeywords(ws)} governance compliance`,
   },
   {
     type: "why_us",
     title: "Why Us",
     order: 10,
     buildPrompt: buildWhyUsPrompt,
-    searchQuery: (d) =>
-      `differentiators partnerships ${d.client_industry} capabilities unique value proposition`,
+    searchQuery: (d, ws) =>
+      `differentiators ${d.client_industry} ${d.opportunity_type} ${winThemeKeywords(ws)} capabilities partnerships unique value`,
   },
 ];

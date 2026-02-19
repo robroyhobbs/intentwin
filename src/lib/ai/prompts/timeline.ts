@@ -8,6 +8,7 @@ export function buildTimelinePrompt(
   retrievedContext: string,
   winStrategy?: WinStrategyData | null,
   companyInfo?: CompanyInfo,
+  l1Context?: string,
 ): string {
   const companyName = companyInfo?.name || "Our Company";
 
@@ -19,33 +20,21 @@ ${JSON.stringify(intakeData, null, 2)}
 ## Strategic Analysis
 ${analysis}
 
-## Reference Material from Past Winning Proposals
+## Reference Material
 ${retrievedContext}
+${l1Context || ""}
 ${buildWinStrategySection(winStrategy)}
 ## Instructions
-Write a section (400-600 words) using the Certainty Framework to build confidence through specificity:
+Write a timeline and milestones section (400-600 words) that:
 
-1. **PHASES**: Break the engagement into clear, manageable phases with defined boundaries — discovery/assessment, planning, execution, and transition
-2. **MILESTONES**: Identify specific checkpoints where progress is measurable and demonstrable — key deliverables per phase
-3. **RISK MITIGATION**: Show what could go wrong at each phase and how you'll prevent/handle it — governance checkpoints and go/no-go decision points
-4. **CONFIDENCE**: Build confidence through specificity — dates, deliverables, dependencies all mapped
-${winStrategy ? "5. Map milestones to specific target outcomes — show when each success metric will begin to be realized, with early wins for high-priority outcomes" : ""}
+1. Proposes a realistic, phased timeline aligned with the client's stated constraints
+2. Defines clear milestones with specific deliverables and acceptance criteria
+3. Highlights early wins — what value the client sees in the first 30/60/90 days
+4. References ${companyName}'s methodology and accelerators that reduce time-to-value
+5. Includes a Mermaid Gantt chart showing the project timeline
+${winStrategy ? `6. Maps milestones to target outcomes and success metrics — show when each outcome is achieved` : ""}
 
-Present as a clear, structured timeline. Use bullet points or a table format.
-
-Include a Mermaid Gantt chart showing the project timeline. Use a \`\`\`mermaid code block. Example:
-\`\`\`mermaid
-gantt
-  title Project Timeline
-  dateFormat YYYY-MM-DD
-  section Discovery
-  Assessment :a1, 2025-01-01, 30d
-  section Planning
-  Architecture Design :a2, after a1, 20d
-  section Execution
-  Migration Wave 1 :a3, after a2, 45d
-\`\`\`
-Use realistic durations based on the engagement scope.
+Reference actual ${companyName} accelerators and tools from the Company Context that speed delivery.
 
 Output only the section text, formatted in markdown.`;
 }

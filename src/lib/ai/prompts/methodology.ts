@@ -8,6 +8,7 @@ export function buildMethodologyPrompt(
   retrievedContext: string,
   winStrategy?: WinStrategyData | null,
   companyInfo?: CompanyInfo,
+  l1Context?: string,
 ): string {
   const companyName = companyInfo?.name || "Our Company";
 
@@ -19,34 +20,21 @@ ${JSON.stringify(intakeData, null, 2)}
 ## Strategic Analysis
 ${analysis}
 
-## Reference Material from Past Winning Proposals
+## Reference Material
 ${retrievedContext}
+${l1Context || ""}
 ${buildWinStrategySection(winStrategy)}
 ## Instructions
-Write a section (500-700 words) using the Before-After-Bridge framework:
+Write a detailed methodology section (500-700 words) that:
 
-1. **BEFORE**: Paint the client's current state clearly — the inefficiencies, risks, or gaps in their existing approach
-2. **AFTER**: Describe the transformed future state — what operational excellence looks like with ${companyName}'s methodology in place
-3. **BRIDGE**: Show how ${companyName}'s methodology is the bridge between the two — the structured path from here to there
+1. Describes ${companyName}'s proven methodology for this type of engagement
+2. References specific frameworks, tools, and accelerators from the Company Context
+3. Explains HOW the methodology delivers the promised outcomes — connect process steps to results
+4. Addresses governance, quality gates, and how risks are managed at each stage
+5. Includes a Mermaid diagram showing the methodology phases or workflow
+${winStrategy ? `6. Maps methodology phases to target outcomes and success metrics` : ""}
 
-Within this framework, describe:
-- Relevant frameworks (e.g., Cloud Assessment Framework, 6R Migration Strategy)
-- Quality assurance and testing approach
-- Change management and knowledge transfer methodology
-- Agile/DevOps practices that will be applied
-- How the methodology adapts to the client's organizational maturity
-${winStrategy ? "- Tie methodology practices directly to achieving the defined success metrics — show how each practice delivers measurable outcomes" : ""}
-
-Include a Mermaid flowchart showing the methodology process. Use a \`\`\`mermaid code block. Example:
-\`\`\`mermaid
-graph LR
-  A[Assess] --> B[Plan]
-  B --> C[Build]
-  C --> D[Test]
-  D --> E[Deploy]
-  E --> F[Optimize]
-\`\`\`
-Keep the diagram clear and focused (max 10-12 nodes).
+Use ${companyName}'s actual methodology names and frameworks from the Company Context — do not invent generic methodology names.
 
 Output only the section text, formatted in markdown.`;
 }

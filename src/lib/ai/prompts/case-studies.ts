@@ -8,6 +8,7 @@ export function buildCaseStudiesPrompt(
   retrievedContext: string,
   winStrategy?: WinStrategyData | null,
   companyInfo?: CompanyInfo,
+  l1Context?: string,
 ): string {
   const companyName = companyInfo?.name || "Our Company";
 
@@ -19,24 +20,21 @@ ${JSON.stringify(intakeData, null, 2)}
 ## Strategic Analysis
 ${analysis}
 
-## Reference Material from Past Winning Proposals
+## Reference Material
 ${retrievedContext}
+${l1Context || ""}
 ${buildWinStrategySection(winStrategy)}
 ## Instructions
-Write a section (600-800 words) presenting 2-3 relevant case studies using the STAR framework for each:
+Write a case studies section (500-700 words) that:
 
-1. **SITUATION**: Set the context — who was the client, what industry, what scale
-2. **TASK**: Define the specific challenge or objective they faced
-3. **ACTION**: Describe what ${companyName}'s team did — the approach, methodology, innovations applied
-4. **RESULT**: Quantify the outcomes with hard metrics — percentages, dollar amounts, time saved
+1. Presents 2-3 relevant case studies from the Verified Evidence in the Company Context above
+2. For each case study, use the STAR format: Situation, Task, Action, Result
+3. Include SPECIFIC metrics from the evidence (percentages, dollar amounts, time savings) — use only metrics listed in the Company Context
+4. Draw explicit parallels between each case study and the current client's challenges
+5. Close with a summary of what these experiences mean for this engagement
+${winStrategy ? `6. Select case studies that best demonstrate ability to deliver the target outcomes` : ""}
 
-Each case study should:
-- Be in the same or similar industry as the client
-- Involve similar technical challenges (cloud migration, app modernization)
-- Include specific metrics and outcomes (cost savings %, timeline, apps migrated, etc.)
-- Demonstrate ${companyName}'s ability to deliver at this scale
-${winStrategy ? `- Directly demonstrate ${companyName}'s ability to deliver the defined target outcomes — highlight metrics that mirror the success criteria` : ""}
+CRITICAL: You MUST use case studies and metrics from the "Verified Evidence" section above. Do NOT invent case studies, client names, or metrics. If insufficient evidence is available, note that additional references can be provided upon request.
 
-Use the reference material to base the case studies on real examples where possible. If the reference material doesn't contain exact matches, create realistic composite examples that align with known ${companyName} capabilities.
 Output only the section text, formatted in markdown.`;
 }

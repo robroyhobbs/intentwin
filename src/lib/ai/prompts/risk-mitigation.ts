@@ -8,6 +8,7 @@ export function buildRiskMitigationPrompt(
   retrievedContext: string,
   winStrategy?: WinStrategyData | null,
   companyInfo?: CompanyInfo,
+  l1Context?: string,
 ): string {
   const companyName = companyInfo?.name || "Our Company";
 
@@ -19,39 +20,21 @@ ${JSON.stringify(intakeData, null, 2)}
 ## Strategic Analysis
 ${analysis}
 
-## Reference Material from Past Winning Proposals
+## Reference Material
 ${retrievedContext}
+${l1Context || ""}
 ${buildWinStrategySection(winStrategy)}
 ## Instructions
-Write a section (400-600 words) using the Acknowledge-Address-Assure framework:
+Write a risk mitigation section (400-600 words) that:
 
-For each of the 4-6 key risks specific to this engagement:
-1. **ACKNOWLEDGE**: Name the risk directly and honestly — show you've thought about what could go wrong
-2. **ADDRESS**: Describe ${companyName}'s specific mitigation strategy — processes, tools, escalation paths
-3. **ASSURE**: Provide evidence that these mitigations work — reference past projects where similar risks were managed
+1. Identifies 4-6 specific risks relevant to THIS engagement (technical, organizational, timeline, resource)
+2. For each risk: acknowledge it honestly, describe the mitigation strategy, and reference ${companyName}'s experience handling it
+3. Reference ${companyName}'s governance frameworks, certifications, and quality processes from the Company Context
+4. Demonstrate proactive risk management — show you've anticipated issues before they arise
+5. Include a Mermaid diagram showing risk categories and mitigation approaches
+${winStrategy ? `6. Address risks that could threaten the target outcomes and explain how they're protected` : ""}
 
-Additionally:
-- Address common risks in cloud migration / app modernization projects
-- Describe ${companyName}'s risk governance framework
-- Show proactive thinking about potential challenges
-${winStrategy ? "- Map risks directly to the target outcomes they could jeopardize — show mitigation strategies as safeguards for achieving defined success metrics" : ""}
-
-Present in a structured format (table or risk cards).
-
-Include a Mermaid quadrant chart showing the risk matrix. Use a \`\`\`mermaid code block. Example:
-\`\`\`mermaid
-quadrantChart
-  title Risk Assessment Matrix
-  x-axis Low Likelihood --> High Likelihood
-  y-axis Low Impact --> High Impact
-  quadrant-1 Critical
-  quadrant-2 Monitor
-  quadrant-3 Accept
-  quadrant-4 Mitigate
-  Risk A: [0.8, 0.9]
-  Risk B: [0.3, 0.7]
-\`\`\`
-Map the identified risks onto the quadrant chart with appropriate positions.
+Reference ${companyName}'s actual certifications, compliance frameworks, and governance practices from the Company Context.
 
 Output only the section text, formatted in markdown.`;
 }

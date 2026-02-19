@@ -7,6 +7,7 @@ import {
   buildCompetitivePrompt,
   runQualityChecks,
 } from "../persuasion";
+import { buildIndustryContext } from "../industry-configs";
 import { logRegenerationMetric } from "@/lib/observability/metrics";
 import { SECTION_CONFIGS } from "./section-configs";
 import { buildPipelineContext } from "./context";
@@ -58,10 +59,12 @@ export async function regenerateSection(
       brandVoice,
       systemPrompt,
       enhancedAnalysis,
+      l1ContextString,
+      industryConfig,
     } = ctx;
 
-    // Generate section content (org-scoped retrieval to prevent cross-tenant leakage)
-    const searchQuery = config.searchQuery(intakeData);
+    // Generate section content (org-scoped, win-strategy-aware retrieval)
+    const searchQuery = config.searchQuery(intakeData, winStrategy);
     const { context, chunkIds } = await retrieveContext(supabase, searchQuery, organizationId);
 
     const basePrompt = config.buildPrompt(
@@ -70,6 +73,7 @@ export async function regenerateSection(
       context,
       winStrategy,
       companyInfo,
+      l1ContextString,
     );
 
     const persuasionFramework = getPersuasionPrompt(config.type);
@@ -90,9 +94,16 @@ export async function regenerateSection(
       .filter(Boolean)
       .join("\n\n");
 
-    let prompt = persuasionContext
-      ? `${basePrompt}\n\n---\n\n## Persuasion & Quality Guidance\n\n${persuasionContext}`
-      : basePrompt;
+    // Add industry-specific guidance (was missing from regeneration path)
+    const industryContext = buildIndustryContext(industryConfig, config.type);
+
+    let prompt = basePrompt;
+    if (industryContext) {
+      prompt += `\n\n---\n\n${industryContext}`;
+    }
+    if (persuasionContext) {
+      prompt += `\n\n---\n\n## Persuasion & Quality Guidance\n\n${persuasionContext}`;
+    }
 
     // Inject quality council feedback when available (feedback-aware regeneration)
     if (qualityFeedback) {

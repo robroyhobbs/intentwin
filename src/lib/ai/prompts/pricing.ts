@@ -7,7 +7,8 @@ export function buildPricingPrompt(
   analysis: string,
   retrievedContext: string,
   winStrategy?: WinStrategyData | null,
-  companyInfo?: CompanyInfo
+  companyInfo?: CompanyInfo,
+  l1Context?: string,
 ): string {
   const companyName = companyInfo?.name || "Our Company";
 
@@ -19,18 +20,21 @@ ${JSON.stringify(intakeData, null, 2)}
 ## Strategic Analysis
 ${analysis}
 
-## Reference Material from Past Winning Proposals
+## Reference Material
 ${retrievedContext}
+${l1Context || ""}
 ${buildWinStrategySection(winStrategy)}
 ## Instructions
-Write a section (300-500 words) that:
-1. Describes the pricing model approach (T&M, fixed price, outcome-based, or hybrid)
-2. Outlines the cost structure categories (discovery, migration, optimization, support)
-3. Describes any phased investment approach
-4. Mentions assumptions that underpin the commercial framework
-5. Includes placeholder markers like [INSERT PRICING TABLE] for actual numbers
-${winStrategy ? "6. Frame the investment in terms of ROI against the defined success metrics — position costs as investments toward the target outcomes" : ""}
+Write a commercial framework section (400-600 words) that:
 
-Do NOT include specific dollar amounts. This is a framework that the proposal team will fill in.
+1. Proposes a pricing structure aligned with ${companyName}'s actual pricing models from the Company Context
+2. Frames the investment in terms of value delivered and ROI, not just cost
+3. Presents pricing tiers or options that give the client flexibility
+4. Addresses total cost of ownership vs. alternatives
+5. Includes governance and change management provisions
+${winStrategy ? `6. Ties investment directly to the target outcomes and success metrics — quantify the expected return` : ""}
+
+IMPORTANT: Use actual pricing models from the Company Context (e.g., fixed-fee, time & materials, outcome-based). Do not invent specific dollar amounts unless provided in the opportunity details — use placeholder ranges and note that detailed pricing will be provided in a separate commercial response.
+
 Output only the section text, formatted in markdown.`;
 }

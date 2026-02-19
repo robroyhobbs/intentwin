@@ -8,6 +8,7 @@ export function buildUnderstandingPrompt(
   retrievedContext: string,
   winStrategy?: WinStrategyData | null,
   companyInfo?: CompanyInfo,
+  l1Context?: string,
 ): string {
   const companyName = companyInfo?.name || "Our Company";
 
@@ -19,17 +20,20 @@ ${JSON.stringify(intakeData, null, 2)}
 ## Strategic Analysis
 ${analysis}
 
-## Reference Material from Past Winning Proposals
+## Reference Material
 ${retrievedContext}
+${l1Context || ""}
 ${buildWinStrategySection(winStrategy)}
 ## Instructions
-Write a section (500-700 words) using the Problem-Agitate-Solve (PAS) framework:
+Write a client-focused analysis (400-600 words) that:
 
-1. **PROBLEM**: Clearly articulate the client's core pain points in their own language — their current business context, technical landscape, and constraints
-2. **AGITATE**: Amplify the urgency — what happens if these problems go unaddressed? What's the cost of inaction? Reference their industry, scale, and competitive pressures
-3. **SOLVE**: Preview how ${companyName}'s approach directly addresses each pain point — connect to desired business outcomes (not just technical outcomes) and key success criteria
-${winStrategy ? "4. Frame the client's needs in terms of the defined target outcomes — show understanding of not just the technical requirements but the business results the client seeks" : ""}
+1. Demonstrates deep understanding of the client's business context, challenges, and strategic priorities
+2. Identifies the root causes behind their stated needs — show you understand WHY, not just WHAT
+3. Articulates what's at stake if these challenges go unaddressed (urgency without fear-mongering)
+4. Subtly positions ${companyName}'s experience by referencing similar challenges solved for other clients
+${winStrategy ? `5. Maps each pain point to a specific target outcome from the win strategy` : ""}
 
-This section should make the client feel heard and understood. Reference their specific industry, scale, and situation.
+Reference specific industry trends and challenges from the analysis. When mentioning ${companyName}'s experience, cite verified evidence from the Company Context above.
+
 Output only the section text, formatted in markdown.`;
 }

@@ -26,8 +26,12 @@ export interface SectionConfig {
     retrievedContext: string,
     winStrategy?: WinStrategyData | null,
     companyInfo?: CompanyInfo,
+    l1Context?: string,
   ) => string;
-  searchQuery: (intakeData: Record<string, unknown>) => string;
+  searchQuery: (
+    intakeData: Record<string, unknown>,
+    winStrategy?: WinStrategyData | null,
+  ) => string;
 }
 
 // ── Shared Pipeline Context ──────────────────────────────────────────────────
@@ -46,6 +50,7 @@ export interface PipelineContext {
   brandVoice: BrandVoice | null;
   systemPrompt: string;
   enhancedAnalysis: string;
+  l1ContextString: string;
   serviceLine: string | undefined;
   industry: string | undefined;
   industryConfig: ReturnType<typeof getIndustryConfig>;

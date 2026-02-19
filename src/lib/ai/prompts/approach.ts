@@ -8,6 +8,7 @@ export function buildApproachPrompt(
   retrievedContext: string,
   winStrategy?: WinStrategyData | null,
   companyInfo?: CompanyInfo,
+  l1Context?: string,
 ): string {
   const companyName = companyInfo?.name || "Our Company";
 
@@ -19,36 +20,21 @@ ${JSON.stringify(intakeData, null, 2)}
 ## Strategic Analysis
 ${analysis}
 
-## Reference Material from Past Winning Proposals
+## Reference Material
 ${retrievedContext}
+${l1Context || ""}
 ${buildWinStrategySection(winStrategy)}
 ## Instructions
-Write a detailed approach section (800-1200 words) using the Feature-Advantage-Benefit (FAB) framework:
+Write a clear, actionable approach section (500-700 words) that:
 
-For each phase of the approach:
-- **FEATURE**: Describe what ${companyName} will do — the specific activities, tools, and methods
-- **ADVANTAGE**: Explain why this approach is superior to alternatives — what makes it smarter, faster, or more reliable
-- **BENEFIT**: Connect every feature to a tangible client outcome — reduced cost, faster time-to-market, lower risk
+1. Describes ${companyName}'s specific technical and strategic approach to solving the client's challenges
+2. Maps capabilities from the Company Context above to each client need — be explicit about WHICH capability addresses WHICH problem
+3. Outlines a phased approach with clear deliverables per phase
+4. Highlights what makes this approach better than alternatives (without naming competitors)
+5. Includes a Mermaid diagram showing the approach phases or architecture
+${winStrategy ? `6. Ties each phase explicitly to a target outcome from the win strategy` : ""}
 
-Additionally:
-1. Describe the phased approach ${companyName} will take
-2. For cloud migration: reference the 6R framework (Rehost, Replatform, Repurchase, Refactor, Retire, Retain) where appropriate
-3. For app modernization: reference patterns like strangler fig, lift-and-shift, re-platform as appropriate
-4. Include key deliverables at each stage
-5. Explain how risks will be mitigated during execution
-${winStrategy ? "6. Show how each phase delivers against the target outcomes — reference specific metrics and map deliverables to defined success criteria" : ""}
+IMPORTANT: Reference specific ${companyName} products, methodologies, and capabilities from the Company Context. Do not describe generic industry approaches — describe ${companyName}'s specific approach.
 
-Be concrete and specific. Use the reference material to inform realistic timelines and approaches.
-
-Include a Mermaid flowchart showing the architecture or migration flow. Use a \`\`\`mermaid code block. Example:
-\`\`\`mermaid
-graph TD
-  A[Discovery] --> B[Assessment]
-  B --> C[Migration Planning]
-  C --> D[Execution]
-  D --> E[Optimization]
-\`\`\`
-Keep the diagram focused and readable (max 12-15 nodes).
-
-Output only the approach section text, formatted in markdown with appropriate headings.`;
+Output only the section text, formatted in markdown.`;
 }

@@ -45,6 +45,7 @@ export async function generateProposal(proposalId: string): Promise<void> {
       brandVoice,
       systemPrompt,
       enhancedAnalysis,
+      l1ContextString,
       serviceLine,
       industry,
       industryConfig,
@@ -117,21 +118,22 @@ export async function generateProposal(proposalId: string): Promise<void> {
           .eq("id", section!.id);
 
         try {
-          // Retrieve relevant context (org-scoped to prevent cross-tenant leakage)
-          const searchQuery = config.searchQuery(intakeData);
+          // Retrieve relevant context (org-scoped, win-strategy-aware)
+          const searchQuery = config.searchQuery(intakeData, winStrategy);
           const { context, chunkIds } = await retrieveContext(
             supabase,
             searchQuery,
             organizationId,
           );
 
-          // Build the base prompt (with win strategy, outcome contract, L1 context, and company info for IDD)
+          // Build the base prompt with L1 context as a first-class section
           const basePrompt = config.buildPrompt(
             intakeData,
             enhancedAnalysis,
             context,
             winStrategy,
             companyInfo,
+            l1ContextString,
           );
 
           // Build persuasion layers for this section type
