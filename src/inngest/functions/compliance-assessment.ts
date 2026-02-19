@@ -54,19 +54,31 @@ export const complianceAssessmentFn = inngest.createFunction(
           error: errorMessage,
         });
 
-        // Ensure DB status is set to failed
+        // Ensure DB status is set to failed (preserve existing data)
         try {
           const supabase = createAdminClient();
-          await supabase
+          // Read current state first to preserve partial results
+          const { data: current } = await supabase
             .from("proposals")
-            .update({
-              compliance_assessment: {
-                status: "failed",
-                error: errorMessage,
-                assessed_at: new Date().toISOString(),
-              },
-            })
-            .eq("id", proposalId);
+            .select("compliance_assessment")
+            .eq("id", proposalId)
+            .single();
+          const existing = (current?.compliance_assessment as Record<string, unknown>) || {};
+
+          // Only update if still in "assessing" state (avoid clobbering a concurrent success)
+          if (existing.status === "assessing") {
+            await supabase
+              .from("proposals")
+              .update({
+                compliance_assessment: {
+                  ...existing,
+                  status: "failed",
+                  error: errorMessage,
+                  assessed_at: new Date().toISOString(),
+                },
+              })
+              .eq("id", proposalId);
+          }
         } catch (cleanupErr) {
           log.error("Failed to clean up assessment status", {
             error:

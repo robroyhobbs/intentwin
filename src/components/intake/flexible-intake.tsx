@@ -62,12 +62,15 @@ export function FlexibleIntake({
 
   // Poll for document processing completion
   // Returns { success, error? } so the caller can surface server-side messages
+  // Uses progressive backoff: 1s intervals for first 30s, then 2s for next 90s
   const pollDocumentStatus = async (
     docId: string,
     fileName: string,
   ): Promise<{ success: boolean; error?: string }> => {
-    const maxAttempts = 30; // 30 seconds max
-    for (let i = 0; i < maxAttempts; i++) {
+    const MAX_POLL_MS = 120_000; // 2 minutes max
+    const startedAt = Date.now();
+
+    while (Date.now() - startedAt < MAX_POLL_MS) {
       try {
         const response = await fetch(`/api/documents/${docId}`);
         if (response.ok) {
@@ -89,9 +92,15 @@ export function FlexibleIntake({
       } catch (e) {
         console.error("Error polling document status:", e);
       }
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Progressive backoff: 1s for first 30s, then 2s after
+      const elapsed = Date.now() - startedAt;
+      const delay = elapsed < 30_000 ? 1000 : 2000;
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
-    return { success: false, error: "Processing timed out" };
+    return {
+      success: false,
+      error: "Processing timed out. Large documents may take longer — please refresh the page in a minute to check.",
+    };
   };
 
   const handleFiles = async (newFiles: File[]) => {

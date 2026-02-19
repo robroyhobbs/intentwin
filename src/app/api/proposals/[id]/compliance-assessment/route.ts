@@ -54,20 +54,32 @@ export async function POST(
     const assessment = proposal.compliance_assessment as Record<string, unknown> | null;
     if (assessment?.status === "assessing") {
       const assessedAt = assessment.assessed_at as string | undefined;
-      if (assessedAt) {
-        const elapsed = Date.now() - new Date(assessedAt).getTime();
-        if (elapsed < STALE_THRESHOLD_MS) {
-          return NextResponse.json(
-            { error: "Assessment already in progress" },
-            { status: 409 },
-          );
-        }
-        // Stale — reset and allow re-trigger
-        log.warn("Stale assessment detected, allowing re-trigger", {
-          elapsed,
-          startedAt: assessedAt,
-        });
+      // If timestamp is missing, treat as stale (safe fallback — avoids permanently stuck state)
+      const startTime = assessedAt ? new Date(assessedAt).getTime() : 0;
+      const elapsed = Date.now() - startTime;
+
+      if (elapsed < STALE_THRESHOLD_MS) {
+        return NextResponse.json(
+          { error: "Assessment already in progress" },
+          { status: 409 },
+        );
       }
+
+      // Stale — explicitly reset to "failed" in DB before re-triggering
+      log.warn("Stale assessment detected, resetting and allowing re-trigger", {
+        elapsed: Math.round(elapsed / 1000),
+        startedAt: assessedAt ?? "missing",
+      });
+      await supabase
+        .from("proposals")
+        .update({
+          compliance_assessment: {
+            ...assessment,
+            status: "failed",
+            error: "Assessment timed out and was automatically reset.",
+          },
+        })
+        .eq("id", id);
     }
 
     // Send event to Inngest for durable background execution

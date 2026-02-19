@@ -429,6 +429,12 @@ describe("Compliance API — Happy Path", () => {
       not_addressed: 1,
       not_applicable: 1,
       mandatory_gaps: 1,
+      by_type: {
+        content: { total: 5, met: 3, gaps: 1 },
+        format: { total: 0, met: 0, gaps: 0 },
+        submission: { total: 0, met: 0, gaps: 0 },
+        certification: { total: 0, met: 0, gaps: 0 },
+      },
     });
   });
 

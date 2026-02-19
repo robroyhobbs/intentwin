@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
 import { getReviewModelLabel } from "@/lib/ai/quality-overseer";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createLogger } from "@/lib/utils/logger";
 import { inngest } from "@/inngest/client";
 
 /** If a review has been "reviewing" for longer than this, treat it as stale/zombie. */
@@ -100,9 +101,10 @@ export async function POST(
       }
 
       // Stale review — reset it and allow re-trigger
-      console.warn(
-        `[QualityReview] Resetting stale review for proposal ${id} (elapsed: ${Math.round(elapsed / 1000)}s)`,
-      );
+      const log = createLogger({ operation: "qualityReviewRoute", proposalId: id });
+      log.warn("Resetting stale review, allowing re-trigger", {
+        elapsed: Math.round(elapsed / 1000),
+      });
       await resetStaleReview(id, qualityReview as Record<string, unknown>);
     }
 

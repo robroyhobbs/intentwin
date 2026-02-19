@@ -71,9 +71,7 @@ export async function GET(request: NextRequest) {
     ? { ok: true, message: "Key configured" }
     : { ok: false, message: "GEMINI_API_KEY not set" };
 
-  checks.claude = process.env.ANTHROPIC_API_KEY
-    ? { ok: true, message: "Key configured" }
-    : { ok: false, message: "ANTHROPIC_API_KEY not set" };
+  // Note: Anthropic SDK was removed — project uses Gemini. No claude check needed.
 
   const allOk = Object.values(checks).every((c) => c.ok);
   const failedChecks = Object.entries(checks)

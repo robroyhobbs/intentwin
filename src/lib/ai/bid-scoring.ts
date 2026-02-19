@@ -1,6 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logger } from "@/lib/utils/logger";
 import { generateText } from "./claude";
+import { fetchL1Context } from "./pipeline/context";
+import type { L1Context } from "./pipeline/types";
 
 // Fixed scoring factors and weights
 export const SCORING_FACTORS = [
@@ -93,11 +95,11 @@ export async function scoreFromRequirements(
 ): Promise<BidEvaluation> {
   const supabase = createAdminClient();
 
-  const l1Context = await fetchL1ContextForScoring(
+  const l1Context = await fetchL1Context(
     supabase,
-    organizationId,
     serviceLine,
     industry,
+    organizationId,
   );
 
   const rfpSummary = buildRfpSummary(rfpRequirements);
@@ -157,12 +159,12 @@ export async function scoreBidOpportunity(
     throw new Error("RFP extraction must complete before bid evaluation");
   }
 
-  // Fetch L1 context for the organization
-  const l1Context = await fetchL1ContextForScoring(
+  // Fetch L1 context for the organization (uses shared pipeline fetcher with TTL cache)
+  const l1Context = await fetchL1Context(
     supabase,
-    proposal.organization_id,
     proposal.intake_data?.service_line,
     proposal.intake_data?.industry,
+    proposal.organization_id,
   );
 
   // Build the scoring prompt
@@ -270,79 +272,8 @@ export async function saveBidDecision(
 
 // --- Internal helpers ---
 
-interface L1ScoringContext {
-  companyContext: Array<{
-    category: string;
-    title: string;
-    content: string;
-  }>;
-  productContexts: Array<{
-    product_name: string;
-    description: string;
-    capabilities: unknown;
-  }>;
-  evidenceLibrary: Array<{
-    title: string;
-    evidence_type: string;
-    summary: string;
-    metrics: unknown;
-  }>;
-}
-
-async function fetchL1ContextForScoring(
-  supabase: ReturnType<typeof createAdminClient>,
-  organizationId?: string,
-  serviceLine?: string,
-  industry?: string,
-): Promise<L1ScoringContext> {
-  try {
-    let companyQuery = supabase
-      .from("company_context")
-      .select("category, title, content")
-      .order("category");
-    if (organizationId) {
-      companyQuery = companyQuery.eq("organization_id", organizationId);
-    }
-    const { data: companyContext } = await companyQuery;
-
-    let productQuery = supabase
-      .from("product_contexts")
-      .select("product_name, description, capabilities");
-    if (organizationId) {
-      productQuery = productQuery.eq("organization_id", organizationId);
-    }
-    if (serviceLine) {
-      productQuery = productQuery.eq("service_line", serviceLine);
-    }
-    const { data: productContexts } = await productQuery;
-
-    let evidenceQuery = supabase
-      .from("evidence_library")
-      .select("title, evidence_type, summary, metrics")
-      .eq("is_verified", true);
-    if (organizationId) {
-      evidenceQuery = evidenceQuery.eq("organization_id", organizationId);
-    }
-    if (serviceLine) {
-      evidenceQuery = evidenceQuery.eq("service_line", serviceLine);
-    }
-    if (industry) {
-      evidenceQuery = evidenceQuery.or(
-        `client_industry.eq.${industry},client_industry.is.null`,
-      );
-    }
-    const { data: evidenceLibrary } = await evidenceQuery.limit(10);
-
-    return {
-      companyContext: companyContext || [],
-      productContexts: productContexts || [],
-      evidenceLibrary: evidenceLibrary || [],
-    };
-  } catch (error) {
-    logger.error("Error fetching L1 context for scoring", error);
-    return { companyContext: [], productContexts: [], evidenceLibrary: [] };
-  }
-}
+// L1 context fetching is now handled by the shared fetchL1Context() from pipeline/context.ts
+// which includes TTL caching (5-min, 50 entries) and proper evidence ordering.
 
 function buildRfpSummary(requirements: Record<string, unknown>): string {
   const sections: string[] = [];
@@ -406,7 +337,7 @@ function buildRfpSummary(requirements: Record<string, unknown>): string {
   return sections.join("\n") || "No RFP details extracted.";
 }
 
-function buildL1Summary(l1Context: L1ScoringContext): string {
+function buildL1Summary(l1Context: L1Context): string {
   const sections: string[] = [];
 
   const brand = l1Context.companyContext.filter(
