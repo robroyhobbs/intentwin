@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { generateText } from "../claude";
 import { createProposalVersion } from "@/lib/versioning/create-version";
 import { runQualityReview } from "../quality-overseer";
+import { runComplianceAssessment } from "../compliance-assessor";
 import {
   getPersuasionPrompt,
   getBestPracticesPrompt,
@@ -312,6 +313,12 @@ export async function generateProposal(proposalId: string): Promise<void> {
         reviewLog.error("Auto quality review failed", err);
       });
     }
+
+    // Auto-trigger compliance assessment (runs in parallel with quality review)
+    runComplianceAssessment(proposalId, "auto_post_generation").catch((err) => {
+      const assessLog = createLogger({ operation: "complianceAssessment", proposalId });
+      assessLog.error("Auto compliance assessment failed", err);
+    });
   } catch (error) {
     const _errorMessage =
       error instanceof Error ? error.message : "Unknown error";

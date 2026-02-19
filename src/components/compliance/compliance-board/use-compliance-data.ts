@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
-import type { Requirement, RequirementType, ComplianceSummary } from "./types";
+import type { Requirement, RequirementType, ComplianceSummary, ComplianceAssessmentStatus } from "./types";
 
 export function useComplianceData(proposalId: string) {
   const [requirements, setRequirements] = useState<Requirement[]>([]);
@@ -11,7 +11,10 @@ export function useComplianceData(proposalId: string) {
   const [loading, setLoading] = useState(true);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
+  const [assessmentStatus, setAssessmentStatus] = useState<ComplianceAssessmentStatus | null>(null);
+  const [assessing, setAssessing] = useState(false);
   const notesTimerRef = useRef<Record<string, NodeJS.Timeout>>({});
+  const assessPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const authFetch = useAuthFetch();
 
   const fetchRequirements = useCallback(async () => {
@@ -178,6 +181,75 @@ export function useComplianceData(proposalId: string) {
     }, 800);
   }
 
+  // ── Assessment ──────────────────────────────────────────────────────────
+
+  const fetchAssessmentStatus = useCallback(async () => {
+    try {
+      const res = await authFetch(`/api/proposals/${proposalId}/compliance-assessment`);
+      if (res.ok) {
+        const data = await res.json();
+        setAssessmentStatus(data.assessment || null);
+        return data.assessment as ComplianceAssessmentStatus | null;
+      }
+    } catch {
+      // Non-critical
+    }
+    return null;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [proposalId]);
+
+  // Fetch assessment status on mount
+  useEffect(() => {
+    fetchAssessmentStatus();
+  }, [fetchAssessmentStatus]);
+
+  // Cleanup poll on unmount
+  useEffect(() => {
+    return () => {
+      if (assessPollRef.current) clearInterval(assessPollRef.current);
+    };
+  }, []);
+
+  async function handleRunAssessment() {
+    if (assessing) return;
+    setAssessing(true);
+
+    try {
+      const res = await authFetch(`/api/proposals/${proposalId}/compliance-assessment`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Assessment failed");
+      }
+
+      toast.success("Auto-assessment started...");
+      setAssessmentStatus({ status: "assessing" });
+
+      // Poll for completion
+      if (assessPollRef.current) clearInterval(assessPollRef.current);
+      assessPollRef.current = setInterval(async () => {
+        const status = await fetchAssessmentStatus();
+        if (status && status.status !== "assessing") {
+          if (assessPollRef.current) {
+            clearInterval(assessPollRef.current);
+            assessPollRef.current = null;
+          }
+          setAssessing(false);
+          if (status.status === "completed") {
+            toast.success(`Auto-assessment complete: ${status.results_applied || 0} requirements updated`);
+            fetchRequirements(); // Refresh to show updated statuses
+          } else if (status.status === "failed") {
+            toast.error(`Assessment failed: ${status.error || "Unknown error"}`);
+          }
+        }
+      }, 3000);
+    } catch (err) {
+      setAssessing(false);
+      toast.error(err instanceof Error ? err.message : "Assessment failed");
+    }
+  }
+
   // ── Delete ─────────────────────────────────────────────────────────────
 
   async function handleDelete(reqId: string) {
@@ -215,5 +287,8 @@ export function useComplianceData(proposalId: string) {
     handleDelete,
     handleStatusChange,
     handleFieldUpdate,
+    assessmentStatus,
+    assessing,
+    handleRunAssessment,
   };
 }

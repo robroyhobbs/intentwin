@@ -37,6 +37,17 @@ export interface ComplianceSummary {
   by_type: Record<RequirementType, { total: number; met: number; gaps: number }>;
 }
 
+export interface ComplianceAssessmentStatus {
+  status: "assessing" | "completed" | "failed";
+  assessed_at?: string;
+  total_requirements?: number;
+  auto_assessed?: number;
+  results_applied?: number;
+  skipped_manual?: number;
+  trigger?: string;
+  error?: string;
+}
+
 export interface ComplianceBoardProps {
   proposalId: string;
   sections?: { id: string; title: string; section_type: string }[];

@@ -20,6 +20,8 @@ import {
   LayoutGrid,
   CheckSquare,
   Filter,
+  Zap,
+  Loader2,
 } from "lucide-react";
 import { DroppableColumn } from "./compliance-board/droppable-column";
 import { CardOverlay } from "./compliance-board/card-overlay";
@@ -54,6 +56,9 @@ export function ComplianceBoard({
     handleDelete,
     handleStatusChange,
     handleFieldUpdate,
+    assessmentStatus,
+    assessing,
+    handleRunAssessment,
   } = useComplianceData(proposalId);
 
   const [viewMode, setViewMode] = useState<"checklist" | "kanban">("checklist");
@@ -183,6 +188,23 @@ export function ComplianceBoard({
             {hasActiveFilters ? "Filtered" : "Filter"}
           </button>
 
+          {/* Auto-assess button */}
+          {requirements.length > 0 && (
+            <button
+              onClick={handleRunAssessment}
+              disabled={assessing}
+              className="btn-secondary text-xs py-1.5"
+              title="AI auto-assesses which requirements are met by the proposal"
+            >
+              {assessing ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Zap className="h-3.5 w-3.5" />
+              )}
+              {assessing ? "Assessing..." : "Auto-Assess"}
+            </button>
+          )}
+
           <button
             onClick={() => setShowAddForm(!showAddForm)}
             className="btn-secondary text-xs py-1.5"
@@ -226,6 +248,22 @@ export function ComplianceBoard({
               </button>
             );
           })}
+        </div>
+      )}
+
+      {/* Assessment status banner */}
+      {assessmentStatus?.status === "completed" && assessmentStatus.results_applied !== undefined && assessmentStatus.results_applied > 0 && (
+        <div className="flex items-center gap-2 text-xs text-[var(--foreground-muted)] px-1">
+          <Zap className="h-3 w-3 text-[var(--success)]" />
+          <span>
+            Last auto-assessment: {assessmentStatus.results_applied} requirements updated
+            {assessmentStatus.skipped_manual ? ` (${assessmentStatus.skipped_manual} kept manual status)` : ""}
+            {assessmentStatus.assessed_at && (
+              <span className="text-[var(--foreground-subtle)]">
+                {" "}&mdash; {new Date(assessmentStatus.assessed_at).toLocaleDateString()}
+              </span>
+            )}
+          </span>
         </div>
       )}
 
