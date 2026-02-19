@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createLogger } from "@/lib/utils/logger";
 
-const IMAGE_MODEL = "gemini-2.0-flash-exp";
+const IMAGE_MODEL = "gemini-3-pro-image-preview";
 
 const log = createLogger({ operation: "diagramGenerator" });
 
