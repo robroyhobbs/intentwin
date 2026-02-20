@@ -30,7 +30,7 @@ export async function regenerateSection(
   // Fetch the section to get its type
   const { data: section, error: secErr } = await supabase
     .from("proposal_sections")
-    .select("*")
+    .select("id, proposal_id, section_type, section_order, title, generated_content, edited_content, is_edited, generation_status, generation_error, review_status, review_notes, diagram_image")
     .eq("id", sectionId)
     .eq("proposal_id", proposalId)
     .single();

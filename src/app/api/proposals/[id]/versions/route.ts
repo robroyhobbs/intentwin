@@ -97,7 +97,7 @@ export async function POST(
     // Fetch the created version
     const { data: version } = await supabase
       .from("proposal_versions")
-      .select("*")
+      .select("id, proposal_id, version_number, title, intake_data, outcome_contract, status, trigger_event, change_summary, label, created_by, created_at")
       .eq("id", data)
       .single();
 

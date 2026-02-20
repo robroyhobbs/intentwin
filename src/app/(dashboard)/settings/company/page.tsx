@@ -90,7 +90,7 @@ export default function CompanySettingsPage() {
         // Load organization
         const { data: organization } = await supabase
           .from("organizations")
-          .select("*")
+          .select("id, name, slug, settings, plan_tier, plan_limits, usage_current_period, trial_ends_at")
           .eq("id", profile.organization_id)
           .single();
 
@@ -110,7 +110,7 @@ export default function CompanySettingsPage() {
         // Load company contexts
         const { data: contextData } = await supabase
           .from("company_context")
-          .select("*")
+          .select("id, category, key, title, content, is_locked, last_verified_at")
           .eq("organization_id", profile.organization_id)
           .order("category", { ascending: true });
 

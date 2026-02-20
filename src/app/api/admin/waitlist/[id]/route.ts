@@ -71,7 +71,7 @@ export async function PATCH(
       .from("waitlist")
       .update(updateData)
       .eq("id", id)
-      .select("*")
+      .select("id, name, email, company, company_size, status, notes, nurture_step, nurture_last_sent_at, created_at")
       .single();
 
     if (error || !entry) {

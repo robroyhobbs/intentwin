@@ -26,7 +26,7 @@ export async function GET(
     const adminClient = createAdminClient();
     const { data: stage, error } = await adminClient
       .from("proposal_review_stages")
-      .select("*")
+      .select("id, proposal_id, organization_id, stage, stage_order, status, started_at, completed_at, completed_by, created_at")
       .eq("proposal_id", id)
       .eq("organization_id", context.organizationId)
       .eq("status", "active")

@@ -41,7 +41,7 @@ export async function POST(
     // Get the current stage
     const { data: currentStage, error: stageError } = await adminClient
       .from("proposal_review_stages")
-      .select("*")
+      .select("id, proposal_id, organization_id, stage, stage_order, status, started_at, completed_at, completed_by, created_at")
       .eq("id", stageId)
       .eq("proposal_id", id)
       .eq("organization_id", context.organizationId)
@@ -121,7 +121,7 @@ export async function POST(
       .eq("proposal_id", id)
       .eq("stage", nextStageName)
       .eq("organization_id", context.organizationId)
-      .select("*")
+      .select("id, proposal_id, organization_id, stage, stage_order, status, started_at, completed_at, completed_by, created_at")
       .single();
 
     if (activateError) {

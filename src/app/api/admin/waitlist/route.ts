@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     const adminClient = createAdminClient();
     const { data: entries, error } = await adminClient
       .from("waitlist")
-      .select("*")
+      .select("id, name, email, company, company_size, status, notes, nurture_step, nurture_last_sent_at, created_at")
       .order("created_at", { ascending: false });
 
     if (error) {

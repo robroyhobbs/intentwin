@@ -67,7 +67,7 @@ export default function SettingsPage() {
       if (profile?.organization_id) {
         const { data: organization } = await supabase
           .from("organizations")
-          .select("*")
+          .select("id, name, slug, settings, plan_tier, plan_limits, usage_current_period, trial_ends_at, stripe_customer_id, stripe_subscription_id, billing_cycle_start, billing_cycle_end")
           .eq("id", profile.organization_id)
           .single();
 

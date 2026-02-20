@@ -30,7 +30,7 @@ export async function GET(
     // Get the version
     const { data: version, error: versionError } = await supabase
       .from("proposal_versions")
-      .select("*")
+      .select("id, proposal_id, version_number, title, intake_data, outcome_contract, status, trigger_event, change_summary, label, created_by, created_at")
       .eq("id", versionId)
       .eq("proposal_id", id)
       .single();
@@ -42,7 +42,7 @@ export async function GET(
     // Get sections for this version
     const { data: sections } = await supabase
       .from("section_versions")
-      .select("*")
+      .select("id, proposal_version_id, original_section_id, title, section_type, section_order, generated_content, edited_content, generation_status, created_at")
       .eq("proposal_version_id", versionId)
       .order("section_order", { ascending: true });
 

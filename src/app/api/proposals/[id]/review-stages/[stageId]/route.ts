@@ -40,7 +40,7 @@ export async function PATCH(
     // Verify stage exists and belongs to this proposal/org
     const { data: existingStage, error: fetchError } = await adminClient
       .from("proposal_review_stages")
-      .select("*")
+      .select("id, proposal_id, organization_id, stage, stage_order, status, started_at, completed_at, completed_by, created_at")
       .eq("id", stageId)
       .eq("proposal_id", id)
       .eq("organization_id", context.organizationId)
@@ -68,7 +68,7 @@ export async function PATCH(
       .update(updateData)
       .eq("id", stageId)
       .eq("organization_id", context.organizationId)
-      .select("*")
+      .select("id, proposal_id, organization_id, stage, stage_order, status, started_at, completed_at, completed_by, created_at")
       .single();
 
     if (updateError) {

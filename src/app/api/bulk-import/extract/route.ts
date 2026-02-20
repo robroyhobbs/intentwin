@@ -135,17 +135,17 @@ export async function POST(request: NextRequest) {
 
     const { data: existingCC } = await supabase
       .from("company_context")
-      .select("*")
+      .select("category, key, title, content")
       .eq("organization_id", orgId);
 
     const { data: existingPC } = await supabase
       .from("product_contexts")
-      .select("*")
+      .select("product_name, service_line, description")
       .eq("organization_id", orgId);
 
     const { data: existingEL } = await supabase
       .from("evidence_library")
-      .select("*")
+      .select("title, summary")
       .eq("organization_id", orgId);
 
     // Add conflict flags to extracted items

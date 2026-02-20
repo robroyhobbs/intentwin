@@ -26,7 +26,7 @@ export async function GET(
     if (category === "company-context") {
       const { data, error } = await adminClient
         .from("company_context")
-        .select("*")
+        .select("key, title, content, category, is_locked, last_verified_at")
         .eq("organization_id", orgId)
         .eq("key", file)
         .single();
@@ -54,7 +54,7 @@ export async function GET(
       const sanitizedFile = file.replace(/[^a-zA-Z0-9_-]/g, "");
       const { data, error } = await adminClient
         .from("product_contexts")
-        .select("*")
+        .select("id, product_name, service_line, description, capabilities, specifications, is_locked, last_verified_at")
         .eq("organization_id", orgId)
         .eq("id", sanitizedFile);
 
@@ -82,7 +82,7 @@ export async function GET(
     if (category === "case-studies" || category === "evidence-library") {
       const { data, error } = await adminClient
         .from("evidence_library")
-        .select("*")
+        .select("id, title, summary, full_content, is_verified, evidence_type, client_industry, service_line, metrics")
         .eq("organization_id", orgId)
         .eq("id", file)
         .single();

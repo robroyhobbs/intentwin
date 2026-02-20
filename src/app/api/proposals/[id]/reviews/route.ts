@@ -24,7 +24,7 @@ export async function GET(
     const adminClient = createAdminClient();
     const { data: reviews, error } = await adminClient
       .from("proposal_reviews")
-      .select("*")
+      .select("id, proposal_id, section_id, reviewer_id, reviewer_email, annotation_type, content, selector_data, selected_text, status, created_at, updated_at")
       .eq("proposal_id", id)
       .order("created_at", { ascending: false });
 

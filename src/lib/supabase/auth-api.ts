@@ -187,7 +187,7 @@ export async function verifyProposalAccess(
   const adminClient = createAdminClient();
   const { data: proposal, error } = await adminClient
     .from("proposals")
-    .select("*")
+    .select("id, title, status, intake_data, rfp_document_id, rfp_extracted_requirements, generation_model, generation_started_at, generation_completed_at, generation_error, created_by, organization_id, win_strategy_data, outcome_contract, intent_status, intent_approved_by, intent_approved_at, intent_notes, deal_outcome, deal_outcome_set_at, deal_outcome_set_by, deal_value, deal_currency, loss_reason, loss_reason_category, competitor_won, outcome_notes, promoted_to_case_study, case_study_source_id, client_research, intake_source_type, quality_review, bid_evaluation, l1_summary, compliance_assessment, created_at, updated_at")
     .eq("id", proposalId)
     .eq("organization_id", context.organizationId)
     .single();
@@ -231,7 +231,7 @@ export async function verifyDocumentAccess(
   const adminClient = createAdminClient();
   const { data: document, error } = await adminClient
     .from("documents")
-    .select("*")
+    .select("id, title, description, file_name, file_type, file_size_bytes, storage_path, mime_type, document_type, industry, service_line, client_name, win_status, tags, processing_status, processing_error, chunk_count, parsed_text_preview, uploaded_by, organization_id, created_at, updated_at")
     .eq("id", documentId)
     .eq("organization_id", context.organizationId)
     .single();

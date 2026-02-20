@@ -51,7 +51,7 @@ export async function PATCH(
     // Get the review and verify it belongs to the current user's stage_reviewer record
     const { data: existingReview, error: reviewError } = await adminClient
       .from("section_reviews")
-      .select("*, reviewer_id")
+      .select("id, stage_id, reviewer_id, section_id, organization_id, score, comment, strengths, weaknesses, recommendations, created_at, updated_at")
       .eq("id", reviewId)
       .eq("stage_id", stageId)
       .eq("organization_id", context.organizationId)
@@ -92,7 +92,7 @@ export async function PATCH(
       .update(updateData)
       .eq("id", reviewId)
       .eq("organization_id", context.organizationId)
-      .select("*")
+      .select("id, stage_id, reviewer_id, section_id, organization_id, score, comment, strengths, weaknesses, recommendations, created_at, updated_at")
       .single();
 
     if (updateError) {

@@ -29,7 +29,7 @@ export async function POST(
     // Verify the version exists and belongs to this proposal
     const { data: version } = await supabase
       .from("proposal_versions")
-      .select("*")
+      .select("id, proposal_id, version_number, label")
       .eq("id", versionId)
       .eq("proposal_id", id)
       .single();
@@ -52,7 +52,7 @@ export async function POST(
     // Fetch the updated proposal
     const { data: updatedProposal } = await supabase
       .from("proposals")
-      .select("*")
+      .select("id, title, status, intake_data, outcome_contract, created_at, updated_at")
       .eq("id", id)
       .single();
 

@@ -27,7 +27,7 @@ export async function GET(
     const adminClient = createAdminClient();
     const { data: stages, error } = await adminClient
       .from("proposal_review_stages")
-      .select("*")
+      .select("id, proposal_id, organization_id, stage, stage_order, status, started_at, completed_at, completed_by, created_at")
       .eq("proposal_id", id)
       .eq("organization_id", context.organizationId)
       .order("stage_order", { ascending: true });
@@ -152,7 +152,7 @@ export async function POST(
           status: "pending",
         },
       ])
-      .select("*")
+      .select("id, proposal_id, organization_id, stage, stage_order, status, started_at, completed_at, completed_by, created_at")
       .order("stage_order", { ascending: true });
 
     if (insertError) {

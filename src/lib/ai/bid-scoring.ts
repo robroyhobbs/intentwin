@@ -290,14 +290,14 @@ async function fetchL1ContextForScoring(
   try {
     let companyQuery = supabase
       .from("company_context")
-      .select("*")
+      .select("id, category, key, title, content, metadata, is_locked, lock_reason, last_verified_at, verified_by")
       .order("category");
     if (organizationId) {
       companyQuery = companyQuery.eq("organization_id", organizationId);
     }
     const { data: companyContext } = await companyQuery;
 
-    let productQuery = supabase.from("product_contexts").select("*");
+    let productQuery = supabase.from("product_contexts").select("id, product_name, service_line, description, capabilities, specifications, pricing_models, constraints, supported_outcomes, is_locked, lock_reason");
     if (organizationId) {
       productQuery = productQuery.eq("organization_id", organizationId);
     }
@@ -308,7 +308,7 @@ async function fetchL1ContextForScoring(
 
     let evidenceQuery = supabase
       .from("evidence_library")
-      .select("*")
+      .select("id, evidence_type, title, summary, full_content, client_industry, service_line, client_size, outcomes_demonstrated, metrics, is_verified, verified_by, verified_at, verification_notes")
       .eq("is_verified", true);
     if (organizationId) {
       evidenceQuery = evidenceQuery.eq("organization_id", organizationId);

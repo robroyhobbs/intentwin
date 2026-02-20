@@ -41,7 +41,7 @@ export async function GET(
     // Get all reviews for this stage
     const { data: reviews, error: reviewsError } = await adminClient
       .from("section_reviews")
-      .select("*")
+      .select("id, stage_id, reviewer_id, section_id, organization_id, score, comment, strengths, weaknesses, recommendations, created_at, updated_at")
       .eq("stage_id", stageId)
       .eq("organization_id", context.organizationId)
       .order("created_at", { ascending: true });
@@ -243,7 +243,7 @@ export async function POST(
         weaknesses: weaknesses || null,
         recommendations: recommendations || null,
       })
-      .select("*")
+      .select("id, stage_id, reviewer_id, section_id, organization_id, score, comment, strengths, weaknesses, recommendations, created_at, updated_at")
       .single();
 
     if (insertError) {

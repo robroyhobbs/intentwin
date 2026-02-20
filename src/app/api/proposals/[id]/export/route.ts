@@ -46,7 +46,7 @@ export async function POST(
       .from("proposals")
       .select(
         `
-        *,
+        id, title, status, intake_data, created_at,
         organization:organizations(id, name, settings)
       `,
       )
@@ -62,8 +62,10 @@ export async function POST(
     }
 
     // Get organization name and branding for exports
-    const organizationName = proposal.organization?.name || "IntentWin";
-    const orgSettings = proposal.organization?.settings || {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase FK join type inference returns array; runtime is single object via .single()
+    const org = (proposal as any).organization as { id: string; name: string; settings: Record<string, any> } | null;
+    const organizationName = org?.name || "IntentWin";
+    const orgSettings = org?.settings || {};
     const branding = {
       logo_url: orgSettings.branding?.logo_url,
       primary_color: orgSettings.branding?.primary_color || "#0070AD",
@@ -76,7 +78,7 @@ export async function POST(
 
     const { data: sections } = await adminClient
       .from("proposal_sections")
-      .select("*")
+      .select("id, proposal_id, section_type, section_order, title, generated_content, edited_content, is_edited, generation_status, review_status, review_notes, diagram_image, created_at, updated_at")
       .eq("proposal_id", id)
       .eq("generation_status", "completed")
       .order("section_order", { ascending: true });

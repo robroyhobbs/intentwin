@@ -51,7 +51,7 @@ export default function OnboardingPage() {
 
           const { data: org } = await supabase
             .from("organizations")
-            .select("*")
+            .select("id, name, slug, settings, plan_tier")
             .eq("id", profile.organization_id)
             .single();
 

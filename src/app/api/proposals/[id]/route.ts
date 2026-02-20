@@ -27,7 +27,7 @@ export async function GET(
     const adminClient = createAdminClient();
     const { data: sections } = await adminClient
       .from("proposal_sections")
-      .select("*")
+      .select("id, proposal_id, section_type, section_order, title, generated_content, edited_content, is_edited, generation_status, generation_error, review_status, review_notes, diagram_image, created_at, updated_at")
       .eq("proposal_id", id)
       .order("section_order", { ascending: true });
 

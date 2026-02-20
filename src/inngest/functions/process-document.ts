@@ -45,7 +45,7 @@ export const processDocumentFn = inngest.createFunction(
         // Fetch document metadata
         const { data: doc, error: fetchError } = await supabase
           .from("documents")
-          .select("*")
+          .select("id, title, file_name, file_type, storage_path, mime_type, document_type, organization_id")
           .eq("id", documentId)
           .single();
 
