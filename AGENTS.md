@@ -121,6 +121,14 @@ All tables now have `organization_id` columns with RLS policies:
 
 <!-- Updated nightly by compound review -->
 
+### 2026-02-19 - Security Hygiene, Query Discipline & Status Centralization
+
+- **Deleted secrets persist in git history — always rotate**: `scripts/generate-proposal.mjs` was deleted in `e407417` but the hardcoded Supabase service role key and Anthropic API key remain in git history. Created `docs/key-rotation.md` runbook. Pattern: any secret committed to git, even if deleted in the next commit, must be treated as compromised and rotated immediately. The Supabase service role key is especially critical because it bypasses all RLS
+- **Unbounded queries are a production risk — always paginate**: List endpoints (evidence, waitlist, versions, reviews) had no `limit` or `range()`, meaning a single request could fetch thousands of rows. Fix: added `page`/`limit` query params with `range(from, to)` and `{ count: "exact" }` for total count. Default limit: 50, max: 200. Pattern: every list endpoint should accept pagination params and enforce a max limit, even for internal-only routes
+- **Centralize status strings into typed constants**: 51 files used inline string literals like `"generating"`, `"draft"`, `"completed"` — typos cause silent bugs, and renaming a status requires a 50-file search. Created `src/lib/constants/statuses.ts` with `as const` objects for all 10 domain entities (Proposal, Generation, SectionReview, Intent, QualityReview, DealOutcome, Waitlist, Review, Compliance, Export). Pattern: `const X = { KEY: "value" } as const` + `type XType = (typeof X)[keyof typeof X]`. Import and use `ProposalStatus.GENERATING` instead of `"generating"`
+- **Complete the `select("*")` elimination**: Previous session identified that `select("*")` fetches unnecessary JSONB blobs. This session completed the sweep across all 26 remaining files. Zero `select("*")` calls remain in the codebase. Lesson: when a pattern is identified as harmful, do a full codebase sweep in the same or next session rather than fixing incrementally
+- **Gemini model versions drift quickly**: Upgraded from `gemini-2.5-pro-preview-05-06` to `gemini-3.1-pro-preview` for generation and quality review, and `gemini-3-pro-image-preview` for diagram generation. Model IDs are hardcoded in 3 different files. Consider centralizing model IDs into a config or env vars to make upgrades a single-line change
+
 ### 2026-02-18 - Pipeline Hardening, Serverless PDF, Multi-Document Support
 
 - **`after()` callbacks need `maxDuration` or Vercel kills them silently**: The generate route used `after()` for background section generation but had no `maxDuration` export. Vercel's default 60s limit killed the callback before all 10 sections completed, leaving trailing sections stuck in `generating` status. Fix: add `export const maxDuration = 300` to any route using `after()` with AI work. Same issue hit the export and regenerate routes
