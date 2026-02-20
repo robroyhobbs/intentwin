@@ -29,7 +29,7 @@ export async function reviewWithGemini(prompt: string): Promise<{
     model: process.env.GEMINI_MODEL || "gemini-3.1-pro-preview",
     generationConfig: {
       temperature: 0.3,
-      maxOutputTokens: 1024,
+      maxOutputTokens: 2048,
       responseMimeType: "application/json",
     },
   });
@@ -51,7 +51,16 @@ export async function reviewWithGemini(prompt: string): Promise<{
     throw new Error("Gemini returned empty response");
   }
 
-  const parsed = JSON.parse(content);
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(content);
+  } catch (parseError) {
+    const preview = content.length > 200 ? content.slice(-200) : content;
+    throw new Error(
+      `Gemini returned invalid JSON (${content.length} chars, likely truncated). Tail: ${preview}`
+    );
+  }
+
   return {
     content_quality: Number(parsed.content_quality) || 0,
     client_fit: Number(parsed.client_fit) || 0,
