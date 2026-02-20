@@ -27,6 +27,7 @@ export async function GET(
       .from("proposal_reviews")
       .select("id, proposal_id, section_id, reviewer_id, reviewer_email, annotation_type, content, selector_data, selected_text, status, created_at, updated_at")
       .eq("proposal_id", id)
+      .limit(500)
       .order("created_at", { ascending: false });
 
     if (error) {

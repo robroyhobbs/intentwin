@@ -27,15 +27,16 @@ export async function GET(
 
     const supabase = createAdminClient();
 
-    // Get all versions with section counts
+    // Get all versions with section counts (capped at 100 for safety)
     const { data: versions, error } = await supabase
       .from("proposal_versions")
       .select(`
-        *,
+        id, proposal_id, version_number, title, status, trigger_event, change_summary, label, created_by, created_at,
         section_versions(count)
       `)
       .eq("proposal_id", id)
-      .order("version_number", { ascending: false });
+      .order("version_number", { ascending: false })
+      .limit(100);
 
     if (error) {
       return serverError("Failed to fetch versions", error);

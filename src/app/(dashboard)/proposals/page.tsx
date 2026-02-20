@@ -32,7 +32,8 @@ export default async function ProposalsPage({
   let query = supabase
     .from("proposals")
     .select("*, proposal_sections(id, generation_status)")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(100);
 
   if (tab !== "all") {
     if (tab === ProposalStatus.DRAFT) {
@@ -44,10 +45,11 @@ export default async function ProposalsPage({
 
   const { data: proposals } = await query;
 
-  // Count by status for tab badges
+  // Count by status for tab badges (safety cap at 1000)
   const { data: allProposals } = await supabase
     .from("proposals")
-    .select("status");
+    .select("status")
+    .limit(1000);
 
   const statusCounts: Record<string, number> = {
     all: allProposals?.length || 0,

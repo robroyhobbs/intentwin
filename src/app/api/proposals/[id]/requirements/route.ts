@@ -34,6 +34,7 @@ export async function GET(
       .select("id, requirement_text, source_reference, category, requirement_type, compliance_status, mapped_section_id, notes, is_extracted, created_at, updated_at")
       .eq("proposal_id", id)
       .eq("organization_id", context.organizationId)
+      .limit(500)
       .order("created_at", { ascending: true });
 
     if (error) {

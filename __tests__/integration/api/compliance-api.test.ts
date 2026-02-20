@@ -37,6 +37,8 @@ function createChain(resolveWith: { data: unknown; error: unknown }) {
   chain.delete = vi.fn(() => chain);
   chain.eq = vi.fn(() => chain);
   chain.order = vi.fn(() => chain);
+  chain.limit = vi.fn(() => chain);
+  chain.range = vi.fn(() => chain);
   chain.single = vi.fn(() => Promise.resolve(resolveWith));
   // For non-single queries, resolve with the data directly
   chain.then = vi.fn((resolve: (v: unknown) => void) => resolve(resolveWith));
@@ -165,6 +167,8 @@ function setupMockSupabase(
         return chain;
       });
       chain.order = vi.fn(() => chain);
+      chain.limit = vi.fn(() => chain);
+      chain.range = vi.fn(() => chain);
 
       chain.single = vi.fn(() => {
         if (chainState.operation === "insert") {

@@ -39,12 +39,13 @@ export async function GET(
       return NextResponse.json({ error: "Review stage not found" }, { status: 404 });
     }
 
-    // Get all reviews for this stage
+    // Get all reviews for this stage (capped at 200 for safety)
     const { data: reviews, error: reviewsError } = await adminClient
       .from("section_reviews")
       .select("id, stage_id, reviewer_id, section_id, organization_id, score, comment, strengths, weaknesses, recommendations, created_at, updated_at")
       .eq("stage_id", stageId)
       .eq("organization_id", context.organizationId)
+      .limit(200)
       .order("created_at", { ascending: true });
 
     if (reviewsError) {

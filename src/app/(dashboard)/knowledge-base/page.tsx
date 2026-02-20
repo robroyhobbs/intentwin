@@ -54,7 +54,8 @@ export default async function KnowledgeBasePage() {
   const { data: documents } = await supabase
     .from("documents")
     .select("id, title, file_name, file_type, file_size_bytes, document_type, processing_status, processing_error, chunk_count, uploaded_by, created_at, updated_at")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(200);
 
   const totalDocs = documents?.length ?? 0;
   const completedDocs =

@@ -38,7 +38,8 @@ export async function GET(request: NextRequest) {
         .select("id, evidence_type, title, summary, full_content, client_industry, service_line, metrics, is_verified, verified_at")
         .eq("organization_id", orgId)
         .order("evidence_type")
-        .order("title"),
+        .order("title")
+        .limit(500),
     ]);
 
     const companyContextItems = companyRes.data ?? [];

@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
     const adminClient = createAdminClient();
 
-    // ── Existing query: proposals with outcomes for this organization ──
+    // ── Existing query: proposals with outcomes for this organization (capped at 1000) ──
     const { data: proposals, error } = await adminClient
       .from("proposals")
       .select(`
@@ -30,17 +30,19 @@ export async function GET(request: NextRequest) {
       `)
       .eq("organization_id", context.organizationId)
       .in("status", [ProposalStatus.EXPORTED, ProposalStatus.FINAL, ProposalStatus.REVIEW, ProposalStatus.DRAFT])
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(1000);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // ── Pipeline funnel: count ALL proposals (not filtered by status) ──
+    // ── Pipeline funnel: count ALL proposals (not filtered by status, capped at 1000) ──
     const { data: allProposals, error: funnelError } = await adminClient
       .from("proposals")
       .select("status")
-      .eq("organization_id", context.organizationId);
+      .eq("organization_id", context.organizationId)
+      .limit(1000);
 
     if (funnelError) {
       return NextResponse.json({ error: funnelError.message }, { status: 500 });

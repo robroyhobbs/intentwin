@@ -53,10 +53,16 @@ export async function GET(request: NextRequest) {
       return badRequest("verified filter must be 'true' or 'false'");
     }
 
+    // Pagination params
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
+    const limit = Math.min(200, Math.max(1, parseInt(searchParams.get("limit") || "50", 10) || 50));
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
     const adminClient = createAdminClient();
     let query = adminClient
       .from("evidence_library")
-      .select(SELECT_FIELDS)
+      .select(SELECT_FIELDS, { count: "exact" })
       .eq("organization_id", context.organizationId);
 
     if (typeFilter) {
@@ -77,13 +83,20 @@ export async function GET(request: NextRequest) {
       query = query.eq("is_verified", verifiedFilter === "true");
     }
 
-    const { data: evidence, error } = await query.order("evidence_type").order("created_at", { ascending: false });
+    const { data: evidence, error, count } = await query
+      .order("evidence_type")
+      .order("created_at", { ascending: false })
+      .range(from, to);
 
     if (error) {
       return serverError("Failed to fetch evidence", error);
     }
 
-    return ok({ evidence: evidence || [] });
+    const total = count ?? 0;
+    return ok({
+      evidence: evidence || [],
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    });
   } catch (error) {
     return serverError("Failed to fetch evidence", error);
   }

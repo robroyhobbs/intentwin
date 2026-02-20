@@ -118,13 +118,16 @@ function setupMockSupabase(
   });
   chain.or = vi.fn(() => chain);
   chain.order = vi.fn(() => chain);
+  chain.range = vi.fn(() => chain);
+  chain.limit = vi.fn(() => chain);
 
-  // Thenable for GET queries (await query.order().order())
+  // Thenable for GET queries (await query.order().order().range())
   chain.then = vi.fn((resolve: (v: unknown) => void) => {
     if (opts.selectError) {
-      resolve({ data: null, error: { message: "Select failed" } });
+      resolve({ data: null, error: { message: "Select failed" }, count: 0 });
     } else {
-      resolve({ data: opts.selectData ?? [], error: null });
+      const data = opts.selectData ?? [];
+      resolve({ data, error: null, count: (data as unknown[]).length });
     }
   });
 
