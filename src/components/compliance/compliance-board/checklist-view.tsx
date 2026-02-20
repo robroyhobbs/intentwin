@@ -21,6 +21,7 @@ import {
   type Requirement,
   type RequirementType,
 } from "./types";
+import { ComplianceStatus } from "@/lib/constants/statuses";
 
 interface ChecklistViewProps {
   requirements: Requirement[];
@@ -36,10 +37,10 @@ interface ChecklistViewProps {
 }
 
 const STATUS_OPTIONS: { value: Requirement["compliance_status"]; label: string; icon: typeof CheckCircle2; color: string }[] = [
-  { value: "met", label: "Met", icon: CheckCircle2, color: "var(--success)" },
-  { value: "partially_met", label: "Partial", icon: CircleDot, color: "var(--warning)" },
-  { value: "not_addressed", label: "Not Addressed", icon: Circle, color: "var(--danger)" },
-  { value: "not_applicable", label: "N/A", icon: MinusCircle, color: "var(--foreground-muted)" },
+  { value: ComplianceStatus.MET, label: "Met", icon: CheckCircle2, color: "var(--success)" },
+  { value: ComplianceStatus.PARTIALLY_MET, label: "Partial", icon: CircleDot, color: "var(--warning)" },
+  { value: ComplianceStatus.NOT_ADDRESSED, label: "Not Addressed", icon: Circle, color: "var(--danger)" },
+  { value: ComplianceStatus.NOT_APPLICABLE, label: "N/A", icon: MinusCircle, color: "var(--foreground-muted)" },
 ];
 
 const TYPE_ICONS: Record<RequirementType, typeof FileText> = {
@@ -93,7 +94,7 @@ export function ChecklistView({
         const typeInfo = REQUIREMENT_TYPE_LABELS[type];
         const TypeIcon = TYPE_ICONS[type];
         const metCount = items.filter(
-          r => r.compliance_status === "met" || r.compliance_status === "not_applicable"
+          r => r.compliance_status === ComplianceStatus.MET || r.compliance_status === ComplianceStatus.NOT_APPLICABLE
         ).length;
 
         return (
@@ -172,7 +173,7 @@ export function ChecklistView({
                         </div>
                         <p
                           className={`text-sm leading-relaxed ${
-                            req.compliance_status === "met" || req.compliance_status === "not_applicable"
+                            req.compliance_status === ComplianceStatus.MET || req.compliance_status === ComplianceStatus.NOT_APPLICABLE
                               ? "text-[var(--foreground-muted)] line-through"
                               : "text-[var(--foreground)]"
                           }`}

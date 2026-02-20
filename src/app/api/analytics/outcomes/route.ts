@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext } from "@/lib/supabase/auth-api";
+import { ProposalStatus, DealOutcome } from "@/lib/constants/statuses";
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
         quality_review
       `)
       .eq("organization_id", context.organizationId)
-      .in("status", ["exported", "final", "review", "draft"])
+      .in("status", [ProposalStatus.EXPORTED, ProposalStatus.FINAL, ProposalStatus.REVIEW, ProposalStatus.DRAFT])
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -46,12 +47,12 @@ export async function GET(request: NextRequest) {
     }
 
     const pipelineFunnel = {
-      draft: 0,
-      intake: 0,
-      generating: 0,
-      review: 0,
-      final: 0,
-      exported: 0,
+      [ProposalStatus.DRAFT]: 0,
+      [ProposalStatus.INTAKE]: 0,
+      [ProposalStatus.GENERATING]: 0,
+      [ProposalStatus.REVIEW]: 0,
+      [ProposalStatus.FINAL]: 0,
+      [ProposalStatus.EXPORTED]: 0,
     };
     for (const p of allProposals || []) {
       const status = p.status as keyof typeof pipelineFunnel;
@@ -62,16 +63,16 @@ export async function GET(request: NextRequest) {
 
     // ── Calculate summary stats (existing) ──
     const total = proposals?.length || 0;
-    const won = proposals?.filter((p) => p.deal_outcome === "won").length || 0;
-    const lost = proposals?.filter((p) => p.deal_outcome === "lost").length || 0;
-    const pending = proposals?.filter((p) => p.deal_outcome === "pending" || !p.deal_outcome).length || 0;
-    const noDecision = proposals?.filter((p) => p.deal_outcome === "no_decision").length || 0;
+    const won = proposals?.filter((p) => p.deal_outcome === DealOutcome.WON).length || 0;
+    const lost = proposals?.filter((p) => p.deal_outcome === DealOutcome.LOST).length || 0;
+    const pending = proposals?.filter((p) => p.deal_outcome === DealOutcome.PENDING || !p.deal_outcome).length || 0;
+    const noDecision = proposals?.filter((p) => p.deal_outcome === DealOutcome.NO_DECISION).length || 0;
 
     const decidedCount = won + lost;
     const winRate = decidedCount > 0 ? Math.round((won / decidedCount) * 100) : 0;
 
     const totalWonValue = proposals
-      ?.filter((p) => p.deal_outcome === "won" && p.deal_value)
+      ?.filter((p) => p.deal_outcome === DealOutcome.WON && p.deal_value)
       .reduce((sum, p) => sum + (p.deal_value || 0), 0) || 0;
 
     // ── Group by industry (existing) ──
@@ -82,8 +83,8 @@ export async function GET(request: NextRequest) {
         byIndustry[industry] = { won: 0, lost: 0, total: 0 };
       }
       byIndustry[industry].total++;
-      if (p.deal_outcome === "won") byIndustry[industry].won++;
-      if (p.deal_outcome === "lost") byIndustry[industry].lost++;
+      if (p.deal_outcome === DealOutcome.WON) byIndustry[industry].won++;
+      if (p.deal_outcome === DealOutcome.LOST) byIndustry[industry].lost++;
     }
 
     // ── Group by opportunity type (existing) ──
@@ -94,21 +95,21 @@ export async function GET(request: NextRequest) {
         byOpportunityType[oppType] = { won: 0, lost: 0, total: 0 };
       }
       byOpportunityType[oppType].total++;
-      if (p.deal_outcome === "won") byOpportunityType[oppType].won++;
-      if (p.deal_outcome === "lost") byOpportunityType[oppType].lost++;
+      if (p.deal_outcome === DealOutcome.WON) byOpportunityType[oppType].won++;
+      if (p.deal_outcome === DealOutcome.LOST) byOpportunityType[oppType].lost++;
     }
 
     // ── Loss reasons (existing) ──
     const lossReasons: Record<string, number> = {};
     for (const p of proposals || []) {
-      if (p.deal_outcome === "lost" && p.loss_reason_category) {
+      if (p.deal_outcome === DealOutcome.LOST && p.loss_reason_category) {
         lossReasons[p.loss_reason_category] = (lossReasons[p.loss_reason_category] || 0) + 1;
       }
     }
 
     // ── Recent outcomes (existing, last 10) ──
     const recentOutcomes = proposals
-      ?.filter((p) => p.deal_outcome && p.deal_outcome !== "pending")
+      ?.filter((p) => p.deal_outcome && p.deal_outcome !== DealOutcome.PENDING)
       .slice(0, 10)
       .map((p) => ({
         id: p.id,
@@ -154,10 +155,10 @@ export async function GET(request: NextRequest) {
       const outcomeDate = new Date(p.deal_outcome_set_at);
       const key = `${outcomeDate.getFullYear()}-${String(outcomeDate.getMonth() + 1).padStart(2, "0")}`;
       if (key in monthMap) {
-        if (p.deal_outcome === "won") {
+        if (p.deal_outcome === DealOutcome.WON) {
           monthMap[key].won++;
           monthMap[key].totalValue += p.deal_value || 0;
-        } else if (p.deal_outcome === "lost") {
+        } else if (p.deal_outcome === DealOutcome.LOST) {
           monthMap[key].lost++;
         }
       }
@@ -191,7 +192,7 @@ export async function GET(request: NextRequest) {
           id: p.id,
           title: p.title,
           qualityScore: qr.overall_score as number,
-          outcome: p.deal_outcome || "pending",
+          outcome: p.deal_outcome || DealOutcome.PENDING,
           dealValue: p.deal_value ?? null,
         };
       });
@@ -199,7 +200,7 @@ export async function GET(request: NextRequest) {
     // ── NEW: Average days to close ──
     const closedProposals = (proposals || []).filter(
       (p) =>
-        (p.deal_outcome === "won" || p.deal_outcome === "lost") &&
+        (p.deal_outcome === DealOutcome.WON || p.deal_outcome === DealOutcome.LOST) &&
         p.created_at &&
         p.deal_outcome_set_at
     );

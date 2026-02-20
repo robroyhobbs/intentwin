@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils/cn";
 import { Check, AlertCircle, Loader2, Clock, XCircle } from "lucide-react";
+import { ProposalStatus, GenerationStatus, SectionReviewStatus } from "@/lib/constants/statuses";
 
 type ReviewStatus = "pending" | "approved" | "needs_revision" | "draft";
 type GenerationStatus = "pending" | "generating" | "completed" | "failed";
@@ -11,45 +12,45 @@ interface SectionStatusBadgeProps {
 }
 
 const BADGE_STYLES: Record<string, { bg: string; text: string; border: string }> = {
-  pending: { bg: "bg-amber-50", text: "text-amber-600", border: "border-amber-100" },
-  generating: { bg: "bg-[var(--accent-subtle)]", text: "text-[var(--accent)]", border: "border-[var(--accent-muted)]" },
-  completed: { bg: "bg-emerald-50", text: "text-emerald-600", border: "border-emerald-100" },
-  failed: { bg: "bg-red-50", text: "text-red-600", border: "border-red-100" },
-  approved: { bg: "bg-emerald-50", text: "text-emerald-600", border: "border-emerald-100" },
-  needs_revision: { bg: "bg-red-50", text: "text-red-600", border: "border-red-100" },
-  draft: { bg: "bg-stone-100", text: "text-stone-600", border: "border-stone-200" },
-  review: { bg: "bg-amber-50", text: "text-amber-600", border: "border-amber-100" },
-  intake: { bg: "bg-amber-50", text: "text-amber-600", border: "border-amber-100" },
-  exported: { bg: "bg-emerald-50", text: "text-emerald-600", border: "border-emerald-100" },
-  final: { bg: "bg-emerald-50", text: "text-emerald-600", border: "border-emerald-100" },
+  [GenerationStatus.PENDING]: { bg: "bg-amber-50", text: "text-amber-600", border: "border-amber-100" },
+  [GenerationStatus.GENERATING]: { bg: "bg-[var(--accent-subtle)]", text: "text-[var(--accent)]", border: "border-[var(--accent-muted)]" },
+  [GenerationStatus.COMPLETED]: { bg: "bg-emerald-50", text: "text-emerald-600", border: "border-emerald-100" },
+  [GenerationStatus.FAILED]: { bg: "bg-red-50", text: "text-red-600", border: "border-red-100" },
+  [SectionReviewStatus.APPROVED]: { bg: "bg-emerald-50", text: "text-emerald-600", border: "border-emerald-100" },
+  [SectionReviewStatus.NEEDS_REVISION]: { bg: "bg-red-50", text: "text-red-600", border: "border-red-100" },
+  [ProposalStatus.DRAFT]: { bg: "bg-stone-100", text: "text-stone-600", border: "border-stone-200" },
+  [ProposalStatus.REVIEW]: { bg: "bg-amber-50", text: "text-amber-600", border: "border-amber-100" },
+  [ProposalStatus.INTAKE]: { bg: "bg-amber-50", text: "text-amber-600", border: "border-amber-100" },
+  [ProposalStatus.EXPORTED]: { bg: "bg-emerald-50", text: "text-emerald-600", border: "border-emerald-100" },
+  [ProposalStatus.FINAL]: { bg: "bg-emerald-50", text: "text-emerald-600", border: "border-emerald-100" },
 };
 
 const BADGE_ICONS: Record<string, typeof Check> = {
-  completed: Check,
-  approved: Check,
-  exported: Check,
-  final: Check,
-  failed: XCircle,
-  needs_revision: AlertCircle,
-  generating: Loader2,
-  pending: Clock,
-  draft: Clock,
-  intake: Clock,
-  review: AlertCircle,
+  [GenerationStatus.COMPLETED]: Check,
+  [SectionReviewStatus.APPROVED]: Check,
+  [ProposalStatus.EXPORTED]: Check,
+  [ProposalStatus.FINAL]: Check,
+  [GenerationStatus.FAILED]: XCircle,
+  [SectionReviewStatus.NEEDS_REVISION]: AlertCircle,
+  [GenerationStatus.GENERATING]: Loader2,
+  [GenerationStatus.PENDING]: Clock,
+  [ProposalStatus.DRAFT]: Clock,
+  [ProposalStatus.INTAKE]: Clock,
+  [ProposalStatus.REVIEW]: AlertCircle,
 };
 
 const DOT_COLORS: Record<string, string> = {
-  pending: "bg-amber-400",
-  generating: "bg-[var(--accent)]",
-  completed: "bg-emerald-500",
-  failed: "bg-red-500",
-  approved: "bg-emerald-500",
-  needs_revision: "bg-red-500",
-  draft: "bg-stone-400",
-  review: "bg-amber-500",
-  intake: "bg-amber-400",
-  exported: "bg-emerald-500",
-  final: "bg-emerald-500",
+  [GenerationStatus.PENDING]: "bg-amber-400",
+  [GenerationStatus.GENERATING]: "bg-[var(--accent)]",
+  [GenerationStatus.COMPLETED]: "bg-emerald-500",
+  [GenerationStatus.FAILED]: "bg-red-500",
+  [SectionReviewStatus.APPROVED]: "bg-emerald-500",
+  [SectionReviewStatus.NEEDS_REVISION]: "bg-red-500",
+  [ProposalStatus.DRAFT]: "bg-stone-400",
+  [ProposalStatus.REVIEW]: "bg-amber-500",
+  [ProposalStatus.INTAKE]: "bg-amber-400",
+  [ProposalStatus.EXPORTED]: "bg-emerald-500",
+  [ProposalStatus.FINAL]: "bg-emerald-500",
 };
 
 export function SectionStatusBadge({
@@ -57,9 +58,9 @@ export function SectionStatusBadge({
   generationStatus,
   className,
 }: SectionStatusBadgeProps) {
-  const status = reviewStatus || generationStatus || "pending";
+  const status = reviewStatus || generationStatus || GenerationStatus.PENDING;
   const label = status.replace("_", " ");
-  const style = BADGE_STYLES[status] || BADGE_STYLES.pending;
+  const style = BADGE_STYLES[status] || BADGE_STYLES[GenerationStatus.PENDING];
   const Icon = BADGE_ICONS[status] || Clock;
 
   return (
@@ -72,7 +73,7 @@ export function SectionStatusBadge({
         className
       )}
     >
-      <Icon className={cn("h-3 w-3", status === "generating" && "animate-spin")} />
+      <Icon className={cn("h-3 w-3", status === GenerationStatus.GENERATING && "animate-spin")} />
       {label}
     </span>
   );
@@ -90,15 +91,15 @@ export function StatusDot({
       <span
         className={cn(
           "inline-block h-2 w-2 rounded-full",
-          DOT_COLORS[status] || DOT_COLORS.pending,
+          DOT_COLORS[status] || DOT_COLORS[GenerationStatus.PENDING],
           className
         )}
       />
-      {status === "generating" && (
+      {status === GenerationStatus.GENERATING && (
         <span
           className={cn(
             "absolute inset-0 rounded-full",
-            DOT_COLORS[status] || DOT_COLORS.pending,
+            DOT_COLORS[status] || DOT_COLORS[GenerationStatus.PENDING],
             "animate-ping opacity-75"
           )}
         />

@@ -27,6 +27,7 @@ import { DroppableColumn } from "./compliance-board/droppable-column";
 import { CardOverlay } from "./compliance-board/card-overlay";
 import { ChecklistView } from "./compliance-board/checklist-view";
 import { useComplianceData } from "./compliance-board/use-compliance-data";
+import { ComplianceAssessmentStatus as ComplianceAssessmentStatusConst } from "@/lib/constants/statuses";
 import {
   COLUMNS,
   REQUIREMENT_TYPE_LABELS,
@@ -252,7 +253,7 @@ export function ComplianceBoard({
       )}
 
       {/* Assessment status banner */}
-      {assessmentStatus?.status === "completed" && assessmentStatus.results_applied !== undefined && assessmentStatus.results_applied > 0 && (
+      {assessmentStatus?.status === ComplianceAssessmentStatusConst.COMPLETED && assessmentStatus.results_applied !== undefined && assessmentStatus.results_applied > 0 && (
         <div className="flex items-center gap-2 text-xs text-[var(--foreground-muted)] px-1">
           <Zap className="h-3 w-3 text-[var(--success)]" />
           <span>

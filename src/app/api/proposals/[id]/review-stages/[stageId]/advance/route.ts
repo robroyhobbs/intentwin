@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
 import { sendStageAdvancedEmail } from "@/lib/email/review-notifications";
+import { ReviewStageStatus } from "@/lib/constants/statuses";
 
 const STAGE_ORDER = ["pink", "red", "gold", "white"] as const;
 
@@ -54,7 +55,7 @@ export async function POST(
       );
     }
 
-    if (currentStage.status !== "active") {
+    if (currentStage.status !== ReviewStageStatus.ACTIVE) {
       return NextResponse.json(
         { error: "Can only advance from an active stage" },
         { status: 400 },
@@ -96,7 +97,7 @@ export async function POST(
     const { error: completeError } = await adminClient
       .from("proposal_review_stages")
       .update({
-        status: "completed",
+        status: ReviewStageStatus.COMPLETED,
         completed_at: now,
         completed_by: context.user.id,
       })
@@ -115,7 +116,7 @@ export async function POST(
     const { data: nextStage, error: activateError } = await adminClient
       .from("proposal_review_stages")
       .update({
-        status: "active",
+        status: ReviewStageStatus.ACTIVE,
         started_at: now,
       })
       .eq("proposal_id", id)

@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
 import { createLogger } from "@/lib/utils/logger";
 import { inngest } from "@/inngest/client";
+import { ProposalStatus, ComplianceAssessmentStatus } from "@/lib/constants/statuses";
 
 const STALE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -43,7 +44,7 @@ export async function POST(
     }
 
     // Block if proposal is still generating
-    if (proposal.status === "generating") {
+    if (proposal.status === ProposalStatus.GENERATING) {
       return NextResponse.json(
         { error: "Cannot assess while proposal is generating" },
         { status: 409 },
@@ -52,7 +53,7 @@ export async function POST(
 
     // Check for stale/stuck assessment
     const assessment = proposal.compliance_assessment as Record<string, unknown> | null;
-    if (assessment?.status === "assessing") {
+    if (assessment?.status === ComplianceAssessmentStatus.ASSESSING) {
       const assessedAt = assessment.assessed_at as string | undefined;
       // If timestamp is missing, treat as stale (safe fallback — avoids permanently stuck state)
       const startTime = assessedAt ? new Date(assessedAt).getTime() : 0;
@@ -75,7 +76,7 @@ export async function POST(
         .update({
           compliance_assessment: {
             ...assessment,
-            status: "failed",
+            status: ComplianceAssessmentStatus.FAILED,
             error: "Assessment timed out and was automatically reset.",
           },
         })
@@ -88,7 +89,7 @@ export async function POST(
       data: { proposalId: id, trigger: "manual" },
     });
 
-    return NextResponse.json({ status: "assessing" });
+    return NextResponse.json({ status: ComplianceAssessmentStatus.ASSESSING });
   } catch (error) {
     return NextResponse.json(
       { error: "Internal server error" },

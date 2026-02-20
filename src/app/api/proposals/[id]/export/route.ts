@@ -9,6 +9,7 @@ import { generatePdf } from "@/lib/export/pdf-generator";
 import { createProposalVersion } from "@/lib/versioning/create-version";
 import { nanoid } from "nanoid";
 import { format } from "date-fns";
+import { ProposalStatus, GenerationStatus } from "@/lib/constants/statuses";
 
 export const maxDuration = 120; // PDF generation with Chromium can take 30-60s
 
@@ -80,7 +81,7 @@ export async function POST(
       .from("proposal_sections")
       .select("id, proposal_id, section_type, section_order, title, generated_content, edited_content, is_edited, generation_status, review_status, review_notes, diagram_image, created_at, updated_at")
       .eq("proposal_id", id)
-      .eq("generation_status", "completed")
+      .eq("generation_status", GenerationStatus.COMPLETED)
       .order("section_order", { ascending: true });
 
     if (!sections || sections.length === 0) {
@@ -173,7 +174,7 @@ export async function POST(
     // Update proposal status
     await adminClient
       .from("proposals")
-      .update({ status: "exported" })
+      .update({ status: ProposalStatus.EXPORTED })
       .eq("id", id);
 
     return NextResponse.json({

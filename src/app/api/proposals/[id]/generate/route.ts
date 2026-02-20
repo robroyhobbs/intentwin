@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { inngest } from "@/inngest/client";
+import { ProposalStatus } from "@/lib/constants/statuses";
 
 export async function POST(
   request: NextRequest,
@@ -30,11 +31,11 @@ export async function POST(
     const { data: claimed, error: claimError } = await adminClient
       .from("proposals")
       .update({
-        status: "generating",
+        status: ProposalStatus.GENERATING,
         generation_started_at: new Date().toISOString(),
       })
       .eq("id", id)
-      .neq("status", "generating")
+      .neq("status", ProposalStatus.GENERATING)
       .select("id")
       .maybeSingle();
 
@@ -61,7 +62,7 @@ export async function POST(
     });
 
     return NextResponse.json({
-      status: "generating",
+      status: ProposalStatus.GENERATING,
       proposalId: id,
       message: "Proposal generation started.",
     });

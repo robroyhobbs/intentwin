@@ -15,6 +15,7 @@ import { SkeletonSection } from "@/components/ui/skeleton";
 import { AgentationWrapper } from "@/components/review/agentation-wrapper";
 import type { ProposalReview } from "@/types/review";
 import type { Proposal, Section } from "./types";
+import { GenerationStatus, QualityReviewStatus } from "@/lib/constants/statuses";
 
 const ProposalContentRenderer = dynamic(
   () =>
@@ -168,7 +169,7 @@ export function SectionContentPane({
             )}
             {regeneratingSection === currentSection.id
               ? "Regenerating..."
-              : proposal?.quality_review?.status === "completed" &&
+              : proposal?.quality_review?.status === QualityReviewStatus.COMPLETED &&
                   proposal.quality_review.sections?.some(
                     (s) => s.section_id === currentSection.id,
                   )
@@ -179,7 +180,7 @@ export function SectionContentPane({
       </div>
 
       {/* Error */}
-      {currentSection.generation_status === "failed" && (
+      {currentSection.generation_status === GenerationStatus.FAILED && (
         <div className="mb-6 rounded-lg border border-[var(--danger-muted)] bg-[var(--danger-subtle)] p-4 text-sm text-[var(--danger)]">
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -269,7 +270,7 @@ export function SectionContentPane({
         )
       ) : (
         <div className="flex flex-col items-center justify-center py-16 text-[var(--foreground-muted)]">
-          {currentSection.generation_status === "generating" ? (
+          {currentSection.generation_status === GenerationStatus.GENERATING ? (
             <>
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--accent-subtle)] mb-4">
                 <Loader2 className="h-6 w-6 animate-spin text-[var(--accent)]" />

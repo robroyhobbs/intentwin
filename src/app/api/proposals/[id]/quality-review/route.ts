@@ -4,6 +4,7 @@ import { getReviewModelLabel } from "@/lib/ai/quality-overseer";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createLogger } from "@/lib/utils/logger";
 import { inngest } from "@/inngest/client";
+import { ProposalStatus, QualityReviewStatus, GenerationStatus } from "@/lib/constants/statuses";
 
 /** If a review has been "reviewing" for longer than this, treat it as stale/zombie. */
 const STALE_REVIEW_MS = 5 * 60 * 1000; // 5 minutes
@@ -72,7 +73,7 @@ export async function POST(
     }
 
     // Block reviews while proposal is still generating
-    if (proposal.status === "generating") {
+    if (proposal.status === ProposalStatus.GENERATING) {
       return NextResponse.json(
         {
           error:
@@ -88,7 +89,7 @@ export async function POST(
       run_at?: string;
     } | null;
 
-    if (qualityReview?.status === "reviewing") {
+    if (qualityReview?.status === QualityReviewStatus.REVIEWING) {
       // Auto-reset stale/zombie reviews instead of permanently blocking
       const runAt = qualityReview.run_at ? new Date(qualityReview.run_at).getTime() : 0;
       const elapsed = Date.now() - runAt;
@@ -114,7 +115,7 @@ export async function POST(
       .from("proposal_sections")
       .select("id", { count: "exact", head: true })
       .eq("proposal_id", id)
-      .eq("generation_status", "generating");
+      .eq("generation_status", GenerationStatus.GENERATING);
 
     if (regeneratingCount && regeneratingCount > 0) {
       return NextResponse.json(
@@ -133,7 +134,7 @@ export async function POST(
       .from("proposals")
       .update({
         quality_review: {
-          status: "reviewing",
+          status: QualityReviewStatus.REVIEWING,
           run_at: new Date().toISOString(),
           trigger,
           model: modelLabel,
@@ -152,7 +153,7 @@ export async function POST(
     });
 
     return NextResponse.json({
-      status: "reviewing",
+      status: QualityReviewStatus.REVIEWING,
       proposalId: id,
       message: "Quality review started.",
     });

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
+import { ComplianceAssessmentStatus as ComplianceAssessmentStatusConst } from "@/lib/constants/statuses";
 import type { Requirement, RequirementType, ComplianceSummary, ComplianceAssessmentStatus } from "./types";
 
 export function useComplianceData(proposalId: string) {
@@ -224,22 +225,22 @@ export function useComplianceData(proposalId: string) {
       }
 
       toast.success("Auto-assessment started...");
-      setAssessmentStatus({ status: "assessing" });
+      setAssessmentStatus({ status: ComplianceAssessmentStatusConst.ASSESSING });
 
       // Poll for completion
       if (assessPollRef.current) clearInterval(assessPollRef.current);
       assessPollRef.current = setInterval(async () => {
         const status = await fetchAssessmentStatus();
-        if (status && status.status !== "assessing") {
+        if (status && status.status !== ComplianceAssessmentStatusConst.ASSESSING) {
           if (assessPollRef.current) {
             clearInterval(assessPollRef.current);
             assessPollRef.current = null;
           }
           setAssessing(false);
-          if (status.status === "completed") {
+          if (status.status === ComplianceAssessmentStatusConst.COMPLETED) {
             toast.success(`Auto-assessment complete: ${status.results_applied || 0} requirements updated`);
             fetchRequirements(); // Refresh to show updated statuses
-          } else if (status.status === "failed") {
+          } else if (status.status === ComplianceAssessmentStatusConst.FAILED) {
             toast.error(`Assessment failed: ${status.error || "Unknown error"}`);
           }
         }

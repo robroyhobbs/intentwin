@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
 import { unauthorized, notFound, badRequest, serverError, ok } from "@/lib/api/response";
+import { ReviewStatus, AnnotationType } from "@/lib/constants/statuses";
 
 export async function GET(
   request: NextRequest,
@@ -35,11 +36,11 @@ export async function GET(
     // Compute summary
     const summary = {
       total: reviews?.length || 0,
-      open: reviews?.filter((r) => r.status === "open").length || 0,
-      resolved: reviews?.filter((r) => r.status === "resolved").length || 0,
-      dismissed: reviews?.filter((r) => r.status === "dismissed").length || 0,
+      open: reviews?.filter((r) => r.status === ReviewStatus.OPEN).length || 0,
+      resolved: reviews?.filter((r) => r.status === ReviewStatus.RESOLVED).length || 0,
+      dismissed: reviews?.filter((r) => r.status === ReviewStatus.DISMISSED).length || 0,
       approvals:
-        reviews?.filter((r) => r.annotation_type === "approval").length || 0,
+        reviews?.filter((r) => r.annotation_type === AnnotationType.APPROVAL).length || 0,
     };
 
     return ok({ reviews, summary });
@@ -70,7 +71,7 @@ export async function POST(
     const body = await request.json();
     const {
       section_id,
-      annotation_type = "comment",
+      annotation_type = AnnotationType.COMMENT,
       content,
       selector_data = {},
       selected_text,

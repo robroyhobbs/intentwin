@@ -1,4 +1,5 @@
 import type { ProposalReview } from "@/types/review";
+import { ReviewStatus } from "@/lib/constants/statuses";
 
 /**
  * Export review annotations as structured markdown for feedback sharing.
@@ -17,8 +18,8 @@ export function exportAnnotationsAsMarkdown(
     "",
     `**Date:** ${new Date().toLocaleDateString()}`,
     `**Total Comments:** ${reviews.length}`,
-    `**Open:** ${reviews.filter((r) => r.status === "open").length}`,
-    `**Resolved:** ${reviews.filter((r) => r.status === "resolved").length}`,
+    `**Open:** ${reviews.filter((r) => r.status === ReviewStatus.OPEN).length}`,
+    `**Resolved:** ${reviews.filter((r) => r.status === ReviewStatus.RESOLVED).length}`,
     "",
     "---",
     "",
@@ -46,9 +47,9 @@ export function exportAnnotationsAsMarkdown(
 
     for (const review of sectionReviews) {
       const statusEmoji =
-        review.status === "resolved"
+        review.status === ReviewStatus.RESOLVED
           ? "[RESOLVED]"
-          : review.status === "dismissed"
+          : review.status === ReviewStatus.DISMISSED
             ? "[DISMISSED]"
             : "[OPEN]";
 
@@ -70,9 +71,9 @@ export function exportAnnotationsAsMarkdown(
     lines.push("");
     for (const review of noSection) {
       const statusEmoji =
-        review.status === "resolved"
+        review.status === ReviewStatus.RESOLVED
           ? "[RESOLVED]"
-          : review.status === "dismissed"
+          : review.status === ReviewStatus.DISMISSED
             ? "[DISMISSED]"
             : "[OPEN]";
       lines.push(`- **${statusEmoji}** ${review.content}`);

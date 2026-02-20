@@ -5,6 +5,7 @@
  */
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { ComplianceAssessmentStatus, ComplianceStatus, GenerationStatus } from "@/lib/constants/statuses";
 import { generateText } from "./claude";
 import {
   buildComplianceAssessmentPrompt,
@@ -43,7 +44,7 @@ export async function runComplianceAssessment(
   const supabase = createAdminClient();
 
   const meta: ComplianceAssessmentMeta = {
-    status: "assessing",
+    status: ComplianceAssessmentStatus.ASSESSING,
     assessed_at: new Date().toISOString(),
     total_requirements: 0,
     auto_assessed: 0,
@@ -79,7 +80,7 @@ export async function runComplianceAssessment(
     if (reqErr) throw new Error(`Failed to fetch requirements: ${reqErr.message}`);
     if (!allRequirements || allRequirements.length === 0) {
       log.info("No requirements to assess");
-      meta.status = "completed";
+      meta.status = ComplianceAssessmentStatus.COMPLETED;
       await storeResult(supabase, proposalId, meta, trigger);
       return meta;
     }
@@ -89,13 +90,13 @@ export async function runComplianceAssessment(
     // Only auto-assess requirements that are currently "not_addressed"
     // Never overwrite manual user decisions
     const toAssess = allRequirements.filter(
-      (r) => r.compliance_status === "not_addressed",
+      (r) => r.compliance_status === ComplianceStatus.NOT_ADDRESSED,
     );
     meta.skipped_manual = allRequirements.length - toAssess.length;
 
     if (toAssess.length === 0) {
       log.info("All requirements already have manual status — nothing to assess");
-      meta.status = "completed";
+      meta.status = ComplianceAssessmentStatus.COMPLETED;
       await storeResult(supabase, proposalId, meta, trigger);
       return meta;
     }
@@ -105,13 +106,13 @@ export async function runComplianceAssessment(
       .from("proposal_sections")
       .select("id, section_type, title, generated_content, edited_content, generation_status")
       .eq("proposal_id", proposalId)
-      .eq("generation_status", "completed")
+      .eq("generation_status", GenerationStatus.COMPLETED)
       .order("section_order", { ascending: true });
 
     if (secErr) throw new Error(`Failed to fetch sections: ${secErr.message}`);
     if (!sections || sections.length === 0) {
       log.warn("No completed sections to assess against");
-      meta.status = "completed";
+      meta.status = ComplianceAssessmentStatus.COMPLETED;
       await storeResult(supabase, proposalId, meta, trigger);
       return meta;
     }
@@ -200,7 +201,7 @@ export async function runComplianceAssessment(
     }
 
     meta.results_applied = appliedCount;
-    meta.status = "completed";
+    meta.status = ComplianceAssessmentStatus.COMPLETED;
 
     log.info("Compliance assessment complete", {
       total: meta.total_requirements,
@@ -213,7 +214,7 @@ export async function runComplianceAssessment(
     return meta;
   } catch (error) {
     log.error("Compliance assessment failed", error);
-    meta.status = "failed";
+    meta.status = ComplianceAssessmentStatus.FAILED;
     meta.error = error instanceof Error ? error.message : String(error);
     await storeResult(supabase, proposalId, meta, trigger).catch(() => {});
     return meta;

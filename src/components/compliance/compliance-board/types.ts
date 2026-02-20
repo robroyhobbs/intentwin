@@ -4,6 +4,7 @@ import {
   Circle,
   MinusCircle,
 } from "lucide-react";
+import { ComplianceStatus } from "@/lib/constants/statuses";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -57,25 +58,25 @@ export interface ComplianceBoardProps {
 
 export const COLUMNS = [
   {
-    id: "met" as const,
+    id: ComplianceStatus.MET as typeof ComplianceStatus.MET,
     title: "Met",
     icon: CheckCircle2,
     color: "var(--success)",
   },
   {
-    id: "partially_met" as const,
+    id: ComplianceStatus.PARTIALLY_MET as typeof ComplianceStatus.PARTIALLY_MET,
     title: "Partially Met",
     icon: CircleDot,
     color: "var(--warning)",
   },
   {
-    id: "not_addressed" as const,
+    id: ComplianceStatus.NOT_ADDRESSED as typeof ComplianceStatus.NOT_ADDRESSED,
     title: "Not Addressed",
     icon: Circle,
     color: "var(--danger)",
   },
   {
-    id: "not_applicable" as const,
+    id: ComplianceStatus.NOT_APPLICABLE as typeof ComplianceStatus.NOT_APPLICABLE,
     title: "N/A",
     icon: MinusCircle,
     color: "var(--foreground-muted)",

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
+import { ReviewStageStatus } from "@/lib/constants/statuses";
 
 /**
  * GET /api/proposals/[id]/review-stages/current
@@ -29,7 +30,7 @@ export async function GET(
       .select("id, proposal_id, organization_id, stage, stage_order, status, started_at, completed_at, completed_by, created_at")
       .eq("proposal_id", id)
       .eq("organization_id", context.organizationId)
-      .eq("status", "active")
+      .eq("status", ReviewStageStatus.ACTIVE)
       .maybeSingle();
 
     if (error) {

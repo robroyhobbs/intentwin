@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils/cn";
 import { StatusDot } from "./section-status-badge";
+import { GenerationStatus } from "@/lib/constants/statuses";
 
 interface SectionNavItem {
   id: string;
@@ -22,7 +23,7 @@ export function SectionNavSidebar({
   onSelect,
 }: SectionNavSidebarProps) {
   const completedCount = sections.filter(
-    (s) => s.generation_status === "completed"
+    (s) => s.generation_status === GenerationStatus.COMPLETED
   ).length;
 
   const progress = sections.length

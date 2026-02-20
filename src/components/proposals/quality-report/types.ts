@@ -1,3 +1,5 @@
+import { QualityReviewStatus } from "@/lib/constants/statuses";
+
 export interface DimensionScores {
   content_quality: number;
   client_fit: number;
@@ -43,7 +45,7 @@ export interface RemediationEntry {
 }
 
 export interface QualityReviewData {
-  status: "reviewing" | "completed" | "failed";
+  status: typeof QualityReviewStatus.REVIEWING | typeof QualityReviewStatus.COMPLETED | typeof QualityReviewStatus.FAILED;
   run_at: string;
   trigger: "auto_post_generation" | "manual";
   model: string;

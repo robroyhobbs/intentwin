@@ -7,6 +7,7 @@ import {
 } from "@/lib/supabase/auth-api";
 import { unauthorized, badRequest, forbidden, serverError, ok, created } from "@/lib/api/response";
 import { sanitizeTitle } from "@/lib/security/sanitize";
+import { ProposalStatus, IntentStatus, ComplianceStatus } from "@/lib/constants/statuses";
 
 export async function GET(request: NextRequest) {
   try {
@@ -95,7 +96,7 @@ export async function POST(request: NextRequest) {
       title: sanitizedTitle,
       intake_data: intake_data || {},
       win_strategy_data: win_strategy_data || {},
-      status: "intake",
+      status: ProposalStatus.INTAKE,
       created_by: context.user.id,
       organization_id: context.organizationId,
       team_id: context.teamId,
@@ -107,7 +108,7 @@ export async function POST(request: NextRequest) {
     }
     if (intent_status) {
       proposalData.intent_status = intent_status;
-      if (intent_status === "approved") {
+      if (intent_status === IntentStatus.APPROVED) {
         proposalData.intent_approved_by = context.user.id;
         proposalData.intent_approved_at = new Date().toISOString();
       }
@@ -144,7 +145,7 @@ export async function POST(request: NextRequest) {
           requirement_text: req,
           category: "mandatory",
           requirement_type: "certification",
-          compliance_status: "not_addressed",
+          compliance_status: ComplianceStatus.NOT_ADDRESSED,
           is_extracted: false,
         }));
 

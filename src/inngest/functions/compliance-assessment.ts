@@ -1,5 +1,6 @@
 import { inngest } from "../client";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { ComplianceAssessmentStatus } from "@/lib/constants/statuses";
 import { runComplianceAssessment } from "@/lib/ai/compliance-assessor";
 import { createLogger } from "@/lib/utils/logger";
 
@@ -66,13 +67,13 @@ export const complianceAssessmentFn = inngest.createFunction(
           const existing = (current?.compliance_assessment as Record<string, unknown>) || {};
 
           // Only update if still in "assessing" state (avoid clobbering a concurrent success)
-          if (existing.status === "assessing") {
+          if (existing.status === ComplianceAssessmentStatus.ASSESSING) {
             await supabase
               .from("proposals")
               .update({
                 compliance_assessment: {
                   ...existing,
-                  status: "failed",
+                  status: ComplianceAssessmentStatus.FAILED,
                   error: errorMessage,
                   assessed_at: new Date().toISOString(),
                 },

@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { ProcessingStatus } from "@/lib/constants/statuses";
 import { logger } from "@/lib/utils/logger";
 import { parseDocument } from "./parser";
 import { chunkSections } from "./chunker";
@@ -11,7 +12,7 @@ export async function processDocument(documentId: string): Promise<void> {
   // Update status to processing
   await supabase
     .from("documents")
-    .update({ processing_status: "processing" })
+    .update({ processing_status: ProcessingStatus.PROCESSING })
     .eq("id", documentId);
 
   try {
@@ -52,7 +53,7 @@ export async function processDocument(documentId: string): Promise<void> {
       await supabase
         .from("documents")
         .update({
-          processing_status: "completed",
+          processing_status: ProcessingStatus.COMPLETED,
           chunk_count: 0,
           parsed_text_preview: "No extractable text content found.",
         })
@@ -97,7 +98,7 @@ export async function processDocument(documentId: string): Promise<void> {
     await supabase
       .from("documents")
       .update({
-        processing_status: "completed",
+        processing_status: ProcessingStatus.COMPLETED,
         chunk_count: chunks.length,
         parsed_text_preview: preview,
       })
@@ -114,7 +115,7 @@ export async function processDocument(documentId: string): Promise<void> {
     await supabase
       .from("documents")
       .update({
-        processing_status: "failed",
+        processing_status: ProcessingStatus.FAILED,
         processing_error: errorMessage,
       })
       .eq("id", documentId);

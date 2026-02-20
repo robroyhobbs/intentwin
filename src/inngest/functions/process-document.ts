@@ -1,5 +1,6 @@
 import { inngest } from "../client";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { ProcessingStatus } from "@/lib/constants/statuses";
 import { parseDocument } from "@/lib/documents/parser";
 import { chunkSections } from "@/lib/documents/chunker";
 import { generateEmbeddings } from "@/lib/ai/embeddings";
@@ -38,7 +39,7 @@ export const processDocumentFn = inngest.createFunction(
       // Set status to processing
       await supabase
         .from("documents")
-        .update({ processing_status: "processing" })
+        .update({ processing_status: ProcessingStatus.PROCESSING })
         .eq("id", documentId);
 
       try {
@@ -101,7 +102,7 @@ export const processDocumentFn = inngest.createFunction(
         await supabase
           .from("documents")
           .update({
-            processing_status: "failed",
+            processing_status: ProcessingStatus.FAILED,
             processing_error: errorMessage,
           })
           .eq("id", documentId);
@@ -119,7 +120,7 @@ export const processDocumentFn = inngest.createFunction(
         await supabase
           .from("documents")
           .update({
-            processing_status: "completed",
+            processing_status: ProcessingStatus.COMPLETED,
             chunk_count: 0,
             parsed_text_preview:
               "No extractable text content found.",
@@ -187,7 +188,7 @@ export const processDocumentFn = inngest.createFunction(
       await supabase
         .from("documents")
         .update({
-          processing_status: "completed",
+          processing_status: ProcessingStatus.COMPLETED,
           chunk_count: totalInserted,
           parsed_text_preview: preview,
         })

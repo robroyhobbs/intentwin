@@ -1,5 +1,6 @@
 import { inngest } from "../client";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { GenerationStatus, ProposalStatus } from "@/lib/constants/statuses";
 import { generateText } from "@/lib/ai/claude";
 import { createProposalVersion } from "@/lib/versioning/create-version";
 import {
@@ -47,7 +48,7 @@ async function generateSingleSection(
   // Mark as generating
   await supabase
     .from("proposal_sections")
-    .update({ generation_status: "generating" })
+    .update({ generation_status: GenerationStatus.GENERATING })
     .eq("id", sectionId);
 
   try {
@@ -131,7 +132,7 @@ async function generateSingleSection(
       .from("proposal_sections")
       .update({
         generated_content: generatedContent,
-        generation_status: "completed",
+        generation_status: GenerationStatus.COMPLETED,
         generation_prompt: prompt.slice(0, 2000),
         retrieved_context_ids: chunkIds,
       })
@@ -183,7 +184,7 @@ async function generateSingleSection(
     await supabase
       .from("proposal_sections")
       .update({
-        generation_status: "failed",
+        generation_status: GenerationStatus.FAILED,
         generation_error: errorMessage,
       })
       .eq("id", sectionId);
@@ -235,7 +236,7 @@ export const generateProposalFn = inngest.createFunction(
         section_type: config.type,
         section_order: config.order,
         title: config.title,
-        generation_status: "pending" as const,
+        generation_status: GenerationStatus.PENDING,
       }));
 
       const { data: sections, error: sectionError } = await supabase
@@ -303,10 +304,10 @@ export const generateProposalFn = inngest.createFunction(
         .eq("proposal_id", proposalId);
 
       const completedCount =
-        finalSections?.filter((s) => s.generation_status === "completed")
+        finalSections?.filter((s) => s.generation_status === GenerationStatus.COMPLETED)
           .length ?? 0;
       const failedCount =
-        finalSections?.filter((s) => s.generation_status === "failed")
+        finalSections?.filter((s) => s.generation_status === GenerationStatus.FAILED)
           .length ?? 0;
 
       const log = createLogger({
@@ -317,7 +318,7 @@ export const generateProposalFn = inngest.createFunction(
       if (completedCount === 0) {
         await supabase
           .from("proposals")
-          .update({ status: "draft" })
+          .update({ status: ProposalStatus.DRAFT })
           .eq("id", proposalId);
         throw new Error(
           `All ${failedCount} sections failed to generate`,
@@ -328,7 +329,7 @@ export const generateProposalFn = inngest.createFunction(
       await supabase
         .from("proposals")
         .update({
-          status: "review",
+          status: ProposalStatus.REVIEW,
           generation_completed_at: new Date().toISOString(),
           ...(failedCount > 0
             ? {

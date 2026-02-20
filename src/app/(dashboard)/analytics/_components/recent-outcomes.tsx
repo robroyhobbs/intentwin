@@ -8,6 +8,7 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import type { AnalyticsData } from "./types";
+import { DealOutcome } from "@/lib/constants/statuses";
 
 interface RecentOutcomesProps {
   recentOutcomes: AnalyticsData["recentOutcomes"];
@@ -55,12 +56,12 @@ export function RecentOutcomes({
                 <div className="flex items-center gap-3">
                   <div
                     className={`h-8 w-8 rounded-lg flex items-center justify-center ${
-                      outcome.outcome === "won"
+                      outcome.outcome === DealOutcome.WON
                         ? "bg-[var(--success-subtle)]"
                         : "bg-[var(--danger-subtle)]"
                     }`}
                   >
-                    {outcome.outcome === "won" ? (
+                    {outcome.outcome === DealOutcome.WON ? (
                       <Trophy className="h-4 w-4 text-[var(--success)]" />
                     ) : (
                       <XCircle className="h-4 w-4 text-[var(--danger)]" />
@@ -110,16 +111,16 @@ export function RecentOutcomes({
               <div className="flex items-center gap-4">
                 <div
                   className={`h-10 w-10 rounded-lg flex items-center justify-center ${
-                    proposal.dealOutcome === "won"
+                    proposal.dealOutcome === DealOutcome.WON
                       ? "bg-[var(--success-subtle)]"
-                      : proposal.dealOutcome === "lost"
+                      : proposal.dealOutcome === DealOutcome.LOST
                       ? "bg-[var(--danger-subtle)]"
                       : "bg-[var(--warning-subtle)]"
                   }`}
                 >
-                  {proposal.dealOutcome === "won" ? (
+                  {proposal.dealOutcome === DealOutcome.WON ? (
                     <Trophy className="h-5 w-5 text-[var(--success)]" />
-                  ) : proposal.dealOutcome === "lost" ? (
+                  ) : proposal.dealOutcome === DealOutcome.LOST ? (
                     <XCircle className="h-5 w-5 text-[var(--danger)]" />
                   ) : (
                     <Clock className="h-5 w-5 text-[var(--warning)]" />
@@ -144,14 +145,14 @@ export function RecentOutcomes({
                 )}
                 <span
                   className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${
-                    proposal.dealOutcome === "won"
+                    proposal.dealOutcome === DealOutcome.WON
                       ? "bg-[var(--success-subtle)] text-[var(--success)]"
-                      : proposal.dealOutcome === "lost"
+                      : proposal.dealOutcome === DealOutcome.LOST
                       ? "bg-[var(--danger-subtle)] text-[var(--danger)]"
                       : "bg-[var(--warning-subtle)] text-[var(--warning)]"
                   }`}
                 >
-                  {proposal.dealOutcome || "pending"}
+                  {proposal.dealOutcome || DealOutcome.PENDING}
                 </span>
               </div>
             </Link>

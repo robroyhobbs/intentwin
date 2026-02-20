@@ -10,6 +10,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import type { ProposalReview } from "@/types/review";
+import { ReviewStatus } from "@/lib/constants/statuses";
 
 interface ReviewCommentsPanelProps {
   reviews: ProposalReview[];
@@ -31,8 +32,8 @@ export function ReviewCommentsPanel({
 }: ReviewCommentsPanelProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const openReviews = reviews.filter((r) => r.status === "open");
-  const closedReviews = reviews.filter((r) => r.status !== "open");
+  const openReviews = reviews.filter((r) => r.status === ReviewStatus.OPEN);
+  const closedReviews = reviews.filter((r) => r.status !== ReviewStatus.OPEN);
 
   return (
     <div className="space-y-2">
@@ -98,8 +99,8 @@ function ReviewCard({
   onDismiss: () => void;
 }) {
   const Icon = TYPE_ICONS[review.annotation_type] || MessageSquare;
-  const isOpen = review.status === "open";
-  const isResolved = review.status === "resolved";
+  const isOpen = review.status === ReviewStatus.OPEN;
+  const isResolved = review.status === ReviewStatus.RESOLVED;
 
   return (
     <div

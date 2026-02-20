@@ -17,6 +17,7 @@ import type {
   ExtractedIntake,
   ClientResearch,
 } from "@/types/intake";
+import { ProcessingStatus } from "@/lib/constants/statuses";
 
 interface FlexibleIntakeProps {
   onExtracted: (data: ExtractedIntake, research: ClientResearch | null) => void;
@@ -75,10 +76,10 @@ export function FlexibleIntake({
         const response = await fetch(`/api/documents/${docId}`);
         if (response.ok) {
           const data = await response.json();
-          if (data.processing_status === "completed") {
+          if (data.processing_status === ProcessingStatus.COMPLETED) {
             return { success: true };
           }
-          if (data.processing_status === "failed") {
+          if (data.processing_status === ProcessingStatus.FAILED) {
             console.error(
               `Document processing failed: ${fileName}`,
               data.processing_error,

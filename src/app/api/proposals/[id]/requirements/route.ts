@@ -2,9 +2,9 @@ import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
 import { unauthorized, notFound, badRequest, serverError, ok, created } from "@/lib/api/response";
+import { ComplianceStatus, COMPLIANCE_STATUSES } from "@/lib/constants/statuses";
 
 const VALID_CATEGORIES = ["mandatory", "desirable", "informational"] as const;
-const VALID_STATUSES = ["met", "partially_met", "not_addressed", "not_applicable"] as const;
 const VALID_REQUIREMENT_TYPES = ["content", "format", "submission", "certification"] as const;
 
 /**
@@ -55,18 +55,18 @@ export async function GET(
       const ofType = sorted.filter(r => (r.requirement_type || "content") === t);
       byType[t] = {
         total: ofType.length,
-        met: ofType.filter(r => r.compliance_status === "met" || r.compliance_status === "not_applicable").length,
-        gaps: ofType.filter(r => r.category === "mandatory" && r.compliance_status === "not_addressed").length,
+        met: ofType.filter(r => r.compliance_status === ComplianceStatus.MET || r.compliance_status === ComplianceStatus.NOT_APPLICABLE).length,
+        gaps: ofType.filter(r => r.category === "mandatory" && r.compliance_status === ComplianceStatus.NOT_ADDRESSED).length,
       };
     }
 
     const summary = {
       total: sorted.length,
-      met: sorted.filter(r => r.compliance_status === "met").length,
-      partially_met: sorted.filter(r => r.compliance_status === "partially_met").length,
-      not_addressed: sorted.filter(r => r.compliance_status === "not_addressed").length,
-      not_applicable: sorted.filter(r => r.compliance_status === "not_applicable").length,
-      mandatory_gaps: sorted.filter(r => r.category === "mandatory" && r.compliance_status === "not_addressed").length,
+      met: sorted.filter(r => r.compliance_status === ComplianceStatus.MET).length,
+      partially_met: sorted.filter(r => r.compliance_status === ComplianceStatus.PARTIALLY_MET).length,
+      not_addressed: sorted.filter(r => r.compliance_status === ComplianceStatus.NOT_ADDRESSED).length,
+      not_applicable: sorted.filter(r => r.compliance_status === ComplianceStatus.NOT_APPLICABLE).length,
+      mandatory_gaps: sorted.filter(r => r.category === "mandatory" && r.compliance_status === ComplianceStatus.NOT_ADDRESSED).length,
       by_type: byType,
     };
 
@@ -172,8 +172,8 @@ export async function PATCH(
       if (!update.id) {
         return badRequest("Each update must have an id");
       }
-      if (update.compliance_status && !VALID_STATUSES.includes(update.compliance_status)) {
-        return badRequest(`Invalid compliance_status. Must be one of: ${VALID_STATUSES.join(", ")}`);
+      if (update.compliance_status && !COMPLIANCE_STATUSES.includes(update.compliance_status)) {
+        return badRequest(`Invalid compliance_status. Must be one of: ${COMPLIANCE_STATUSES.join(", ")}`);
       }
       if (update.category && !VALID_CATEGORIES.includes(update.category)) {
         return badRequest(`Invalid category. Must be one of: ${VALID_CATEGORIES.join(", ")}`);

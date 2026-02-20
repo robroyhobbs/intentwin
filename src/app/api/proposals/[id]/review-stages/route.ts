@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
 import { unauthorized, notFound, serverError, ok, created, conflict } from "@/lib/api/response";
+import { ReviewStageStatus } from "@/lib/constants/statuses";
 
 /**
  * GET /api/proposals/[id]/review-stages
@@ -67,7 +68,7 @@ export async function GET(
       };
     });
 
-    const currentStage = stagesWithReviewers.find((s) => s.status === "active") || null;
+    const currentStage = stagesWithReviewers.find((s) => s.status === ReviewStageStatus.ACTIVE) || null;
 
     return ok({ stages: stagesWithReviewers, currentStage });
   } catch (error) {
@@ -127,7 +128,7 @@ export async function POST(
           organization_id: context.organizationId,
           stage: "pink",
           stage_order: 1,
-          status: "active",
+          status: ReviewStageStatus.ACTIVE,
           started_at: now,
         },
         {
@@ -135,21 +136,21 @@ export async function POST(
           organization_id: context.organizationId,
           stage: "red",
           stage_order: 2,
-          status: "pending",
+          status: ReviewStageStatus.PENDING,
         },
         {
           proposal_id: id,
           organization_id: context.organizationId,
           stage: "gold",
           stage_order: 3,
-          status: "pending",
+          status: ReviewStageStatus.PENDING,
         },
         {
           proposal_id: id,
           organization_id: context.organizationId,
           stage: "white",
           stage_order: 4,
-          status: "pending",
+          status: ReviewStageStatus.PENDING,
         },
       ])
       .select("id, proposal_id, organization_id, stage, stage_order, status, started_at, completed_at, completed_by, created_at")

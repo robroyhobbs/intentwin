@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { FileText, Play, Download, ArrowUpRight } from "lucide-react";
 import { SectionStatusBadge } from "./section-status-badge";
+import { ProposalStatus } from "@/lib/constants/statuses";
 
 interface ProposalCardProps {
   id: string;
@@ -14,10 +15,10 @@ interface ProposalCardProps {
 }
 
 const QUICK_ACTIONS: Record<string, { label: string; icon: typeof Play }> = {
-  intake: { label: "Continue", icon: Play },
-  draft: { label: "Generate", icon: Play },
-  review: { label: "Export", icon: Download },
-  exported: { label: "View", icon: FileText },
+  [ProposalStatus.INTAKE]: { label: "Continue", icon: Play },
+  [ProposalStatus.DRAFT]: { label: "Generate", icon: Play },
+  [ProposalStatus.REVIEW]: { label: "Export", icon: Download },
+  [ProposalStatus.EXPORTED]: { label: "View", icon: FileText },
 };
 
 export function ProposalCard({

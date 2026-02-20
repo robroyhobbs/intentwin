@@ -4,6 +4,7 @@ import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
 import { generateText } from "@/lib/ai/claude";
 import { buildAutoFixPrompt } from "@/lib/ai/prompts/auto-fix";
 import { getQualityFeedbackForSection } from "@/lib/ai/quality-overseer";
+import { ReviewStatus } from "@/lib/constants/statuses";
 
 /** AI-powered section rewrite */
 export const maxDuration = 120;
@@ -68,7 +69,7 @@ export async function POST(
       .from("proposal_reviews")
       .select("id, content, selected_text")
       .eq("proposal_id", id)
-      .eq("status", "open")
+      .eq("status", ReviewStatus.OPEN)
       .or(`section_id.eq.${sectionId},section_id.is.null`);
 
     if (reviewsError) {
@@ -144,7 +145,7 @@ export async function POST(
       const { error: resolveError } = await adminClient
         .from("proposal_reviews")
         .update({
-          status: "resolved",
+          status: ReviewStatus.RESOLVED,
           updated_at: new Date().toISOString(),
         })
         .in("id", reviewIds);

@@ -13,6 +13,7 @@
  */
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { GenerationStatus, QualityReviewStatus } from "@/lib/constants/statuses";
 import { logger } from "@/lib/utils/logger";
 import { logQualityReviewMetric } from "@/lib/observability/metrics";
 import { parallelBatch, PIPELINE_CONCURRENCY } from "./pipeline/retrieval";
@@ -336,7 +337,7 @@ export async function runQualityReview(
   const judges = getAvailableJudges();
 
   const result: QualityReviewResult = {
-    status: "reviewing",
+    status: QualityReviewStatus.REVIEWING,
     run_at: runAt,
     trigger,
     model: judges.length > 1 ? "council" : judges[0]?.id || "unknown",
@@ -371,7 +372,7 @@ export async function runQualityReview(
       .from("proposal_sections")
       .select("id, section_type, title, generated_content, generation_status")
       .eq("proposal_id", proposalId)
-      .eq("generation_status", "completed")
+      .eq("generation_status", GenerationStatus.COMPLETED)
       .order("section_order", { ascending: true });
 
     if (sectionsErr) {
@@ -380,7 +381,7 @@ export async function runQualityReview(
 
     // Handle empty sections
     if (!sections || sections.length === 0) {
-      result.status = "completed";
+      result.status = QualityReviewStatus.COMPLETED;
       result.overall_score = 0;
       result.pass = false;
       result.consensus = "split";
@@ -473,7 +474,7 @@ export async function runQualityReview(
     }
 
     if (hasFatalError && sectionReviews.length === 0) {
-      result.status = "failed";
+      result.status = QualityReviewStatus.FAILED;
       result.sections = sectionReviews;
       await storeResult(supabase, proposalId, result);
       return result;
@@ -584,7 +585,7 @@ export async function runQualityReview(
         : 0;
     result.pass = result.overall_score >= PASS_THRESHOLD;
     result.consensus = calculateConsensus(sectionReviews);
-    result.status = "completed";
+    result.status = QualityReviewStatus.COMPLETED;
 
     // Log quality review metric (non-critical — never break main flow)
     try {
@@ -621,7 +622,7 @@ export async function runQualityReview(
     return result;
   } catch (err) {
     logger.error("Quality review error", err);
-    result.status = "failed";
+    result.status = QualityReviewStatus.FAILED;
 
     // Log quality review failure metric (non-critical)
     try {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
 import { getQualityFeedbackForSection } from "@/lib/ai/quality-overseer";
 import { inngest } from "@/inngest/client";
+import { GenerationStatus, QualityReviewStatus } from "@/lib/constants/statuses";
 
 export async function POST(
   request: NextRequest,
@@ -25,7 +26,7 @@ export async function POST(
 
     // Block regeneration while quality review is in progress
     const qualityReview = proposal.quality_review as { status?: string } | null;
-    if (qualityReview?.status === "reviewing") {
+    if (qualityReview?.status === QualityReviewStatus.REVIEWING) {
       return NextResponse.json(
         {
           error:
@@ -52,7 +53,7 @@ export async function POST(
     });
 
     return NextResponse.json({
-      status: "regenerating",
+      status: GenerationStatus.REGENERATING,
       sectionId,
       message: qualityFeedback
         ? "Section regeneration started with quality feedback."

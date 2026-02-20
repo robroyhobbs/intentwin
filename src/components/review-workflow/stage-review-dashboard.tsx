@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
+import { ReviewStageStatus, StageReviewerStatus } from "@/lib/constants/statuses";
 import { ReviewStageTracker } from "./review-stage-tracker";
 import { ReviewerAssignment } from "./reviewer-assignment";
 import { SectionReviewForm } from "./section-review-form";
@@ -102,8 +103,8 @@ export function StageReviewDashboard({
 
       // Auto-select the active (or first non-completed) stage
       const active =
-        stageList.find((s) => s.status === "active") ??
-        stageList.find((s) => s.status !== "completed") ??
+        stageList.find((s) => s.status === ReviewStageStatus.ACTIVE) ??
+        stageList.find((s) => s.status !== ReviewStageStatus.COMPLETED) ??
         stageList[stageList.length - 1] ??
         null;
       setActiveStageId(active?.id ?? null);
@@ -231,7 +232,7 @@ export function StageReviewDashboard({
   const sectionsWithReviews = sections.filter(
     (s) => reviewMatrix.has(s.id) && (reviewMatrix.get(s.id)?.size ?? 0) > 0,
   ).length;
-  const allReviewersComplete = reviewers.every((r) => r.status === "completed");
+  const allReviewersComplete = reviewers.every((r) => r.status === StageReviewerStatus.COMPLETED);
 
   // ── Loading State ────────────────────────────────────────────────────────
 
@@ -444,13 +445,13 @@ export function StageReviewDashboard({
                       : "var(--warning)",
                   }}
                 >
-                  {reviewers.filter((r) => r.status === "completed").length}/
+                  {reviewers.filter((r) => r.status === StageReviewerStatus.COMPLETED).length}/
                   {reviewers.length}
                 </span>
               </span>
             </div>
 
-            {activeStage.status !== "completed" && (
+            {activeStage.status !== ReviewStageStatus.COMPLETED && (
               <button
                 type="button"
                 onClick={() => setShowAdvanceModal(true)}

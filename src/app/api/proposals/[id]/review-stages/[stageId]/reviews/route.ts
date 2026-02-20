@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
+import { StageReviewerStatus } from "@/lib/constants/statuses";
 
 /**
  * GET /api/proposals/[id]/review-stages/[stageId]/reviews
@@ -259,10 +260,10 @@ export async function POST(
     }
 
     // If this is the reviewer's first review, update stage_reviewers status to 'in_progress'
-    if (stageReviewer.status === "pending") {
+    if (stageReviewer.status === StageReviewerStatus.PENDING) {
       await adminClient
         .from("stage_reviewers")
-        .update({ status: "in_progress" })
+        .update({ status: StageReviewerStatus.IN_PROGRESS })
         .eq("id", stageReviewer.id)
         .eq("organization_id", context.organizationId);
     }

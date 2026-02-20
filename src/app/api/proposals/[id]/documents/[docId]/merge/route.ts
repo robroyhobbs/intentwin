@@ -6,6 +6,7 @@ import {
 } from "@/lib/supabase/auth-api";
 import { VALID_SECTION_TYPES } from "@/lib/ai/prompts/extract-requirements";
 import type { MergeRequest, MergeResponse } from "@/types/proposal-documents";
+import { ComplianceStatus, SectionReviewStatus } from "@/lib/constants/statuses";
 
 type RouteParams = {
   params: Promise<{ id: string; docId: string }>;
@@ -148,7 +149,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             requirement_text: req.requirement_text,
             source_reference: req.source_reference || null,
             category: req.category || "desirable",
-            compliance_status: "not_addressed",
+            compliance_status: ComplianceStatus.NOT_ADDRESSED,
             mapped_section_id: mappedSectionId,
             is_extracted: true,
             source_document_id: req.source_document_id,
@@ -244,7 +245,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         const { error: flagError } = await adminClient
           .from("proposal_sections")
           .update({
-            review_status: "needs_revision",
+            review_status: SectionReviewStatus.NEEDS_REVISION,
             review_notes: `Flagged for revision: new document "${documentId}" added requirements affecting this section.`,
           })
           .eq("proposal_id", proposalId)

@@ -1,5 +1,6 @@
 import { inngest } from "../client";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { QualityReviewStatus } from "@/lib/constants/statuses";
 import { runQualityReview } from "@/lib/ai/quality-overseer";
 import { createLogger } from "@/lib/utils/logger";
 
@@ -76,13 +77,13 @@ export const qualityReviewFn = inngest.createFunction(
 
           const qr =
             (current?.quality_review as Record<string, unknown>) || {};
-          if (qr.status === "reviewing") {
+          if (qr.status === QualityReviewStatus.REVIEWING) {
             await supabase
               .from("proposals")
               .update({
                 quality_review: {
                   ...qr,
-                  status: "failed",
+                  status: QualityReviewStatus.FAILED,
                   error: errorMessage,
                 },
               })

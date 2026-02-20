@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { GenerationStatus } from "@/lib/constants/statuses";
 import { generateText } from "../claude";
 import {
   getPersuasionPrompt,
@@ -47,7 +48,7 @@ export async function regenerateSection(
   // Mark as generating
   await supabase
     .from("proposal_sections")
-    .update({ generation_status: "generating", generation_error: null })
+    .update({ generation_status: GenerationStatus.GENERATING, generation_error: null })
     .eq("id", sectionId);
 
   try {
@@ -136,7 +137,7 @@ export async function regenerateSection(
         generated_content: generatedContent,
         edited_content: null,
         is_edited: false,
-        generation_status: "completed",
+        generation_status: GenerationStatus.COMPLETED,
         generation_prompt: prompt.slice(0, 2000),
         retrieved_context_ids: chunkIds,
         generation_error: null,
@@ -180,7 +181,7 @@ export async function regenerateSection(
     await supabase
       .from("proposal_sections")
       .update({
-        generation_status: "failed",
+        generation_status: GenerationStatus.FAILED,
         generation_error: errorMessage,
       })
       .eq("id", sectionId);

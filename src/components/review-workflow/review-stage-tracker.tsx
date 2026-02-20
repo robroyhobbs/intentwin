@@ -1,6 +1,7 @@
 "use client";
 
 import { Check } from "lucide-react";
+import { ReviewStageStatus } from "@/lib/constants/statuses";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -50,7 +51,7 @@ function StatusBadge({ status }: { status: string }) {
     pending: { bg: "rgba(148, 163, 184, 0.1)", text: "var(--foreground-subtle)" },
   };
 
-  const style = colors[status] ?? colors.pending;
+  const style = colors[status] ?? colors[ReviewStageStatus.PENDING];
 
   return (
     <span
@@ -90,7 +91,7 @@ export function ReviewStageTracker({
         {sorted.map((stage, idx) => {
           const color = getStageColor(stage.stage);
           const isActive = stage.id === activeStageId;
-          const isCompleted = stage.status === "completed";
+          const isCompleted = stage.status === ReviewStageStatus.COMPLETED;
           const isClickable = isCompleted || isActive;
 
           return (

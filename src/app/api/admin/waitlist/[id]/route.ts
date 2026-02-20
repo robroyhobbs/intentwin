@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext } from "@/lib/supabase/auth-api";
-
-const VALID_STATUSES = [
-  "pending",
-  "contacted",
-  "approved",
-  "rejected",
-] as const;
-type WaitlistStatus = (typeof VALID_STATUSES)[number];
+import { WaitlistStatus, WAITLIST_STATUSES, type WaitlistStatusType } from "@/lib/constants/statuses";
 
 /**
  * PATCH /api/admin/waitlist/[id]
@@ -38,10 +31,10 @@ export async function PATCH(
     const updateData: Record<string, unknown> = {};
 
     if (status !== undefined) {
-      if (!VALID_STATUSES.includes(status as WaitlistStatus)) {
+      if (!WAITLIST_STATUSES.includes(status as WaitlistStatusType)) {
         return NextResponse.json(
           {
-            error: `Invalid status. Must be one of: ${VALID_STATUSES.join(", ")}`,
+            error: `Invalid status. Must be one of: ${WAITLIST_STATUSES.join(", ")}`,
           },
           { status: 400 },
         );
@@ -89,7 +82,7 @@ export async function PATCH(
     }
 
     // When approved, auto-add email to allowed_emails so the user can sign up
-    if (status === "approved" && entry.email) {
+    if (status === WaitlistStatus.APPROVED && entry.email) {
       await adminClient
         .from("allowed_emails")
         .upsert({ email: entry.email }, { onConflict: "email" });

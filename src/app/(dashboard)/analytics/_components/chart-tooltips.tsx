@@ -1,5 +1,7 @@
 "use client";
 
+import { DealOutcome } from "@/lib/constants/statuses";
+
 // Theme-matched hex colors
 export const COLORS = {
   accent: "#00FF88",
@@ -161,9 +163,9 @@ export const ScatterTooltip = ({ active, payload }: any) => {
       <p
         style={{
           color:
-            item.outcome === "won"
+            item.outcome === DealOutcome.WON
               ? COLORS.success
-              : item.outcome === "lost"
+              : item.outcome === DealOutcome.LOST
               ? COLORS.danger
               : COLORS.foregroundMuted,
           fontSize: 12,

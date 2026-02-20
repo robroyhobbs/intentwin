@@ -8,6 +8,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
+import { ProposalStatus, QualityReviewStatus } from "@/lib/constants/statuses";
 
 import type {
   QualityReviewData,
@@ -25,7 +26,7 @@ export function QualityReport({
   initialData,
   proposalStatus,
 }: QualityReportProps) {
-  const isGenerating = proposalStatus === "generating";
+  const isGenerating = proposalStatus === ProposalStatus.GENERATING;
   const [data, setData] = useState<QualityReviewData | null>(
     initialData || null,
   );
@@ -52,18 +53,18 @@ export function QualityReport({
       const result = await res.json();
       if (result) {
         setData(result);
-        if (result.status !== "reviewing") {
+        if (result.status !== QualityReviewStatus.REVIEWING) {
           if (pollRef.current) {
             clearInterval(pollRef.current);
             pollRef.current = null;
           }
-          if (result.status === "completed") {
+          if (result.status === QualityReviewStatus.COMPLETED) {
             toast.success(
               result.pass
                 ? `Quality review passed! Score: ${result.overall_score}/10`
                 : `Quality review complete. Score: ${result.overall_score}/10`,
             );
-          } else if (result.status === "failed") {
+          } else if (result.status === QualityReviewStatus.FAILED) {
             toast.error("Quality review failed. Try again.");
           }
         }
@@ -74,7 +75,7 @@ export function QualityReport({
   }, [authFetch, proposalId]);
 
   useEffect(() => {
-    if (data?.status === "reviewing" && !pollRef.current) {
+    if (data?.status === QualityReviewStatus.REVIEWING && !pollRef.current) {
       pollRef.current = setInterval(pollResults, 3000);
     }
     return () => {
@@ -123,7 +124,7 @@ export function QualityReport({
       }
 
       setData({
-        status: "reviewing",
+        status: QualityReviewStatus.REVIEWING,
         run_at: new Date().toISOString(),
         trigger: "manual",
         model: "council",
@@ -165,12 +166,12 @@ export function QualityReport({
     const PASS_THRESHOLD = 9.0;
 
     return data.judges.map((judge) => {
-      if (judge.status !== "completed") {
+      if (judge.status !== QualityReviewStatus.COMPLETED) {
         return { ...judge, score: undefined, pass: undefined };
       }
       const judgeScores = data.sections
         .map((s) => s.judge_reviews?.find((jr) => jr.judge_id === judge.judge_id))
-        .filter((jr): jr is JudgeReviewData => jr != null && jr.status === "completed");
+        .filter((jr): jr is JudgeReviewData => jr != null && jr.status === QualityReviewStatus.COMPLETED);
 
       if (judgeScores.length === 0) {
         return { ...judge, score: 0, pass: false };
@@ -221,7 +222,7 @@ export function QualityReport({
   }
 
   // Reviewing state
-  if (data.status === "reviewing") {
+  if (data.status === QualityReviewStatus.REVIEWING) {
     return (
       <div className="border border-[var(--border)] rounded-xl bg-[var(--card-bg)] p-4">
         <div className="flex items-center gap-2">
@@ -240,7 +241,7 @@ export function QualityReport({
   }
 
   // Failed state
-  if (data.status === "failed") {
+  if (data.status === QualityReviewStatus.FAILED) {
     return (
       <div className="border border-[var(--danger)]/20 rounded-xl bg-[var(--card-bg)] p-4">
         <div className="flex items-center justify-between">

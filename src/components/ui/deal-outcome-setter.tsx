@@ -12,6 +12,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { DealOutcome } from "@/lib/constants/statuses";
 
 interface DealOutcomeSetterProps {
   proposalId: string;
@@ -21,10 +22,10 @@ interface DealOutcomeSetterProps {
 }
 
 const OUTCOMES = [
-  { value: "pending", label: "Pending", icon: Clock, color: "warning" },
-  { value: "won", label: "Won", icon: Trophy, color: "success" },
-  { value: "lost", label: "Lost", icon: XCircle, color: "danger" },
-  { value: "no_decision", label: "No Decision", icon: MinusCircle, color: "info" },
+  { value: DealOutcome.PENDING, label: "Pending", icon: Clock, color: "warning" },
+  { value: DealOutcome.WON, label: "Won", icon: Trophy, color: "success" },
+  { value: DealOutcome.LOST, label: "Lost", icon: XCircle, color: "danger" },
+  { value: DealOutcome.NO_DECISION, label: "No Decision", icon: MinusCircle, color: "info" },
 ];
 
 const LOSS_REASONS = [
@@ -39,7 +40,7 @@ const LOSS_REASONS = [
 
 export function DealOutcomeSetter({
   proposalId,
-  currentOutcome = "pending",
+  currentOutcome = DealOutcome.PENDING,
   currentValue,
   onUpdate,
 }: DealOutcomeSetterProps) {
@@ -142,7 +143,7 @@ export function DealOutcomeSetter({
                       key={opt.value}
                       onClick={() => {
                         setOutcome(opt.value);
-                        if (opt.value === "won" || opt.value === "lost") {
+                        if (opt.value === DealOutcome.WON || opt.value === DealOutcome.LOST) {
                           setShowForm(true);
                         } else {
                           // Quick save for pending/no_decision
@@ -167,7 +168,7 @@ export function DealOutcomeSetter({
                 })}
               </div>
 
-              {(outcome === "pending" || outcome === "no_decision") && outcome !== currentOutcome && (
+              {(outcome === DealOutcome.PENDING || outcome === DealOutcome.NO_DECISION) && outcome !== currentOutcome && (
                 <div className="p-3 border-t border-[var(--border)]">
                   <button
                     onClick={handleSave}
@@ -184,7 +185,7 @@ export function DealOutcomeSetter({
               <div className="flex items-center gap-2 mb-2">
                 <Icon className={`h-5 w-5 ${colors.text}`} />
                 <span className={`font-semibold ${colors.text}`}>
-                  {outcome === "won" ? "Record Win" : "Record Loss"}
+                  {outcome === DealOutcome.WON ? "Record Win" : "Record Loss"}
                 </span>
               </div>
 
@@ -206,7 +207,7 @@ export function DealOutcomeSetter({
               </div>
 
               {/* Loss-specific fields */}
-              {outcome === "lost" && (
+              {outcome === DealOutcome.LOST && (
                 <>
                   <div>
                     <label className="block text-xs font-medium text-[var(--foreground-muted)] mb-1">

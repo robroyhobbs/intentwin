@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
-
-const VALID_STATUSES = ["pending", "active", "completed", "skipped"] as const;
+import { ReviewStageStatus, REVIEW_STAGE_STATUSES } from "@/lib/constants/statuses";
 
 /**
  * PATCH /api/proposals/[id]/review-stages/[stageId]
@@ -28,9 +27,9 @@ export async function PATCH(
     const body = await request.json();
     const { status } = body;
 
-    if (!status || !VALID_STATUSES.includes(status)) {
+    if (!status || !REVIEW_STAGE_STATUSES.includes(status)) {
       return NextResponse.json(
-        { error: `Invalid status. Must be one of: ${VALID_STATUSES.join(", ")}` },
+        { error: `Invalid status. Must be one of: ${REVIEW_STAGE_STATUSES.join(", ")}` },
         { status: 400 }
       );
     }
@@ -53,13 +52,13 @@ export async function PATCH(
     const updateData: Record<string, unknown> = { status };
 
     // If completing, set completed_at and completed_by
-    if (status === "completed") {
+    if (status === ReviewStageStatus.COMPLETED) {
       updateData.completed_at = new Date().toISOString();
       updateData.completed_by = context.user.id;
     }
 
     // If activating, set started_at if not already set
-    if (status === "active" && !existingStage.started_at) {
+    if (status === ReviewStageStatus.ACTIVE && !existingStage.started_at) {
       updateData.started_at = new Date().toISOString();
     }
 

@@ -10,14 +10,15 @@ import {
 } from "lucide-react";
 import { ProposalCard } from "@/components/ui/proposal-card";
 import { GettingStartedChecklist } from "@/components/dashboard/getting-started-checklist";
+import { ProposalStatus, GenerationStatus } from "@/lib/constants/statuses";
 
 export const dynamic = "force-dynamic";
 
 const STATUS_TABS = [
   { label: "All", value: "all" },
-  { label: "Draft", value: "draft" },
-  { label: "Review", value: "review" },
-  { label: "Exported", value: "exported" },
+  { label: "Draft", value: ProposalStatus.DRAFT },
+  { label: "Review", value: ProposalStatus.REVIEW },
+  { label: "Exported", value: ProposalStatus.EXPORTED },
 ];
 
 export default async function ProposalsPage({
@@ -34,8 +35,8 @@ export default async function ProposalsPage({
     .order("created_at", { ascending: false });
 
   if (tab !== "all") {
-    if (tab === "draft") {
-      query = query.in("status", ["draft", "intake", "generating"]);
+    if (tab === ProposalStatus.DRAFT) {
+      query = query.in("status", [ProposalStatus.DRAFT, ProposalStatus.INTAKE, ProposalStatus.GENERATING]);
     } else {
       query = query.eq("status", tab);
     }
@@ -52,16 +53,16 @@ export default async function ProposalsPage({
     all: allProposals?.length || 0,
   };
   for (const p of allProposals || []) {
-    if (["draft", "intake", "generating"].includes(p.status)) {
-      statusCounts["draft"] = (statusCounts["draft"] || 0) + 1;
+    if ([ProposalStatus.DRAFT, ProposalStatus.INTAKE, ProposalStatus.GENERATING].includes(p.status)) {
+      statusCounts[ProposalStatus.DRAFT] = (statusCounts[ProposalStatus.DRAFT] || 0) + 1;
     } else {
       statusCounts[p.status] = (statusCounts[p.status] || 0) + 1;
     }
   }
 
   const totalCount = allProposals?.length || 0;
-  const reviewCount = statusCounts["review"] || 0;
-  const exportedCount = statusCounts["exported"] || 0;
+  const reviewCount = statusCounts[ProposalStatus.REVIEW] || 0;
+  const exportedCount = statusCounts[ProposalStatus.EXPORTED] || 0;
 
   return (
     <div className="animate-fade-in">
@@ -215,7 +216,7 @@ export default async function ProposalsPage({
               | undefined;
             const sectionCount = sections?.length || 0;
             const completedSections =
-              sections?.filter((s) => s.generation_status === "completed")
+              sections?.filter((s) => s.generation_status === GenerationStatus.COMPLETED)
                 .length || 0;
             return (
               <div

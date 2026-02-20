@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
+import { ProposalStatus, GenerationStatus, ReviewStatus } from "@/lib/constants/statuses";
 import { SectionNavSidebar } from "@/components/ui/section-nav-sidebar";
 import { SkeletonSection } from "@/components/ui/skeleton";
 import { DealOutcomeSetter } from "@/components/ui/deal-outcome-setter";
@@ -101,7 +102,7 @@ export default function ProposalPage() {
       // Only set initial active section once
       if (!initialSectionSet.current && data.sections?.length > 0) {
         const firstCompleted = data.sections?.find(
-          (s: Section) => s.generation_status === "completed",
+          (s: Section) => s.generation_status === GenerationStatus.COMPLETED,
         );
         setActiveSection(firstCompleted?.id || data.sections[0].id);
         initialSectionSet.current = true;
@@ -153,14 +154,14 @@ export default function ProposalPage() {
   }, [fetchProposal]);
 
   useEffect(() => {
-    if (proposal?.status === "review" || proposal?.status === "exported") {
+    if (proposal?.status === ProposalStatus.REVIEW || proposal?.status === ProposalStatus.EXPORTED) {
       fetchReviews();
     }
   }, [proposal?.status, fetchReviews]);
 
   // Poll during generation with a 10-minute timeout safety net
   useEffect(() => {
-    if (proposal?.status !== "generating") return;
+    if (proposal?.status !== ProposalStatus.GENERATING) return;
     const startedAt = Date.now();
     const MAX_POLL_MS = 10 * 60 * 1000; // 10 minutes
     let stopped = false;
@@ -204,7 +205,7 @@ export default function ProposalPage() {
         throw new Error(error.error || "Generation failed");
       }
       toast.success("Proposal generation started");
-      setProposal((prev) => (prev ? { ...prev, status: "generating" } : null));
+      setProposal((prev) => (prev ? { ...prev, status: ProposalStatus.GENERATING } : null));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Generation failed");
     } finally {
@@ -263,15 +264,15 @@ export default function ProposalPage() {
           const section = data.sections?.find(
             (s: Section) => s.id === sectionId,
           );
-          if (section && section.generation_status !== "generating") {
+          if (section && section.generation_status !== GenerationStatus.GENERATING) {
             setRegeneratingSection(null);
             if (regenIntervalRef.current) {
               clearInterval(regenIntervalRef.current);
               regenIntervalRef.current = null;
             }
-            if (section.generation_status === "completed") {
+            if (section.generation_status === GenerationStatus.COMPLETED) {
               toast.success("Section regenerated successfully");
-            } else if (section.generation_status === "failed") {
+            } else if (section.generation_status === GenerationStatus.FAILED) {
               toast.error("Section regeneration failed");
             }
           }
@@ -322,7 +323,7 @@ export default function ProposalPage() {
       await authFetch(`/api/proposals/${id}/reviews`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ review_id: reviewId, status: "resolved" }),
+        body: JSON.stringify({ review_id: reviewId, status: ReviewStatus.RESOLVED }),
       });
       fetchReviews();
     } catch {
@@ -335,7 +336,7 @@ export default function ProposalPage() {
       await authFetch(`/api/proposals/${id}/reviews`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ review_id: reviewId, status: "dismissed" }),
+        body: JSON.stringify({ review_id: reviewId, status: ReviewStatus.DISMISSED }),
       });
       fetchReviews();
     } catch {
@@ -361,11 +362,11 @@ export default function ProposalPage() {
 
   const currentSection = sections.find((s) => s.id === activeSection);
   const isReviewMode =
-    proposal?.status === "review" || proposal?.status === "exported";
+    proposal?.status === ProposalStatus.REVIEW || proposal?.status === ProposalStatus.EXPORTED;
   const sectionReviews = currentSection
     ? reviews.filter((r) => r.section_id === currentSection.id || !r.section_id)
     : reviews;
-  const openSectionReviews = sectionReviews.filter((r) => r.status === "open");
+  const openSectionReviews = sectionReviews.filter((r) => r.status === ReviewStatus.OPEN);
 
   if (loading) {
     return (
@@ -391,7 +392,7 @@ export default function ProposalPage() {
   }
 
   const completedCount = sections.filter(
-    (s) => s.generation_status === "completed",
+    (s) => s.generation_status === GenerationStatus.COMPLETED,
   ).length;
 
   return (
@@ -543,7 +544,7 @@ export default function ProposalPage() {
           )}
         </div>
       ) : (
-        proposal.status !== "generating" && (
+        proposal.status !== ProposalStatus.GENERATING && (
           <div className="flex flex-col items-center justify-center py-24">
             <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[var(--accent-subtle)] mb-6">
               <Sparkles className="h-10 w-10 text-[var(--accent)]" />

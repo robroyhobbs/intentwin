@@ -1,5 +1,6 @@
 import { inngest } from "../client";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { WaitlistStatus } from "@/lib/constants/statuses";
 import { sendNurtureEmail } from "@/lib/email/send-nurture-email";
 import { createLogger } from "@/lib/utils/logger";
 
@@ -50,7 +51,7 @@ export const nurtureCronFn = inngest.createFunction(
           const { data: entries, error: queryError } = await supabase
             .from("waitlist")
             .select("id, name, email, company, nurture_step")
-            .eq("status", "pending")
+            .eq("status", WaitlistStatus.PENDING)
             .lt("nurture_step", nurtureStep)
             .gte("created_at", windowStart.toISOString())
             .lt("created_at", windowEnd.toISOString());

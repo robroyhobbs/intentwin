@@ -12,6 +12,7 @@ import type { QualityReviewData, JudgeInfoData } from "./types";
 import { ConsensusIndicator, JudgeCard } from "./helpers";
 import { SectionBreakdown } from "./section-breakdown";
 import { RemediationLog } from "./remediation-log";
+import { QualityReviewStatus } from "@/lib/constants/statuses";
 
 interface CompletedViewProps {
   data: QualityReviewData;
@@ -44,7 +45,7 @@ export function CompletedView({
 }: CompletedViewProps) {
   const passColor = data.pass ? "var(--success)" : "var(--warning, #f59e0b)";
   const successfulJudges =
-    data.judges?.filter((j) => j.status === "completed").length ?? 0;
+    data.judges?.filter((j) => j.status === QualityReviewStatus.COMPLETED).length ?? 0;
   const totalJudges = data.judges?.length ?? 0;
 
   return (

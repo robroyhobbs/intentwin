@@ -17,6 +17,7 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { SectionStatusBadge } from "@/components/ui/section-status-badge";
 import type { ProposalReview, ReviewSummary } from "@/types/review";
 import type { Proposal, Section, L1Summary } from "./types";
+import { ProposalStatus } from "@/lib/constants/statuses";
 
 interface ProposalTopBarProps {
   proposal: Proposal;
@@ -116,7 +117,7 @@ export function ProposalTopBar({
             <span className="hidden sm:inline">Versions</span>
           </button>
 
-          {(proposal.status === "intake" || proposal.status === "draft") && (
+          {(proposal.status === ProposalStatus.INTAKE || proposal.status === ProposalStatus.DRAFT) && (
             <button
               onClick={handleGenerate}
               disabled={generating}
@@ -202,10 +203,10 @@ export function ProposalTopBar({
       )}
 
       {/* L1 Data Health Indicator */}
-      {proposal.l1_summary && proposal.status !== "generating" && (
+      {proposal.l1_summary && proposal.status !== ProposalStatus.GENERATING && (
         <L1HealthBadge l1={proposal.l1_summary} />
       )}
-      {!proposal.l1_summary && (proposal.status === "review" || proposal.status === "exported") && (
+      {!proposal.l1_summary && (proposal.status === ProposalStatus.REVIEW || proposal.status === ProposalStatus.EXPORTED) && (
         <div className="mt-3 flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400">
           <AlertTriangle className="h-3.5 w-3.5" />
           <span>L1 data unknown — proposal was generated before tracking was enabled</span>
@@ -213,7 +214,7 @@ export function ProposalTopBar({
       )}
 
       {/* Generation Progress */}
-      {proposal.status === "generating" && (
+      {proposal.status === ProposalStatus.GENERATING && (
         <div className="mt-4 rounded-lg border border-[var(--accent-muted)] bg-[var(--accent-subtle)] p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent-subtle)]">

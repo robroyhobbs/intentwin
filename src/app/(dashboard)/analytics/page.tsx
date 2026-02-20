@@ -5,6 +5,7 @@ import {
   BarChart3,
   Zap,
 } from "lucide-react";
+import { DealOutcome } from "@/lib/constants/statuses";
 import type { AnalyticsData } from "./_components/types";
 import { COLORS } from "./_components/chart-tooltips";
 import { SummaryStats } from "./_components/summary-stats";
@@ -124,10 +125,10 @@ export default function AnalyticsPage() {
     y: item.dealValue ?? 0,
   }));
 
-  const scatterWon = scatterData.filter((d) => d.outcome === "won");
-  const scatterLost = scatterData.filter((d) => d.outcome === "lost");
+  const scatterWon = scatterData.filter((d) => d.outcome === DealOutcome.WON);
+  const scatterLost = scatterData.filter((d) => d.outcome === DealOutcome.LOST);
   const scatterPending = scatterData.filter(
-    (d) => d.outcome !== "won" && d.outcome !== "lost"
+    (d) => d.outcome !== DealOutcome.WON && d.outcome !== DealOutcome.LOST
   );
 
   const axisStyle = {
