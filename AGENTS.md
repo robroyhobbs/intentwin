@@ -121,6 +121,13 @@ All tables now have `organization_id` columns with RLS policies:
 
 <!-- Updated nightly by compound review -->
 
+### 2026-02-20 - AI Token Budgets, Demo Seeding & Knowledge Base Plumbing
+
+- **AI JSON responses truncate silently when `maxOutputTokens` is too low**: Gemini review judge was returning `unexpected end of JSON input` because `maxOutputTokens: 1024` wasn't enough for structured JSON review output. Doubled to 2048 and wrapped `JSON.parse` with a try/catch that surfaces the response tail (last 200 chars) for debugging. Pattern: when an AI route returns structured JSON, set `maxOutputTokens` generously (2x what you think you need) and always catch parse errors with context about the raw response length
+- **Seed scripts are the fastest way to demo — invest in them**: The 1,344-line `seed-general-company.ts` seeds a complete demo account (org, 20 L1 context entries, 4 products, 14 evidence items, sample RFP proposal with 15 compliance requirements). Having a one-command demo reset (`npx tsx scripts/seed-general-company.ts`) makes onboarding and sales demos reproducible. Pattern: seed scripts should be idempotent (upsert, not insert) and cover all entity types the user will interact with
+- **`maxDuration` must be set on every AI-touching route — not just generation**: The `bulk-import/extract` route was missing `maxDuration`, relying on Vercel's 60s default. Large document parsing + AI extraction easily exceeds that. This is the third time this pattern has appeared (generation, quality review, now extraction). Consider a lint rule or codemod to flag API routes importing AI clients that lack a `maxDuration` export
+- **Service catalog `fileName` should use UUID, not slugified names**: Sources page was building file identifiers from `${service_line}-${product_name}` slugs, which broke when product names contained special characters or duplicated across service lines. Switched to using the product's UUID (`p.id`) as the fileName, which is guaranteed unique and stable. Pattern: when building URL-safe identifiers for DB entities, prefer the primary key over derived slugs
+
 ### 2026-02-19 - Security Hygiene, Query Discipline & Status Centralization
 
 - **Deleted secrets persist in git history — always rotate**: `scripts/generate-proposal.mjs` was deleted in `e407417` but the hardcoded Supabase service role key and Anthropic API key remain in git history. Created `docs/key-rotation.md` runbook. Pattern: any secret committed to git, even if deleted in the next commit, must be treated as compromised and rotated immediately. The Supabase service role key is especially critical because it bypasses all RLS
