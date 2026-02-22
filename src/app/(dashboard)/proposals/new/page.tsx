@@ -56,6 +56,7 @@ export default function NewProposalPage() {
   const [clientName, setClientName] = useState("");
   const [clientIndustry, setClientIndustry] = useState("");
   const [clientSize, setClientSize] = useState("");
+  const [solicitationType, setSolicitationType] = useState("RFP");
   const [opportunityType, setOpportunityType] = useState("cloud_migration");
   const [currentStatePains, setCurrentStatePains] = useState<string[]>([""]);
   const [scopeDescription, setScopeDescription] = useState("");
@@ -107,6 +108,7 @@ export default function NewProposalPage() {
       client_name: clientName,
       client_industry: clientIndustry,
       client_size: clientSize,
+      solicitation_type: solicitationType,
       opportunity_type: opportunityType,
       scope_description: scopeDescription,
       key_requirements: desiredOutcomes.filter((r) => r.trim()),
@@ -488,6 +490,8 @@ export default function NewProposalPage() {
                 setClientName={setClientName}
                 clientIndustry={clientIndustry}
                 setClientIndustry={setClientIndustry}
+                solicitationType={solicitationType}
+                setSolicitationType={setSolicitationType}
                 opportunityType={opportunityType}
                 setOpportunityType={setOpportunityType}
                 currentStatePains={currentStatePains}

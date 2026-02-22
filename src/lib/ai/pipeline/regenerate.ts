@@ -11,7 +11,7 @@ import {
 import { buildIndustryContext } from "../industry-configs";
 import { logRegenerationMetric } from "@/lib/observability/metrics";
 import { SECTION_CONFIGS } from "./section-configs";
-import { buildPipelineContext, extractCompetitiveObjections } from "./context";
+import { buildPipelineContext, extractCompetitiveObjections, buildSectionSpecificL1Context } from "./context";
 import { retrieveContext } from "./retrieval";
 // Editorial pass import — kept for future re-enablement
 // import { runEditorialPass } from "../editorial-pass";

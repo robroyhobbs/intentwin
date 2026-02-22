@@ -124,6 +124,32 @@ This is a hard rule with ZERO exceptions. Every bracket in your output is a fail
 /**
  * Builds the complete editorial standards block to append to any section prompt.
  */
-export function buildEditorialStandards(): string {
-  return `${FORMATTING_RULES}\n${ANTI_FLUFF_RULES}`;
+export function buildEditorialStandards(solicitationType: string = "RFP"): string {
+    let typeRules = "";
+  if (solicitationType === "RFQ") {
+    typeRules = "\n\n## SOLICITATION TONE: RFQ (Request for Quote)\nThis is an RFQ. Do NOT include visionary fluff, long narratives, or high-level strategic posturing. Keep everything bottom-line upfront, highly technical, and strictly focused on pricing, SLAs, and exact deliverables. Cut word counts by 40% compared to a normal proposal.";
+  } else if (solicitationType === "RFI") {
+    typeRules = "\n\n## SOLICITATION TONE: RFI (Request for Information)\nThis is an RFI. The client is researching options. Heavily emphasize case studies, high-level capabilities, industry vision, and differentiators. Do not make hard commitments on pricing or exact timelines unless explicitly requested.";
+  } else if (solicitationType === "SOW") {
+    typeRules = "\n\n## SOLICITATION TONE: SOW (Statement of Work)\nThis is a Statement of Work. Use highly contractual, precise language. Focus entirely on scope, deliverables, acceptance criteria, assumptions, and milestones. Remove marketing fluff.";
+  }
+
+  const chainOfThought = `
+## MANDATORY OUTLINING (CHAIN OF THOUGHT)
+Before generating the final markdown for the section, you MUST output a <thought_process> block.
+Inside this block, map exactly how you will satisfy the persuasion framework (AIDA, PAS, etc.) using the provided Win Themes and Evidence. 
+Example:
+<thought_process>
+1. Identify primary Win Theme: Speed to market.
+2. Select L1 Evidence: Acme Corp 14-day deployment.
+3. Map to PAS Framework:
+   - Problem: ...
+   - Agitation: ...
+   - Solution: ...
+</thought_process>
+
+After the </thought_process> tag, write the final presentation-ready Markdown.
+`;
+
+  return `${FORMATTING_RULES}\n${ANTI_FLUFF_RULES}${typeRules}\n${chainOfThought}`;
 }

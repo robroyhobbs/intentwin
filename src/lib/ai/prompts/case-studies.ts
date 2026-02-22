@@ -56,5 +56,5 @@ ${winStrategy ? `\nSelect case studies that best demonstrate ability to deliver 
 
 CRITICAL: You MUST use case studies and metrics from the "Verified Evidence" section of the Company Context above. Do NOT invent case studies, client names, or metrics. If insufficient evidence is available, present what exists and note that additional references can be provided upon request. It is BETTER to present 1-2 real case studies than 3 fabricated ones.
 
-${buildEditorialStandards()}`;
+${buildEditorialStandards((intakeData as any).solicitation_type)}`;
 }

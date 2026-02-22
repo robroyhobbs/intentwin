@@ -70,5 +70,5 @@ ${winStrategy ? `\nMap methodology phases to target outcomes and success metrics
 
 Use ${companyName}'s actual methodology names and frameworks from the Company Context — do not invent generic methodology names.
 
-${buildEditorialStandards()}`;
+${buildEditorialStandards((intakeData as any).solicitation_type)}`;
 }

@@ -15,6 +15,8 @@ interface ContextPhaseProps {
   setClientName: (value: string) => void;
   clientIndustry: string;
   setClientIndustry: (value: string) => void;
+  solicitationType: string;
+  setSolicitationType: (value: string) => void;
   opportunityType: string;
   setOpportunityType: (value: string) => void;
   currentStatePains: string[];
@@ -52,6 +54,8 @@ export function ContextPhase({
   setClientName,
   clientIndustry,
   setClientIndustry,
+  solicitationType,
+  setSolicitationType,
   opportunityType,
   setOpportunityType,
   currentStatePains,
@@ -120,9 +124,24 @@ export function ContextPhase({
             </select>
           </div>
           <div>
-            <label className={labelClass}>Opportunity Type</label>
+            <label className={labelClass}>Solicitation Type</label>
+            <select
+              value={solicitationType}
+              onChange={(e) => setSolicitationType(e.target.value)}
+              className={fieldClass}
+            >
+              <option value="RFP">RFP (Request for Proposal)</option>
+              <option value="RFI">RFI (Request for Information)</option>
+              <option value="RFQ">RFQ (Request for Quote)</option>
+              <option value="Proactive">Proactive Pitch</option>
+              <option value="SOW">SOW (Statement of Work)</option>
+            </select>
+          </div>
+          <div>
+            <label className={labelClass}>Service Line</label>
             <select
               value={opportunityType}
+
               onChange={(e) => setOpportunityType(e.target.value)}
               className={fieldClass}
             >
