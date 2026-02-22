@@ -121,6 +121,10 @@ All tables now have `organization_id` columns with RLS policies:
 
 <!-- Updated nightly by compound review -->
 
+### 2026-02-21 - Quiet Day; Solicitation Type Extraction
+
+- **Light activity**: Only commit was yesterday's compound review. One in-progress change: adding `solicitation_type` (RFP | RFI | RFQ | SOW | Proactive) to the intake extraction prompt. This distinguishes document types early in the pipeline so downstream generation can tailor tone and structure (e.g., RFQ responses need pricing tables, RFIs need capability summaries). Pattern: when adding a new extracted field, add it in both the `explicit` and `inferred` sections of the prompt schema so the AI always produces a value even when the document doesn't state it outright
+
 ### 2026-02-20 - AI Token Budgets, Demo Seeding & Knowledge Base Plumbing
 
 - **AI JSON responses truncate silently when `maxOutputTokens` is too low**: Gemini review judge was returning `unexpected end of JSON input` because `maxOutputTokens: 1024` wasn't enough for structured JSON review output. Doubled to 2048 and wrapped `JSON.parse` with a try/catch that surfaces the response tail (last 200 chars) for debugging. Pattern: when an AI route returns structured JSON, set `maxOutputTokens` generously (2x what you think you need) and always catch parse errors with context about the raw response length
