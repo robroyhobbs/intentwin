@@ -206,6 +206,29 @@ export default function NewProposalPage() {
     if (intakeData.technical_environment)
       setTechnicalEnvironment(intakeData.technical_environment as string);
 
+    // Normalize solicitation_type from AI extraction to dropdown values
+    if (intakeData.solicitation_type) {
+      const raw = (intakeData.solicitation_type as string).toUpperCase().trim();
+      const solicitationMap: Record<string, string> = {
+        RFP: "RFP",
+        "REQUEST FOR PROPOSAL": "RFP",
+        "REQUEST FOR PROPOSALS": "RFP",
+        RFI: "RFI",
+        "REQUEST FOR INFORMATION": "RFI",
+        RFQ: "RFQ",
+        "REQUEST FOR QUOTE": "RFQ",
+        "REQUEST FOR QUOTATION": "RFQ",
+        SOW: "SOW",
+        "STATEMENT OF WORK": "SOW",
+        "SCOPE OF WORK": "SOW",
+        PROACTIVE: "Proactive",
+        "PROACTIVE PITCH": "Proactive",
+        "UNSOLICITED PROPOSAL": "Proactive",
+      };
+      const normalized = solicitationMap[raw];
+      if (normalized) setSolicitationType(normalized);
+    }
+
     if (
       Array.isArray(intakeData.current_state_pains) &&
       intakeData.current_state_pains.length > 0
