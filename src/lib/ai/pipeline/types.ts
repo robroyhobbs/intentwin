@@ -9,6 +9,7 @@ import type {
 } from "@/types/idd";
 import type { BrandVoice } from "../persuasion";
 import type { getIndustryConfig } from "../industry-configs";
+import type { ProposalIntelligence } from "@/lib/intelligence";
 
 // ── RFP Task Structure Types ─────────────────────────────────────────────────
 
@@ -122,4 +123,6 @@ export interface PipelineContext {
   serviceLine: string | undefined;
   industry: string | undefined;
   industryConfig: ReturnType<typeof getIndustryConfig>;
+  /** External procurement intelligence (null if service unavailable or unconfigured) */
+  intelligence: ProposalIntelligence | null;
 }

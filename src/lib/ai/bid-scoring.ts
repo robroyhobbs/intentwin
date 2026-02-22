@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logger } from "@/lib/utils/logger";
 import { generateText } from "./gemini";
+import { intelligenceClient, buildIntelligenceContext } from "@/lib/intelligence";
 import type { L1Context } from "./pipeline/types";
 
 // Fixed scoring factors and weights
@@ -94,15 +95,30 @@ export async function scoreFromRequirements(
 ): Promise<BidEvaluation> {
   const supabase = createAdminClient();
 
-  const l1Context = await fetchL1ContextForScoring(
-    supabase,
-    serviceLine,
-    industry,
-    organizationId,
-  );
+  // Fetch L1 context and intelligence in parallel (non-blocking)
+  const agencyName =
+    (rfpRequirements.agency as string) ??
+    (rfpRequirements.client_name as string) ??
+    null;
+  const naicsCode = (rfpRequirements.naics_code as string) ?? null;
+
+  const [l1Context, agencyProfile, pricingRates] = await Promise.all([
+    fetchL1ContextForScoring(supabase, serviceLine, industry, organizationId),
+    agencyName
+      ? intelligenceClient.getAgencyProfile(agencyName)
+      : Promise.resolve(null),
+    intelligenceClient.getPricingRates({
+      categories: ["Software Developer", "Project Manager", "Systems Engineer"],
+      naicsCode: naicsCode ?? undefined,
+    }),
+  ]);
 
   const rfpSummary = buildRfpSummary(rfpRequirements);
   const l1Summary = buildL1Summary(l1Context);
+  const intelligenceContext = buildIntelligenceContext(
+    agencyProfile,
+    pricingRates,
+  );
 
   const prompt = `## RFP Opportunity Analysis
 
@@ -111,7 +127,7 @@ ${rfpSummary}
 
 ### Firm Context (L1 - Verified)
 ${l1Summary}
-
+${intelligenceContext ? `\n### Procurement Intelligence\n${intelligenceContext}` : ""}
 Based on the above, score each of the 5 bid evaluation factors (0-100) with rationale.`;
 
   const response = await generateText(prompt, {

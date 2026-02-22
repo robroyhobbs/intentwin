@@ -12,6 +12,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { generateStructuredAnalysis, buildSystemPrompt } from "../gemini";
 import { loadSources, formatSourcesAsL1Context } from "@/lib/sources";
 import { getIndustryConfig } from "../industry-configs";
+import { intelligenceClient } from "@/lib/intelligence";
 import { createLogger } from "@/lib/utils/logger";
 import type { WinStrategyData } from "@/types/outcomes";
 import type { OutcomeContract, CompanyInfo } from "@/types/idd";
@@ -84,16 +85,27 @@ export async function buildPipelineContext(
     brandVoice,
   });
 
-  // IDD Stage 0: Fetch L1 Context (Company Truth)
+  // IDD Stage 0: Fetch L1 Context (Company Truth) + External Intelligence
   const serviceLine = (intakeData.opportunity_type as string) || undefined;
   const industry = (intakeData.client_industry as string) || undefined;
   const industryConfig = getIndustryConfig(industry || "");
-  const l1Context = await fetchL1Context(
-    supabase,
-    serviceLine,
-    industry,
-    proposal.organization_id,
-  );
+
+  // Extract agency/NAICS from intake for intelligence lookup
+  const agencyName =
+    (intakeData.agency_name as string) ??
+    (intakeData.client_name as string) ??
+    null;
+  const naicsCode = (intakeData.naics_code as string) ?? null;
+
+  // Fetch L1 + intelligence in parallel (intelligence is non-blocking)
+  const [l1Context, intelligence] = await Promise.all([
+    fetchL1Context(supabase, serviceLine, industry, proposal.organization_id),
+    intelligenceClient.getProposalIntelligence({
+      agencyName,
+      naicsCode,
+      laborCategories: extractLaborCategoriesFromIntake(intakeData),
+    }),
+  ]);
 
   const ctxLog = createLogger({
     operation: "buildPipelineContext",
@@ -194,5 +206,21 @@ export async function buildPipelineContext(
     serviceLine,
     industry,
     industryConfig,
+    intelligence,
   };
+}
+
+/**
+ * Extract likely labor categories from intake data for pricing intelligence lookup.
+ * Returns common categories if intake doesn't specify explicit ones.
+ */
+function extractLaborCategoriesFromIntake(
+  intakeData: Record<string, unknown>,
+): string[] {
+  const categories = intakeData.labor_categories;
+  if (Array.isArray(categories) && categories.length > 0) {
+    return categories.filter((c): c is string => typeof c === "string");
+  }
+  // Default probe categories — covers most IT services proposals
+  return ["Software Developer", "Project Manager", "Systems Engineer"];
 }

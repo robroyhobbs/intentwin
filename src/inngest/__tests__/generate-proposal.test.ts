@@ -99,6 +99,7 @@ const mockPipelineContext = {
   serviceLine: "consulting",
   industry: "technology",
   industryConfig: null,
+  intelligence: null,
 };
 
 describe("generateProposalFn", () => {
