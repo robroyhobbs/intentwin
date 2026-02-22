@@ -146,6 +146,15 @@ Respond with a JSON object matching this exact structure:
       "value": ["outcome 1", "outcome 2"],
       "confidence": 0.0-1.0,
       "source": "quote or reference"
+    },
+    "audience_profile": {
+      "value": {
+        "tech_level": "non_technical | moderate | highly_technical",
+        "evaluator": "description of who will evaluate (e.g., county_board, procurement_office, engineering_team, executive_committee)",
+        "size": "organization size context (e.g., small_municipality, mid_market, enterprise, federal_agency)"
+      },
+      "confidence": 0.0-1.0,
+      "source": "quote or reference"
     }
   },
 
@@ -165,6 +174,14 @@ Respond with a JSON object matching this exact structure:
     "industry": {
       "value": "inferred industry if not explicit",
       "reasoning": "why you inferred this"
+    },
+    "audience_profile": {
+      "value": {
+        "tech_level": "non_technical | moderate | highly_technical (based on document language, org type, and evaluator role)",
+        "evaluator": "who will likely read this proposal (based on submission instructions, evaluation criteria, org structure)",
+        "size": "organization size (based on employee count mentions, budget scale, scope complexity)"
+      },
+      "reasoning": "why you inferred this audience profile"
     }
   },
 

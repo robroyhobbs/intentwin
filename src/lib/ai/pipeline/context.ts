@@ -5,7 +5,7 @@ import { getIndustryConfig } from "../industry-configs";
 import { createLogger } from "@/lib/utils/logger";
 import { TtlCache } from "@/lib/utils/ttl-cache";
 import type { WinStrategyData } from "@/types/outcomes";
-import type { OutcomeContract, CompanyContext, ProductContext, EvidenceLibraryEntry, CompanyInfo } from "@/types/idd";
+import type { OutcomeContract, CompanyContext, ProductContext, EvidenceLibraryEntry, CompanyInfo, TeamMember } from "@/types/idd";
 import type { BrandVoice } from "../persuasion";
 import type { L1Context, PipelineContext } from "./types";
 
@@ -73,10 +73,23 @@ export async function fetchL1Context(
       .order("created_at", { ascending: false })
       .limit(10);
 
+    // Fetch team members (named personnel for proposal generation)
+    let teamMembersQuery = supabase
+      .from("team_members")
+      .select("id, name, role, title, skills, certifications, clearance_level, years_experience, project_history, bio, is_verified, verified_by, verified_at");
+    if (organizationId) {
+      teamMembersQuery = teamMembersQuery.eq("organization_id", organizationId);
+    }
+    const { data: teamMembers } = await teamMembersQuery
+      .order("is_verified", { ascending: false })
+      .order("name")
+      .limit(50);
+
     const result: L1Context = {
       companyContext: (companyContext || []) as CompanyContext[],
       productContexts: (productContexts || []) as ProductContext[],
       evidenceLibrary: (evidenceLibrary || []) as EvidenceLibraryEntry[],
+      teamMembers: (teamMembers || []) as TeamMember[],
     };
 
     // Cache the result for subsequent calls with same params
@@ -90,6 +103,7 @@ export async function fetchL1Context(
       companyContext: [],
       productContexts: [],
       evidenceLibrary: [],
+      teamMembers: [],
     };
   }
 }
@@ -162,7 +176,7 @@ export function buildSectionSpecificL1Context(
     // Track actual count so prompt can enforce placeholder behavior
     evidenceCountForSection = l1Context.evidenceLibrary.length;
   } else if (sectionType === "team" || sectionType === "methodology") {
-    // Only fetch certs and methodology
+    // Only fetch certs and methodology + team members for team section
     relevantCompany = [
       ...brandContext,
       ...l1Context.companyContext.filter(c => c.category === "certifications" || c.category === "values")
@@ -179,10 +193,16 @@ export function buildSectionSpecificL1Context(
     relevantProducts = l1Context.productContexts;
   }
 
+  // Include team members only in the team section
+  const relevantTeamMembers = sectionType === "team"
+    ? (l1Context.teamMembers || [])
+    : [];
+
   const l1String = buildL1ContextString({
     companyContext: relevantCompany,
     productContexts: relevantProducts,
-    evidenceLibrary: relevantEvidence
+    evidenceLibrary: relevantEvidence,
+    teamMembers: relevantTeamMembers,
   });
 
   // Prepend evidence count metadata for sections that need it (case_studies, team)
@@ -260,6 +280,31 @@ export function buildL1ContextString(l1Context: L1Context): string {
       })
       .join("\n\n");
     sections.push(`## Verified Evidence — CITE THESE IN YOUR RESPONSE\n${evidenceStr}`);
+  }
+
+  // Team Members (named personnel for proposals)
+  if (l1Context.teamMembers && l1Context.teamMembers.length > 0) {
+    const teamStr = l1Context.teamMembers
+      .map((tm) => {
+        const certs = Array.isArray(tm.certifications) && tm.certifications.length > 0
+          ? `\n  Certifications: ${tm.certifications.join(", ")}`
+          : "";
+        const skills = Array.isArray(tm.skills) && tm.skills.length > 0
+          ? `\n  Skills: ${tm.skills.join(", ")}`
+          : "";
+        const clearance = tm.clearance_level
+          ? `\n  Clearance: ${tm.clearance_level}`
+          : "";
+        const experience = tm.years_experience
+          ? `\n  Experience: ${tm.years_experience} years`
+          : "";
+        const bio = tm.bio
+          ? `\n  Bio: ${tm.bio.slice(0, 300)}`
+          : "";
+        return `### ${tm.name} — ${tm.role}${tm.title ? ` (${tm.title})` : ""}${certs}${skills}${clearance}${experience}${bio}`;
+      })
+      .join("\n\n");
+    sections.push(`## Team Members — USE THESE REAL PEOPLE IN THE PROPOSAL\n${teamStr}`);
   }
 
   // Legal constraints
@@ -360,6 +405,25 @@ export async function buildPipelineContext(
   const brandVoice: BrandVoice | null = orgData?.settings?.brand_voice
     ? (orgData.settings.brand_voice as BrandVoice)
     : null;
+
+  // Brand name lock — consistent naming across all sections
+  const primaryBrandName = (orgData?.settings?.primary_brand_name as string) || undefined;
+
+  // Inject brand name into intakeData so prompt builders can pass it to editorial standards
+  // Uses underscore prefix to indicate it's a synthetic pipeline field, not user-entered data
+  if (primaryBrandName) {
+    intakeData._brand_name = primaryBrandName;
+  }
+
+  // Audience profile from intake extraction (inferred from RFP during extraction)
+  const rawAudience = intakeData.audience_profile as
+    | { tech_level?: string; evaluator?: string; size?: string }
+    | { value?: { tech_level?: string; evaluator?: string; size?: string } }
+    | undefined;
+  // Handle both flat and nested (ExtractedIntake) formats
+  const audienceProfile = rawAudience
+    ? ("value" in rawAudience && rawAudience.value ? rawAudience.value : rawAudience as { tech_level?: string; evaluator?: string; size?: string })
+    : undefined;
 
   // Build organization-aware system prompt with brand voice
   const systemPrompt = buildSystemPrompt({
@@ -469,6 +533,8 @@ export async function buildPipelineContext(
     outcomeContract,
     companyInfo,
     brandVoice,
+    primaryBrandName,
+    audienceProfile,
     systemPrompt,
     enhancedAnalysis,
     l1ContextString,

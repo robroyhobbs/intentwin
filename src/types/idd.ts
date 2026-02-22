@@ -93,6 +93,35 @@ export interface EvidenceLibraryEntry {
   verification_notes?: string;
 }
 
+export interface TeamMemberProjectHistory {
+  title: string;
+  client_industry?: string;
+  scope?: string;
+  results?: string;
+  dates?: string;
+}
+
+export interface TeamMember {
+  id: string;
+  organization_id?: string;
+  name: string;
+  role: string;
+  title?: string;
+  email?: string;
+  skills: string[];
+  certifications: string[];
+  clearance_level?: string;
+  years_experience?: number;
+  project_history: TeamMemberProjectHistory[];
+  resume_document_id?: string;
+  bio?: string;
+  is_verified: boolean;
+  verified_by?: string;
+  verified_at?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 // ===========================================
 // L2: PROPOSAL INTENT TYPES
 // ===========================================

@@ -330,10 +330,11 @@ async function fetchL1ContextForScoring(
       companyContext: (companyContext || []) as L1Context["companyContext"],
       productContexts: (productContexts || []) as L1Context["productContexts"],
       evidenceLibrary: (evidenceLibrary || []) as L1Context["evidenceLibrary"],
+      teamMembers: [],
     };
   } catch (error) {
     logger.error("Error fetching L1 context for scoring", error);
-    return { companyContext: [], productContexts: [], evidenceLibrary: [] };
+    return { companyContext: [], productContexts: [], evidenceLibrary: [], teamMembers: [] };
   }
 }
 

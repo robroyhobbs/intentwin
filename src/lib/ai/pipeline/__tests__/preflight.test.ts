@@ -74,6 +74,7 @@ function makeL1(overrides: Partial<L1Context> = {}): L1Context {
     companyContext: [makeCompanyContext()],
     productContexts: [makeProduct()],
     evidenceLibrary: [makeEvidence(), makeEvidence({ id: "ev-2", title: "Federal Agency Security" })],
+    teamMembers: [],
     ...overrides,
   };
 }
@@ -198,6 +199,7 @@ describe("runPreflightCheck — Bad Path", () => {
       companyContext: [],
       productContexts: [],
       evidenceLibrary: [],
+      teamMembers: [],
     };
     const intake = makeIntakeData();
 
@@ -364,7 +366,7 @@ describe("runPreflightCheck — Data Leak", () => {
 
   it("error scenario does not expose internal DB schema", () => {
     // Even with bad data, the result structure stays clean
-    const l1: L1Context = { companyContext: [], productContexts: [], evidenceLibrary: [] };
+    const l1: L1Context = { companyContext: [], productContexts: [], evidenceLibrary: [], teamMembers: [] };
 
     const result = runPreflightCheck(l1, {}, []);
 

@@ -62,5 +62,5 @@ ${winStrategy ? `\nAddress risks that could threaten the target outcomes and exp
 
 Reference ${companyName}'s actual certifications, compliance frameworks, and governance practices from the Company Context.
 
-${buildEditorialStandards((intakeData as any).solicitation_type)}`;
+${buildEditorialStandards((intakeData as any).solicitation_type, (intakeData as any).audience_profile, (intakeData as any)._brand_name)}`;
 }

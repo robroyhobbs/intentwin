@@ -277,6 +277,8 @@ export const generateProposalFn = inngest.createFunction(
       ...serializedCtx,
       serviceLine: serializedCtx.serviceLine ?? undefined,
       industry: serializedCtx.industry ?? undefined,
+      primaryBrandName: serializedCtx.primaryBrandName ?? undefined,
+      audienceProfile: serializedCtx.audienceProfile ?? undefined,
     };
 
     const metrics = createPipelineMetrics(

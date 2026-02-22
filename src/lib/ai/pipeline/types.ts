@@ -5,6 +5,7 @@ import type {
   ProductContext,
   EvidenceLibraryEntry,
   CompanyInfo,
+  TeamMember,
 } from "@/types/idd";
 import type { BrandVoice } from "../persuasion";
 import type { getIndustryConfig } from "../industry-configs";
@@ -14,6 +15,7 @@ export interface L1Context {
   companyContext: CompanyContext[];
   productContexts: ProductContext[];
   evidenceLibrary: EvidenceLibraryEntry[];
+  teamMembers: TeamMember[];
 }
 
 export interface SectionConfig {
@@ -48,6 +50,8 @@ export interface PipelineContext {
   outcomeContract: OutcomeContract | null;
   companyInfo: CompanyInfo;
   brandVoice: BrandVoice | null;
+  primaryBrandName: string | undefined;
+  audienceProfile: { tech_level?: string; evaluator?: string; size?: string } | undefined;
   systemPrompt: string;
   enhancedAnalysis: string;
   l1ContextString: string;

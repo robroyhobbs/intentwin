@@ -121,17 +121,58 @@ This is a hard rule with ZERO exceptions. Every bracket in your output is a fail
 - GOOD: "34% reduction in annual infrastructure costs"
 `;
 
+/** Audience profile for tone modulation */
+export interface AudienceProfile {
+  tech_level?: string;   // "non_technical" | "moderate" | "highly_technical"
+  evaluator?: string;    // "county_board" | "procurement_office" | "engineering_team"
+  size?: string;         // "small_municipality" | "mid_market" | "enterprise"
+}
+
 /**
  * Builds the complete editorial standards block to append to any section prompt.
+ * Optional audience profile modulates vocabulary and technical depth.
+ * Optional brand name enforces consistent naming throughout.
  */
-export function buildEditorialStandards(solicitationType: string = "RFP"): string {
-    let typeRules = "";
+export function buildEditorialStandards(
+  solicitationType: string = "RFP",
+  audienceProfile?: AudienceProfile | null,
+  primaryBrandName?: string,
+): string {
+  let typeRules = "";
   if (solicitationType === "RFQ") {
     typeRules = "\n\n## SOLICITATION TONE: RFQ (Request for Quote)\nThis is an RFQ. Do NOT include visionary fluff, long narratives, or high-level strategic posturing. Keep everything bottom-line upfront, highly technical, and strictly focused on pricing, SLAs, and exact deliverables. Cut word counts by 40% compared to a normal proposal.";
   } else if (solicitationType === "RFI") {
     typeRules = "\n\n## SOLICITATION TONE: RFI (Request for Information)\nThis is an RFI. The client is researching options. Heavily emphasize case studies, high-level capabilities, industry vision, and differentiators. Do not make hard commitments on pricing or exact timelines unless explicitly requested.";
   } else if (solicitationType === "SOW") {
     typeRules = "\n\n## SOLICITATION TONE: SOW (Statement of Work)\nThis is a Statement of Work. Use highly contractual, precise language. Focus entirely on scope, deliverables, acceptance criteria, assumptions, and milestones. Remove marketing fluff.";
+  }
+
+  // Audience calibration — modulate tone based on evaluator profile
+  let audienceRules = "";
+  if (audienceProfile?.tech_level === "non_technical") {
+    audienceRules = `\n\n## AUDIENCE CALIBRATION: NON-TECHNICAL AUDIENCE
+The evaluators are non-technical (${audienceProfile.evaluator || "general decision-makers"}${audienceProfile.size ? `, ${audienceProfile.size}` : ""}).
+- Use plain language and avoid jargon. Explain technical concepts in everyday terms.
+- Lead with business outcomes and cost savings, not architecture diagrams.
+- Replace acronyms with full names on first use.
+- Use analogies to explain complex processes.
+- Focus on "what it means for you" rather than "how it works."`;
+  } else if (audienceProfile?.tech_level === "highly_technical") {
+    audienceRules = `\n\n## AUDIENCE CALIBRATION: TECHNICAL AUDIENCE
+The evaluators are highly technical (${audienceProfile.evaluator || "engineering team"}${audienceProfile.size ? `, ${audienceProfile.size}` : ""}).
+- Provide technical depth: include architecture patterns, specifications, and implementation details.
+- Reference specific technologies, protocols, and standards by name.
+- Use precise technical vocabulary — don't dumb down.
+- Include performance benchmarks, scalability metrics, and infrastructure specifications.
+- Demonstrate deep domain expertise through technical specificity.`;
+  }
+  // "moderate" or unknown tech_level — no audience modifier (default balanced tone)
+
+  // Brand name lock — enforce consistent naming
+  let brandLock = "";
+  if (primaryBrandName && primaryBrandName.trim()) {
+    brandLock = `\n\n## BRAND NAME LOCK
+Use ONLY '${primaryBrandName}' when referring to our company throughout the entire section. No abbreviations, alternate names, DBAs, or variations. Every mention must use the exact string '${primaryBrandName}'.`;
   }
 
   const chainOfThought = `
@@ -151,5 +192,5 @@ Example:
 After the </thought_process> tag, write the final presentation-ready Markdown.
 `;
 
-  return `${FORMATTING_RULES}\n${ANTI_FLUFF_RULES}${typeRules}\n${chainOfThought}`;
+  return `${FORMATTING_RULES}\n${ANTI_FLUFF_RULES}${typeRules}${audienceRules}${brandLock}\n${chainOfThought}`;
 }

@@ -101,5 +101,5 @@ ${winStrategy ? `\nSelect case studies that best demonstrate ability to deliver 
 
 CRITICAL: You MUST use case studies and metrics from the "Verified Evidence" section of the Company Context above. Do NOT invent case studies, client names, or metrics. If insufficient evidence is available, use the [CASE STUDY NEEDED: ...] placeholder format instead. It is BETTER to present 1 real case study with placeholders than 3 fabricated ones.
 
-${buildEditorialStandards((intakeData as any).solicitation_type)}`;
+${buildEditorialStandards((intakeData as any).solicitation_type, (intakeData as any).audience_profile, (intakeData as any)._brand_name)}`;
 }
