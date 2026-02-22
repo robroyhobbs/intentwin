@@ -8,19 +8,30 @@ IntentWin ingests an RFP or solicitation document, cross-references it against y
 
 ### Key Capabilities
 
-- **RFP Intake & Analysis** -- Upload PDF/DOCX solicitations; AI extracts requirements, evaluation criteria, and compliance items
+- **RFP Intake & Analysis** -- Upload PDF/DOCX solicitations; AI extracts requirements, evaluation criteria, compliance items, and solicitation type (RFP/RFI/RFQ/SOW/Proactive)
+- **Pre-Flight Readiness Gate** -- Automated check before generation: verifies evidence library, team members, product contexts, and intake completeness. Surfaces targeted upload prompts for missing data
 - **Bid/No-Bid Scoring** -- Automated opportunity evaluation engine that scores RFPs on fit, capacity, and win probability
-- **Two-Layer Knowledge System** -- L1 (verified company context: brand, products, evidence) + L2 (uploaded reference documents for RAG retrieval)
-- **Parallel Section Generation** -- 10 AI-powered prompt pipelines run concurrently in configurable batches for ~3x faster generation
+- **Three-Layer Knowledge System** -- L1 (verified company context: brand, products, evidence, named personnel) + L2 (uploaded reference documents for RAG retrieval) + L3 (AI-generated content with claim traceability)
+- **Solicitation-Aware Generation** -- Sections are filtered and tailored by solicitation type; RFQs get pricing-focused output, RFIs get capability summaries
+- **Named Personnel & Resume Extraction** -- Team members with certifications, clearance levels, and bios are injected into proposals; AI extracts structured data from uploaded resumes
+- **Parallel Section Generation** -- Up to 15 AI-powered prompt pipelines run concurrently via Inngest with per-section retry; executive summary generates first for differentiator extraction
+- **Repetition Limiter** -- Differentiators from the executive summary are tracked and subsequent sections are instructed to demonstrate (not repeat) them
+- **Brand Name Lock** -- Primary brand name is enforced consistently across all generated sections via editorial standards
+- **Audience Calibration** -- AI detects evaluator profile (technical level, role, organization size) from RFP and adjusts tone, depth, and terminology
+- **Auto-Generated Assumptions** -- Standard assumptions and compliance boilerplate injected based on solicitation type
 - **Industry Intelligence** -- Sector-specific proposal tuning for healthcare, financial services, manufacturing, and public sector
 - **Persuasion Engine** -- AI-driven persuasive writing optimization layered into generated content
 - **Quality Overseer** -- 3-judge LLM council review system with auto-remediation for sections scoring below threshold
+- **Review Mode UI** -- Post-generation sidebar highlighting placeholders, unsubstantiated claims, and areas needing human review
 - **Evidence Library** -- Case studies, certifications, and metrics with verified sourcing and AI extraction
+- **Pricing Structure** -- Structured pricing tables with rate cards, labor categories, and fee schedules rather than vague cost language
+- **Tech Specificity Enforcement** -- Vague capability claims (e.g., "industry-leading platform") are flagged with warnings to use concrete technology names and metrics
 - **5-Format Export** -- HTML, DOCX, PPTX, Google Slides, and PDF with Mermaid diagram rendering
 - **Color Team Review** -- Structured Pink/Red/Gold/White stage-gate review workflow with reviewer assignments
 - **Version Control** -- Full proposal versioning with diff comparison and restore
 - **Brand Voice** -- Configurable tone and terminology settings that shape AI-generated content
 - **Multi-Tenant** -- Organization-scoped data isolation via Supabase RLS on every table
+- **Multi-Document Support** -- Multiple documents per proposal with priority-based merge and per-field source traceability
 - **Win/Loss Analytics** -- Interactive dashboard with trend analysis, industry breakdown, and outcome tracking
 
 ## Architecture
@@ -30,7 +41,7 @@ IntentWin ingests an RFP or solicitation document, cross-references it against y
 |                     Next.js 16 App                           |
 |                  (App Router + RSC)                           |
 +--------------------------------------------------------------+
-|  Dashboard       | API Routes (53 files) |  Auth (SSR)       |
+|  Dashboard       | API Routes (60 files) |  Auth (SSR)       |
 |  - Proposals     | - /api/proposals      |  Supabase Auth    |
 |  - Evidence      | - /api/intake         |  Cookie sessions  |
 |  - KB Docs       | - /api/evidence       |  Bearer fallback  |
@@ -44,7 +55,8 @@ IntentWin ingests an RFP or solicitation document, cross-references it against y
 |                       AI Layer                               |
 |  Google Gemini 3 Pro (generation + quality review)           |
 |  Voyage AI voyage-3 (1024d vector embeddings)                |
-|  10 section prompts | 3-judge quality council                |
+|  15 section prompts | 3-judge quality council                |
+|  Pre-flight gate | Repetition limiter | Audience calibration |
 |  Industry configs | Persuasion engine                        |
 +--------------------------------------------------------------+
 |                    Observability                             |
@@ -54,7 +66,7 @@ IntentWin ingests an RFP or solicitation document, cross-references it against y
 +--------------------------------------------------------------+
 |                       Supabase                               |
 |  PostgreSQL + pgvector + Row Level Security                  |
-|  30 migrations | Multi-tenant org isolation                  |
+|  42 migrations | Multi-tenant org isolation                  |
 |  Performance indexes on all hot query paths                  |
 +--------------------------------------------------------------+
 |                     Export Layer                              |
@@ -76,7 +88,7 @@ IntentWin ingests an RFP or solicitation document, cross-references it against y
 | Email | Resend (transactional) |
 | Editor | TipTap (rich text editing) |
 | Export | Puppeteer (PDF), docx (DOCX), pptxgenjs (PPTX), Google Slides API |
-| Testing | Vitest (540+ tests) + Playwright (E2E) |
+| Testing | Vitest (710 tests) + Playwright (E2E) |
 | CI/CD | GitHub Actions (lint, typecheck, test, coverage, build) |
 | Deployment | Vercel (with `@sparticuz/chromium` for serverless PDF) |
 
@@ -84,10 +96,10 @@ IntentWin ingests an RFP or solicitation document, cross-references it against y
 
 IntentWin follows a 7-phase robustness improvement program:
 
-### Testing (540+ tests)
+### Testing (710 tests, 0 failures)
 
-- **Unit tests** -- Core AI pipeline, export generators, quality checks, bid scoring
-- **Integration tests** -- API routes, auth flows, multi-tenancy isolation, RLS policies
+- **Unit tests** -- Core AI pipeline, prompt builders, export generators, quality checks, bid scoring, preflight gate, review mode, audience calibration, assumptions, boilerplate sections, team members
+- **Integration tests** -- API routes, auth flows, multi-tenancy isolation, RLS policies, pipeline integration, bulk import, compliance
 - **Security tests** -- Input sanitization, XSS prevention, SQL injection prevention, data leak verification
 - **E2E tests** -- Playwright specs for onboarding, proposal flow, export, knowledge base, multi-tenancy
 - **CI pipeline** -- GitHub Actions with lint, typecheck, unit tests, integration tests, coverage, and build
@@ -134,41 +146,61 @@ src/
 |   |   +-- settings/          # Company context, products, brand voice, branding
 |   |   +-- analytics/         # Win/loss analytics with recharts
 |   |   +-- onboarding/        # New org setup wizard
-|   +-- (public)/              # Landing, pricing, blog, capabilities
-|   +-- api/                   # 53 API route files, 76 HTTP handlers
+|   +-- (public)/              # Landing page
+|   +-- api/                   # 60 API route files
 |       +-- proposals/         # CRUD, generation, versioning, export, quality review
 |       +-- intake/            # RFP parsing, requirement extraction, bid evaluation
 |       +-- documents/         # Upload, process, chunk, embed, search
 |       +-- evidence/          # Evidence library CRUD + AI extraction
+|       +-- settings/          # Team members (with resume extraction), products
+|       +-- bulk-import/       # Batch L1 data import with AI extraction
 |       +-- health/            # Health check with component diagnostics
 |       +-- ...                # 20+ additional route groups
 +-- components/
-|   +-- error-boundary.tsx     # React error boundaries with Sentry integration
+|   +-- preflight/             # Pre-flight readiness report, targeted uploads, review mode sidebar
 |   +-- proposals/             # Proposal editor, quality report, version history
 |   +-- compliance/            # Compliance board with drag-and-drop
 |   +-- review-workflow/       # Color team stage-gate review
 |   +-- ui/                    # Shared UI components
++-- inngest/
+|   +-- functions/             # Inngest step functions
+|   |   +-- generate-proposal.ts       # Orchestrator: context build, fan-out, finalize
+|   |   +-- generate-single-section.ts # Per-section generation with L1/persuasion/repetition limiter
+|   |   +-- quality-review.ts          # 3-judge quality council
+|   |   +-- compliance-assessment.ts   # Compliance scoring
+|   |   +-- process-document.ts        # Document chunking + embedding
+|   |   +-- regenerate-section.ts      # Single-section regeneration
 +-- lib/
 |   +-- ai/
-|   |   +-- pipeline.ts        # Parallel multi-section generation orchestrator
+|   |   +-- pipeline/          # Generation pipeline modules
+|   |   |   +-- preflight.ts   # Pre-flight readiness gate
+|   |   |   +-- context.ts     # L1 context fetch, section-specific filtering, outcome contracts
+|   |   |   +-- build-pipeline-context.ts # Shared pipeline context builder
+|   |   |   +-- section-configs.ts       # Section registry + solicitation-type filtering
+|   |   |   +-- differentiators.ts       # Executive summary differentiator extraction
+|   |   |   +-- retrieval.ts             # Org-scoped RAG retrieval
+|   |   |   +-- types.ts                 # L1Context, PipelineContext, SectionConfig types
 |   |   +-- quality-overseer.ts # 3-judge LLM council quality review
 |   |   +-- bid-scoring.ts     # Bid/no-bid opportunity scoring
 |   |   +-- persuasion.ts      # Persuasive writing engine
 |   |   +-- industry-configs/  # Sector-specific proposal tuning
-|   |   +-- prompts/           # 10 section-specific prompt templates
+|   |   +-- prompts/           # 24 prompt templates (15 sections + extraction + review)
 |   +-- api/                   # Standardized response builders
+|   +-- constants/statuses.ts  # Typed status constants for all 10 domain entities
 |   +-- rate-limit/            # Sliding window rate limiter + route configs
 |   +-- security/              # Input sanitization + request validation
 |   +-- observability/         # Error tracking, pipeline metrics
 |   +-- utils/logger.ts        # Structured logger with correlation IDs
+|   +-- utils/ttl-cache.ts     # In-memory TTL cache (used for L1 context)
 |   +-- documents/             # File parsing (PDF, DOCX, PPTX)
 |   +-- export/                # PDF, DOCX, PPTX, Slides, HTML generators
+|   +-- versioning/            # Proposal version snapshots
 |   +-- test-utils/            # Mock factories, test helpers, API test utilities
 |   +-- supabase/              # Server client, admin client, auth helpers
 +-- types/                     # TypeScript type definitions
 
 supabase/
-+-- migrations/                # 30 SQL migrations (schema + RLS + indexes)
++-- migrations/                # 42 SQL migrations (schema + RLS + indexes)
 
 __tests__/
 +-- integration/               # API, security, rate-limiting, observability, performance
@@ -182,18 +214,23 @@ __tests__/
 
 Each proposal generation runs through:
 
-1. **Intake** -- Parse RFP, extract requirements and evaluation criteria
+1. **Intake** -- Parse RFP, extract requirements, evaluation criteria, solicitation type, and audience profile
 2. **Bid/No-Bid Evaluation** -- Score opportunity fit, capacity, and win probability
-3. **L1 Context Fetch** -- Pull verified company data for the user's org
-4. **L2 RAG Retrieval** -- Semantic search across uploaded documents
-5. **Industry Intelligence** -- Apply sector-specific context
-6. **Win Strategy** -- Analyze competitive positioning and key themes
-7. **Parallel Section Generation** -- 10 sections generated in concurrent batches with per-section metrics
-8. **Persuasion Enhancement** -- Optimize content for persuasive impact
-9. **Quality Review** -- 3-judge LLM council scores each section across compliance, persuasiveness, specificity, consistency
-10. **Auto-Remediation** -- Re-generate sections scoring below threshold with judge feedback
+3. **Pre-Flight Gate** -- Verify L1 data completeness (evidence, team members, products, intake fields); surface targeted upload prompts for gaps
+4. **L1 Context Fetch** -- Pull verified company data for the user's org (cached 5 min with TTL cache)
+5. **L2 RAG Retrieval** -- Org-scoped semantic search across uploaded documents
+6. **Section-Specific L1 Filtering** -- Each section receives only relevant L1 data to prevent "lost in the middle" syndrome
+7. **Industry Intelligence** -- Apply sector-specific context
+8. **Win Strategy** -- Analyze competitive positioning and key themes
+9. **Executive Summary First** -- Generate executive summary, then extract differentiators for the repetition limiter
+10. **Parallel Section Generation** -- Remaining sections generated concurrently via Inngest steps with per-section retry, audience calibration, brand name lock, and editorial standards
+11. **Repetition Limiter** -- Differentiators from executive summary are tracked; subsequent sections demonstrate (not repeat) them
+12. **Persuasion Enhancement** -- Optimize content for persuasive impact
+13. **Quality Review** -- 3-judge LLM council scores each section across compliance, persuasiveness, specificity, consistency
+14. **Auto-Remediation** -- Re-generate sections scoring below threshold with judge feedback
+15. **Review Mode** -- Post-generation UI highlights placeholders, unsubstantiated claims, and areas needing human attention
 
-Pipeline concurrency is configurable via `PIPELINE_CONCURRENCY` env var (default: 3).
+Section generation is orchestrated by Inngest with individual step retries (3 attempts per section). If the executive summary fails, remaining sections still generate without the repetition limiter (graceful degradation).
 
 ## Multi-Tenancy
 
@@ -240,8 +277,10 @@ Open [http://localhost:3000](http://localhost:3000).
 | `SUPABASE_SERVICE_ROLE_KEY` | Yes | Supabase service role key (server-only) |
 | `GOOGLE_AI_API_KEY` | Yes | Google Gemini API key |
 | `VOYAGE_API_KEY` | Yes | Voyage AI embedding key |
+| `GEMINI_MODEL` | No | Gemini model ID override (default: gemini-3.1-pro-preview) |
 | `RESEND_API_KEY` | No | Resend transactional email key |
-| `PIPELINE_CONCURRENCY` | No | Parallel section generation batch size (default: 3) |
+| `INNGEST_EVENT_KEY` | No | Inngest event key (for background job orchestration) |
+| `INNGEST_SIGNING_KEY` | No | Inngest signing key |
 | `LOG_LEVEL` | No | Logging level: debug, info, warn, error (default: warn in prod) |
 | `SENTRY_DSN` | No | Sentry error tracking DSN |
 
