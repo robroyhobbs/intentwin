@@ -15,6 +15,8 @@ import { SkeletonSection } from "@/components/ui/skeleton";
 import { DealOutcomeSetter } from "@/components/ui/deal-outcome-setter";
 import type { ProposalReview, ReviewSummary } from "@/types/review";
 import { exportAnnotationsAsMarkdown } from "@/lib/review/export-annotations";
+import { ReadinessReport } from "@/components/preflight/readiness-report";
+import type { PreflightResult } from "@/lib/ai/pipeline/preflight";
 
 import type { Proposal, Section } from "./_components/types";
 import { ProposalTopBar } from "./_components/proposal-top-bar";
@@ -45,6 +47,10 @@ const ComplianceBoard = dynamic(
 );
 const StageReviewDashboard = dynamic(
   () => import("@/components/review-workflow/stage-review-dashboard").then((m) => m.StageReviewDashboard),
+  { ssr: false },
+);
+const ReviewModeSidebar = dynamic(
+  () => import("@/components/preflight/review-mode-sidebar").then((m) => m.ReviewModeSidebar),
   { ssr: false },
 );
 
@@ -84,6 +90,9 @@ export default function ProposalPage() {
     null,
   );
   const [savingSection, setSavingSection] = useState(false);
+  const [preflight, setPreflight] = useState<PreflightResult | null>(null);
+  const [preflightLoading, setPreflightLoading] = useState(false);
+  const [showPlaceholderPanel, setShowPlaceholderPanel] = useState(false);
   const [activeTab, setActiveTab] = useState<
     "sections" | "compliance" | "review"
   >(initialTab);
@@ -138,6 +147,22 @@ export default function ProposalPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps -- authFetch returns new ref each render
   }, [id]);
 
+  const fetchPreflight = useCallback(async () => {
+    setPreflightLoading(true);
+    try {
+      const response = await authFetch(`/api/proposals/${id}/preflight`);
+      if (response.ok) {
+        const data = await response.json();
+        setPreflight(data.preflight);
+      }
+    } catch {
+      // Preflight is non-blocking
+    } finally {
+      setPreflightLoading(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
   useEffect(() => {
     fetchProposal();
   }, [fetchProposal]);
@@ -158,6 +183,30 @@ export default function ProposalPage() {
       fetchReviews();
     }
   }, [proposal?.status, fetchReviews]);
+
+  // Fetch preflight when proposal is ready to generate (draft, no sections)
+  useEffect(() => {
+    if (proposal && sections.length === 0 && proposal.status !== ProposalStatus.GENERATING) {
+      fetchPreflight();
+    }
+  }, [proposal, sections.length, fetchPreflight]);
+
+  // Auto-show placeholder panel when generation completes (review mode)
+  const proposalInReview =
+    proposal?.status === ProposalStatus.REVIEW || proposal?.status === ProposalStatus.EXPORTED;
+  useEffect(() => {
+    if (proposalInReview && sections.length > 0 && !showPlaceholderPanel) {
+      // Check if any section has placeholders
+      const hasPlaceholders = sections.some((s) => {
+        const content = s.edited_content || s.generated_content || "";
+        return /\[CASE STUDY NEEDED:|TEAM MEMBER NEEDED:|\{signatory_name\}|\{signatory_title\}|\{date\}|\{client_name\}|\$TBD/.test(content);
+      });
+      if (hasPlaceholders) {
+        setShowPlaceholderPanel(true);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [proposalInReview, sections]);
 
   // Poll during generation with a 10-minute timeout safety net
   useEffect(() => {
@@ -542,6 +591,19 @@ export default function ProposalPage() {
               </div>
             </div>
           )}
+
+          {/* Placeholder review mode panel */}
+          {showPlaceholderPanel && (
+            <div className="w-72 flex-shrink-0 border-l border-[var(--border)] bg-[var(--background-secondary)] overflow-y-auto animate-slide-in-right">
+              <ReviewModeSidebar
+                sections={sections}
+                onNavigateToSection={(sectionId) => {
+                  setActiveSection(sectionId);
+                  setEditingSection(null);
+                }}
+              />
+            </div>
+          )}
         </div>
       ) : (
         proposal.status !== ProposalStatus.GENERATING && (
@@ -556,6 +618,18 @@ export default function ProposalPage() {
               Your proposal is configured. Click Generate to start creating all
               sections with AI-powered content.
             </p>
+
+            {/* Preflight readiness report */}
+            <div className="mt-6 w-full max-w-lg">
+              <ReadinessReport
+                preflight={preflight}
+                loading={preflightLoading}
+                onRetry={fetchPreflight}
+                onUploadComplete={fetchPreflight}
+                proposalId={id}
+              />
+            </div>
+
             <button
               onClick={handleGenerate}
               disabled={generating}
