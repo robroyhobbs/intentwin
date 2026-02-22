@@ -13,6 +13,38 @@ export function buildTeamPrompt(
 ): string {
   const companyName = companyInfo?.name || "Our Company";
 
+  // Until team_members table exists (Phase 1), there are never named personnel.
+  // Check L1 context for any personnel data markers (future-proofing).
+  const hasNamedPersonnel = l1Context?.includes("## Team Members") ?? false;
+
+  const personnelEnforcement = hasNamedPersonnel
+    ? `
+## PERSONNEL STATUS — NAMED TEAM MEMBERS AVAILABLE
+
+Use ONLY the named team members from the Company Context below. Do not invent names, bios, or credentials.
+`
+    : `
+## PERSONNEL ENFORCEMENT — NO NAMED TEAM MEMBERS REGISTERED
+
+No named personnel are registered in the system. You do NOT have real names, bios, or resumes.
+
+**MANDATORY BEHAVIOR when no named personnel exist:**
+- For each key role, output the following placeholder block INSTEAD of inventing a person:
+
+\`\`\`
+[TEAM MEMBER NEEDED: Role Title]
+Required: Name, years of experience, relevant certifications, clearance level
+Qualifications to look for: [Describe ideal qualifications for this role]
+Upload at: Settings > Team Members > Add Team Member
+\`\`\`
+
+- You MAY still describe the role's responsibilities, required qualifications, and why the role matters.
+- You MUST NOT invent specific people, names, bios, or personal credentials.
+- You MAY reference company-wide certifications and partnership levels from the Company Context.
+
+This is a HARD RULE — fabricated personnel names in government proposals are grounds for disqualification.
+`;
+
   return `Write the "Proposed Team & Qualifications" section for a ${companyName} proposal.
 
 ## Opportunity Details
@@ -25,6 +57,7 @@ ${analysis}
 ${retrievedContext}
 ${l1Context || ""}
 ${buildWinStrategySection(winStrategy)}
+${personnelEnforcement}
 ## Instructions
 Write a team and qualifications section (400-500 words) using this EXACT structure:
 
@@ -66,7 +99,7 @@ Present the reporting structure as a markdown table:
 Include 4-6 key roles showing the hierarchy clearly.
 ${winStrategy ? `\nMap team capabilities directly to the win themes and target outcomes.` : ""}
 
-Reference ${companyName}'s actual certifications and partnership levels from the Company Context — do not invent credentials.
+Reference ${companyName}'s actual certifications and partnership levels from the Company Context — do not invent credentials. For named personnel, use ONLY registered team members. If no team members are registered, use the [TEAM MEMBER NEEDED: ...] placeholder format.
 
 ${buildEditorialStandards((intakeData as any).solicitation_type)}`;
 }

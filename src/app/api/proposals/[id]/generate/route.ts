@@ -3,6 +3,8 @@ import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { inngest } from "@/inngest/client";
 import { ProposalStatus } from "@/lib/constants/statuses";
+import { fetchL1Context } from "@/lib/ai/pipeline/context";
+import { runPreflightCheck, type PreflightResult } from "@/lib/ai/pipeline/preflight";
 
 export async function POST(
   request: NextRequest,
@@ -25,10 +27,32 @@ export async function POST(
       );
     }
 
+    // ── Pre-flight readiness check (fail-open) ───────────────────────────
+    // Runs before generation to surface data gaps. Never blocks generation.
+    let preflight: PreflightResult | null = null;
+    try {
+      const intakeData = (proposal.intake_data as Record<string, unknown>) || {};
+      const serviceLine = intakeData.service_line as string | undefined;
+      const industry = intakeData.client_industry as string | undefined;
+      const adminClient = createAdminClient();
+      const l1Context = await fetchL1Context(
+        adminClient,
+        serviceLine,
+        industry,
+        context.organizationId,
+      );
+      const requirements =
+        (proposal.rfp_extracted_requirements as Record<string, unknown>[] | null) ?? null;
+      preflight = runPreflightCheck(l1Context, intakeData, requirements);
+    } catch (preflightError) {
+      // Fail-open: log and continue without preflight data
+      console.warn("Preflight check failed (non-blocking):", preflightError);
+    }
+
     // Atomic guard: only one generation at a time.
     // Uses UPDATE ... WHERE status != 'generating' as a database-level mutex.
-    const adminClient = createAdminClient();
-    const { data: claimed, error: claimError } = await adminClient
+    const adminClientForClaim = createAdminClient();
+    const { data: claimed, error: claimError } = await adminClientForClaim
       .from("proposals")
       .update({
         status: ProposalStatus.GENERATING,
@@ -65,6 +89,7 @@ export async function POST(
       status: ProposalStatus.GENERATING,
       proposalId: id,
       message: "Proposal generation started.",
+      preflight: preflight ?? undefined,
     });
   } catch (error) {
     console.error("Generate proposal error:", error);

@@ -153,11 +153,14 @@ export function buildSectionSpecificL1Context(
   let relevantEvidence: EvidenceLibraryEntry[] = [];
   let relevantProducts: ProductContext[] = [];
   let relevantCompany = [...brandContext];
+  let evidenceCountForSection: number | undefined;
 
   // Specific routing logic
   if (sectionType === "case_studies" || solicitationType === "RFI") {
     // RFIs and Case Study sections need maximum proof points
     relevantEvidence = l1Context.evidenceLibrary;
+    // Track actual count so prompt can enforce placeholder behavior
+    evidenceCountForSection = l1Context.evidenceLibrary.length;
   } else if (sectionType === "team" || sectionType === "methodology") {
     // Only fetch certs and methodology
     relevantCompany = [
@@ -176,11 +179,19 @@ export function buildSectionSpecificL1Context(
     relevantProducts = l1Context.productContexts;
   }
 
-  return buildL1ContextString({
+  const l1String = buildL1ContextString({
     companyContext: relevantCompany,
     productContexts: relevantProducts,
     evidenceLibrary: relevantEvidence
   });
+
+  // Prepend evidence count metadata for sections that need it (case_studies, team)
+  // This allows prompt functions to detect evidence availability without signature changes
+  if (evidenceCountForSection !== undefined) {
+    return `<!-- L1_EVIDENCE_COUNT: ${evidenceCountForSection} -->\n${l1String}`;
+  }
+
+  return l1String;
 }
 
 export function buildL1ContextString(l1Context: L1Context): string {

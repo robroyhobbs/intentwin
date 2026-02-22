@@ -396,8 +396,37 @@ Return ONLY a JSON array. No markdown, no explanation.
 | Evidence cards render slowly with 100+ items | Group sections collapse, lazy rendering if needed |
 | Duplicate evidence from re-extraction        | Show warning, let user decide                     |
 
-## 8. Open Items
+## 8. Named Personnel (New — from Realism Enhancements)
+
+New `team_members` table for L1. Required for government proposals where named key personnel are mandatory.
+
+```sql
+team_members (
+  id UUID PRIMARY KEY,
+  organization_id UUID NOT NULL REFERENCES organizations(id),
+  name TEXT NOT NULL,
+  role TEXT NOT NULL,
+  skills JSONB,            -- Extracted qualifications
+  certifications JSONB,    -- e.g., ["CCIE", "PMP", "CISSP"]
+  project_history JSONB,   -- Past performances with dates, scope, results
+  resume_document_id UUID, -- FK to documents table (uploaded resume)
+  is_verified BOOLEAN DEFAULT false,
+  verified_by UUID,
+  verified_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+```
+
+**UI:** New "Team Members" tab on `/settings/company` alongside Products & Services. Upload resume PDF -> AI extracts structured data -> user verifies.
+
+**Pipeline integration:** `fetchL1Context()` extended to query `team_members` filtered by role/certifications matching RFP requirements. `buildL1ContextString()` formats as `## Our Team` section in L1 prompt context.
+
+See `.intent/realism-enhancements.intent.md` Section 2.1.B for full design.
+
+## 9. Open Items
 
 - [ ] Decide if evidence should track `source_document_id` for provenance
 - [ ] Consider evidence "tagging" beyond industry/service_line
 - [ ] Determine if pipeline should prefer recently-verified evidence
+- [ ] Design resume extraction prompt for team_members AI ingestion

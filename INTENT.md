@@ -153,15 +153,22 @@ Every proposal has an INTENT that defines its purpose before any content is gene
 │                                                                  │
 │   Output: Proposal INTENT (outcome contract + win strategy)      │
 ├──────────────────────────────────────────────────────────────────┤
-│ PHASE 2: CAPABILITY MAPPING                                      │
+│ PHASE 2: CAPABILITY MAPPING + PRE-FLIGHT CHECK                   │
 │                                                                  │
 │   For each stated outcome:                                       │
 │   1. Query L1 (Company/Product Context) for relevant capabilities│
 │   2. Query L1 (Evidence Context) for supporting case studies     │
-│   3. Identify gaps (outcomes we can't fully support)             │
-│   4. Flag claims that need verification                          │
+│   3. Query L1 (Team Members) for named personnel                 │
+│   4. Identify gaps (outcomes we can't fully support)             │
+│   5. Flag claims that need verification                          │
 │                                                                  │
-│   Output: Outcome → Capability → Evidence mapping                │
+│   Pre-Flight Gate:                                               │
+│   - Produce Readiness Report: Ready / Needs Data / Cannot Address│
+│   - Surface specific upload requests for missing data            │
+│   - Warn (with override) when critical gaps exist                │
+│   - User provides missing data OR proceeds with placeholders     │
+│                                                                  │
+│   Output: Outcome → Capability → Evidence mapping + gap report   │
 ├──────────────────────────────────────────────────────────────────┤
 │ PHASE 3: SECTION GENERATION                                      │
 │                                                                  │
@@ -200,6 +207,7 @@ Every proposal has an INTENT that defines its purpose before any content is gene
 -- Company-wide context (brand, values, legal)
 company_context (
   id, category, key, value,
+  primary_brand_name,      -- Enforced single brand name
   is_locked, last_verified_at, verified_by
 )
 
@@ -263,92 +271,9 @@ section_outcome_mapping (
 
 ---
 
-## Section Approval Mechanism
-
-Adapt IDD's LOCKED/REVIEWED/DRAFT to proposals:
-
-```
-::: locked {reason="Client-approved outcome"}
-## Outcome Contract
-Client expects 40% cost reduction within 18 months...
-:::
-
-::: reviewed {by=proposal_owner date=2026-01-28}
-## Win Strategy
-Primary differentiator: Only vendor with FedRAMP High + healthcare experience...
-:::
-
-::: draft
-## Executive Summary
-[AI-generated content, human can freely edit]
-:::
-```
-
-**Behavior:**
-
-- **LOCKED sections**: Cannot be changed without explicit unlock (protects client commitments)
-- **REVIEWED sections**: Changes trigger notification to reviewer
-- **DRAFT sections**: AI and humans can freely iterate
-
----
-
-## Verification Agents
-
-### proposal-validate
-
-- Intent completeness (outcomes defined? metrics specific?)
-- Constraint compliance (must-include present? must-avoid absent?)
-- Evidence coverage (% of claims with L1 sources)
-
-### proposal-sync
-
-- Compare Intent vs generated content
-- Flag sections that don't serve any stated outcome
-- Detect claims that contradict L1 context
-
-### proposal-audit
-
-- Overall health score
-- Outcome coverage (every outcome addressed?)
-- Evidence freshness (case studies current?)
-- Competitive positioning strength
-
----
-
 ## Multi-Document Support
 
-Proposals support multiple source documents with role-based classification and incremental addition:
-
-```
-┌──────────────────────────────────────────────────────────────────┐
-│  PROPOSAL DOCUMENT LIFECYCLE                                      │
-│                                                                  │
-│  Initial Intake:                                                 │
-│  1. Upload 1-N documents (PDF, DOCX, PPTX, TXT, MD)            │
-│  2. Classify each document's role:                               │
-│     - primary_rfp, amendment, attachment, qa_addendum,           │
-│       incumbent_info, evaluation_criteria, template, supplemental│
-│  3. Extract from all documents with role-based precedence        │
-│  4. Persist document associations in proposal_documents table    │
-│                                                                  │
-│  Mid-Proposal Addition:                                          │
-│  1. Upload new document, assign role                             │
-│  2. Incremental extraction (new doc only)                        │
-│  3. Semantic merge: compare against existing requirements        │
-│     - NEW: requirement not in existing set                       │
-│     - UPDATED: similar requirement with changed wording          │
-│     - COVERED: already captured                                  │
-│  4. User reviews merge plan, approves/rejects each change        │
-│  5. Affected sections flagged for regeneration (manual trigger)  │
-│                                                                  │
-│  Key Safety Rules:                                               │
-│  - Manual requirements (is_extracted=false) are NEVER modified   │
-│  - Compliance statuses are preserved during merge                │
-│  - Sections are never auto-regenerated without user confirmation │
-└──────────────────────────────────────────────────────────────────┘
-```
-
-See `~/intent/intentwin-multi-document/intent.md` for full design.
+Implemented. See `.intent/document-separation.intent.md` for full design (migration 00033).
 
 ---
 
@@ -357,37 +282,3 @@ See `~/intent/intentwin-multi-document/intent.md` for full design.
 - Real-time collaboration (future enhancement)
 - Competitor intelligence gathering (manual input)
 - Contract generation (legal review required)
-
----
-
-## Success Metrics for This System
-
-| Metric                 | Target         | Measurement                      |
-| ---------------------- | -------------- | -------------------------------- |
-| Proposal creation time | -60% vs manual | Time from intake to draft        |
-| Win rate improvement   | +15%           | Track proposals through to award |
-| Claim accuracy         | 100% verified  | Zero unverified claims in final  |
-| Outcome alignment      | 100%           | Every section maps to outcome    |
-
----
-
-## Skill Routing (Generation Sequence)
-
-```
-1. /intent-capture      → Structured interview for outcome contract
-2. /capability-map      → Query L1 for relevant capabilities + evidence
-3. /generate-sections   → Outcome-focused section generation
-4. /verify-claims       → Check all claims against L1
-5. /proposal-review     → Human review interface with annotations
-6. /export              → Final document generation
-```
-
----
-
-## Decisions Log
-
-| Decision           | Options Considered    | Choice        | Rationale                                |
-| ------------------ | --------------------- | ------------- | ---------------------------------------- |
-| Context storage    | Files vs DB           | DB (Supabase) | Queryable, versionable, access control   |
-| Claim verification | Manual vs automated   | Hybrid        | AI flags, human confirms                 |
-| Outcome structure  | Free-form vs template | Template      | Ensures completeness, enables validation |
