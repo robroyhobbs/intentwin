@@ -1,7 +1,7 @@
 /**
  * Test Utilities
  * 
- * Central export for all test utilities used across the IntentWin test suite.
+ * Central export for all test utilities used across the IntentBid test suite.
  * 
  * Usage:
  * ```typescript

@@ -18,7 +18,7 @@ describe("review-notifications", () => {
     vi.resetModules();
     mockSend.mockReset();
     process.env.RESEND_API_KEY = "re_test_123";
-    process.env.NEXT_PUBLIC_APP_URL = "https://test.intentwin.com";
+    process.env.NEXT_PUBLIC_APP_URL = "https://test.intentbid.com";
   });
 
   afterEach(() => {
@@ -54,9 +54,9 @@ describe("review-notifications", () => {
       expect(call.text).toContain("Cloud Migration Strategy");
       expect(call.text).toContain("Pink Team");
       expect(call.text).toContain(
-        "https://test.intentwin.com/proposals/prop-123?tab=review",
+        "https://test.intentbid.com/proposals/prop-123?tab=review",
       );
-      expect(call.from).toContain("IntentWin");
+      expect(call.from).toContain("IntentBid");
     });
   });
 
@@ -91,7 +91,7 @@ describe("review-notifications", () => {
       expect(call.text).toContain("8.5");
       expect(call.text).toContain("6");
       expect(call.text).toContain(
-        "https://test.intentwin.com/proposals/prop-456?tab=review",
+        "https://test.intentbid.com/proposals/prop-456?tab=review",
       );
     });
   });

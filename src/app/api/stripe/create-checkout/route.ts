@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
         interval: interval === "annual" ? "year" : "month",
       },
       product_data: {
-        name: `IntentWin ${PRICING_TIERS[tier].name}`,
+        name: `IntentBid ${PRICING_TIERS[tier].name}`,
         metadata: {
           tier,
         },
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
     const origin =
       request.headers.get("origin") ||
       process.env.NEXT_PUBLIC_APP_URL ||
-      "https://intentwin.com";
+      "https://intentbid.com";
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: "subscription",

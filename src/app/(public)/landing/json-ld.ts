@@ -2,7 +2,7 @@ export function getJsonLd() {
   return {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
-    name: "IntentWin",
+    name: "IntentBid",
     applicationCategory: "BusinessApplication",
     operatingSystem: "Web",
     description:

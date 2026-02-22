@@ -12,7 +12,7 @@ export function nurtureDay7Email(params: {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Why consulting firms and gov contractors chose IntentWin</title>
+  <title>Why consulting firms and gov contractors chose IntentBid</title>
 </head>
 <body style="margin:0;padding:0;background-color:#09090b;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#09090b;">
@@ -37,7 +37,7 @@ export function nurtureDay7Email(params: {
               </h2>
 
               <p style="margin:0 0 24px 0;font-size:16px;line-height:1.6;color:#d4d4d8;">
-                IntentWin was built for teams where every proposal matters. Where a single win can mean millions in revenue &mdash; and a loss means months of effort wasted.
+                IntentBid was built for teams where every proposal matters. Where a single win can mean millions in revenue &mdash; and a loss means months of effort wasted.
               </p>
 
               <h3 style="margin:0 0 16px 0;font-size:17px;font-weight:600;color:#ffffff;">
@@ -91,7 +91,7 @@ export function nurtureDay7Email(params: {
               </h3>
 
               <p style="margin:0 0 20px 0;font-size:16px;line-height:1.6;color:#d4d4d8;">
-                IntentWin ingests your existing materials &mdash; <strong style="color:#ffffff;">PDF, DOCX, PPTX, CSV, TXT, and Markdown</strong> &mdash; and transforms them into a living knowledge base. Every proposal is then engineered section-by-section with full traceability back to your source documents.
+                IntentBid ingests your existing materials &mdash; <strong style="color:#ffffff;">PDF, DOCX, PPTX, CSV, TXT, and Markdown</strong> &mdash; and transforms them into a living knowledge base. Every proposal is then engineered section-by-section with full traceability back to your source documents.
               </p>
 
               <p style="margin:0 0 8px 0;font-size:16px;line-height:1.6;color:#d4d4d8;">
@@ -106,7 +106,7 @@ export function nurtureDay7Email(params: {
               <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 28px 0;">
                 <tr>
                   <td align="center" style="border-radius:8px;background-color:#7c3aed;">
-                    <a href="https://intentwin.com/request-access?ref=email" target="_blank" style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">
+                    <a href="https://intentbid.com/request-access?ref=email" target="_blank" style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">
                       Request access now &rarr;
                     </a>
                   </td>
@@ -119,7 +119,7 @@ export function nurtureDay7Email(params: {
               <!-- Signature -->
               <p style="margin:0;font-size:15px;line-height:1.6;color:#d4d4d8;">
                 Best regards,<br />
-                <strong style="color:#ffffff;">The IntentWin Team</strong>
+                <strong style="color:#ffffff;">The IntentBid Team</strong>
               </p>
             </td>
           </tr>
@@ -128,7 +128,7 @@ export function nurtureDay7Email(params: {
           <tr>
             <td style="padding:28px 0 0 0;text-align:center;">
               <p style="margin:0;font-size:12px;color:#52525b;">
-                IntentWin &middot; <a href="https://intentwin.com" style="color:#7c3aed;text-decoration:none;">intentwin.com</a>
+                IntentBid &middot; <a href="https://intentbid.com" style="color:#7c3aed;text-decoration:none;">intentbid.com</a>
               </p>
             </td>
           </tr>

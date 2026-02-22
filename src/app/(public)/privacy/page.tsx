@@ -7,7 +7,7 @@ export default function PrivacyPage() {
         <nav className="legal-nav">
           <div className="legal-nav-inner">
             <Link href="/" className="legal-logo">
-              IntentWin
+              IntentBid
             </Link>
             <Link href="/" className="legal-back">
               &larr; Back to Home
@@ -24,14 +24,14 @@ export default function PrivacyPage() {
             <section className="legal-section">
               <h2>1. Introduction</h2>
               <p>
-                IntentWin (&ldquo;we,&rdquo; &ldquo;our,&rdquo; or
+                IntentBid (&ldquo;we,&rdquo; &ldquo;our,&rdquo; or
                 &ldquo;us&rdquo;) operates an AI-powered proposal intelligence
-                platform at intentwin.com. This Privacy Policy explains how we
+                platform at intentbid.com. This Privacy Policy explains how we
                 collect, use, store, and protect your information when you use
                 our service.
               </p>
               <p>
-                By using IntentWin, you agree to the collection and use of
+                By using IntentBid, you agree to the collection and use of
                 information in accordance with this policy.
               </p>
             </section>
@@ -71,7 +71,7 @@ export default function PrivacyPage() {
               <h2>3. How We Use Your Information</h2>
               <p>We use the information we collect to:</p>
               <ul>
-                <li>Provide, maintain, and improve the IntentWin platform</li>
+                <li>Provide, maintain, and improve the IntentBid platform</li>
                 <li>
                   Generate AI-powered proposal content tailored to your needs
                 </li>
@@ -96,7 +96,7 @@ export default function PrivacyPage() {
             <section className="legal-section">
               <h2>4. Third-Party Services</h2>
               <p>
-                IntentWin integrates with the following third-party services to
+                IntentBid integrates with the following third-party services to
                 deliver our platform:
               </p>
               <ul>
@@ -114,7 +114,7 @@ export default function PrivacyPage() {
                 <li>
                   <strong>Vercel</strong> &mdash; Application hosting and
                   content delivery. Vercel processes web requests and serves the
-                  IntentWin application.
+                  IntentBid application.
                 </li>
                 <li>
                   <strong>Stripe</strong> &mdash; Payment processing. Stripe
@@ -173,7 +173,7 @@ export default function PrivacyPage() {
               <p>
                 You may request deletion of your data at any time by contacting
                 us at{" "}
-                <a href="mailto:privacy@intentwin.com">privacy@intentwin.com</a>
+                <a href="mailto:privacy@intentbid.com">privacy@intentbid.com</a>
                 .
               </p>
             </section>
@@ -209,7 +209,7 @@ export default function PrivacyPage() {
             <section className="legal-section">
               <h2>9. Children&apos;s Privacy</h2>
               <p>
-                IntentWin is a business-to-business service and is not intended
+                IntentBid is a business-to-business service and is not intended
                 for use by individuals under the age of 18. We do not knowingly
                 collect personal information from children.
               </p>
@@ -220,7 +220,7 @@ export default function PrivacyPage() {
               <p>
                 We may update this Privacy Policy from time to time. We will
                 notify you of material changes by email or through a notice on
-                the platform. Continued use of IntentWin after changes
+                the platform. Continued use of IntentBid after changes
                 constitutes acceptance of the updated policy.
               </p>
             </section>
@@ -232,10 +232,10 @@ export default function PrivacyPage() {
                 practices, contact us at:
               </p>
               <p className="legal-contact">
-                IntentWin
+                IntentBid
                 <br />
                 Email:{" "}
-                <a href="mailto:privacy@intentwin.com">privacy@intentwin.com</a>
+                <a href="mailto:privacy@intentbid.com">privacy@intentbid.com</a>
               </p>
             </section>
           </div>
@@ -244,7 +244,7 @@ export default function PrivacyPage() {
         <footer className="legal-footer">
           <div className="legal-footer-inner">
             <span className="legal-footer-text">
-              IntentWin &mdash; Proposal intelligence, engineered to win.
+              IntentBid &mdash; Proposal intelligence, engineered to win.
             </span>
             <div className="legal-footer-links">
               <Link href="/privacy">Privacy Policy</Link>

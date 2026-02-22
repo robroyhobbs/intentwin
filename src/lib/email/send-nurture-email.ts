@@ -16,9 +16,9 @@ interface SendNurtureEmailParams {
 
 const SUBJECT_LINES: Record<NurtureStep, (firstName: string) => string> = {
   1: () => "The #1 reason proposals lose (it's not price)",
-  2: () => "Inside the engine: how IntentWin makes every section persuasive",
-  3: () => "Why consulting firms and gov contractors chose IntentWin",
-  4: (firstName) => `${firstName}, here's your IntentWin access update`,
+  2: () => "Inside the engine: how IntentBid makes every section persuasive",
+  3: () => "Why consulting firms and gov contractors chose IntentBid",
+  4: (firstName) => `${firstName}, here's your IntentBid access update`,
 };
 
 const TEMPLATE_MAP: Record<
@@ -49,7 +49,7 @@ export async function sendNurtureEmail(
       company: params.company,
     });
 
-    const from = process.env.EMAIL_FROM || "IntentWin <onboarding@resend.dev>";
+    const from = process.env.EMAIL_FROM || "IntentBid <onboarding@resend.dev>";
 
     const { error } = await resend.emails.send({
       from,

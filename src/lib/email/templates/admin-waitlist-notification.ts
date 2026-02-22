@@ -33,7 +33,7 @@ export function adminWaitlistNotificationEmail(params: {
           <!-- Header -->
           <tr>
             <td style="padding:0 0 24px 0;">
-              <span style="font-size:13px;font-weight:600;color:#7c3aed;text-transform:uppercase;letter-spacing:0.5px;">IntentWin Admin</span>
+              <span style="font-size:13px;font-weight:600;color:#7c3aed;text-transform:uppercase;letter-spacing:0.5px;">IntentBid Admin</span>
             </td>
           </tr>
 
@@ -75,7 +75,7 @@ export function adminWaitlistNotificationEmail(params: {
           <tr>
             <td style="padding:20px 0 0 0;text-align:center;">
               <p style="margin:0;font-size:11px;color:#a1a1aa;">
-                This is an automated admin notification from IntentWin.
+                This is an automated admin notification from IntentBid.
               </p>
             </td>
           </tr>

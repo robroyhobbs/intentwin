@@ -248,10 +248,10 @@ export default function OnboardingPage() {
         <p className="text-center text-sm text-[var(--foreground-subtle)] mt-6">
           Need help? Email us at{" "}
           <a
-            href="mailto:support@intentwin.com"
+            href="mailto:support@intentbid.com"
             className="text-[var(--accent)] hover:underline"
           >
-            support@intentwin.com
+            support@intentbid.com
           </a>
         </p>
       </div>

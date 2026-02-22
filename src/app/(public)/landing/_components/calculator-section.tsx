@@ -42,7 +42,7 @@ export function CalculatorSection() {
           </div>
           <div className="vf-calc-results">
             <div className="vf-calc-card vf-calc-old">
-              <span className="vf-calc-card-label">Without IntentWin</span>
+              <span className="vf-calc-card-label">Without IntentBid</span>
               <div className="vf-calc-stat">
                 <span className="vf-calc-num">{proposals}</span>
                 <span className="vf-calc-unit">proposals/mo</span>
@@ -61,7 +61,7 @@ export function CalculatorSection() {
               </div>
             </div>
             <div className="vf-calc-card vf-calc-new">
-              <span className="vf-calc-card-label">With IntentWin</span>
+              <span className="vf-calc-card-label">With IntentBid</span>
               <div className="vf-calc-stat">
                 <span className="vf-calc-num">{proposalsWithIntent}</span>
                 <span className="vf-calc-unit">proposals/mo</span>

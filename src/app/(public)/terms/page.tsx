@@ -7,7 +7,7 @@ export default function TermsPage() {
         <nav className="legal-nav">
           <div className="legal-nav-inner">
             <Link href="/" className="legal-logo">
-              IntentWin
+              IntentBid
             </Link>
             <Link href="/" className="legal-back">
               &larr; Back to Home
@@ -24,8 +24,8 @@ export default function TermsPage() {
             <section className="legal-section">
               <h2>1. Acceptance of Terms</h2>
               <p>
-                By accessing or using IntentWin (&ldquo;the Service&rdquo;),
-                operated by IntentWin (&ldquo;we,&rdquo; &ldquo;our,&rdquo; or
+                By accessing or using IntentBid (&ldquo;the Service&rdquo;),
+                operated by IntentBid (&ldquo;we,&rdquo; &ldquo;our,&rdquo; or
                 &ldquo;us&rdquo;), you agree to be bound by these Terms of
                 Service. If you are using the Service on behalf of an
                 organization, you represent that you have authority to bind that
@@ -37,7 +37,7 @@ export default function TermsPage() {
             <section className="legal-section">
               <h2>2. Service Description</h2>
               <p>
-                IntentWin is an AI-powered proposal intelligence platform that
+                IntentBid is an AI-powered proposal intelligence platform that
                 helps businesses generate, refine, and manage professional
                 proposals. The Service includes:
               </p>
@@ -56,7 +56,7 @@ export default function TermsPage() {
                 <li>Multi-format proposal export</li>
               </ul>
               <p>
-                IntentWin is an invite-only platform. Access is granted at our
+                IntentBid is an invite-only platform. Access is granted at our
                 sole discretion.
               </p>
             </section>
@@ -71,7 +71,7 @@ export default function TermsPage() {
               </p>
               <p>
                 You must notify us immediately at{" "}
-                <a href="mailto:legal@intentwin.com">legal@intentwin.com</a> if
+                <a href="mailto:legal@intentbid.com">legal@intentbid.com</a> if
                 you become aware of any unauthorized use of your account.
               </p>
               <p>
@@ -84,7 +84,7 @@ export default function TermsPage() {
             <section className="legal-section">
               <h2>4. Payment Terms</h2>
               <p>
-                IntentWin is offered as a subscription service at{" "}
+                IntentBid is offered as a subscription service at{" "}
                 <strong>$999 per month</strong>. All features are included in
                 the subscription &mdash; there are no tiers or add-on charges.
               </p>
@@ -116,15 +116,15 @@ export default function TermsPage() {
               <h3>Your Content</h3>
               <p>
                 You retain full ownership of all content you upload to or create
-                using IntentWin, including proposals, documents, brand voice
+                using IntentBid, including proposals, documents, brand voice
                 configurations, and knowledge base materials. We do not claim
                 any ownership rights over your content.
               </p>
               <h3>Our Platform</h3>
               <p>
-                IntentWin, including its design, code, Intent Framework
+                IntentBid, including its design, code, Intent Framework
                 methodology, AI models, user interface, and documentation, is
-                owned by IntentWin and protected by intellectual property laws.
+                owned by IntentBid and protected by intellectual property laws.
                 Your subscription grants you a limited, non-exclusive,
                 non-transferable license to use the platform for your internal
                 business purposes.
@@ -139,7 +139,7 @@ export default function TermsPage() {
             <section className="legal-section">
               <h2>6. AI-Generated Content</h2>
               <p>
-                IntentWin uses artificial intelligence to generate proposal
+                IntentBid uses artificial intelligence to generate proposal
                 content. You acknowledge and agree that:
               </p>
               <ul>
@@ -164,7 +164,7 @@ export default function TermsPage() {
                 </li>
               </ul>
               <p>
-                IntentWin is designed as a human-in-the-loop system. The AI
+                IntentBid is designed as a human-in-the-loop system. The AI
                 accelerates your work &mdash; it does not replace your
                 professional judgment.
               </p>
@@ -172,7 +172,7 @@ export default function TermsPage() {
 
             <section className="legal-section">
               <h2>7. Acceptable Use</h2>
-              <p>You agree not to use IntentWin to:</p>
+              <p>You agree not to use IntentBid to:</p>
               <ul>
                 <li>
                   Generate fraudulent, misleading, or intentionally deceptive
@@ -253,7 +253,7 @@ export default function TermsPage() {
             <section className="legal-section">
               <h2>11. Limitation of Liability</h2>
               <p>
-                To the maximum extent permitted by law, IntentWin shall not be
+                To the maximum extent permitted by law, IntentBid shall not be
                 liable for any indirect, incidental, special, consequential, or
                 punitive damages, including but not limited to loss of profits,
                 revenue, contracts, data, or business opportunities, arising
@@ -275,7 +275,7 @@ export default function TermsPage() {
             <section className="legal-section">
               <h2>12. Indemnification</h2>
               <p>
-                You agree to indemnify and hold harmless IntentWin, its
+                You agree to indemnify and hold harmless IntentBid, its
                 officers, employees, and agents from any claims, damages, or
                 expenses arising from your use of the Service, your content, or
                 your violation of these terms.
@@ -299,7 +299,7 @@ export default function TermsPage() {
                 We may update these Terms of Service from time to time. We will
                 notify you of material changes by email or through a notice on
                 the platform at least 30 days before they take effect. Continued
-                use of IntentWin after changes become effective constitutes
+                use of IntentBid after changes become effective constitutes
                 acceptance of the updated terms.
               </p>
             </section>
@@ -311,10 +311,10 @@ export default function TermsPage() {
                 at:
               </p>
               <p className="legal-contact">
-                IntentWin
+                IntentBid
                 <br />
                 Email:{" "}
-                <a href="mailto:legal@intentwin.com">legal@intentwin.com</a>
+                <a href="mailto:legal@intentbid.com">legal@intentbid.com</a>
               </p>
             </section>
           </div>
@@ -323,7 +323,7 @@ export default function TermsPage() {
         <footer className="legal-footer">
           <div className="legal-footer-inner">
             <span className="legal-footer-text">
-              IntentWin &mdash; Proposal intelligence, engineered to win.
+              IntentBid &mdash; Proposal intelligence, engineered to win.
             </span>
             <div className="legal-footer-links">
               <Link href="/privacy">Privacy Policy</Link>

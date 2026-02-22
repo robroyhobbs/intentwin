@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "IntentWin - AI Proposal Intelligence Platform";
+export const alt = "IntentBid - AI Proposal Intelligence Platform";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -121,11 +121,11 @@ export default async function Image() {
               letterSpacing: "-0.02em",
             }}
           >
-            IntentWin
+            IntentBid
           </div>
           <div style={{ color: "#3f3f46", fontSize: "14px" }}>|</div>
           <div style={{ color: "#3f3f46", fontSize: "14px" }}>
-            intentwin.com
+            intentbid.com
           </div>
         </div>
       </div>

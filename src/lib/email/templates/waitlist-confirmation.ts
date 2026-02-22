@@ -13,7 +13,7 @@ export function waitlistConfirmationEmail(params: {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>You're on the IntentWin waitlist</title>
+  <title>You're on the IntentBid waitlist</title>
 </head>
 <body style="margin:0;padding:0;background-color:#09090b;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#09090b;">
@@ -38,7 +38,7 @@ export function waitlistConfirmationEmail(params: {
               </h2>
 
               <p style="margin:0 0 20px 0;font-size:16px;line-height:1.6;color:#d4d4d8;">
-                Thank you for requesting access to IntentWin on behalf of <strong style="color:#ffffff;">${safeCompany}</strong>. We're excited to have you on board.
+                Thank you for requesting access to IntentBid on behalf of <strong style="color:#ffffff;">${safeCompany}</strong>. We're excited to have you on board.
               </p>
 
               <!-- Value Prop -->
@@ -46,7 +46,7 @@ export function waitlistConfirmationEmail(params: {
                 <tr>
                   <td style="background-color:#7c3aed12;border-left:3px solid #7c3aed;border-radius:0 8px 8px 0;padding:16px 20px;margin:0 0 24px 0;">
                     <p style="margin:0;font-size:15px;line-height:1.5;color:#c4b5fd;">
-                      IntentWin helps teams produce 10x more proposals with AI-powered persuasion intelligence.
+                      IntentBid helps teams produce 10x more proposals with AI-powered persuasion intelligence.
                     </p>
                   </td>
                 </tr>
@@ -66,7 +66,7 @@ export function waitlistConfirmationEmail(params: {
               <!-- Signature -->
               <p style="margin:0;font-size:15px;line-height:1.6;color:#d4d4d8;">
                 Best regards,<br />
-                <strong style="color:#ffffff;">The IntentWin Team</strong>
+                <strong style="color:#ffffff;">The IntentBid Team</strong>
               </p>
             </td>
           </tr>
@@ -75,7 +75,7 @@ export function waitlistConfirmationEmail(params: {
           <tr>
             <td style="padding:28px 0 0 0;text-align:center;">
               <p style="margin:0;font-size:12px;color:#52525b;">
-                IntentWin &middot; <a href="https://intentwin.com" style="color:#7c3aed;text-decoration:none;">intentwin.com</a>
+                IntentBid &middot; <a href="https://intentbid.com" style="color:#7c3aed;text-decoration:none;">intentbid.com</a>
               </p>
             </td>
           </tr>

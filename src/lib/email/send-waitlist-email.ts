@@ -20,12 +20,12 @@ export async function sendWaitlistConfirmation(params: {
       company: params.company,
     });
 
-    const from = process.env.EMAIL_FROM || "IntentWin <onboarding@resend.dev>";
+    const from = process.env.EMAIL_FROM || "IntentBid <onboarding@resend.dev>";
 
     const { error } = await resend.emails.send({
       from,
       to: params.email,
-      subject: "You're on the IntentWin waitlist",
+      subject: "You're on the IntentBid waitlist",
       html,
     });
 

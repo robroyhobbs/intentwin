@@ -12,7 +12,7 @@ export function nurtureDay3Email(params: {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inside the engine: how IntentWin makes every section persuasive</title>
+  <title>Inside the engine: how IntentBid makes every section persuasive</title>
 </head>
 <body style="margin:0;padding:0;background-color:#09090b;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#09090b;">
@@ -37,7 +37,7 @@ export function nurtureDay3Email(params: {
               </h2>
 
               <p style="margin:0 0 24px 0;font-size:16px;line-height:1.6;color:#d4d4d8;">
-                Every proposal section IntentWin generates passes through six persuasion layers. Not templates. Not fill-in-the-blank prompts. A structured intelligence framework that builds arguments the way winning proposal teams do &mdash; but in seconds.
+                Every proposal section IntentBid generates passes through six persuasion layers. Not templates. Not fill-in-the-blank prompts. A structured intelligence framework that builds arguments the way winning proposal teams do &mdash; but in seconds.
               </p>
 
               <h3 style="margin:0 0 16px 0;font-size:17px;font-weight:600;color:#ffffff;">
@@ -94,7 +94,7 @@ export function nurtureDay3Email(params: {
                       4. Competitive Positioning
                     </p>
                     <p style="margin:0;font-size:14px;line-height:1.5;color:#a1a1aa;">
-                      Clear differentiation without naming competitors. IntentWin positions your strengths against common alternatives so evaluators draw the right conclusions on their own.
+                      Clear differentiation without naming competitors. IntentBid positions your strengths against common alternatives so evaluators draw the right conclusions on their own.
                     </p>
                   </td>
                 </tr>
@@ -140,8 +140,8 @@ export function nurtureDay3Email(params: {
               <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 28px 0;">
                 <tr>
                   <td align="center" style="border-radius:8px;background-color:#7c3aed;">
-                    <a href="https://intentwin.com/request-access?ref=email" target="_blank" style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">
-                      See IntentWin in action &rarr;
+                    <a href="https://intentbid.com/request-access?ref=email" target="_blank" style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">
+                      See IntentBid in action &rarr;
                     </a>
                   </td>
                 </tr>
@@ -153,7 +153,7 @@ export function nurtureDay3Email(params: {
               <!-- Signature -->
               <p style="margin:0;font-size:15px;line-height:1.6;color:#d4d4d8;">
                 Best regards,<br />
-                <strong style="color:#ffffff;">The IntentWin Team</strong>
+                <strong style="color:#ffffff;">The IntentBid Team</strong>
               </p>
             </td>
           </tr>
@@ -162,7 +162,7 @@ export function nurtureDay3Email(params: {
           <tr>
             <td style="padding:28px 0 0 0;text-align:center;">
               <p style="margin:0;font-size:12px;color:#52525b;">
-                IntentWin &middot; <a href="https://intentwin.com" style="color:#7c3aed;text-decoration:none;">intentwin.com</a>
+                IntentBid &middot; <a href="https://intentbid.com" style="color:#7c3aed;text-decoration:none;">intentbid.com</a>
               </p>
             </td>
           </tr>

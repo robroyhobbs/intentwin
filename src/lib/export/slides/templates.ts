@@ -14,7 +14,7 @@ import type { SlideContent } from "./types";
 export function renderSlide(
   slide: SlideContent,
   index: number,
-  companyName: string = "IntentWin",
+  companyName: string = "IntentBid",
 ): string {
   switch (slide.type) {
     case "hero":

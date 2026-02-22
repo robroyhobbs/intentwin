@@ -69,15 +69,15 @@ export function nurtureDay1Email(params: {
               </p>
 
               <p style="margin:0 0 28px 0;font-size:16px;line-height:1.6;color:#d4d4d8;">
-                <strong style="color:#ffffff;">This is exactly what we built IntentWin to solve.</strong>
+                <strong style="color:#ffffff;">This is exactly what we built IntentBid to solve.</strong>
               </p>
 
               <!-- CTA Button -->
               <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 28px 0;">
                 <tr>
                   <td align="center" style="border-radius:8px;background-color:#7c3aed;">
-                    <a href="https://intentwin.com/request-access?ref=email" target="_blank" style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">
-                      Get started with IntentWin &rarr;
+                    <a href="https://intentbid.com/request-access?ref=email" target="_blank" style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">
+                      Get started with IntentBid &rarr;
                     </a>
                   </td>
                 </tr>
@@ -89,7 +89,7 @@ export function nurtureDay1Email(params: {
               <!-- Signature -->
               <p style="margin:0;font-size:15px;line-height:1.6;color:#d4d4d8;">
                 Best regards,<br />
-                <strong style="color:#ffffff;">The IntentWin Team</strong>
+                <strong style="color:#ffffff;">The IntentBid Team</strong>
               </p>
             </td>
           </tr>
@@ -98,7 +98,7 @@ export function nurtureDay1Email(params: {
           <tr>
             <td style="padding:28px 0 0 0;text-align:center;">
               <p style="margin:0;font-size:12px;color:#52525b;">
-                IntentWin &middot; <a href="https://intentwin.com" style="color:#7c3aed;text-decoration:none;">intentwin.com</a>
+                IntentBid &middot; <a href="https://intentbid.com" style="color:#7c3aed;text-decoration:none;">intentbid.com</a>
               </p>
             </td>
           </tr>

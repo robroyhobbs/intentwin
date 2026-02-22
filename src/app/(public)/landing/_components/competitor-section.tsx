@@ -62,14 +62,14 @@ const differentiators = [
 
 export function CompetitorSection() {
   return (
-    <section id="why-intentwin" className="vf-competitor">
+    <section id="why-intentbid" className="vf-competitor">
       <div className="vf-section-inner">
-        <span className="vf-label">Why IntentWin</span>
+        <span className="vf-label">Why IntentBid</span>
         <h2 className="vf-section-heading">
           Not another document builder.
         </h2>
         <p className="vf-section-sub" style={{ maxWidth: 640, margin: "0 auto 48px" }}>
-          Most proposal tools format documents. IntentWin engineers wins.
+          Most proposal tools format documents. IntentBid engineers wins.
           Here&apos;s how we&apos;re different from everything else on the market.
         </p>
 
@@ -93,7 +93,7 @@ export function CompetitorSection() {
           <div className="vf-comp-table-header">
             <div className="vf-comp-table-label" />
             <div className="vf-comp-table-them">Everyone Else</div>
-            <div className="vf-comp-table-us">IntentWin</div>
+            <div className="vf-comp-table-us">IntentBid</div>
           </div>
           {differentiators.map((d, i) => (
             <div key={i} className="vf-comp-table-row">

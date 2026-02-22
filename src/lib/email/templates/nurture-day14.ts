@@ -12,7 +12,7 @@ export function nurtureDay14Email(params: {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${firstName}, here's your IntentWin access update</title>
+  <title>${firstName}, here's your IntentBid access update</title>
 </head>
 <body style="margin:0;padding:0;background-color:#09090b;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#09090b;">
@@ -37,7 +37,7 @@ export function nurtureDay14Email(params: {
               </h2>
 
               <p style="margin:0 0 20px 0;font-size:16px;line-height:1.6;color:#d4d4d8;">
-                It's been two weeks since you requested access to IntentWin. We wanted to give you a quick update.
+                It's been two weeks since you requested access to IntentBid. We wanted to give you a quick update.
               </p>
 
               <p style="margin:0 0 24px 0;font-size:16px;line-height:1.6;color:#d4d4d8;">
@@ -49,14 +49,14 @@ export function nurtureDay14Email(params: {
                 <tr>
                   <td style="background-color:#7c3aed12;border-left:3px solid #7c3aed;border-radius:0 8px 8px 0;padding:16px 20px;">
                     <p style="margin:0;font-size:15px;line-height:1.5;color:#c4b5fd;">
-                      IntentWin is invite-only at <strong>$999/month</strong> because quality matters. We'd rather serve 100 teams exceptionally than 10,000 poorly.
+                      IntentBid is invite-only at <strong>$999/month</strong> because quality matters. We'd rather serve 100 teams exceptionally than 10,000 poorly.
                     </p>
                   </td>
                 </tr>
               </table>
 
               <p style="margin:0 0 20px 0;font-size:16px;line-height:1.6;color:#d4d4d8;">
-                We review each request to ensure IntentWin is the right fit &mdash; that your team will see real ROI, not just another tool in the stack. When you're approved, you'll get a <strong style="color:#ffffff;">14-day free trial</strong> with full access to every feature so you can see the difference before you commit.
+                We review each request to ensure IntentBid is the right fit &mdash; that your team will see real ROI, not just another tool in the stack. When you're approved, you'll get a <strong style="color:#ffffff;">14-day free trial</strong> with full access to every feature so you can see the difference before you commit.
               </p>
 
               <p style="margin:0 0 24px 0;font-size:16px;line-height:1.6;color:#d4d4d8;">
@@ -77,7 +77,7 @@ export function nurtureDay14Email(params: {
               <!-- Signature -->
               <p style="margin:0;font-size:15px;line-height:1.6;color:#d4d4d8;">
                 Best regards,<br />
-                <strong style="color:#ffffff;">The IntentWin Team</strong>
+                <strong style="color:#ffffff;">The IntentBid Team</strong>
               </p>
             </td>
           </tr>
@@ -86,7 +86,7 @@ export function nurtureDay14Email(params: {
           <tr>
             <td style="padding:28px 0 0 0;text-align:center;">
               <p style="margin:0;font-size:12px;color:#52525b;">
-                IntentWin &middot; <a href="https://intentwin.com" style="color:#7c3aed;text-decoration:none;">intentwin.com</a>
+                IntentBid &middot; <a href="https://intentbid.com" style="color:#7c3aed;text-decoration:none;">intentbid.com</a>
               </p>
             </td>
           </tr>

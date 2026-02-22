@@ -424,7 +424,7 @@ function addContentSlide(
 
 export async function generatePptx(data: ProposalData): Promise<Buffer> {
   const pptx = new pptxgen();
-  const companyName = data.company_name || "IntentWin";
+  const companyName = data.company_name || "IntentBid";
 
   const branding = data.branding;
   const COLORS = {

@@ -54,7 +54,7 @@ export default function LoginPage() {
               <Sparkles className="h-6 w-6 text-white" />
             </div>
             <span className="text-2xl font-semibold text-[var(--foreground)]">
-              IntentWin
+              IntentBid
             </span>
           </div>
 
@@ -105,7 +105,7 @@ export default function LoginPage() {
               <Sparkles className="h-5 w-5 text-white" />
             </div>
             <span className="text-xl font-semibold text-[var(--foreground)]">
-              IntentWin
+              IntentBid
             </span>
           </div>
 
