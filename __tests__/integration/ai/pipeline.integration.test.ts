@@ -5,7 +5,7 @@ vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: vi.fn(),
 }));
 
-vi.mock("@/lib/ai/claude", () => ({
+vi.mock("@/lib/ai/gemini", () => ({
   generateText: vi.fn(),
   generateStructuredAnalysis: vi.fn(),
   buildSystemPrompt: vi.fn(),
@@ -78,7 +78,7 @@ import {
   generateText,
   generateStructuredAnalysis,
   buildSystemPrompt,
-} from "@/lib/ai/claude";
+} from "@/lib/ai/gemini";
 import { generateQueryEmbedding } from "@/lib/ai/embeddings";
 import { runQualityReview } from "@/lib/ai/quality-overseer";
 import { createProposalVersion } from "@/lib/versioning/create-version";

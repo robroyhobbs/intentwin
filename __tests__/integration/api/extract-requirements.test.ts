@@ -27,7 +27,7 @@ vi.mock("@/lib/supabase/auth-api", () => ({
   verifyProposalAccess: vi.fn(),
 }));
 
-vi.mock("@/lib/ai/claude", () => ({
+vi.mock("@/lib/ai/gemini", () => ({
   generateText: vi.fn(
     async (prompt: string, options?: Record<string, unknown>) => {
       lastGenerateTextCall = { prompt, options };
