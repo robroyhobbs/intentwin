@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "IntentWin - AI Proposal Intelligence Platform";
+export const alt = "IntentBid - AI Proposal Intelligence Platform";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -44,9 +44,9 @@ export default async function Image() {
             fontWeight: 600,
             letterSpacing: "0.15em",
             textTransform: "uppercase" as const,
-            color: "#a78bfa",
-            border: "1px solid rgba(124, 58, 237, 0.3)",
-            background: "rgba(124, 58, 237, 0.08)",
+            color: "#C084FC",
+            border: "1px solid rgba(192, 132, 252, 0.3)",
+            background: "rgba(192, 132, 252, 0.08)",
             padding: "8px 24px",
             borderRadius: "100px",
             marginBottom: "32px",
@@ -79,7 +79,7 @@ export default async function Image() {
             style={{
               fontSize: "72px",
               fontWeight: 900,
-              background: "linear-gradient(135deg, #a78bfa, #818cf8, #6366f1)",
+              background: "linear-gradient(135deg, #818CF8, #C084FC, #F472B6)",
               backgroundClip: "text",
               color: "transparent",
               letterSpacing: "-0.04em",
@@ -113,19 +113,31 @@ export default async function Image() {
             gap: "8px",
           }}
         >
+          
+          {/* Brand Logo */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', marginRight: '8px', background: '#09090b', borderRadius: '8px', boxShadow: '0 0 10px rgba(192,132,252,0.4)' }}>
+             {/* Monogram IB */}
+             <svg width="24" height="24" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="176" y="144" width="32" height="224" rx="16" fill="#818CF8"/>
+                <path d="M232 144H320C355.346 144 384 172.654 384 208C384 233.167 369.458 254.918 348.65 265.558C374.881 275.64 394 300.911 394 330C394 369.764 361.764 402 322 402H232V144Z" stroke="#C084FC" strokeWidth="28" strokeLinejoin="round" strokeLinecap="round"/>
+                <path d="M232 268H320" stroke="#C084FC" strokeWidth="28" strokeLinecap="round"/>
+                <circle cx="192" cy="112" r="16" fill="#818CF8"/>
+                <circle cx="232" cy="112" r="16" fill="#C084FC"/>
+              </svg>
+          </div>
           <div
             style={{
-              fontSize: "18px",
+              fontSize: "24px",
               fontWeight: 700,
-              color: "#52525b",
+              color: "#fafafa",
               letterSpacing: "-0.02em",
             }}
           >
-            IntentWin
+            IntentBid
           </div>
           <div style={{ color: "#3f3f46", fontSize: "14px" }}>|</div>
           <div style={{ color: "#3f3f46", fontSize: "14px" }}>
-            intentwin.com
+            intentbid.com
           </div>
         </div>
       </div>

@@ -663,7 +663,7 @@ export function LandingStyles() {
         margin-top: 2px;
       }
 
-      /* IntentWin Gov */
+      /* IntentBid Gov */
       .vf-gov {
         padding: 120px 0;
         border-top: 1px solid rgba(255, 255, 255, 0.06);

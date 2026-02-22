@@ -6,7 +6,7 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ComplianceAssessmentStatus, ComplianceStatus, GenerationStatus } from "@/lib/constants/statuses";
-import { generateText } from "./claude";
+import { generateText } from "./gemini";
 import {
   buildComplianceAssessmentPrompt,
   parseAssessmentResponse,

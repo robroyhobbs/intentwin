@@ -92,6 +92,11 @@ Respond with a JSON object matching this exact structure:
       "confidence": 0.0-1.0,
       "source": "quote or reference"
     },
+    "solicitation_type": {
+      "value": "RFP | RFI | RFQ | SOW | Proactive",
+      "confidence": 0.0-1.0,
+      "source": "quote or reference"
+    },
     "opportunity_type": {
       "value": "cloud_migration | app_modernization | data_analytics | digital_transformation | managed_services | other",
       "confidence": 0.0-1.0,
@@ -148,6 +153,10 @@ Respond with a JSON object matching this exact structure:
     "client_size": {
       "value": "inferred size if not explicit",
       "reasoning": "why you inferred this"
+    },
+    "solicitation_type": {
+      "value": "RFP | RFI | RFQ | SOW | Proactive (default to RFP if unsure)",
+      "reasoning": "why you inferred this format based on language (e.g. quote tables = RFQ)"
     },
     "opportunity_type": {
       "value": "inferred type if not explicit",

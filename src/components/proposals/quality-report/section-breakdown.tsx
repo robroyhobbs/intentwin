@@ -29,7 +29,7 @@ export function SectionBreakdown({
 }: SectionBreakdownProps) {
   return (
     <div className="space-y-1">
-      <h4 className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wider">
+      <h4 className="text-xs font-mono font-bold text-zinc-500 uppercase tracking-widest">
         Section Scores
       </h4>
       {sections.map((section) => {

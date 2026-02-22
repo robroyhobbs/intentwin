@@ -18,7 +18,7 @@ export function WelcomeStep({ firstName, onContinue }: WelcomeStepProps) {
         <Sparkles className="w-8 h-8 text-white" />
       </div>
       <h1 className="text-2xl font-bold text-[var(--foreground)] mb-2">
-        Welcome to IntentWin, {firstName}!
+        Welcome to IntentBid, {firstName}!
       </h1>
       <p className="text-[var(--foreground-muted)] mb-8 max-w-md mx-auto">
         Let&apos;s set up your company profile so the AI can write

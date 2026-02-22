@@ -56,6 +56,7 @@ export default function NewProposalPage() {
   const [clientName, setClientName] = useState("");
   const [clientIndustry, setClientIndustry] = useState("");
   const [clientSize, setClientSize] = useState("");
+  const [solicitationType, setSolicitationType] = useState("RFP");
   const [opportunityType, setOpportunityType] = useState("cloud_migration");
   const [currentStatePains, setCurrentStatePains] = useState<string[]>([""]);
   const [scopeDescription, setScopeDescription] = useState("");
@@ -107,6 +108,7 @@ export default function NewProposalPage() {
       client_name: clientName,
       client_industry: clientIndustry,
       client_size: clientSize,
+      solicitation_type: solicitationType,
       opportunity_type: opportunityType,
       scope_description: scopeDescription,
       key_requirements: desiredOutcomes.filter((r) => r.trim()),
@@ -203,6 +205,29 @@ export default function NewProposalPage() {
       setTimelineExpectation(intakeData.timeline_expectation as string);
     if (intakeData.technical_environment)
       setTechnicalEnvironment(intakeData.technical_environment as string);
+
+    // Normalize solicitation_type from AI extraction to dropdown values
+    if (intakeData.solicitation_type) {
+      const raw = (intakeData.solicitation_type as string).toUpperCase().trim();
+      const solicitationMap: Record<string, string> = {
+        RFP: "RFP",
+        "REQUEST FOR PROPOSAL": "RFP",
+        "REQUEST FOR PROPOSALS": "RFP",
+        RFI: "RFI",
+        "REQUEST FOR INFORMATION": "RFI",
+        RFQ: "RFQ",
+        "REQUEST FOR QUOTE": "RFQ",
+        "REQUEST FOR QUOTATION": "RFQ",
+        SOW: "SOW",
+        "STATEMENT OF WORK": "SOW",
+        "SCOPE OF WORK": "SOW",
+        PROACTIVE: "Proactive",
+        "PROACTIVE PITCH": "Proactive",
+        "UNSOLICITED PROPOSAL": "Proactive",
+      };
+      const normalized = solicitationMap[raw];
+      if (normalized) setSolicitationType(normalized);
+    }
 
     if (
       Array.isArray(intakeData.current_state_pains) &&
@@ -488,6 +513,8 @@ export default function NewProposalPage() {
                 setClientName={setClientName}
                 clientIndustry={clientIndustry}
                 setClientIndustry={setClientIndustry}
+                solicitationType={solicitationType}
+                setSolicitationType={setSolicitationType}
                 opportunityType={opportunityType}
                 setOpportunityType={setOpportunityType}
                 currentStatePains={currentStatePains}
@@ -600,8 +627,11 @@ export default function NewProposalPage() {
             disabled={submitting || !intentApproved}
             className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hover)] px-6 py-3 text-sm font-bold text-white hover:shadow-lg disabled:opacity-40 transition-all"
           >
-            {submitting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+                        {submitting ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Engineering Proposal...
+              </span>
             ) : (
               <Send className="h-4 w-4" />
             )}

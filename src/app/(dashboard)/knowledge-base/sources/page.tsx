@@ -100,7 +100,9 @@ export default function SourcesPage() {
       <div className="flex items-center justify-center h-64">
         <div className="flex flex-col items-center gap-4">
           <Sparkles className="h-8 w-8 text-[var(--accent)] animate-pulse" />
-          <p className="text-sm text-[var(--foreground-muted)]">Loading L1 Context...</p>
+          <p className="text-sm text-[var(--foreground-muted)]">
+            Loading L1 Context...
+          </p>
         </div>
       </div>
     );
@@ -120,10 +122,14 @@ export default function SourcesPage() {
         <div className="card p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="h-10 w-10 rounded-xl bg-[var(--accent-subtle)] flex items-center justify-center">
-              {categoryIcons[selectedSource.category] || <FileText className="h-5 w-5 text-[var(--accent)]" />}
+              {categoryIcons[selectedSource.category] || (
+                <FileText className="h-5 w-5 text-[var(--accent)]" />
+              )}
             </div>
             <div>
-              <h1 className="text-xl font-bold text-[var(--foreground)]">{selectedSource.title}</h1>
+              <h1 className="text-xl font-bold text-[var(--foreground)]">
+                {selectedSource.title}
+              </h1>
               <p className="text-xs text-[var(--foreground-muted)] uppercase tracking-wide">
                 {selectedSource.category.replace(/-/g, " ")}
               </p>
@@ -135,10 +141,25 @@ export default function SourcesPage() {
               className="text-sm text-[var(--foreground-muted)] whitespace-pre-wrap font-mono bg-[var(--background-tertiary)] rounded-xl p-6 overflow-auto max-h-[70vh]"
               dangerouslySetInnerHTML={{
                 __html: selectedSource.content
-                  .replace(/^# .+$/gm, (match) => `<h1 class="text-xl font-bold text-[var(--foreground)] mt-6 mb-3">${match.slice(2)}</h1>`)
-                  .replace(/^## .+$/gm, (match) => `<h2 class="text-lg font-semibold text-[var(--foreground)] mt-5 mb-2">${match.slice(3)}</h2>`)
-                  .replace(/^### .+$/gm, (match) => `<h3 class="text-base font-medium text-[var(--foreground)] mt-4 mb-2">${match.slice(4)}</h3>`)
-                  .replace(/\*\*([^*]+)\*\*/g, '<strong class="text-[var(--foreground)]">$1</strong>')
+                  .replace(
+                    /^# .+$/gm,
+                    (match) =>
+                      `<h1 class="text-xl font-bold text-[var(--foreground)] mt-6 mb-3">${match.slice(2)}</h1>`,
+                  )
+                  .replace(
+                    /^## .+$/gm,
+                    (match) =>
+                      `<h2 class="text-lg font-semibold text-[var(--foreground)] mt-5 mb-2">${match.slice(3)}</h2>`,
+                  )
+                  .replace(
+                    /^### .+$/gm,
+                    (match) =>
+                      `<h3 class="text-base font-medium text-[var(--foreground)] mt-4 mb-2">${match.slice(4)}</h3>`,
+                  )
+                  .replace(
+                    /\*\*([^*]+)\*\*/g,
+                    '<strong class="text-[var(--foreground)]">$1</strong>',
+                  )
                   .replace(/^- (.+)$/gm, '<li class="ml-4">• $1</li>')
                   .replace(/\n/g, "<br>"),
               }}
@@ -182,10 +203,14 @@ export default function SourcesPage() {
           <div className="flex items-start gap-3">
             <Shield className="h-5 w-5 text-[var(--accent)] mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-[var(--foreground)]">Intent-Driven Development (IDD)</p>
+              <p className="text-sm font-semibold text-[var(--foreground)]">
+                Intent-Driven Development (IDD)
+              </p>
               <p className="text-xs text-[var(--foreground-muted)] mt-1">
-                L1 Context is verified company knowledge - methodologies, case studies, and capabilities that are automatically
-                injected into every proposal. AI-generated content is always grounded in these verified sources.
+                L1 Context is verified company knowledge - methodologies, case
+                studies, and capabilities that are automatically injected into
+                every proposal. AI-generated content is always grounded in these
+                verified sources.
               </p>
             </div>
           </div>
@@ -195,10 +220,30 @@ export default function SourcesPage() {
       {/* Stats */}
       <div className="mb-8 grid grid-cols-4 gap-4">
         {[
-          { label: "Methodologies", count: sources.find(s => s.key === "methodologies")?.files.length || 0, icon: <BookOpen className="h-5 w-5" /> },
-          { label: "Case Studies", count: sources.find(s => s.key === "case-studies")?.files.length || 0, icon: <Briefcase className="h-5 w-5" /> },
-          { label: "Evidence Items", count: sources.find(s => s.key === "evidence-library")?.files.length || 0, icon: <Award className="h-5 w-5" /> },
-          { label: "Total Sources", count: sources.reduce((sum, cat) => sum + cat.files.length, 0), icon: <Database className="h-5 w-5" /> },
+          {
+            label: "Methodologies",
+            count:
+              sources.find((s) => s.key === "methodologies")?.files.length || 0,
+            icon: <BookOpen className="h-5 w-5" />,
+          },
+          {
+            label: "Case Studies",
+            count:
+              sources.find((s) => s.key === "case-studies")?.files.length || 0,
+            icon: <Briefcase className="h-5 w-5" />,
+          },
+          {
+            label: "Evidence Items",
+            count:
+              sources.find((s) => s.key === "evidence-library")?.files.length ||
+              0,
+            icon: <Award className="h-5 w-5" />,
+          },
+          {
+            label: "Total Sources",
+            count: sources.reduce((sum, cat) => sum + cat.files.length, 0),
+            icon: <Database className="h-5 w-5" />,
+          },
         ].map((stat) => (
           <div
             key={stat.label}
@@ -208,8 +253,12 @@ export default function SourcesPage() {
               {stat.icon}
             </div>
             <div>
-              <p className="text-2xl font-bold text-[var(--foreground)]">{stat.count}</p>
-              <p className="text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wide">{stat.label}</p>
+              <p className="text-2xl font-bold text-[var(--foreground)]">
+                {stat.count}
+              </p>
+              <p className="text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wide">
+                {stat.label}
+              </p>
             </div>
           </div>
         ))}
@@ -221,14 +270,17 @@ export default function SourcesPage() {
           <div key={category.key} className="card overflow-hidden">
             <div className="flex items-center gap-4 p-5 border-b border-[var(--border)]">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent-subtle)] text-[var(--accent)]">
-                {categoryIcons[category.key] || <FileText className="h-5 w-5" />}
+                {categoryIcons[category.key] || (
+                  <FileText className="h-5 w-5" />
+                )}
               </div>
               <div className="flex-1">
                 <h2 className="text-lg font-semibold text-[var(--foreground)] capitalize">
                   {category.key.replace(/-/g, " ")}
                 </h2>
                 <p className="text-xs text-[var(--foreground-muted)]">
-                  {categoryDescriptions[category.key] || `${category.files.length} source files`}
+                  {categoryDescriptions[category.key] ||
+                    `${category.files.length} source files`}
                 </p>
               </div>
               <span className="rounded-full bg-[var(--accent-subtle)] px-3 py-1 text-xs font-semibold text-[var(--accent)]">
@@ -249,7 +301,9 @@ export default function SourcesPage() {
                       {file.title || file.fileName}
                     </p>
                     <p className="text-xs text-[var(--foreground-muted)]">
-                      {file.fileName}.md
+                      {file.contentType
+                        ? file.contentType.replace(/_/g, " ")
+                        : file.fileName}
                     </p>
                   </div>
                   {file.status === "VERIFIED" && (

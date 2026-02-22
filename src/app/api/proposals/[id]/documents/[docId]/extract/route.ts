@@ -4,7 +4,7 @@ import {
   getUserContext,
   checkProposalAccess,
 } from "@/lib/supabase/auth-api";
-import { generateText } from "@/lib/ai/claude";
+import { generateText } from "@/lib/ai/gemini";
 import {
   buildRequirementsExtractionPrompt,
   parseExtractionResponse,

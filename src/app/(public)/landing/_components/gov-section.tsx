@@ -6,7 +6,7 @@ export function GovSection() {
       <div className="vf-gov-glow" aria-hidden="true" />
       <div className="vf-section-inner vf-gov-inner">
         <div className="vf-gov-badge-row">
-          <span className="vf-gov-badge">IntentWin Gov</span>
+          <span className="vf-gov-badge">IntentBid Gov</span>
         </div>
         <h2 className="vf-gov-headline">
           Purpose-built for
@@ -14,7 +14,7 @@ export function GovSection() {
           <span className="vf-gradient-text">government contractors.</span>
         </h2>
         <p className="vf-gov-sub">
-          Everything in IntentWin Pro, plus specialized capabilities for federal,
+          Everything in IntentBid Pro, plus specialized capabilities for federal,
           state, and local government procurement.
         </p>
 
@@ -182,9 +182,9 @@ export function GovSection() {
 
         <div className="vf-gov-cta">
           <p className="vf-gov-cta-text">
-            IntentWin Gov is available to qualified government contractors.
+            IntentBid Gov is available to qualified government contractors.
           </p>
-          <a href="mailto:gov@intentwin.com" className="vf-btn-gov">
+          <a href="mailto:gov@intentbid.com" className="vf-btn-gov">
             Contact Us for Gov Edition
           </a>
         </div>

@@ -12,17 +12,17 @@ import { createMockOrganization, createMockProposal } from "../test-data";
  */
 export const testUsers = {
   admin: {
-    email: "test-admin@intentwin.test",
+    email: "test-admin@intentbid.test",
     password: "TestPassword123!",
     organization: createMockOrganization({ name: "Test Admin Org" }),
   },
   manager: {
-    email: "test-manager@intentwin.test",
+    email: "test-manager@intentbid.test",
     password: "TestPassword123!",
     organization: createMockOrganization({ name: "Test Manager Org" }),
   },
   member: {
-    email: "test-member@intentwin.test",
+    email: "test-member@intentbid.test",
     password: "TestPassword123!",
     organization: createMockOrganization({ name: "Test Member Org" }),
   },

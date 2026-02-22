@@ -8,9 +8,9 @@ import "@/styles/public.css";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "IntentWin - AI Proposal Intelligence Platform | Win More Deals",
+  title: "IntentBid - AI Proposal Intelligence Platform | Win More Deals",
   description:
-    "The proposal engine built to win. IntentWin applies the Intent Framework — 6 layers of persuasion science — to every section of your proposal. Invite-only access for serious teams.",
+    "The proposal engine built to win. IntentBid applies the Intent Framework — 6 layers of persuasion science — to every section of your proposal. Invite-only access for serious teams.",
   keywords: [
     "AI proposal intelligence",
     "proposal automation",
@@ -21,21 +21,21 @@ export const metadata: Metadata = {
     "enterprise proposal platform",
   ],
   openGraph: {
-    title: "IntentWin - The Proposal Engine Built to Win",
+    title: "IntentBid - The Proposal Engine Built to Win",
     description:
       "6 layers of persuasion science applied to every proposal section. Not just AI — a proven framework that turns good proposals into winning ones.",
     type: "website",
-    url: "https://intentwin.com",
-    siteName: "IntentWin",
+    url: "https://intentbid.com",
+    siteName: "IntentBid",
   },
   twitter: {
     card: "summary_large_image",
-    title: "IntentWin - AI Proposal Intelligence Platform",
+    title: "IntentBid - AI Proposal Intelligence Platform",
     description:
       "6 layers of persuasion science. Every section engineered to win. Invite-only access.",
   },
   alternates: {
-    canonical: "https://intentwin.com",
+    canonical: "https://intentbid.com",
   },
 };
 

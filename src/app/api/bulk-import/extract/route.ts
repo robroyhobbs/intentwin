@@ -14,6 +14,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext, incrementUsage } from "@/lib/supabase/auth-api";
 import { nanoid } from "nanoid";
 
+export const maxDuration = 300; // 5 min for large document parsing + AI extraction
+
 function getFileType(fileName: string): string | null {
   const ext = fileName.split(".").pop()?.toLowerCase();
   if (!ext) return null;

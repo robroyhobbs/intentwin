@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserContext, checkDocumentAccess } from "@/lib/supabase/auth-api";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { generateText } from "@/lib/ai/claude";
+import { generateText } from "@/lib/ai/gemini";
 import {
   buildExtractionPrompt,
   buildMultiDocumentContent,

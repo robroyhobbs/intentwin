@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserContext } from "@/lib/supabase/auth-api";
-import { generateText } from "@/lib/ai/claude";
+import { generateText } from "@/lib/ai/gemini";
 import { buildResearchPrompt } from "@/lib/ai/prompts/extract-intake";
 import type { ClientResearch } from "@/types/intake";
 

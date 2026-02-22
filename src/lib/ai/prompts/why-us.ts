@@ -57,5 +57,5 @@ ${winStrategy ? `\nMap each differentiator to a specific target outcome — make
 
 CRITICAL: Every differentiator claim MUST be backed by evidence from the Company Context (certifications, case study metrics, partnership levels). Do not make unsupported claims. It is better to have 3 well-evidenced differentiators than 6 generic ones.
 
-${buildEditorialStandards()}`;
+${buildEditorialStandards((intakeData as any).solicitation_type)}`;
 }

@@ -1,0 +1,30 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dark Background -->
+  <rect width="512" height="512" rx="100" fill="#09090B"/>
+  
+  <!-- Directional Glow -->
+  <circle cx="280" cy="256" r="150" fill="#818CF8" filter="blur(130px)" opacity="0.4"/>
+  <circle cx="220" cy="256" r="100" fill="#F472B6" filter="blur(90px)" opacity="0.3"/>
+  
+  <!-- Double Right-Facing Chevrons (Momentum / Win) -->
+  <path d="M140 180L236 276L140 372" stroke="url(#chevron_grad_1)" stroke-width="36" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+  <path d="M220 160L332 272L220 384" stroke="url(#chevron_grad_2)" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- "Bid" Indicator / Core Node -->
+  <circle cx="360" cy="272" r="24" fill="url(#chevron_grad_3)"/>
+  
+  <defs>
+    <linearGradient id="chevron_grad_1" x1="140" y1="180" x2="236" y2="372" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#818CF8"/>
+      <stop offset="1" stop-color="#C084FC"/>
+    </linearGradient>
+    <linearGradient id="chevron_grad_2" x1="220" y1="160" x2="332" y2="384" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#C084FC"/>
+      <stop offset="1" stop-color="#F472B6"/>
+    </linearGradient>
+    <linearGradient id="chevron_grad_3" x1="336" y1="248" x2="384" y2="296" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F472B6"/>
+      <stop offset="1" stop-color="#818CF8"/>
+    </linearGradient>
+  </defs>
+</svg>

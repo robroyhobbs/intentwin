@@ -32,7 +32,10 @@ export async function GET(
         .single();
 
       if (error || !data) {
-        return NextResponse.json({ error: "Source not found" }, { status: 404 });
+        return NextResponse.json(
+          { error: "Source not found" },
+          { status: 404 },
+        );
       }
 
       return NextResponse.json({
@@ -50,17 +53,22 @@ export async function GET(
     }
 
     if (category === "service-catalog") {
-      // file is a composite slug; search by id only (sanitized to prevent filter injection)
+      // file is the product UUID; sanitize to prevent filter injection
       const sanitizedFile = file.replace(/[^a-zA-Z0-9_-]/g, "");
       const { data, error } = await adminClient
         .from("product_contexts")
-        .select("id, product_name, service_line, description, capabilities, specifications, is_locked, last_verified_at")
+        .select(
+          "id, product_name, service_line, description, capabilities, specifications, is_locked, last_verified_at",
+        )
         .eq("organization_id", orgId)
         .eq("id", sanitizedFile);
 
       const product = data?.[0];
       if (error || !product) {
-        return NextResponse.json({ error: "Source not found" }, { status: 404 });
+        return NextResponse.json(
+          { error: "Source not found" },
+          { status: 404 },
+        );
       }
 
       // Build readable content from product fields
@@ -82,13 +90,18 @@ export async function GET(
     if (category === "case-studies" || category === "evidence-library") {
       const { data, error } = await adminClient
         .from("evidence_library")
-        .select("id, title, summary, full_content, is_verified, evidence_type, client_industry, service_line, metrics")
+        .select(
+          "id, title, summary, full_content, is_verified, evidence_type, client_industry, service_line, metrics",
+        )
         .eq("organization_id", orgId)
         .eq("id", file)
         .single();
 
       if (error || !data) {
-        return NextResponse.json({ error: "Source not found" }, { status: 404 });
+        return NextResponse.json(
+          { error: "Source not found" },
+          { status: 404 },
+        );
       }
 
       const content = data.full_content || data.summary || "";
@@ -129,11 +142,15 @@ function buildProductContent(product: Record<string, unknown>): string {
   lines.push(`**Service Line:** ${product.service_line}`);
   lines.push("");
 
-  const capabilities = product.capabilities as Array<Record<string, string>> | undefined;
+  const capabilities = product.capabilities as
+    | Array<Record<string, string>>
+    | undefined;
   if (capabilities?.length) {
     lines.push("## Capabilities");
     for (const cap of capabilities) {
-      lines.push(`- **${cap.name || cap.capability}**: ${cap.description || ""}`);
+      lines.push(
+        `- **${cap.name || cap.capability}**: ${cap.description || ""}`,
+      );
     }
     lines.push("");
   }

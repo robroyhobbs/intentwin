@@ -7,7 +7,7 @@
  * - evidence_library (case studies, metrics, testimonials, certifications, awards)
  */
 
-import { generateText } from "@/lib/ai/claude";
+import { generateText } from "@/lib/ai/gemini";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 

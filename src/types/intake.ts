@@ -46,6 +46,7 @@ export interface ExtractedIntake {
     compliance_requirements?: ExtractedField<string[]>;
     current_state_pains?: ExtractedField<string[]>;
     desired_outcomes?: ExtractedField<string[]>;
+    solicitation_type?: ExtractedField<string>;
   };
 
   // AI-inferred fields (not explicit in source)
@@ -53,6 +54,7 @@ export interface ExtractedIntake {
     client_size?: InferredField<string>;
     opportunity_type?: InferredField<string>;
     industry?: InferredField<string>;
+    solicitation_type?: InferredField<string>;
   };
 
   // Missing critical info

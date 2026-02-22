@@ -30,7 +30,7 @@ export const stripe = process.env.STRIPE_SECRET_KEY
 // When/if tiered pricing is introduced, add tiers here.
 export const PRICING_TIERS = {
   invite: {
-    name: "IntentWin",
+    name: "IntentBid",
     description: "Everything included. Invite-only.",
     monthlyPrice: 999,
     annualPrice: 9990, // ~2 months free

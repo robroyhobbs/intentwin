@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     const origin =
       request.headers.get("origin") ||
       process.env.NEXT_PUBLIC_APP_URL ||
-      "https://intentwin.com";
+      "https://intentbid.com";
     const session = await createBillingPortalSession(
       org.stripe_customer_id,
       `${origin}/settings`,

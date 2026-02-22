@@ -68,5 +68,5 @@ ${winStrategy ? `\nMap team capabilities directly to the win themes and target o
 
 Reference ${companyName}'s actual certifications and partnership levels from the Company Context — do not invent credentials.
 
-${buildEditorialStandards()}`;
+${buildEditorialStandards((intakeData as any).solicitation_type)}`;
 }

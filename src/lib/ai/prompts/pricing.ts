@@ -62,5 +62,5 @@ ${winStrategy ? `\nTie investment directly to the target outcomes and success me
 
 IMPORTANT: Use actual pricing models from the Company Context (e.g., fixed-fee, time & materials, outcome-based). Do not invent specific dollar amounts unless provided in the opportunity details — use placeholder ranges and note that detailed pricing will be provided in a separate commercial response.
 
-${buildEditorialStandards()}`;
+${buildEditorialStandards((intakeData as any).solicitation_type)}`;
 }

@@ -1,7 +1,7 @@
 import { inngest } from "../client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { GenerationStatus, ProposalStatus } from "@/lib/constants/statuses";
-import { generateText } from "@/lib/ai/claude";
+import { generateText } from "@/lib/ai/gemini";
 import { createProposalVersion } from "@/lib/versioning/create-version";
 import {
   getPersuasionPrompt,
@@ -14,10 +14,7 @@ import { buildIndustryContext } from "@/lib/ai/industry-configs";
 import { createLogger } from "@/lib/utils/logger";
 import { createPipelineMetrics } from "@/lib/observability/metrics";
 import { SECTION_CONFIGS } from "@/lib/ai/pipeline/section-configs";
-import {
-  buildPipelineContext,
-  extractCompetitiveObjections,
-} from "@/lib/ai/pipeline/context";
+import { buildPipelineContext, extractCompetitiveObjections, buildSectionSpecificL1Context } from "@/lib/ai/pipeline/context";
 import { retrieveContext } from "@/lib/ai/pipeline/retrieval";
 // Editorial pass import — kept for future re-enablement
 // import { runEditorialPass } from "@/lib/ai/editorial-pass";
@@ -60,6 +57,10 @@ async function generateSingleSection(
       ctx.organizationId,
     );
 
+    
+    const solicitationType = (ctx.intakeData.solicitation_type as string) || "RFP";
+    const sectionL1Context = buildSectionSpecificL1Context(ctx.rawL1Context, config.type, solicitationType);
+
     // Build prompt with L1 context
     const basePrompt = config.buildPrompt(
       ctx.intakeData,
@@ -67,7 +68,7 @@ async function generateSingleSection(
       context,
       ctx.winStrategy,
       ctx.companyInfo,
-      ctx.l1ContextString,
+      sectionL1Context,
     );
 
     // Build persuasion layers
@@ -108,10 +109,18 @@ async function generateSingleSection(
       .filter(Boolean)
       .join("");
 
+    
     // Generate content
-    const generatedContent = await generateText(prompt, {
+    const generatedContentRaw = await generateText(prompt, {
       systemPrompt: ctx.systemPrompt,
     });
+
+    // Strip out the Chain of Thought block before saving
+    let generatedContent = generatedContentRaw.replace(/<thought_process>[\s\S]*?<\/thought_process>/, '').trim();
+    if (generatedContent.startsWith('```markdown')) {
+      generatedContent = generatedContent.replace(/^```markdown/, '').replace(/```$/, '').trim();
+    }
+
 
     // Editorial pass disabled — prompt engineering handles formatting/quality.
     // Re-enable if output quality needs a second polish pass:

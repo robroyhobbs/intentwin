@@ -17,10 +17,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://intentwin.com"),
+  metadataBase: new URL("https://intentbid.com"),
   title: {
-    default: "IntentWin - AI Proposal Intelligence Platform",
-    template: "%s | IntentWin",
+    default: "IntentBid - AI Proposal Intelligence Platform",
+    template: "%s | IntentBid",
   },
   description:
     "Generate winning proposals, RFPs, RFIs, and SOWs in hours. AI-powered persuasion intelligence with a 6-layer Intent Framework. Built for consulting firms, government contractors, and sales teams.",
@@ -41,27 +41,27 @@ export const metadata: Metadata = {
     "proposal writing software",
     "bid management tool",
   ],
-  authors: [{ name: "IntentWin" }],
-  creator: "IntentWin",
+  authors: [{ name: "IntentBid" }],
+  creator: "IntentBid",
   icons: {
     icon: "/favicon.ico",
   },
   openGraph: {
-    title: "IntentWin - AI Proposal Intelligence Platform",
+    title: "IntentBid - AI Proposal Intelligence Platform",
     description:
       "Generate winning proposals, RFPs, RFIs, and SOWs in hours. AI-powered persuasion intelligence with a 6-layer Intent Framework. Built for consulting firms, government contractors, and sales teams.",
-    url: "https://intentwin.com",
-    siteName: "IntentWin",
+    url: "https://intentbid.com",
+    siteName: "IntentBid",
     locale: "en_US",
     type: "website",
     images: ["/opengraph-image"],
   },
   twitter: {
     card: "summary_large_image",
-    title: "IntentWin - AI Proposal Intelligence Platform",
+    title: "IntentBid - AI Proposal Intelligence Platform",
     description:
       "Generate winning proposals, RFPs, RFIs, and SOWs in hours. AI-powered persuasion intelligence with a 6-layer Intent Framework.",
-    creator: "@intentwin",
+    creator: "@intentbid",
   },
   robots: {
     index: true,

@@ -56,7 +56,7 @@ export function PricingFooterSection() {
             Request Access
           </Link>
           <p className="vf-footer-tag">
-            IntentWin — Proposal intelligence, engineered to win.
+            IntentBid — Proposal intelligence, engineered to win.
           </p>
           <div className="vf-footer-legal">
             <a href="/privacy" className="vf-footer-legal-link">

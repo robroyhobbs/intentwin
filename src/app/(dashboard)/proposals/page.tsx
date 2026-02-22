@@ -187,26 +187,47 @@ export default async function ProposalsPage({
       </div>
 
       {/* Content */}
-      {!proposals || proposals.length === 0 ? (
-        <div className="rounded-2xl border-2 border-dashed border-[var(--border)] bg-[var(--card-bg)] p-16 text-center">
-          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-[var(--accent-subtle)] border border-[var(--accent-muted)] shadow-[var(--shadow-glow)]">
-            <FileText className="h-10 w-10 text-[var(--accent)]" />
+            {!proposals || proposals.length === 0 ? (
+        <div className="relative rounded-2xl border border-[var(--border)] bg-[#09090b] p-16 text-center overflow-hidden flex flex-col items-center justify-center">
+          {/* Subtle glowing background orb */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-500/10 rounded-full blur-[100px] pointer-events-none"></div>
+          
+          <div className="relative z-10 mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-[#18181b] border border-[#27272a] shadow-[0_0_30px_rgba(192,132,252,0.15)] mb-6">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="url(#gradient_file)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+              <defs>
+                <linearGradient id="gradient_file" x1="4" y1="2" x2="20" y2="22" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#818CF8" />
+                  <stop offset="1" stopColor="#C084FC" />
+                </linearGradient>
+              </defs>
+            </svg>
           </div>
-          <h3 className="mt-6 text-xl font-bold text-[var(--foreground)]">
-            {tab === "all" ? "No proposals yet" : `No ${tab} proposals`}
+          <h3 className="relative z-10 text-2xl font-bold text-white tracking-tight mb-3">
+            {tab === "all" ? "Engineer your first proposal" : `No ${tab} proposals`}
           </h3>
-          <p className="mt-2 text-sm text-[var(--foreground-muted)] max-w-md mx-auto">
-            Get started by creating your first AI-powered proposal. Define your
-            intent, and let AI generate winning content backed by verified case
-            studies.
+          <p className="relative z-10 text-base text-zinc-400 max-w-lg mx-auto mb-10 leading-relaxed font-light">
+            Skip the blank page. Define your win strategy, upload an RFP, and let the 6-layer Intent framework generate a fully compliant, highly persuasive first draft in minutes.
           </p>
-          <Link
-            href="/proposals/new"
-            className="btn-primary mt-8 inline-flex items-center gap-2 px-6 py-3"
-          >
-            <Sparkles className="h-5 w-5" />
-            Create Your First Proposal
-          </Link>
+          <div className="relative z-10 flex flex-col sm:flex-row gap-4 items-center justify-center">
+            <Link
+              href="/proposals/new"
+              className="bg-white text-black font-semibold rounded-lg hover:bg-zinc-200 transition-all text-sm px-6 py-3 shadow-[0_0_20px_rgba(192,132,252,0.3)] hover:shadow-[0_0_30px_rgba(192,132,252,0.5)] flex items-center gap-2"
+            >
+              <Sparkles className="h-4 w-4 text-purple-600" />
+              Start New Proposal
+            </Link>
+            <Link
+              href="/knowledge-base/upload"
+              className="bg-zinc-900 border border-zinc-800 text-white font-medium rounded-lg hover:bg-zinc-800 transition-all text-sm px-6 py-3 flex items-center gap-2"
+            >
+              Upload RFP Documents
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

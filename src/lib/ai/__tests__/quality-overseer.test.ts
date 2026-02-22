@@ -49,7 +49,7 @@ vi.mock("../mistral-client", () => ({
 }));
 
 // Mock claude (Gemini generation for remediation)
-vi.mock("../claude", () => ({
+vi.mock("../gemini", () => ({
   generateText: vi.fn().mockResolvedValue("Regenerated content from Gemini."),
   buildSystemPrompt: vi.fn().mockReturnValue("System prompt"),
 }));

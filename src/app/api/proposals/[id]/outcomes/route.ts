@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
-import { generateText } from "@/lib/ai/claude";
+import { generateText } from "@/lib/ai/gemini";
 import { buildOutcomesPrompt } from "@/lib/ai/prompts/outcomes";
 import { getIndustryConfig } from "@/lib/ai/industry-configs";
 import type { WinStrategyData } from "@/types/outcomes";

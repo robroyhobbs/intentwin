@@ -51,6 +51,7 @@ export interface PipelineContext {
   systemPrompt: string;
   enhancedAnalysis: string;
   l1ContextString: string;
+  rawL1Context: L1Context;
   serviceLine: string | undefined;
   industry: string | undefined;
   industryConfig: ReturnType<typeof getIndustryConfig>;

@@ -65,7 +65,7 @@ export async function POST(
     // Get organization name and branding for exports
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase FK join type inference returns array; runtime is single object via .single()
     const org = (proposal as any).organization as { id: string; name: string; settings: Record<string, any> } | null;
-    const organizationName = org?.name || "IntentWin";
+    const organizationName = org?.name || "IntentBid";
     const orgSettings = org?.settings || {};
     const branding = {
       logo_url: orgSettings.branding?.logo_url,

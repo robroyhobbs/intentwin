@@ -16,8 +16,8 @@ export async function sendAdminWaitlistNotification(params: {
       return;
     }
 
-    const adminEmail = process.env.ADMIN_EMAIL || "rob@intentwin.com";
-    const from = process.env.EMAIL_FROM || "IntentWin <onboarding@resend.dev>";
+    const adminEmail = process.env.ADMIN_EMAIL || "rob@intentbid.com";
+    const from = process.env.EMAIL_FROM || "IntentBid <onboarding@resend.dev>";
     const timestamp = new Date().toISOString();
 
     const { subject, html } = adminWaitlistNotificationEmail({

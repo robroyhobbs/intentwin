@@ -1,4 +1,4 @@
-import { generateText } from "./claude";
+import { generateText } from "./gemini";
 import { BANNED_PHRASES } from "./prompts/editorial-standards";
 import { createLogger } from "@/lib/utils/logger";
 

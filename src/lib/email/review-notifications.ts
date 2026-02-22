@@ -5,8 +5,8 @@ const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null;
 
-const FROM_EMAIL = "IntentWin <notifications@intentwin.com>";
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://intentwin.com";
+const FROM_EMAIL = "IntentBid <notifications@intentbid.com>";
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://intentbid.com";
 
 function capitalize(s: string): string {
   if (!s) return s;
@@ -50,7 +50,7 @@ export async function sendReviewerAssignedEmail(params: {
         `Review the proposal here:`,
         proposalLink,
         "",
-        "— IntentWin",
+        "— IntentBid",
       ].join("\n"),
     });
 
@@ -115,7 +115,7 @@ export async function sendStageCompleteEmail(params: {
         `View the full review:`,
         proposalLink,
         "",
-        "— IntentWin",
+        "— IntentBid",
       ].join("\n"),
     });
 
@@ -171,7 +171,7 @@ export async function sendStageAdvancedEmail(params: {
             `Start your review here:`,
             proposalLink,
             "",
-            "— IntentWin",
+            "— IntentBid",
           ].join("\n"),
         });
 

@@ -23,19 +23,25 @@ export async function GET(request: NextRequest) {
     const [companyRes, productsRes, evidenceRes] = await Promise.all([
       adminClient
         .from("company_context")
-        .select("id, category, key, title, content, metadata, is_locked, last_verified_at")
+        .select(
+          "id, category, key, title, content, metadata, is_locked, last_verified_at",
+        )
         .eq("organization_id", orgId)
         .order("category")
         .order("title"),
       adminClient
         .from("product_contexts")
-        .select("id, product_name, service_line, description, capabilities, specifications, is_locked, last_verified_at")
+        .select(
+          "id, product_name, service_line, description, capabilities, specifications, is_locked, last_verified_at",
+        )
         .eq("organization_id", orgId)
         .order("service_line")
         .order("product_name"),
       adminClient
         .from("evidence_library")
-        .select("id, evidence_type, title, summary, full_content, client_industry, service_line, metrics, is_verified, verified_at")
+        .select(
+          "id, evidence_type, title, summary, full_content, client_industry, service_line, metrics, is_verified, verified_at",
+        )
         .eq("organization_id", orgId)
         .order("evidence_type")
         .order("title")
@@ -47,13 +53,20 @@ export async function GET(request: NextRequest) {
     const evidenceItems = evidenceRes.data ?? [];
 
     // Map company_context categories to source categories
-    const categoryMap: Record<string, { name: string; key: string; files: SourceFile[] }> = {};
+    const categoryMap: Record<
+      string,
+      { name: string; key: string; files: SourceFile[] }
+    > = {};
 
     // Group company context entries
     for (const item of companyContextItems) {
       const catKey = "company-context";
       if (!categoryMap[catKey]) {
-        categoryMap[catKey] = { name: "company context", key: catKey, files: [] };
+        categoryMap[catKey] = {
+          name: "company context",
+          key: catKey,
+          files: [],
+        };
       }
       categoryMap[catKey].files.push({
         fileName: item.key,
@@ -70,7 +83,7 @@ export async function GET(request: NextRequest) {
         name: "service catalog",
         key: "service-catalog",
         files: productItems.map((p) => ({
-          fileName: `${p.service_line}-${p.product_name}`.replace(/\s+/g, "-").toLowerCase(),
+          fileName: p.id,
           category: "service-catalog",
           title: p.product_name,
           status: p.last_verified_at ? "VERIFIED" : "UNVERIFIED",
@@ -103,7 +116,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Other evidence (metrics, testimonials, certifications, awards) → evidence-library
-    const otherEvidence = evidenceItems.filter((e) => e.evidence_type !== "case_study");
+    const otherEvidence = evidenceItems.filter(
+      (e) => e.evidence_type !== "case_study",
+    );
     if (otherEvidence.length > 0) {
       categoryMap["evidence-library"] = {
         name: "evidence library",
@@ -134,7 +149,7 @@ export async function GET(request: NextRequest) {
     console.error("Failed to load sources:", error);
     return NextResponse.json(
       { error: "Failed to load sources" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

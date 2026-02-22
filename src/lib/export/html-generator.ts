@@ -177,7 +177,7 @@ export async function generateHtml(
   data: ProposalData,
   options?: { inlineFonts?: boolean },
 ): Promise<string> {
-  const companyName = data.company_name || "IntentWin";
+  const companyName = data.company_name || "IntentBid";
 
   // Collect all mermaid blocks for batch image conversion
   const allMermaidCodes: string[] = [];

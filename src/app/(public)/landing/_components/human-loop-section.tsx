@@ -13,7 +13,7 @@ export function HumanLoopSection() {
               Human-guided.
             </h2>
             <p className="vf-human-body">
-              IntentWin is never autopilot. Every proposal flows through your
+              IntentBid is never autopilot. Every proposal flows through your
               team — review, refine, and approve at every stage. The AI
               accelerates your expertise. It doesn&apos;t replace it.
             </p>
@@ -49,7 +49,7 @@ export function HumanLoopSection() {
               </div>
               <div className="vf-flow-arrow">&#x2193;</div>
               <div className="vf-flow-step vf-flow-ai">
-                <span className="vf-flow-label">IntentWin</span>
+                <span className="vf-flow-label">IntentBid</span>
                 <span className="vf-flow-action">Generate Draft</span>
               </div>
               <div className="vf-flow-arrow">&#x2193;</div>
@@ -59,7 +59,7 @@ export function HumanLoopSection() {
               </div>
               <div className="vf-flow-arrow">&#x2193;</div>
               <div className="vf-flow-step vf-flow-ai">
-                <span className="vf-flow-label">IntentWin</span>
+                <span className="vf-flow-label">IntentBid</span>
                 <span className="vf-flow-action">Apply 6 Layers</span>
               </div>
               <div className="vf-flow-arrow">&#x2193;</div>

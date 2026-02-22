@@ -7,16 +7,16 @@
 :root {
   /* Core Colors - Bold Dark Theme */
   --black: #000000;
-  --electric: #00ff88;
-  --electric-dim: #00cc6a;
+  --electric: #C084FC;
+  --electric-dim: #818CF8;
   --blue: #0066ff;
   --purple: #8b5cf6;
   --cyan: #12ABDB;
 
   /* Backgrounds - True Dark */
-  --background: #0a0a0a;
-  --background-secondary: #111111;
-  --background-tertiary: #1a1a1a;
+  --background: #09090b;
+  --background-secondary: #0d1117;
+  --background-tertiary: #161b22;
   --background-elevated: #222222;
 
   /* Foreground - High Contrast */
@@ -25,16 +25,16 @@
   --foreground-subtle: #666666;
 
   /* Borders - Subtle glow */
-  --border: #2a2a2a;
-  --border-subtle: #1f1f1f;
-  --border-focus: #00ff88;
-  --border-glow: rgba(0, 255, 136, 0.3);
+  --border: #27272a;
+  --border-subtle: #18181b;
+  --border-focus: #C084FC;
+  --border-glow: rgba(192, 132, 252, 0.3);
 
   /* Primary Accent - Electric Green */
-  --accent: #00ff88;
-  --accent-hover: #00cc6a;
-  --accent-subtle: rgba(0, 255, 136, 0.1);
-  --accent-muted: rgba(0, 255, 136, 0.2);
+  --accent: #C084FC;
+  --accent-hover: #818CF8;
+  --accent-subtle: rgba(192, 132, 252, 0.1);
+  --accent-muted: rgba(192, 132, 252, 0.2);
 
   /* Brand Colors (for exports/branding) */
   --cap-blue: #0070AD;
@@ -42,9 +42,9 @@
   --cap-accent: #12ABDB;
 
   /* Semantic Colors - Vibrant */
-  --success: #00ff88;
-  --success-subtle: rgba(0, 255, 136, 0.1);
-  --success-muted: rgba(0, 255, 136, 0.2);
+  --success: #34d399;
+  --success-subtle: rgba(52, 211, 153, 0.1);
+  --success-muted: rgba(52, 211, 153, 0.2);
   --warning: #ffaa00;
   --warning-subtle: rgba(255, 170, 0, 0.1);
   --warning-muted: rgba(255, 170, 0, 0.2);
@@ -58,20 +58,20 @@
   --info-muted: rgba(0, 102, 255, 0.2);
 
   /* Surfaces */
-  --card-bg: #111111;
-  --card-border: #2a2a2a;
-  --card-hover: #1a1a1a;
-  --input-bg: #0a0a0a;
-  --input-border: #2a2a2a;
+  --card-bg: #0d1117;
+  --card-border: #18181b;
+  --card-hover: #161b22;
+  --input-bg: #09090b;
+  --input-border: #27272a;
 
   /* Sidebar - Dark Premium */
-  --sidebar-bg: #0a0a0a;
-  --sidebar-border: #1a1a1a;
+  --sidebar-bg: #09090b;
+  --sidebar-border: #18181b;
   --sidebar-text: #ffffff;
   --sidebar-text-muted: #888888;
   --sidebar-hover: #1a1a1a;
-  --sidebar-active: rgba(0, 255, 136, 0.1);
-  --sidebar-active-border: #00ff88;
+  --sidebar-active: rgba(192, 132, 252, 0.15);
+  --sidebar-active-border: #C084FC;
   --sidebar-width: 240px;
 
   /* Shadows - Glow effects */
@@ -116,7 +116,7 @@
   --sidebar-text: #0a0a0a;
   --sidebar-text-muted: #666666;
   --sidebar-hover: #f0f0f0;
-  --sidebar-active: rgba(0, 170, 85, 0.1);
+  --sidebar-active: rgba(192, 132, 252, 0.1);
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
@@ -277,7 +277,7 @@ input[type="checkbox"] {
   justify-content: center;
   gap: 0.5rem;
   background: var(--accent);
-  color: var(--black);
+  color: #fff;
   font-family: 'Space Grotesk', sans-serif;
   font-weight: 600;
   font-size: 14px;
@@ -741,7 +741,7 @@ input[type="checkbox"] {
 /* Step indicator active state */
 .step-active {
   background: var(--accent);
-  color: var(--black);
+  color: #fff;
   box-shadow: 0 0 20px var(--accent);
 }
 

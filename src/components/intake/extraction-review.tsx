@@ -175,6 +175,9 @@ export function ExtractionReview({
     if (ext.technical_environment?.value) {
       data.technical_environment = ext.technical_environment.value;
     }
+    if (ext.solicitation_type?.value) {
+      data.solicitation_type = ext.solicitation_type.value;
+    }
 
     // Add inferred fields (with null checks)
     if (extracted.inferred?.industry?.value && !data.client_industry) {
@@ -185,6 +188,9 @@ export function ExtractionReview({
     }
     if (extracted.inferred?.opportunity_type?.value && !data.opportunity_type) {
       data.opportunity_type = extracted.inferred.opportunity_type.value;
+    }
+    if (extracted.inferred?.solicitation_type?.value && !data.solicitation_type) {
+      data.solicitation_type = extracted.inferred.solicitation_type.value;
     }
 
     return data;
@@ -209,6 +215,7 @@ export function ExtractionReview({
       desired_outcomes: editedData.desired_outcomes || [],
       compliance_requirements: editedData.compliance_requirements || [],
       technical_environment: editedData.technical_environment || "",
+      solicitation_type: editedData.solicitation_type || "",
     };
 
     onConfirm(intakeData);

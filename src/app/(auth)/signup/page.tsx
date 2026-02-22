@@ -122,7 +122,7 @@ export default function SignupPage() {
               <Sparkles className="h-6 w-6 text-white" />
             </div>
             <span className="text-2xl font-semibold text-[var(--foreground)]">
-              IntentWin
+              IntentBid
             </span>
           </div>
 
@@ -144,7 +144,7 @@ export default function SignupPage() {
 
           <p className="text-lg text-[var(--foreground-muted)] mb-10 leading-relaxed">
             {step === "waitlist" || step === "waitlist-success"
-              ? "IntentWin is currently invite-only. Join the waitlist and we'll notify you when a spot opens up."
+              ? "IntentBid is currently invite-only. Join the waitlist and we'll notify you when a spot opens up."
               : "AI-powered proposal generation with outcome-driven strategy. Write better, win more."}
           </p>
 
@@ -183,7 +183,7 @@ export default function SignupPage() {
               <Sparkles className="h-5 w-5 text-white" />
             </div>
             <span className="text-xl font-semibold text-[var(--foreground)]">
-              IntentWin
+              IntentBid
             </span>
           </div>
 
@@ -360,7 +360,7 @@ export default function SignupPage() {
                     Join the waitlist
                   </h2>
                   <p className="mt-1 text-sm text-[var(--foreground-muted)]">
-                    IntentWin is currently invite-only. Leave your details and
+                    IntentBid is currently invite-only. Leave your details and
                     we&apos;ll reach out when a spot opens.
                   </p>
                 </div>

@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { generateStructuredAnalysis, buildSystemPrompt } from "../claude";
+import { generateStructuredAnalysis, buildSystemPrompt } from "../gemini";
 import { loadSources, formatSourcesAsL1Context } from "@/lib/sources";
 import { getIndustryConfig } from "../industry-configs";
 import { createLogger } from "@/lib/utils/logger";
@@ -137,6 +137,52 @@ export function buildOutcomeContractContext(
 }
 
 /** Build L1 context string for prompts */
+
+/** 
+ * Filter the global L1 Context down to only what's strictly necessary for a specific section.
+ * This prevents the "Lost in the Middle" LLM syndrome and saves tokens.
+ */
+export function buildSectionSpecificL1Context(
+  l1Context: L1Context,
+  sectionType: string,
+  solicitationType: string = "RFP"
+): string {
+  // Always include Brand Guidelines for tone
+  const brandContext = l1Context.companyContext.filter(c => c.category === "brand");
+  
+  let relevantEvidence: EvidenceLibraryEntry[] = [];
+  let relevantProducts: ProductContext[] = [];
+  let relevantCompany = [...brandContext];
+
+  // Specific routing logic
+  if (sectionType === "case_studies" || solicitationType === "RFI") {
+    // RFIs and Case Study sections need maximum proof points
+    relevantEvidence = l1Context.evidenceLibrary;
+  } else if (sectionType === "team" || sectionType === "methodology") {
+    // Only fetch certs and methodology
+    relevantCompany = [
+      ...brandContext,
+      ...l1Context.companyContext.filter(c => c.category === "certifications" || c.category === "values")
+    ];
+  } else if (sectionType === "pricing") {
+    // Only fetch legal/pricing terms
+    relevantCompany = [
+      ...brandContext,
+      ...l1Context.companyContext.filter(c => c.category === "legal")
+    ];
+  } else {
+    // Default: Provide top 3 evidence points and product specs to avoid overwhelming
+    relevantEvidence = l1Context.evidenceLibrary.slice(0, 3);
+    relevantProducts = l1Context.productContexts;
+  }
+
+  return buildL1ContextString({
+    companyContext: relevantCompany,
+    productContexts: relevantProducts,
+    evidenceLibrary: relevantEvidence
+  });
+}
+
 export function buildL1ContextString(l1Context: L1Context): string {
   const sections: string[] = [];
 
@@ -415,6 +461,7 @@ export async function buildPipelineContext(
     systemPrompt,
     enhancedAnalysis,
     l1ContextString,
+    rawL1Context: l1Context,
     serviceLine,
     industry,
     industryConfig,

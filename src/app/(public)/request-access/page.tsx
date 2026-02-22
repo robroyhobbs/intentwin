@@ -78,7 +78,7 @@ export default function RequestAccessPage() {
         <nav className="ra-nav">
           <div className="ra-nav-inner">
             <Link href="/" className="ra-logo">
-              IntentWin
+              IntentBid
             </Link>
             <Link href="/" className="ra-nav-back">
               &larr; Back to Home
@@ -126,7 +126,7 @@ export default function RequestAccessPage() {
                 </div>
                 <h1 className="ra-success-heading">You&apos;re on the list.</h1>
                 <p className="ra-success-sub">
-                  Thanks for your interest in IntentWin. We review every request
+                  Thanks for your interest in IntentBid. We review every request
                   personally and will be in touch soon.
                 </p>
                 <Link href="/" className="ra-btn-ghost">
@@ -139,7 +139,7 @@ export default function RequestAccessPage() {
                   <span className="ra-badge">Invite Only</span>
                   <h1 className="ra-heading">Request Access</h1>
                   <p className="ra-sub">
-                    IntentWin is invite-only. Request access and we&apos;ll be
+                    IntentBid is invite-only. Request access and we&apos;ll be
                     in touch.
                   </p>
                 </div>
@@ -266,7 +266,7 @@ export default function RequestAccessPage() {
 
         {/* Footer */}
         <footer className="ra-footer">
-          <p>IntentWin — Proposal intelligence, engineered to win.</p>
+          <p>IntentBid — Proposal intelligence, engineered to win.</p>
         </footer>
       </div>
 

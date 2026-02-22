@@ -88,7 +88,7 @@ function getNavigationScript(): string {
  * This is the primary public API for the slides generator.
  */
 export async function generateSlides(data: ProposalData): Promise<string> {
-  const companyName = data.company_name || "IntentWin";
+  const companyName = data.company_name || "IntentBid";
   const slides = buildSlides(data, companyName);
   const totalSlides = slides.length;
   const slidesHtml = slides

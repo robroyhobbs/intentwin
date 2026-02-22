@@ -33,7 +33,7 @@ export default function DemoLoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800">
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-slate-900">IntentWin Demo</h1>
+          <h1 className="text-2xl font-bold text-slate-900">IntentBid Demo</h1>
           <p className="text-slate-600 mt-2">
             Enter the demo password to continue
           </p>
