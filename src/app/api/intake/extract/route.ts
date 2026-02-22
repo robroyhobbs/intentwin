@@ -6,6 +6,7 @@ import {
   buildExtractionPrompt,
   buildMultiDocumentContent,
 } from "@/lib/ai/prompts/extract-intake";
+import { buildAssumptionsPrompt, type Assumption } from "@/lib/ai/prompts/assumptions";
 import type { DocumentForExtraction } from "@/lib/ai/prompts/extract-intake";
 import type { ExtractedIntake } from "@/types/intake";
 import type { DocumentRole } from "@/types/proposal-documents";
@@ -279,7 +280,56 @@ export async function POST(request: NextRequest) {
       extracted.source_text = content.substring(0, 1000); // First 1000 chars as preview
     }
 
-    return NextResponse.json({ extracted });
+    // Generate assumptions in parallel (non-blocking — if it fails, we still return extraction)
+    let assumptions: Assumption[] = [];
+    try {
+      // Build a flat intake object from extracted fields for the assumptions prompt
+      const flatIntake: Record<string, unknown> = {};
+      if (extracted.extracted) {
+        for (const [key, val] of Object.entries(extracted.extracted)) {
+          if (val && typeof val === "object" && "value" in val) {
+            flatIntake[key] = (val as { value: unknown }).value;
+          }
+        }
+      }
+      // Also pull from inferred fields as fallback
+      if (extracted.inferred) {
+        for (const [key, val] of Object.entries(extracted.inferred)) {
+          if (!flatIntake[key] && val && typeof val === "object" && "value" in val) {
+            flatIntake[key] = (val as { value: unknown }).value;
+          }
+        }
+      }
+
+      const assumptionsPrompt = buildAssumptionsPrompt(
+        flatIntake,
+        extracted.input_summary || "",
+      );
+
+      const assumptionsResponse = await generateText(assumptionsPrompt, {
+        systemPrompt: "You are an expert proposal analyst. Respond with valid JSON only — a JSON array of assumption objects.",
+        temperature: 0.4,
+        maxTokens: 4096,
+      });
+
+      // Parse assumptions JSON
+      let assumptionsJson = assumptionsResponse;
+      const assumptionsMatch = assumptionsResponse.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (assumptionsMatch) {
+        assumptionsJson = assumptionsMatch[1];
+      }
+      const parsed = JSON.parse(assumptionsJson.trim());
+      if (Array.isArray(parsed)) {
+        assumptions = parsed;
+      }
+    } catch (assumptionsError) {
+      // Non-fatal — log and continue without assumptions
+      logger.warn("Assumptions generation failed during extraction", {
+        error: assumptionsError instanceof Error ? assumptionsError.message : String(assumptionsError),
+      });
+    }
+
+    return NextResponse.json({ extracted, assumptions });
   } catch (error) {
     console.error("Extraction error:", error);
     return NextResponse.json(

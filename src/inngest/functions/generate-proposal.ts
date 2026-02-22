@@ -13,7 +13,7 @@ import {
 import { buildIndustryContext } from "@/lib/ai/industry-configs";
 import { createLogger } from "@/lib/utils/logger";
 import { createPipelineMetrics } from "@/lib/observability/metrics";
-import { SECTION_CONFIGS } from "@/lib/ai/pipeline/section-configs";
+import { SECTION_CONFIGS, getSectionsForSolicitationType } from "@/lib/ai/pipeline/section-configs";
 import { buildPipelineContext, extractCompetitiveObjections, buildSectionSpecificL1Context } from "@/lib/ai/pipeline/context";
 import { retrieveContext } from "@/lib/ai/pipeline/retrieval";
 // Editorial pass import — kept for future re-enablement
@@ -239,8 +239,12 @@ export const generateProposalFn = inngest.createFunction(
         .delete()
         .eq("proposal_id", proposalId);
 
-      // Create all section rows
-      const sectionInserts = SECTION_CONFIGS.map((config) => ({
+      // Determine which sections to generate based on solicitation type
+      const solicitationType = (ctx.intakeData.solicitation_type as string) || "RFP";
+      const applicableSections = getSectionsForSolicitationType(solicitationType);
+
+      // Create section rows (filtered by solicitation type)
+      const sectionInserts = applicableSections.map((config) => ({
         proposal_id: proposalId,
         section_type: config.type,
         section_order: config.order,
