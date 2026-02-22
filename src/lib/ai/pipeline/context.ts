@@ -13,6 +13,57 @@ import type { L1Context, PipelineContext } from "./types";
 // to avoid redundant DB queries during concurrent proposal generations.
 const l1Cache = new TtlCache<L1Context>({ ttlMs: 5 * 60 * 1000, maxSize: 50 });
 
+/**
+ * Terms that indicate vague, unsubstantiated capability claims.
+ * When these appear in product descriptions or capabilities,
+ * a specificity warning is appended to the L1 context string.
+ */
+export const VAGUE_CAPABILITY_TERMS = [
+  "enterprise tools",
+  "advanced platform",
+  "comprehensive solution",
+  "industry-leading",
+  "next-generation",
+  "cutting-edge solution",
+  "best-of-breed",
+  "end-to-end platform",
+  "world-class tools",
+  "innovative solution",
+] as const;
+
+/**
+ * Scan product capabilities and descriptions for vague terms.
+ * Returns an array of internal SPECIFICITY WARNING strings.
+ * These are pipeline metadata — never exposed in generated content.
+ */
+export function checkCapabilitySpecificity(products: ProductContext[]): string[] {
+  const warnings: string[] = [];
+
+  for (const product of products) {
+    const textsToCheck: string[] = [product.description || ""];
+
+    if (Array.isArray(product.capabilities)) {
+      for (const cap of product.capabilities) {
+        const c = cap as { name?: string; description?: string };
+        if (c.name) textsToCheck.push(c.name);
+        if (c.description) textsToCheck.push(c.description);
+      }
+    }
+
+    const combined = textsToCheck.join(" ").toLowerCase();
+
+    for (const term of VAGUE_CAPABILITY_TERMS) {
+      if (combined.includes(term.toLowerCase())) {
+        warnings.push(
+          `SPECIFICITY WARNING: "${product.product_name}" uses vague term "${term}" — replace with concrete technology names, metrics, or specifications`,
+        );
+      }
+    }
+  }
+
+  return warnings;
+}
+
 /** Clear the L1 context cache (used in tests and after L1 data updates) */
 export function clearL1Cache(): void {
   l1Cache.clear();
@@ -312,6 +363,14 @@ export function buildL1ContextString(l1Context: L1Context): string {
   if (legal.length > 0) {
     const legalStr = legal.map((c) => `- ${c.title}: ${c.content}`).join("\n");
     sections.push(`## Content Guidelines (Must Follow)\n${legalStr}`);
+  }
+
+  // Specificity warnings — internal metadata to improve generation quality
+  const specificityWarnings = checkCapabilitySpecificity(l1Context.productContexts);
+  if (specificityWarnings.length > 0) {
+    sections.push(
+      `## Specificity Guidance (Internal — Do Not Include in Output)\n${specificityWarnings.map((w) => `- ${w}`).join("\n")}`,
+    );
   }
 
   if (sections.length === 0) return "";

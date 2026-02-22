@@ -19,7 +19,25 @@ import { retrieveContext } from "@/lib/ai/pipeline/retrieval";
 // Editorial pass import — kept for future re-enablement
 // import { runEditorialPass } from "@/lib/ai/editorial-pass";
 import { shouldGenerateDiagram, generateDiagram } from "@/lib/ai/diagram-generator";
+import { extractDifferentiators } from "@/lib/ai/pipeline/differentiators";
 import type { PipelineContext } from "@/lib/ai/pipeline/types";
+
+/**
+ * Build the repetition limiter prompt block from extracted differentiators.
+ * Returns empty string if no differentiators are available.
+ */
+function buildRepetitionLimiterBlock(differentiators: string[]): string {
+  if (!differentiators.length) return "";
+  const diffList = differentiators.map((d) => `  - ${d}`).join("\n");
+  return `\n\n---\n\n## REPETITION LIMITER (MANDATORY)
+The following differentiators were already stated in the Executive Summary:
+${diffList}
+
+DO NOT re-state these claims verbatim. Instead:
+- Demonstrate each differentiator through specific examples relevant to THIS section
+- Show, don't tell — add new evidence, metrics, or detail rather than echoing the same points
+- Each section should contribute NEW information that builds on the Executive Summary`;
+}
 
 /**
  * Generate a single proposal section.
@@ -29,7 +47,8 @@ async function generateSingleSection(
   sectionId: string,
   sectionType: string,
   ctx: PipelineContext,
-): Promise<{ chunkCount: number }> {
+  differentiators?: string[],
+): Promise<{ chunkCount: number; generatedContent?: string }> {
   const supabase = createAdminClient();
   const config = SECTION_CONFIGS.find((c) => c.type === sectionType);
   if (!config) {
@@ -99,12 +118,18 @@ async function generateSingleSection(
       config.type,
     );
 
+    // Repetition limiter — only applied to sections after executive_summary
+    const repetitionBlock = (sectionType !== "executive_summary" && differentiators?.length)
+      ? buildRepetitionLimiterBlock(differentiators)
+      : "";
+
     const prompt = [
       basePrompt,
       industryContext ? `\n\n---\n\n${industryContext}` : "",
       persuasionContext
         ? `\n\n---\n\n## Persuasion & Quality Guidance\n\n${persuasionContext}`
         : "",
+      repetitionBlock,
     ]
       .filter(Boolean)
       .join("");
@@ -185,7 +210,7 @@ async function generateSingleSection(
       }
     }
 
-    return { chunkCount: chunkIds.length };
+    return { chunkCount: chunkIds.length, generatedContent };
   } catch (err) {
     const errorMessage =
       err instanceof Error ? err.message : "Unknown error";
@@ -294,19 +319,66 @@ export const generateProposalFn = inngest.createFunction(
       },
     );
 
-    // Steps 2-11: Generate each section individually (fan-out)
-    // Each section is its own retryable step.
-    const sectionResults = await Promise.allSettled(
-      sections.map((section) =>
+    // Step 2: Generate executive summary FIRST (needed for differentiator extraction)
+    // If exec summary fails, remaining sections still generate without the repetition limiter.
+    const execSection = sections.find((s) => s.sectionType === "executive_summary");
+    let differentiators: string[] = [];
+    let execFailed = false;
+
+    if (execSection) {
+      try {
+        const execResult = await step.run("section-executive_summary", async () => {
+          return generateSingleSection(
+            execSection.id,
+            execSection.sectionType,
+            ctx,
+          );
+        });
+
+        // Extract differentiators from the generated executive summary
+        if (execResult.generatedContent) {
+          differentiators = extractDifferentiators(execResult.generatedContent);
+        }
+      } catch {
+        // Exec summary failed — continue without repetition limiter (graceful degradation)
+        execFailed = true;
+      }
+    }
+
+    // Steps 3-N: Generate remaining sections in parallel with differentiators
+    const remainingSections = sections.filter(
+      (s) => s.sectionType !== "executive_summary",
+    );
+
+    const remainingResults = await Promise.allSettled(
+      remainingSections.map((section) =>
         step.run(`section-${section.sectionType}`, async () => {
           return generateSingleSection(
             section.id,
             section.sectionType,
             ctx,
+            differentiators,
           );
         }),
       ),
     );
+
+    // Combine results for tracking: exec summary (if it ran) + remaining
+    // Build a map of sectionType -> result for the return value
+    const sectionResultMap = new Map<string, { status: string; error?: string }>();
+    if (execSection) {
+      sectionResultMap.set("executive_summary", {
+        status: execFailed ? "rejected" : "fulfilled",
+        ...(execFailed ? { error: "Executive summary generation failed" } : {}),
+      });
+    }
+    remainingResults.forEach((r, i) => {
+      const sectionType = remainingSections[i].sectionType;
+      sectionResultMap.set(sectionType, {
+        status: r.status,
+        ...(r.status === "rejected" ? { error: (r as PromiseRejectedResult).reason?.message || "Unknown" } : {}),
+      });
+    });
 
     // Step 12: Finalize proposal status
     const result = await step.run("finalize", async () => {
@@ -394,13 +466,14 @@ export const generateProposalFn = inngest.createFunction(
       proposalId,
       completed: result.completedCount,
       failed: result.failedCount,
-      sectionResults: sectionResults.map((r, i) => ({
-        section: sections[i].sectionType,
-        status: r.status,
-        ...(r.status === "rejected"
-          ? { error: r.reason?.message || "Unknown" }
-          : {}),
-      })),
+      sectionResults: sections.map((s) => {
+        const result = sectionResultMap.get(s.sectionType);
+        return {
+          section: s.sectionType,
+          status: result?.status || "unknown",
+          ...(result?.error ? { error: result.error } : {}),
+        };
+      }),
     };
   },
 );

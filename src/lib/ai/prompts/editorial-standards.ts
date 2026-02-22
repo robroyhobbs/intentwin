@@ -132,11 +132,13 @@ export interface AudienceProfile {
  * Builds the complete editorial standards block to append to any section prompt.
  * Optional audience profile modulates vocabulary and technical depth.
  * Optional brand name enforces consistent naming throughout.
+ * Optional priorDifferentiators triggers the repetition limiter.
  */
 export function buildEditorialStandards(
   solicitationType: string = "RFP",
   audienceProfile?: AudienceProfile | null,
   primaryBrandName?: string,
+  priorDifferentiators?: string[],
 ): string {
   let typeRules = "";
   if (solicitationType === "RFQ") {
@@ -175,6 +177,21 @@ The evaluators are highly technical (${audienceProfile.evaluator || "engineering
 Use ONLY '${primaryBrandName}' when referring to our company throughout the entire section. No abbreviations, alternate names, DBAs, or variations. Every mention must use the exact string '${primaryBrandName}'.`;
   }
 
+  // Repetition limiter — prevent every section from restating the same claims
+  let repetitionLimiter = "";
+  if (priorDifferentiators && priorDifferentiators.length > 0) {
+    const diffList = priorDifferentiators.map((d) => `  - ${d}`).join("\n");
+    repetitionLimiter = `\n\n## REPETITION LIMITER (MANDATORY)
+The following differentiators were already stated in the Executive Summary:
+${diffList}
+
+DO NOT re-state these claims verbatim in this section. Instead:
+- Demonstrate each differentiator through specific examples, metrics, or deliverables relevant to THIS section's topic
+- Show, don't tell — if the Executive Summary said "47 federal migrations," this section should describe HOW a specific migration was executed, not repeat the count
+- Each section should add NEW evidence and detail, not echo the same talking points
+- If you must reference a differentiator, add new context: a different metric, a different client, a different angle`;
+  }
+
   const chainOfThought = `
 ## MANDATORY OUTLINING (CHAIN OF THOUGHT)
 Before generating the final markdown for the section, you MUST output a <thought_process> block.
@@ -192,5 +209,5 @@ Example:
 After the </thought_process> tag, write the final presentation-ready Markdown.
 `;
 
-  return `${FORMATTING_RULES}\n${ANTI_FLUFF_RULES}${typeRules}${audienceRules}${brandLock}\n${chainOfThought}`;
+  return `${FORMATTING_RULES}\n${ANTI_FLUFF_RULES}${typeRules}${audienceRules}${brandLock}${repetitionLimiter}\n${chainOfThought}`;
 }
