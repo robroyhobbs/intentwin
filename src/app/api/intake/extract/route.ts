@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     try {
       body = await request.json();
     } catch {
-      console.error("Extract: Failed to parse request body");
+      logger.error("Extract: Failed to parse request body");
       return NextResponse.json(
         { error: "Invalid request body" },
         { status: 400 },
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!content && (!document_ids || document_ids.length === 0)) {
-      console.error("Extract: No content and no document_ids provided");
+      logger.error("Extract: No content and no document_ids provided");
       return NextResponse.json(
         { error: "Either content or document_ids is required" },
         { status: 400 },
@@ -213,12 +213,12 @@ export async function POST(request: NextRequest) {
         .eq("organization_id", context.organizationId)
         .then(({ error }) => {
           if (error)
-            console.error("Failed to auto-tag intake docs as rfp:", error);
+            logger.error("Failed to auto-tag intake docs as rfp", error);
         });
     }
 
     if (!combinedContent.trim()) {
-      console.error("Extract: combinedContent is empty after processing", {
+      logger.error("Extract: combinedContent is empty after processing", {
         hadDocIds: !!document_ids?.length,
         docCount: document_ids?.length ?? 0,
         originalContentLength: content?.length ?? 0,
@@ -254,7 +254,7 @@ export async function POST(request: NextRequest) {
       }
       extracted = JSON.parse(jsonStr.trim());
     } catch (_parseError) {
-      console.error("Failed to parse extraction response:", response);
+      logger.error("Failed to parse extraction response", { responseTail: response?.slice(-200) });
       return NextResponse.json(
         { error: "Failed to parse extraction results" },
         { status: 500 },
@@ -331,7 +331,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ extracted, assumptions });
   } catch (error) {
-    console.error("Extraction error:", error);
+    logger.error("Extraction error", error);
     return NextResponse.json(
       { error: "Failed to extract intake data" },
       { status: 500 },

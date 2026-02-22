@@ -5,6 +5,7 @@ import { inngest } from "@/inngest/client";
 import { ProposalStatus } from "@/lib/constants/statuses";
 import { fetchL1Context } from "@/lib/ai/pipeline/context";
 import { runPreflightCheck, type PreflightResult } from "@/lib/ai/pipeline/preflight";
+import { logger } from "@/lib/utils/logger";
 
 export async function POST(
   request: NextRequest,
@@ -46,7 +47,9 @@ export async function POST(
       preflight = runPreflightCheck(l1Context, intakeData, requirements);
     } catch (preflightError) {
       // Fail-open: log and continue without preflight data
-      console.warn("Preflight check failed (non-blocking):", preflightError);
+      logger.warn("Preflight check failed (non-blocking)", {
+        error: preflightError instanceof Error ? preflightError.message : String(preflightError),
+      });
     }
 
     // Atomic guard: only one generation at a time.
@@ -64,7 +67,7 @@ export async function POST(
       .maybeSingle();
 
     if (claimError) {
-      console.error("Generation claim error:", claimError);
+      logger.error("Generation claim error", claimError);
       return NextResponse.json(
         { error: "Failed to start generation" },
         { status: 500 }
@@ -92,7 +95,7 @@ export async function POST(
       preflight: preflight ?? undefined,
     });
   } catch (error) {
-    console.error("Generate proposal error:", error);
+    logger.error("Generate proposal error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

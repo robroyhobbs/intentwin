@@ -4,6 +4,9 @@ import { getUserContext } from "@/lib/supabase/auth-api";
 import { unauthorized, notFound, badRequest, serverError, ok, created } from "@/lib/api/response";
 import { sanitizeTitle, sanitizeString } from "@/lib/security/sanitize";
 import { clearL1Cache } from "@/lib/ai/pipeline/context";
+import { generateText } from "@/lib/ai/gemini";
+import { buildResumeExtractionPrompt } from "@/lib/ai/prompts/extract-resume";
+import { logger } from "@/lib/utils/logger";
 
 const SELECT_FIELDS =
   "id, name, role, title, email, skills, certifications, clearance_level, years_experience, project_history, bio, is_verified, created_at, updated_at";
@@ -48,6 +51,12 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+
+    // Resume extraction path: parse resume document via AI
+    if (body.extract_from_resume && body.source_document_id) {
+      return handleResumeExtraction(body.source_document_id, context);
+    }
+
     const {
       name,
       role,
@@ -221,4 +230,79 @@ export async function DELETE(request: NextRequest) {
   } catch (error) {
     return serverError("Failed to delete team member", error);
   }
+}
+
+// ── Resume extraction helper ────────────────────────────────────────────────
+
+async function handleResumeExtraction(
+  documentId: string,
+  context: { organizationId: string; user: { id: string } },
+) {
+  const adminClient = createAdminClient();
+  const log = logger;
+
+  // Fetch document chunks to get the resume text
+  const { data: chunks, error: chunkError } = await adminClient
+    .from("document_chunks")
+    .select("content")
+    .eq("document_id", documentId)
+    .order("chunk_index", { ascending: true });
+
+  if (chunkError || !chunks?.length) {
+    return badRequest("Could not read document content for resume extraction");
+  }
+
+  const resumeText = chunks.map((c) => c.content).join("\n\n");
+  if (resumeText.trim().length < 50) {
+    return badRequest("Document content too short for resume extraction");
+  }
+
+  // Call AI to extract structured team member data
+  let extracted: Record<string, unknown>;
+  try {
+    const prompt = buildResumeExtractionPrompt(resumeText);
+    const response = await generateText(prompt, { temperature: 0.2, maxTokens: 2048 });
+
+    // Strip markdown code fences if present
+    const cleaned = response.replace(/^```(?:json)?\n?/m, "").replace(/\n?```$/m, "").trim();
+    extracted = JSON.parse(cleaned);
+  } catch (aiError) {
+    log.error("Resume extraction AI call failed", aiError);
+    return serverError("Failed to extract team member from resume", aiError);
+  }
+
+  // Validate required fields from AI response
+  const extractedName = extracted.name as string;
+  const extractedRole = extracted.role as string;
+  if (!extractedName || !extractedRole) {
+    return serverError("AI could not extract name and role from resume");
+  }
+
+  // Insert the extracted team member
+  const { data: teamMember, error: insertError } = await adminClient
+    .from("team_members")
+    .insert({
+      organization_id: context.organizationId,
+      name: sanitizeTitle(extractedName),
+      role: sanitizeTitle(extractedRole),
+      title: extracted.title ? sanitizeTitle(extracted.title as string) : null,
+      email: extracted.email ? sanitizeString(extracted.email as string) : null,
+      skills: Array.isArray(extracted.skills) ? extracted.skills : [],
+      certifications: Array.isArray(extracted.certifications) ? extracted.certifications : [],
+      clearance_level: extracted.clearance_level ? sanitizeString(extracted.clearance_level as string) : null,
+      years_experience: typeof extracted.years_experience === "number" ? extracted.years_experience : null,
+      project_history: Array.isArray(extracted.project_history) ? extracted.project_history : [],
+      bio: extracted.bio ? sanitizeString(extracted.bio as string) : null,
+      is_verified: false,
+      created_by: context.user.id,
+    })
+    .select(SELECT_FIELDS)
+    .single();
+
+  if (insertError) {
+    return serverError("Failed to create team member from resume", insertError);
+  }
+
+  clearL1Cache();
+  return created({ teamMember, extractedFromResume: true });
 }
