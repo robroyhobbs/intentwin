@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { GenerationStatus } from "@/lib/constants/statuses";
-import { generateText } from "../claude";
+import { generateText } from "../gemini";
 import {
   getPersuasionPrompt,
   getBestPracticesPrompt,

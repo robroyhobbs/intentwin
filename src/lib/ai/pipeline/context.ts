@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { generateStructuredAnalysis, buildSystemPrompt } from "../claude";
+import { generateStructuredAnalysis, buildSystemPrompt } from "../gemini";
 import { loadSources, formatSourcesAsL1Context } from "@/lib/sources";
 import { getIndustryConfig } from "../industry-configs";
 import { createLogger } from "@/lib/utils/logger";

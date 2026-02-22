@@ -1,7 +1,7 @@
 import { inngest } from "../client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { GenerationStatus, ProposalStatus } from "@/lib/constants/statuses";
-import { generateText } from "@/lib/ai/claude";
+import { generateText } from "@/lib/ai/gemini";
 import { createProposalVersion } from "@/lib/versioning/create-version";
 import {
   getPersuasionPrompt,

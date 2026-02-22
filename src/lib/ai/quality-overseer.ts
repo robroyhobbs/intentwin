@@ -27,7 +27,7 @@ import {
   PASS_THRESHOLD,
   type QualityScores,
 } from "./prompts/quality-review";
-import { generateText, buildSystemPrompt } from "./claude";
+import { generateText, buildSystemPrompt } from "./gemini";
 import { createProposalVersion } from "@/lib/versioning/create-version";
 
 // ============================================================

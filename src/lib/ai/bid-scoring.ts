@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logger } from "@/lib/utils/logger";
-import { generateText } from "./claude";
+import { generateText } from "./gemini";
 import type { L1Context } from "./pipeline/types";
 
 // Fixed scoring factors and weights

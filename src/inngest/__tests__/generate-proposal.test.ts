@@ -5,7 +5,7 @@ vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: vi.fn(() => mockSupabase),
 }));
 
-vi.mock("@/lib/ai/claude", () => ({
+vi.mock("@/lib/ai/gemini", () => ({
   generateText: vi.fn(() => Promise.resolve("Generated content")),
 }));
 

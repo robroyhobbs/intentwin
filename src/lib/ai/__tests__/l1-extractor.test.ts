@@ -14,7 +14,7 @@ let lastGenerateTextCall: {
   options?: Record<string, unknown>;
 } | null = null;
 
-vi.mock("@/lib/ai/claude", () => ({
+vi.mock("@/lib/ai/gemini", () => ({
   generateText: vi.fn(
     async (prompt: string, options?: Record<string, unknown>) => {
       lastGenerateTextCall = { prompt, options };
