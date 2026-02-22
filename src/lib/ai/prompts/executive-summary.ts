@@ -55,5 +55,5 @@ ${winStrategy ? `\nWeave win themes throughout — open with the primary outcome
 
 CRITICAL: Reference specific ${companyName} capabilities and evidence from the Company Context above. Every claim must cite verified data — do not invent metrics or capabilities.
 
-${buildEditorialStandards((intakeData as any).solicitation_type, (intakeData as any).audience_profile, (intakeData as any)._brand_name)}`;
+${buildEditorialStandards(intakeData.solicitation_type as string | undefined, intakeData.audience_profile, intakeData._brand_name as string | undefined)}`;
 }

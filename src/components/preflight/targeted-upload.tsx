@@ -8,7 +8,6 @@ import { useAuthFetch } from "@/hooks/use-auth-fetch";
 
 interface TargetedUploadProps {
   gapType: "evidence" | "personnel" | "product" | "compliance";
-  proposalId: string;
   onUploadComplete?: () => void;
 }
 
@@ -43,7 +42,6 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 export function TargetedUpload({
   gapType,
-  proposalId,
   onUploadComplete,
 }: TargetedUploadProps) {
   const [uploading, setUploading] = useState(false);

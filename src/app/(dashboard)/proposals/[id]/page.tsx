@@ -15,7 +15,7 @@ import { SkeletonSection } from "@/components/ui/skeleton";
 import { DealOutcomeSetter } from "@/components/ui/deal-outcome-setter";
 import type { ProposalReview, ReviewSummary } from "@/types/review";
 import { exportAnnotationsAsMarkdown } from "@/lib/review/export-annotations";
-import { ReadinessReport } from "@/components/preflight/readiness-report";
+import { extractPlaceholders } from "@/components/preflight/review-mode-sidebar";
 import type { PreflightResult } from "@/lib/ai/pipeline/preflight";
 
 import type { Proposal, Section } from "./_components/types";
@@ -51,6 +51,10 @@ const StageReviewDashboard = dynamic(
 );
 const ReviewModeSidebar = dynamic(
   () => import("@/components/preflight/review-mode-sidebar").then((m) => m.ReviewModeSidebar),
+  { ssr: false },
+);
+const ReadinessReport = dynamic(
+  () => import("@/components/preflight/readiness-report").then((m) => m.ReadinessReport),
   { ssr: false },
 );
 
@@ -153,7 +157,12 @@ export default function ProposalPage() {
       const response = await authFetch(`/api/proposals/${id}/preflight`);
       if (response.ok) {
         const data = await response.json();
-        setPreflight(data.preflight);
+        // Route returns { proposalId, status, gaps, summary } at top level
+        setPreflight({
+          status: data.status,
+          gaps: data.gaps,
+          summary: data.summary,
+        });
       }
     } catch {
       // Preflight is non-blocking
@@ -196,11 +205,7 @@ export default function ProposalPage() {
     proposal?.status === ProposalStatus.REVIEW || proposal?.status === ProposalStatus.EXPORTED;
   useEffect(() => {
     if (proposalInReview && sections.length > 0 && !showPlaceholderPanel) {
-      // Check if any section has placeholders
-      const hasPlaceholders = sections.some((s) => {
-        const content = s.edited_content || s.generated_content || "";
-        return /\[CASE STUDY NEEDED:|TEAM MEMBER NEEDED:|\{signatory_name\}|\{signatory_title\}|\{date\}|\{client_name\}|\$TBD/.test(content);
-      });
+      const hasPlaceholders = extractPlaceholders(sections).length > 0;
       if (hasPlaceholders) {
         setShowPlaceholderPanel(true);
       }
@@ -208,20 +213,21 @@ export default function ProposalPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [proposalInReview, sections]);
 
-  // Poll during generation with a 10-minute timeout safety net
+  // Poll during generation with exponential backoff and 10-minute timeout
   useEffect(() => {
     if (proposal?.status !== ProposalStatus.GENERATING) return;
     const startedAt = Date.now();
     const MAX_POLL_MS = 10 * 60 * 1000; // 10 minutes
+    const MIN_INTERVAL = 2000;
+    const MAX_INTERVAL = 10000;
     let stopped = false;
+    let pollCount = 0;
 
     const poll = async () => {
       if (stopped) return;
 
       if (Date.now() - startedAt > MAX_POLL_MS) {
-        // Before showing error, do one final check — generation may have finished
         await fetchProposal();
-        // If still generating after 10 min, warn the user
         toast.error(
           "Generation is taking longer than expected. Please refresh the page.",
         );
@@ -229,13 +235,16 @@ export default function ProposalPage() {
       }
 
       await fetchProposal();
+      pollCount++;
 
       if (!stopped) {
-        setTimeout(poll, 3000);
+        // Exponential backoff: 2s, 3s, 4.5s, 6.75s, 10s (capped)
+        const delay = Math.min(MIN_INTERVAL * Math.pow(1.5, pollCount), MAX_INTERVAL);
+        setTimeout(poll, delay);
       }
     };
 
-    // Start first poll immediately (no 3s delay)
+    // Start first poll immediately
     poll();
 
     return () => {
@@ -626,7 +635,6 @@ export default function ProposalPage() {
                 loading={preflightLoading}
                 onRetry={fetchPreflight}
                 onUploadComplete={fetchPreflight}
-                proposalId={id}
               />
             </div>
 

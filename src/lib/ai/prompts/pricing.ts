@@ -73,5 +73,5 @@ ${winStrategy ? `\nTie investment directly to the target outcomes and success me
 
 IMPORTANT: Use actual pricing models from the Company Context (e.g., fixed-fee, time & materials, outcome-based). Use \`$TBD\` as the placeholder for any dollar amounts not provided — do NOT invent specific dollar figures. The \`$TBD\` placeholder clearly indicates that detailed pricing will be finalized during contract negotiation.
 
-${buildEditorialStandards((intakeData as any).solicitation_type, (intakeData as any).audience_profile, (intakeData as any)._brand_name)}`;
+${buildEditorialStandards(intakeData.solicitation_type as string | undefined, intakeData.audience_profile, intakeData._brand_name as string | undefined)}`;
 }

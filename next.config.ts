@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["puppeteer-core", "@sparticuz/chromium"],
+  serverExternalPackages: ["puppeteer-core", "@sparticuz/chromium", "js-tiktoken"],
 
   // Ensure @sparticuz/chromium binary files are included in the serverless function
   outputFileTracingIncludes: {

@@ -116,8 +116,6 @@ export function runPreflightCheck(
   for (const req of safeRequirements) {
     const text = (req.requirement_text as string || "").toLowerCase();
     const category = req.category as string;
-    const _sections = req.suggested_sections as string[] | undefined;
-
     // Check for case study requirements
     if (
       category === "mandatory" &&

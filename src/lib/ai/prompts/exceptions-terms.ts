@@ -96,5 +96,5 @@ Create a professional Exceptions to Terms & Conditions section that identifies c
 - Demonstrates ${companyName}'s experience with contract negotiation
 - Context-appropriate for ${scopeDescription}
 
-${buildEditorialStandards((intakeData as any).solicitation_type, (intakeData as any).audience_profile, (intakeData as any)._brand_name)}`;
+${buildEditorialStandards(intakeData.solicitation_type as string | undefined, intakeData.audience_profile, intakeData._brand_name as string | undefined)}`;
 }

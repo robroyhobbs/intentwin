@@ -3,6 +3,7 @@ import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchL1Context } from "@/lib/ai/pipeline/context";
 import { runPreflightCheck } from "@/lib/ai/pipeline/preflight";
+import { logger } from "@/lib/utils/logger";
 
 /**
  * GET /api/proposals/[id]/preflight
@@ -55,7 +56,7 @@ export async function GET(
       ...result,
     });
   } catch (error) {
-    console.error("Preflight check error:", error);
+    logger.error("Preflight check error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },

@@ -63,5 +63,5 @@ ${winStrategy ? `\nMap milestones to target outcomes and success metrics — sho
 
 Reference actual ${companyName} accelerators and tools from the Company Context that speed delivery.
 
-${buildEditorialStandards((intakeData as any).solicitation_type, (intakeData as any).audience_profile, (intakeData as any)._brand_name)}`;
+${buildEditorialStandards(intakeData.solicitation_type as string | undefined, intakeData.audience_profile, intakeData._brand_name as string | undefined)}`;
 }

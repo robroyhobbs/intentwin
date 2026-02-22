@@ -22,7 +22,6 @@ interface ReadinessReportProps {
   loading?: boolean;
   onRetry?: () => void;
   onUploadComplete?: () => void;
-  proposalId: string;
 }
 
 const STATUS_CONFIG = {
@@ -58,11 +57,9 @@ const GAP_TYPE_ICONS = {
 
 function GapItem({
   gap,
-  proposalId,
   onUploadComplete,
 }: {
   gap: PreflightGap;
-  proposalId: string;
   onUploadComplete?: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -117,7 +114,6 @@ function GapItem({
               </p>
               <TargetedUpload
                 gapType={gap.type}
-                proposalId={proposalId}
                 onUploadComplete={onUploadComplete}
               />
             </div>
@@ -133,7 +129,6 @@ export function ReadinessReport({
   loading,
   onRetry,
   onUploadComplete,
-  proposalId,
 }: ReadinessReportProps) {
   if (loading) {
     return (
@@ -189,7 +184,6 @@ export function ReadinessReport({
             <GapItem
               key={`${gap.type}-${gap.affectedSection}-${idx}`}
               gap={gap}
-              proposalId={proposalId}
               onUploadComplete={onUploadComplete}
             />
           ))}

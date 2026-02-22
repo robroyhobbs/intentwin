@@ -436,7 +436,7 @@ export async function buildPipelineContext(
   // Fetch proposal with organization
   const { data: proposal, error: fetchError } = await supabase
     .from("proposals")
-    .select("*, organizations(name, settings)")
+    .select("id, organization_id, title, status, intake_data, win_strategy_data, outcome_contract, rfp_extracted_requirements, organizations(name, settings)")
     .eq("id", proposalId)
     .single();
 
@@ -449,8 +449,9 @@ export async function buildPipelineContext(
   const outcomeContract =
     (proposal.outcome_contract as OutcomeContract) || null;
 
-  // Get company info from organization
-  const orgData = proposal.organizations as {
+  // Get company info from organization (Supabase join may return object or array)
+  const rawOrg = proposal.organizations;
+  const orgData = (Array.isArray(rawOrg) ? rawOrg[0] : rawOrg) as {
     name: string;
     settings?: Record<string, unknown>;
   } | null;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 /**
@@ -8,14 +8,17 @@ import { createClient } from "@/lib/supabase/client";
  * access token as an Authorization header, ensuring API routes
  * can authenticate the user.
  *
- * The returned function is memoized to prevent infinite re-render
- * loops when used inside useCallback/useEffect dependency arrays.
+ * The Supabase client is stored in a ref to ensure the callback
+ * reference is stable across re-renders (prevents infinite loops
+ * in useCallback/useEffect dependency arrays).
  */
 export function useAuthFetch() {
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
 
   const authFetch = useCallback(
     async (url: string, options: RequestInit = {}): Promise<Response> => {
+      const supabase = supabaseRef.current;
+
       // Try getSession first (reads from storage)
       let accessToken: string | null = null;
 
@@ -48,7 +51,7 @@ export function useAuthFetch() {
         headers,
       });
     },
-    [supabase],
+    [],
   );
 
   return authFetch;

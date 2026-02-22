@@ -136,10 +136,11 @@ export interface AudienceProfile {
  */
 export function buildEditorialStandards(
   solicitationType: string = "RFP",
-  audienceProfile?: AudienceProfile | null,
+  audienceProfile?: AudienceProfile | null | unknown,
   primaryBrandName?: string,
   priorDifferentiators?: string[],
 ): string {
+  const audience = audienceProfile as AudienceProfile | null | undefined;
   let typeRules = "";
   if (solicitationType === "RFQ") {
     typeRules = "\n\n## SOLICITATION TONE: RFQ (Request for Quote)\nThis is an RFQ. Do NOT include visionary fluff, long narratives, or high-level strategic posturing. Keep everything bottom-line upfront, highly technical, and strictly focused on pricing, SLAs, and exact deliverables. Cut word counts by 40% compared to a normal proposal.";
@@ -151,17 +152,17 @@ export function buildEditorialStandards(
 
   // Audience calibration — modulate tone based on evaluator profile
   let audienceRules = "";
-  if (audienceProfile?.tech_level === "non_technical") {
+  if (audience?.tech_level === "non_technical") {
     audienceRules = `\n\n## AUDIENCE CALIBRATION: NON-TECHNICAL AUDIENCE
-The evaluators are non-technical (${audienceProfile.evaluator || "general decision-makers"}${audienceProfile.size ? `, ${audienceProfile.size}` : ""}).
+The evaluators are non-technical (${audience.evaluator || "general decision-makers"}${audience.size ? `, ${audience.size}` : ""}).
 - Use plain language and avoid jargon. Explain technical concepts in everyday terms.
 - Lead with business outcomes and cost savings, not architecture diagrams.
 - Replace acronyms with full names on first use.
 - Use analogies to explain complex processes.
 - Focus on "what it means for you" rather than "how it works."`;
-  } else if (audienceProfile?.tech_level === "highly_technical") {
+  } else if (audience?.tech_level === "highly_technical") {
     audienceRules = `\n\n## AUDIENCE CALIBRATION: TECHNICAL AUDIENCE
-The evaluators are highly technical (${audienceProfile.evaluator || "engineering team"}${audienceProfile.size ? `, ${audienceProfile.size}` : ""}).
+The evaluators are highly technical (${audience.evaluator || "engineering team"}${audience.size ? `, ${audience.size}` : ""}).
 - Provide technical depth: include architecture patterns, specifications, and implementation details.
 - Reference specific technologies, protocols, and standards by name.
 - Use precise technical vocabulary — don't dumb down.

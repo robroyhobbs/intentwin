@@ -88,5 +88,5 @@ Map requirements to these proposal sections:
 
 ${allRequirements.length === 0 ? `\nSince no specific requirements were extracted, create a general compliance overview covering standard ${solicitationType} areas: technical requirements, staffing requirements, schedule requirements, reporting requirements, quality assurance requirements, and security/compliance requirements.` : ""}
 
-${buildEditorialStandards((intakeData as any).solicitation_type, (intakeData as any).audience_profile, (intakeData as any)._brand_name)}`;
+${buildEditorialStandards(intakeData.solicitation_type as string | undefined, intakeData.audience_profile, intakeData._brand_name as string | undefined)}`;
 }

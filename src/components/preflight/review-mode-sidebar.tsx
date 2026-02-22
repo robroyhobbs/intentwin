@@ -241,6 +241,4 @@ export function ReviewModeSidebar({
   );
 }
 
-// Re-export for convenience
 export { extractPlaceholders, markResolvedPlaceholders };
-export type { PlaceholderItem };
