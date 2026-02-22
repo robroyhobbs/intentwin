@@ -600,8 +600,11 @@ export default function NewProposalPage() {
             disabled={submitting || !intentApproved}
             className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hover)] px-6 py-3 text-sm font-bold text-white hover:shadow-lg disabled:opacity-40 transition-all"
           >
-            {submitting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+                        {submitting ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Engineering Proposal...
+              </span>
             ) : (
               <Send className="h-4 w-4" />
             )}

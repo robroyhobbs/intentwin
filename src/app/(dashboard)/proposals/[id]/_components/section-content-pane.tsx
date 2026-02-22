@@ -271,17 +271,36 @@ export function SectionContentPane({
       ) : (
         <div className="flex flex-col items-center justify-center py-16 text-[var(--foreground-muted)]">
           {currentSection.generation_status === GenerationStatus.GENERATING ? (
-            <>
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--accent-subtle)] mb-4">
-                <Loader2 className="h-6 w-6 animate-spin text-[var(--accent)]" />
+            <div className="w-full max-w-2xl mx-auto">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl shadow-[0_0_20px_rgba(192,132,252,0.2)] bg-zinc-900 border border-zinc-800 mb-6 mx-auto">
+                <Loader2 className="h-6 w-6 animate-spin text-purple-400" />
               </div>
-              <p className="text-sm font-medium text-[var(--foreground)]">
-                Generating this section...
-              </p>
-              <p className="mt-1 text-xs text-[var(--foreground-muted)]">
-                AI is crafting your content
-              </p>
-            </>
+              <h3 className="text-xl font-semibold text-white mb-2 text-center">Engineering {currentSection.section_type.replace(/_/g, " ")}</h3>
+              <p className="text-sm text-zinc-400 text-center mb-8">Applying the Intent framework and cross-referencing your Company Truth.</p>
+              
+              <div className="space-y-4">
+                 {/* Skeleton Code-like Output */}
+                 <div className="h-4 w-3/4 bg-zinc-900 rounded border border-zinc-800 animate-pulse"></div>
+                 <div className="h-4 w-full bg-zinc-900 rounded border border-zinc-800 animate-pulse" style={{ animationDelay: '150ms' }}></div>
+                 <div className="h-4 w-5/6 bg-zinc-900 rounded border border-zinc-800 animate-pulse" style={{ animationDelay: '300ms' }}></div>
+                 <div className="h-4 w-1/2 bg-zinc-900 rounded border border-zinc-800 animate-pulse" style={{ animationDelay: '450ms' }}></div>
+                 
+                 <div className="pt-4 mt-6 border-t border-zinc-800 flex flex-col gap-2">
+                    <div className="flex items-center gap-2 text-xs font-mono text-zinc-500">
+                      <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]"></div>
+                      [System] Loaded L1 Context: Brand Voice
+                    </div>
+                    <div className="flex items-center gap-2 text-xs font-mono text-zinc-500">
+                      <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]"></div>
+                      [System] Extracted Win Themes
+                    </div>
+                    <div className="flex items-center gap-2 text-xs font-mono text-purple-400">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      [AI] Applying PAS Persuasion Framework...
+                    </div>
+                 </div>
+              </div>
+            </div>
           ) : (
             <>
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--background-tertiary)] mb-4">

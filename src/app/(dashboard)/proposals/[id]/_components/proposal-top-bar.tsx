@@ -124,7 +124,10 @@ export function ProposalTopBar({
               className="btn-primary"
             >
               {generating ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="flex items-center gap-2 font-mono">
+                  <Loader2 className="h-4 w-4 animate-spin text-purple-400" />
+                  Engineering Proposal...
+                </span>
               ) : (
                 <Sparkles className="h-4 w-4" />
               )}
