@@ -27,7 +27,7 @@ export interface PreflightGap {
   affectedSection?: string;
 }
 
-export interface PreflightSummary {
+interface PreflightSummary {
   evidenceCount: number;
   productCount: number;
   companyContextCount: number;
