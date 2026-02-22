@@ -9,7 +9,6 @@ import {
   Search,
   Upload,
   LayoutDashboard,
-  svg,
   BookOpen,
   BarChart3,
   Building2,
