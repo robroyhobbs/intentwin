@@ -136,16 +136,25 @@ export async function generateText(
       return response.text();
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
+      const msg = lastError.message.toLowerCase();
       const isRetryable =
-        lastError.message.includes("503") ||
-        lastError.message.includes("Service Unavailable") ||
-        lastError.message.includes("overloaded") ||
-        lastError.message.includes("high demand");
+        msg.includes("503") ||
+        msg.includes("service unavailable") ||
+        msg.includes("overloaded") ||
+        msg.includes("high demand") ||
+        msg.includes("not found") ||
+        msg.includes("model") ||
+        msg.includes("429") ||
+        msg.includes("rate limit") ||
+        msg.includes("quota");
 
       if (isRetryable && modelName !== FALLBACK_MODEL) {
-        logger.warn(`[AI] ${modelName} unavailable (503), falling back to ${FALLBACK_MODEL}`);
+        logger.warn(`[AI] ${modelName} failed (${lastError.message.slice(0, 100)}), falling back to ${FALLBACK_MODEL}`);
         continue;
       }
+      logger.error(`[AI] Generation failed on ${modelName}`, {
+        error: lastError.message.slice(0, 200),
+      });
       throw lastError;
     }
   }

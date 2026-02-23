@@ -156,13 +156,33 @@ export async function buildPipelineContext(
     buildL1ContextString(l1Context) + staticSourcesContext;
 
   // Stage 1: Strategic Analysis (incorporating win strategy and outcome contract)
-  const analysis = await generateStructuredAnalysis(
-    intakeData,
-    proposal.rfp_extracted_requirements as
-      | Record<string, unknown>
-      | undefined,
-    winStrategy,
-  );
+  // Wrap in a timeout to prevent Gemini hangs from blocking the entire pipeline.
+  // 90s is generous — typical analysis takes 10-30s.
+  let analysis: string;
+  try {
+    analysis = await Promise.race([
+      generateStructuredAnalysis(
+        intakeData,
+        proposal.rfp_extracted_requirements as
+          | Record<string, unknown>
+          | undefined,
+        winStrategy,
+      ),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Strategic analysis timed out after 90s")), 90_000)
+      ),
+    ]);
+    ctxLog.info("Strategic analysis completed", { analysisLength: analysis.length });
+  } catch (analysisError) {
+    // If strategic analysis fails, use a minimal fallback rather than killing the whole pipeline
+    ctxLog.error("Strategic analysis FAILED — using minimal fallback", {
+      error: analysisError instanceof Error ? analysisError.message : String(analysisError),
+    });
+    analysis = `Strategic analysis unavailable. Generate sections based on intake data directly.
+Key themes: ${(intakeData.key_themes as string) || "Not specified"}
+Client: ${(intakeData.client_name as string) || "Not specified"}
+Industry: ${(intakeData.client_industry as string) || "Not specified"}`;
+  }
 
   // Enhanced analysis with outcome contract (L1 is now passed separately)
   const enhancedAnalysis = `${analysis}\n${outcomeContractContext}`;

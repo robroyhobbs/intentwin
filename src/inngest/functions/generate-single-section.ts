@@ -97,6 +97,12 @@ export async function generateSingleSection(
       }
     }
 
+    log.info("Building search query for RAG retrieval", {
+      isTaskSection,
+      sectionType,
+      taskNumber: taskMeta?.task_number,
+    });
+
     // Build search query for RAG retrieval
     const searchQuery = isTaskSection
       ? `${taskMeta!.title} ${taskMeta!.description.slice(0, 100)} ${ctx.intakeData.client_industry || ""}`
@@ -190,10 +196,25 @@ export async function generateSingleSection(
       .filter(Boolean)
       .join("");
 
-    
-    // Generate content
-    const generatedContentRaw = await generateText(prompt, {
-      systemPrompt: ctx.systemPrompt,
+    log.info("Calling Gemini AI for content generation", {
+      sectionType,
+      promptLength: prompt.length,
+      systemPromptLength: ctx.systemPrompt.length,
+    });
+
+    // Generate content with a timeout to prevent Gemini hangs
+    const generatedContentRaw = await Promise.race([
+      generateText(prompt, {
+        systemPrompt: ctx.systemPrompt,
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error(`AI generation timed out after 120s for section ${sectionType}`)), 120_000)
+      ),
+    ]);
+
+    log.info("AI generation completed", {
+      sectionType,
+      rawContentLength: generatedContentRaw.length,
     });
 
     // Strip out the Chain of Thought block before saving
@@ -271,12 +292,21 @@ export async function generateSingleSection(
   } catch (err) {
     const errorMessage =
       err instanceof Error ? err.message : "Unknown error";
+    const errorStack = err instanceof Error ? err.stack : undefined;
+
+    log.error("Section generation FAILED", {
+      sectionId,
+      sectionType,
+      proposalId: ctx.proposal.id,
+      error: errorMessage,
+      stack: errorStack?.slice(0, 500),
+    });
 
     await supabase
       .from("proposal_sections")
       .update({
         generation_status: GenerationStatus.FAILED,
-        generation_error: errorMessage,
+        generation_error: errorMessage.slice(0, 1000),
       })
       .eq("id", sectionId);
 
