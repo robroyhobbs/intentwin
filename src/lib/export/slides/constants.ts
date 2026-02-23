@@ -42,6 +42,7 @@ export const NARRATIVE_MAP: Record<string, string> = {
   differentiators: "differentiator",
   value_proposition: "differentiator",
   team: "differentiator",
+  rfp_task: "approach",        // Task-mirrored sections use the approach slide layout
   next_steps: "closing",
   timeline: "closing",
   commercial: "closing",

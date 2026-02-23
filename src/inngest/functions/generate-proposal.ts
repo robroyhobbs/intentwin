@@ -4,11 +4,11 @@ import { GenerationStatus, ProposalStatus } from "@/lib/constants/statuses";
 import { createProposalVersion } from "@/lib/versioning/create-version";
 import { createLogger } from "@/lib/utils/logger";
 import { createPipelineMetrics } from "@/lib/observability/metrics";
-import { getSectionsForSolicitationType } from "@/lib/ai/pipeline/section-configs";
+import { buildSectionList } from "@/lib/ai/pipeline/section-configs";
 import { buildPipelineContext } from "@/lib/ai/pipeline/context";
 import { extractDifferentiators } from "@/lib/ai/pipeline/differentiators";
 import { generateSingleSection } from "./generate-single-section";
-import type { PipelineContext } from "@/lib/ai/pipeline/types";
+import type { PipelineContext, RfpTaskStructure } from "@/lib/ai/pipeline/types";
 
 /**
  * Inngest function: Generate a full proposal.
@@ -47,23 +47,27 @@ export const generateProposalFn = inngest.createFunction(
         .delete()
         .eq("proposal_id", proposalId);
 
-      // Determine which sections to generate based on solicitation type
-      const solicitationType = (ctx.intakeData.solicitation_type as string) || "RFP";
-      const applicableSections = getSectionsForSolicitationType(solicitationType);
+      // Read task structure from the proposal (may be null)
+      const rfpTaskStructure = (ctx.proposal.rfp_task_structure as RfpTaskStructure | null) ?? null;
 
-      // Create section rows (filtered by solicitation type)
+      // Determine which sections to generate (task-mirrored or fixed)
+      const solicitationType = (ctx.intakeData.solicitation_type as string) || "RFP";
+      const applicableSections = buildSectionList(rfpTaskStructure, solicitationType);
+
+      // Create section rows with optional task metadata
       const sectionInserts = applicableSections.map((config) => ({
         proposal_id: proposalId,
         section_type: config.type,
         section_order: config.order,
         title: config.title,
         generation_status: GenerationStatus.PENDING,
+        ...(config.taskMeta ? { metadata: config.taskMeta } : {}),
       }));
 
       const { data: sections, error: sectionError } = await supabase
         .from("proposal_sections")
         .insert(sectionInserts)
-        .select("id, section_type");
+        .select("id, section_type, title");
 
       if (sectionError || !sections) {
         throw new Error(
@@ -77,6 +81,7 @@ export const generateProposalFn = inngest.createFunction(
         sections: sections.map((s) => ({
           id: s.id,
           sectionType: s.section_type,
+          title: s.title,
         })),
       };
     });
@@ -134,16 +139,20 @@ export const generateProposalFn = inngest.createFunction(
     );
 
     const remainingResults = await Promise.allSettled(
-      remainingSections.map((section) =>
-        step.run(`section-${section.sectionType}`, async () => {
+      remainingSections.map((section) => {
+        // Use title-based step ID for rfp_task sections to avoid duplicate step names
+        const stepId = section.sectionType === "rfp_task"
+          ? `section-rfp_task-${section.title.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 50)}`
+          : `section-${section.sectionType}`;
+        return step.run(stepId, async () => {
           return generateSingleSection(
             section.id,
             section.sectionType,
             ctx,
             differentiators,
           );
-        }),
-      ),
+        });
+      }),
     );
 
     // Combine results for tracking: exec summary (if it ran) + remaining

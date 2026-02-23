@@ -510,3 +510,126 @@ describe("PPTX Generator — Data Damage", () => {
     expect(result.length).toBeGreaterThan(0);
   });
 });
+
+// ════════════════════════════════════════════════════════════════════════════
+// TASK-MIRRORED SECTIONS (Phase 5)
+// ════════════════════════════════════════════════════════════════════════════
+
+describe("PPTX Generator — Task-Mirrored Sections", () => {
+  it("renders rfp_task sections with task-numbered titles", async () => {
+    const result = await generatePptx({
+      title: "Task Proposal",
+      client_name: "Agency",
+      date: "2026-02-22",
+      sections: [
+        {
+          title: "Executive Summary",
+          content: "Overview of our proposal.",
+          section_type: "executive_summary",
+        },
+        {
+          title: "Task 1.1: Tier 1 Support",
+          content: "We will provide 24/7 Tier 1 support with 4-hour SLA.",
+          section_type: "rfp_task",
+        },
+        {
+          title: "Task 1.2: Tier 2 Support",
+          content: "Escalation handling for complex technical issues.",
+          section_type: "rfp_task",
+        },
+        {
+          title: "Task 2: Network Operations",
+          content: "Manage WAN/LAN infrastructure including monitoring.",
+          section_type: "rfp_task",
+        },
+      ],
+    });
+
+    expect(result).toBeInstanceOf(Buffer);
+    expect(result.length).toBeGreaterThan(0);
+  });
+
+  it("generates valid PPTX with mixed fixed and task sections", async () => {
+    const result = await generatePptx({
+      title: "Hybrid Proposal",
+      client_name: "Agency",
+      date: "2026-02-22",
+      sections: [
+        {
+          title: "Cover Letter",
+          content: "Dear Agency...",
+          section_type: "cover_letter",
+        },
+        {
+          title: "Executive Summary",
+          content: "We propose...",
+          section_type: "executive_summary",
+        },
+        {
+          title: "Task 1: Help Desk Services",
+          content: "Full help desk support.",
+          section_type: "rfp_task",
+        },
+        {
+          title: "Task 2: Network Ops",
+          content: "Network management.",
+          section_type: "rfp_task",
+        },
+        {
+          title: "Task 3: Security",
+          content: "Security operations.",
+          section_type: "rfp_task",
+        },
+        {
+          title: "Proposed Team & Qualifications",
+          content: "Our team includes...",
+          section_type: "team",
+        },
+        {
+          title: "Why Us",
+          content: "We are the best choice because...",
+          section_type: "why_us",
+        },
+      ],
+    });
+
+    expect(result).toBeInstanceOf(Buffer);
+    expect(result.length).toBeGreaterThan(0);
+  });
+
+  it("handles rfp_task section with empty content gracefully", async () => {
+    const result = await generatePptx({
+      title: "Test",
+      client_name: "Client",
+      date: "2026-02-22",
+      sections: [
+        {
+          title: "Task 1: Empty Task",
+          content: "",
+          section_type: "rfp_task",
+        },
+      ],
+    });
+
+    expect(result).toBeInstanceOf(Buffer);
+    expect(result.length).toBeGreaterThan(0);
+  });
+
+  it("handles 20+ task sections", async () => {
+    const taskSections = Array.from({ length: 22 }, (_, i) => ({
+      title: `Task ${i + 1}: Task Name ${i + 1}`,
+      content: `Content for task ${i + 1} with detailed description.`,
+      section_type: "rfp_task",
+    }));
+
+    const result = await generatePptx({
+      title: "Large Task Proposal",
+      client_name: "Agency",
+      date: "2026-02-22",
+      sections: taskSections,
+    });
+
+    expect(result).toBeInstanceOf(Buffer);
+    expect(result.length).toBeGreaterThan(0);
+  });
+});

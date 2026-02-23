@@ -225,3 +225,19 @@ export interface SectionOutcomeMapping {
 // GenerationContext, GeneratedClaim, SectionGenerationResult,
 // IntentInterviewStep, INTENT_INTERVIEW_STEPS
 // — none were imported anywhere in the codebase.
+
+// ===========================================
+// RFP TASK STRUCTURE TYPES (re-exported from pipeline/types.ts)
+// ===========================================
+
+export {
+  TASK_CATEGORIES,
+  isValidRfpTask,
+  isValidRfpTaskStructure,
+} from "@/lib/ai/pipeline/types";
+
+export type {
+  TaskCategory,
+  RfpTask,
+  RfpTaskStructure,
+} from "@/lib/ai/pipeline/types";

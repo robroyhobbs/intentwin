@@ -11,7 +11,7 @@ import { buildWhyUsPrompt } from "../prompts/why-us";
 import { buildCoverLetterPrompt } from "../prompts/cover-letter";
 import { buildComplianceMatrixSectionPrompt } from "../prompts/compliance-matrix-section";
 import { buildExceptionsTermsPrompt } from "../prompts/exceptions-terms";
-import type { SectionConfig } from "./types";
+import type { SectionConfig, RfpTaskStructure, RfpTask } from "./types";
 
 /**
  * Helper: extract top win themes as search keywords.
@@ -186,4 +186,114 @@ export function getSectionsForSolicitationType(
     // Include boilerplate only if enabled for this solicitation type
     return enabledBoilerplate.has(config.type);
   }).sort((a, b) => a.order - b.order);
+}
+
+// ── Task-Mirrored Section Building ──────────────────────────────────────────
+
+/** Minimum number of tasks required to activate task-mirrored mode */
+const TASK_MODE_THRESHOLD = 3;
+
+/** Section types replaced by task-mirrored sections */
+const TASK_REPLACED_TYPES = new Set([
+  "approach",
+  "methodology",
+  "understanding",
+  "timeline",
+]);
+
+/**
+ * Resolve leaf tasks: tasks that have no children in the hierarchy.
+ * Only leaf tasks get generated sections; parents become grouping headers.
+ */
+function resolveLeafTasks(tasks: RfpTask[]): RfpTask[] {
+  const parentNumbers = new Set(
+    tasks
+      .filter((t) => t.parent_task_number !== null)
+      .map((t) => t.parent_task_number as string),
+  );
+  return tasks.filter((t) => !parentNumbers.has(t.task_number));
+}
+
+/**
+ * Natural sort comparator for task numbers.
+ * Handles dotted notation: "1.1" < "1.2" < "1.10" < "2"
+ */
+function compareTaskNumbers(a: string, b: string): number {
+  const partsA = a.split(".");
+  const partsB = b.split(".");
+  const len = Math.max(partsA.length, partsB.length);
+  for (let i = 0; i < len; i++) {
+    const pa = partsA[i] ?? "";
+    const pb = partsB[i] ?? "";
+    const na = parseInt(pa, 10);
+    const nb = parseInt(pb, 10);
+    // If both are numbers, compare numerically
+    if (!isNaN(na) && !isNaN(nb)) {
+      if (na !== nb) return na - nb;
+    } else {
+      // Lexicographic fallback for non-numeric (A, B, i, ii)
+      if (pa !== pb) return pa.localeCompare(pb);
+    }
+  }
+  return 0;
+}
+
+/**
+ * Build the section list for a proposal.
+ *
+ * When `rfpTaskStructure` has ≥3 tasks, activates task-mirrored mode:
+ * - Removes approach, methodology, understanding, timeline
+ * - Adds one `rfp_task` section per leaf task, ordered by task number
+ * - Keeps all other fixed sections (cover_letter, exec_summary, etc.)
+ *
+ * When below threshold or null, falls back to standard fixed template.
+ *
+ * This is a pure function — no side effects, no DB writes.
+ */
+export function buildSectionList(
+  rfpTaskStructure: RfpTaskStructure | null | undefined,
+  solicitationType: string,
+): SectionConfig[] {
+  // Fall back to fixed template if no task structure or below threshold
+  if (
+    !rfpTaskStructure ||
+    !rfpTaskStructure.tasks ||
+    rfpTaskStructure.tasks.length < TASK_MODE_THRESHOLD
+  ) {
+    return getSectionsForSolicitationType(solicitationType);
+  }
+
+  // Get the fixed sections for this solicitation type, minus the replaced ones
+  const fixedSections = getSectionsForSolicitationType(solicitationType).filter(
+    (config) => !TASK_REPLACED_TYPES.has(config.type),
+  );
+
+  // Resolve leaf tasks
+  const leafTasks = resolveLeafTasks(rfpTaskStructure.tasks);
+
+  // Sort leaf tasks by task number
+  const sortedLeaves = [...leafTasks].sort((a, b) =>
+    compareTaskNumbers(a.task_number, b.task_number),
+  );
+
+  // Find the insertion point: after executive_summary (order 1), before team (order 5)
+  // Task sections get orders 2.x to slot between exec summary and team
+  const taskSections: SectionConfig[] = sortedLeaves.map((task, index) => ({
+    type: "rfp_task",
+    title: `Task ${task.task_number}: ${task.title}`,
+    order: 2 + index * 0.01, // Slot between exec_summary (1) and team (5)
+    buildPrompt: () => "", // Placeholder — actual prompt built by buildTaskResponsePrompt
+    searchQuery: (d: Record<string, unknown>, ws: { win_themes?: string[] } | null | undefined) =>
+      `${task.title} ${task.description.slice(0, 100)} ${d.client_industry || ""} ${winThemeKeywords(ws)}`,
+    taskMeta: {
+      task_number: task.task_number,
+      title: task.title,
+      description: task.description,
+      category: task.category,
+      parent_task_number: task.parent_task_number,
+    },
+  }));
+
+  // Merge and sort
+  return [...fixedSections, ...taskSections].sort((a, b) => a.order - b.order);
 }

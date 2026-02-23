@@ -19,10 +19,20 @@ import {
 import { buildIndustryContext } from "@/lib/ai/industry-configs";
 import { createLogger } from "@/lib/utils/logger";
 import { SECTION_CONFIGS } from "@/lib/ai/pipeline/section-configs";
-import { extractCompetitiveObjections, buildSectionSpecificL1Context } from "@/lib/ai/pipeline/context";
+import { extractCompetitiveObjections, buildSectionSpecificL1Context, buildTaskSectionL1Context } from "@/lib/ai/pipeline/context";
 import { retrieveContext } from "@/lib/ai/pipeline/retrieval";
 import { shouldGenerateDiagram, generateDiagram } from "@/lib/ai/diagram-generator";
+import { buildTaskResponsePrompt } from "@/lib/ai/prompts/task-response";
 import type { PipelineContext } from "@/lib/ai/pipeline/types";
+
+/** Metadata stored on rfp_task section rows */
+interface TaskSectionMeta {
+  task_number: string;
+  title: string;
+  description: string;
+  category: string;
+  parent_task_number: string | null;
+}
 
 /**
  * Build the repetition limiter prompt block from extracted differentiators.
@@ -52,8 +62,11 @@ export async function generateSingleSection(
   differentiators?: string[],
 ): Promise<{ chunkCount: number; generatedContent?: string }> {
   const supabase = createAdminClient();
-  const config = SECTION_CONFIGS.find((c) => c.type === sectionType);
-  if (!config) {
+
+  // For rfp_task sections, we don't look up SECTION_CONFIGS — we use task metadata
+  const isTaskSection = sectionType === "rfp_task";
+  const config = isTaskSection ? null : SECTION_CONFIGS.find((c) => c.type === sectionType);
+  if (!isTaskSection && !config) {
     throw new Error(`Unknown section type: ${sectionType}`);
   }
 
@@ -70,31 +83,71 @@ export async function generateSingleSection(
     .eq("id", sectionId);
 
   try {
+    // For task sections, read metadata from the section row
+    let taskMeta: TaskSectionMeta | null = null;
+    if (isTaskSection) {
+      const { data: sectionRow } = await supabase
+        .from("proposal_sections")
+        .select("metadata")
+        .eq("id", sectionId)
+        .single();
+      taskMeta = (sectionRow?.metadata as TaskSectionMeta | null) ?? null;
+      if (!taskMeta?.task_number) {
+        throw new Error(`Task section ${sectionId} is missing task metadata`);
+      }
+    }
+
+    // Build search query for RAG retrieval
+    const searchQuery = isTaskSection
+      ? `${taskMeta!.title} ${taskMeta!.description.slice(0, 100)} ${ctx.intakeData.client_industry || ""}`
+      : config!.searchQuery(ctx.intakeData, ctx.winStrategy);
+
     // Retrieve relevant context (org-scoped)
-    const searchQuery = config.searchQuery(ctx.intakeData, ctx.winStrategy);
     const { context, chunkIds } = await retrieveContext(
       supabase,
       searchQuery,
       ctx.organizationId,
     );
 
-    
     const solicitationType = (ctx.intakeData.solicitation_type as string) || "RFP";
-    const sectionL1Context = buildSectionSpecificL1Context(ctx.rawL1Context, config.type, solicitationType);
 
-    // Build prompt with L1 context
-    const basePrompt = config.buildPrompt(
-      ctx.intakeData,
-      ctx.enhancedAnalysis,
-      context,
-      ctx.winStrategy,
-      ctx.companyInfo,
-      sectionL1Context,
-    );
+    // Build prompt: task sections use buildTaskResponsePrompt, fixed sections use config.buildPrompt
+    let basePrompt: string;
+    if (isTaskSection && taskMeta) {
+      const taskL1Context = buildTaskSectionL1Context(ctx.rawL1Context);
+      basePrompt = buildTaskResponsePrompt({
+        taskNumber: taskMeta.task_number,
+        taskTitle: taskMeta.title,
+        taskDescription: taskMeta.description,
+        intakeData: ctx.intakeData,
+        analysis: ctx.enhancedAnalysis,
+        l1Context: taskL1Context,
+        winStrategy: ctx.winStrategy,
+        companyInfo: ctx.companyInfo,
+        differentiators,
+        solicitationType,
+        audienceProfile: ctx.audienceProfile,
+        primaryBrandName: ctx.primaryBrandName,
+      });
+    } else {
+      const sectionL1Context = buildSectionSpecificL1Context(ctx.rawL1Context, config!.type, solicitationType);
+      basePrompt = config!.buildPrompt(
+        ctx.intakeData,
+        ctx.enhancedAnalysis,
+        context,
+        ctx.winStrategy,
+        ctx.companyInfo,
+        sectionL1Context,
+      );
+    }
+
+    // For task sections, editorial standards + repetition limiter are already in the prompt
+    // For fixed sections, add persuasion layers, industry context, and repetition limiter
+    const effectiveType = isTaskSection ? "approach" : config!.type; // task sections use approach-like persuasion
 
     // Build persuasion layers
-    const persuasionFramework = getPersuasionPrompt(config.type);
-    const bestPractices = getBestPracticesPrompt(config.type);
+    const persuasionFramework = getPersuasionPrompt(effectiveType);
+    const bestPractices = getBestPracticesPrompt(effectiveType);
     const winThemesPrompt = ctx.winStrategy?.win_themes
       ? buildWinThemesPrompt(ctx.winStrategy.win_themes)
       : "";
@@ -117,11 +170,12 @@ export async function generateSingleSection(
 
     const industryContext = buildIndustryContext(
       ctx.industryConfig,
-      config.type,
+      effectiveType,
     );
 
-    // Repetition limiter — only applied to sections after executive_summary
-    const repetitionBlock = (sectionType !== "executive_summary" && differentiators?.length)
+    // Repetition limiter — applied to all sections except executive_summary
+    // For task sections, it's already embedded via buildTaskResponsePrompt's differentiators param
+    const repetitionBlock = (!isTaskSection && sectionType !== "executive_summary" && differentiators?.length)
       ? buildRepetitionLimiterBlock(differentiators)
       : "";
 
@@ -158,9 +212,9 @@ export async function generateSingleSection(
     try {
       const avoidTerms = ctx.brandVoice?.terminology?.avoid ?? [];
       const themes = ctx.winStrategy?.win_themes ?? [];
-      runQualityChecks(generatedContent, config.type, themes, avoidTerms);
+      runQualityChecks(generatedContent, effectiveType, themes, avoidTerms);
     } catch {
-      log.warn(`Quality check failed for ${config.type}`);
+      log.warn(`Quality check failed for ${sectionType}${taskMeta ? ` (task ${taskMeta.task_number})` : ""}`);
     }
 
     // Update section with content
@@ -175,12 +229,13 @@ export async function generateSingleSection(
       .eq("id", sectionId);
 
     // Generate diagram image for applicable sections (non-blocking)
-    if (shouldGenerateDiagram(config.type)) {
+    // Task sections don't get diagrams — they're response-focused, not methodology-focused
+    if (!isTaskSection && shouldGenerateDiagram(config!.type)) {
       try {
         const companyName = (ctx.companyInfo?.name as string) || "Our Company";
         const clientName = (ctx.intakeData?.client_name as string) || "the Client";
         const diagramImage = await generateDiagram(
-          config.type,
+          config!.type,
           generatedContent,
           companyName,
           clientName,
@@ -192,7 +247,7 @@ export async function generateSingleSection(
             .eq("id", sectionId);
         }
       } catch {
-        log.warn(`Diagram generation failed for ${config.type} — continuing without diagram`);
+        log.warn(`Diagram generation failed for ${config!.type} — continuing without diagram`);
       }
     }
 
@@ -208,7 +263,7 @@ export async function generateSingleSection(
         );
         await supabase.from("section_sources").insert(sourceInserts);
       } catch {
-        log.warn(`Source tracking failed for ${config.type}`);
+        log.warn(`Source tracking failed for ${sectionType}${taskMeta ? ` (task ${taskMeta.task_number})` : ""}`);
       }
     }
 

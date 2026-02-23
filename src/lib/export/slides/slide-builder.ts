@@ -350,6 +350,28 @@ export function buildSlides(
     });
   }
 
+  // 7b. RFP Task-Mirrored Sections (Phase 5)
+  // When task mode is active, approach/methodology/understanding/timeline are replaced
+  // by per-task sections. Each gets an approach-style slide.
+  const taskSections = sections.filter(
+    (s) => s.section_type.toLowerCase() === "rfp_task",
+  );
+  for (const taskSection of taskSections) {
+    const items = extractItems(taskSection.content, 5);
+    slides.push({
+      type: "approach",
+      title: taskSection.title,
+      subtitle: "Task Response",
+      items:
+        items.length > 0
+          ? items
+          : ["Comprehensive response to RFP requirements"],
+      phases: extractPhases(taskSection.content).length > 0
+        ? extractPhases(taskSection.content)
+        : undefined,
+    });
+  }
+
   // 8. Team & Qualifications
   const teamSection = getSectionByType(sections, "team");
   if (teamSection) {

@@ -10,6 +10,61 @@ import type {
 import type { BrandVoice } from "../persuasion";
 import type { getIndustryConfig } from "../industry-configs";
 
+// ── RFP Task Structure Types ─────────────────────────────────────────────────
+
+export const TASK_CATEGORIES = [
+  "technical",
+  "staffing",
+  "management",
+  "support-operations",
+  "compliance-security",
+  "transition-onboarding",
+  "training",
+  "reporting-analytics",
+  "quality-assurance",
+  "infrastructure",
+] as const;
+
+export type TaskCategory = (typeof TASK_CATEGORIES)[number];
+
+export interface RfpTask {
+  task_number: string;
+  title: string;
+  description: string;
+  category: TaskCategory;
+  parent_task_number: string | null;
+}
+
+export interface RfpTaskStructure {
+  tasks: RfpTask[];
+  extracted_at: string; // ISO timestamp
+}
+
+const taskCategorySet = new Set<string>(TASK_CATEGORIES);
+
+/** Runtime validator for RfpTask objects (e.g., from AI JSON output) */
+export function isValidRfpTask(obj: unknown): obj is RfpTask {
+  if (!obj || typeof obj !== "object") return false;
+  const o = obj as Record<string, unknown>;
+  return (
+    typeof o.task_number === "string" &&
+    typeof o.title === "string" &&
+    typeof o.description === "string" &&
+    typeof o.category === "string" &&
+    taskCategorySet.has(o.category) &&
+    (o.parent_task_number === null || typeof o.parent_task_number === "string")
+  );
+}
+
+/** Runtime validator for RfpTaskStructure objects */
+export function isValidRfpTaskStructure(obj: unknown): obj is RfpTaskStructure {
+  if (!obj || typeof obj !== "object") return false;
+  const o = obj as Record<string, unknown>;
+  if (typeof o.extracted_at !== "string") return false;
+  if (!Array.isArray(o.tasks)) return false;
+  return o.tasks.every((t: unknown) => isValidRfpTask(t));
+}
+
 // L1 Context: Company Truth
 export interface L1Context {
   companyContext: CompanyContext[];
@@ -34,6 +89,14 @@ export interface SectionConfig {
     intakeData: Record<string, unknown>,
     winStrategy?: WinStrategyData | null,
   ) => string;
+  /** Present only on rfp_task sections — carries per-task metadata */
+  taskMeta?: {
+    task_number: string;
+    title: string;
+    description: string;
+    category: TaskCategory;
+    parent_task_number: string | null;
+  };
 }
 
 // ── Shared Pipeline Context ──────────────────────────────────────────────────

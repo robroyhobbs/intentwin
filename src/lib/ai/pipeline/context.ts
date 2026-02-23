@@ -384,6 +384,30 @@ ${sections.join("\n\n")}
 === END COMPANY CONTEXT ===\n`;
 }
 
+// ── Task Section L1 Context ──────────────────────────────────────────────────
+
+/** Approximate tokens-to-chars ratio (1 token ≈ 4 chars) */
+const TOKEN_BUDGET = 4_000;
+const CHAR_BUDGET = TOKEN_BUDGET * 4; // ~16K chars
+
+/**
+ * Build L1 context string for task-mirrored sections.
+ * Includes ALL L1 context types (company, products, evidence, team),
+ * truncated to ~4K tokens to fit within prompt budgets.
+ *
+ * Unlike buildSectionSpecificL1Context (which filters by section type),
+ * this provides a broad view because task sections may touch any domain.
+ */
+export function buildTaskSectionL1Context(l1Context: L1Context): string {
+  const fullContext = buildL1ContextString(l1Context);
+  if (!fullContext) return "";
+
+  // Truncate to ~4K tokens if needed
+  if (fullContext.length <= CHAR_BUDGET) return fullContext;
+
+  return fullContext.slice(0, CHAR_BUDGET) + "\n\n[L1 context truncated to fit token budget]";
+}
+
 /**
  * Extract competitive objections from intake data.
  * Parses incumbent_info, competitive_landscape, and client_concerns
