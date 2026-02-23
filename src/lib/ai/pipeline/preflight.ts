@@ -141,16 +141,19 @@ export function runPreflightCheck(
       category === "mandatory" &&
       (text.includes("named") || text.includes("personnel") || text.includes("resume") || text.includes("key staff"))
     ) {
-      // No team_members table yet — always a gap until Phase 1 implements it
-      gaps.push({
-        type: "personnel",
-        category: "needs_data",
-        description: "RFP requires named personnel but no team members are registered",
-        detail: text.slice(0, 100),
-        placeholder: `[TEAM MEMBER NEEDED: See RFP requirement]`,
-        uploadHint: "Upload team member resumes or add personnel in Settings > Team Members.",
-        affectedSection: "team",
-      });
+      // Check if org actually has team members before flagging as a gap
+      const hasTeamMembers = l1Context.teamMembers.length > 0;
+      if (!hasTeamMembers) {
+        gaps.push({
+          type: "personnel",
+          category: "needs_data",
+          description: "RFP requires named personnel but no team members are registered",
+          detail: text.slice(0, 100),
+          placeholder: `[TEAM MEMBER NEEDED: See RFP requirement]`,
+          uploadHint: "Upload team member resumes or add personnel in Settings > Company Profile > Team Members.",
+          affectedSection: "team",
+        });
+      }
     }
 
     // Check for pricing requirements

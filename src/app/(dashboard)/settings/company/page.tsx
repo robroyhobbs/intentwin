@@ -11,6 +11,7 @@ import {
   AlertCircle,
   Package,
   Award,
+  Users,
 } from "lucide-react";
 
 import {
@@ -24,6 +25,7 @@ import { DifferentiatorsTab } from "./_components/differentiators-tab";
 import { ProductsTab } from "./_components/products-tab";
 import { CertificationsTab } from "./_components/certifications-tab";
 import { DeleteConfirmModal } from "./_components/delete-confirm-modal";
+import { TeamMembersTab } from "./_components/team-members-tab";
 
 export default function CompanySettingsPage() {
   const [loading, setLoading] = useState(true);
@@ -32,7 +34,7 @@ export default function CompanySettingsPage() {
   const [org, setOrg] = useState<Organization | null>(null);
   const [contexts, setContexts] = useState<CompanyContext[]>([]);
   const [activeTab, setActiveTab] = useState<
-    "profile" | "differentiators" | "certifications" | "products"
+    "profile" | "differentiators" | "certifications" | "products" | "team"
   >("profile");
 
   // Form state
@@ -451,6 +453,7 @@ export default function CompanySettingsPage() {
           { id: "differentiators", label: "Differentiators", icon: Target },
           { id: "certifications", label: "Certifications", icon: Award },
           { id: "products", label: "Products & Services", icon: Package },
+          { id: "team", label: "Team Members", icon: Users },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -530,6 +533,9 @@ export default function CompanySettingsPage() {
           saving={saving}
         />
       )}
+
+      {/* Team Members Tab */}
+      {activeTab === "team" && <TeamMembersTab />}
 
       {/* Delete Confirmation Modal */}
       {deleteConfirm && (

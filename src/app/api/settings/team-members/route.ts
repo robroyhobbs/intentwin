@@ -278,7 +278,7 @@ async function handleResumeExtraction(
     return serverError("AI could not extract name and role from resume");
   }
 
-  // Insert the extracted team member
+  // Insert the extracted team member, linking back to the source document
   const { data: teamMember, error: insertError } = await adminClient
     .from("team_members")
     .insert({
@@ -293,6 +293,7 @@ async function handleResumeExtraction(
       years_experience: typeof extracted.years_experience === "number" ? extracted.years_experience : null,
       project_history: Array.isArray(extracted.project_history) ? extracted.project_history : [],
       bio: extracted.bio ? sanitizeString(extracted.bio as string) : null,
+      resume_document_id: documentId,
       is_verified: false,
       created_by: context.user.id,
     })

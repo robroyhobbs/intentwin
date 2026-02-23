@@ -30,7 +30,22 @@ const supabase = createClient(
   },
 );
 
-const ORG_ID = "e0c3a510-8350-43cd-b0f6-3fa34c55b88e";
+// Look up dynamically — the org may have been recreated with a new UUID
+let ORG_ID = "e0c3a510-8350-43cd-b0f6-3fa34c55b88e"; // fallback
+async function resolveOrgId() {
+  const { data } = await supabase
+    .from("organizations")
+    .select("id")
+    .eq("slug", "com-systems-inc")
+    .single();
+  if (data?.id) {
+    ORG_ID = data.id;
+    console.log(`Resolved org ID: ${ORG_ID}`);
+  } else {
+    console.log(`Using fallback org ID: ${ORG_ID}`);
+  }
+}
+
 
 // ============================================================
 // COMPANY CONTEXT — from L1 Research Full Profile + Company Background
@@ -711,6 +726,8 @@ const EVIDENCE_LIBRARY = [
 async function main() {
   console.log("=== Reseed L1 Context from Research Documents ===\n");
 
+  await resolveOrgId();
+
   // Step 1: Delete existing L1 context
   console.log("Step 1: Wiping existing L1 context...");
 
@@ -752,10 +769,10 @@ async function main() {
 
   const { error: insCtx } = await supabase
     .from("company_context")
-    .upsert(contextRows, { onConflict: "category,key" });
+    .insert(contextRows);
   if (insCtx) console.error("  Error:", insCtx.message);
   else
-    console.log(`  ✓ ${contextRows.length} company context entries upserted`);
+    console.log(`  ✓ ${contextRows.length} company context entries inserted`);
 
   // Step 3: Insert product contexts
   console.log("\nStep 3: Seeding product contexts...");

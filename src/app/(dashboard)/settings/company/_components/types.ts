@@ -39,3 +39,40 @@ export const OUTCOME_OPTIONS = [
   { value: "innovation", label: "Innovation" },
   { value: "compliance", label: "Compliance" },
 ];
+
+export interface TeamMemberProjectHistory {
+  title: string;
+  client_industry?: string;
+  scope?: string;
+  results?: string;
+  dates?: string;
+}
+
+export interface TeamMemberFormData {
+  name: string;
+  role: string;
+  title: string;
+  email: string;
+  skills: string[];
+  certifications: string[];
+  clearance_level: string;
+  years_experience: number | null;
+  bio: string;
+  project_history: TeamMemberProjectHistory[];
+}
+
+export interface TeamMember extends TeamMemberFormData {
+  id: string;
+  is_verified: boolean;
+  resume_document_id?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export const CLEARANCE_OPTIONS = [
+  { value: "", label: "None / Not Applicable" },
+  { value: "Public Trust", label: "Public Trust" },
+  { value: "Secret", label: "Secret" },
+  { value: "Top Secret", label: "Top Secret" },
+  { value: "Top Secret/SCI", label: "Top Secret/SCI" },
+];
