@@ -5,6 +5,7 @@
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { logger } from "@/lib/utils/logger";
+import { geminiHeliconeOptions } from "@/lib/observability/helicone";
 
 const IMAGE_MODEL = "gemini-3-pro-image-preview";
 
@@ -21,13 +22,17 @@ export async function mermaidToImage(
   if (apiKey) {
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({
-        model: IMAGE_MODEL,
-        generationConfig: {
-          // @ts-expect-error -- Gemini image generation uses responseModalities
-          responseModalities: ["image", "text"],
+      const heliconeOpts = geminiHeliconeOptions();
+      const model = genAI.getGenerativeModel(
+        {
+          model: IMAGE_MODEL,
+          generationConfig: {
+            // @ts-expect-error -- Gemini image generation uses responseModalities
+            responseModalities: ["image", "text"],
+          },
         },
-      });
+        heliconeOpts,
+      );
 
       const prompt = `Create a clean, professional technical diagram based on this Mermaid diagram definition.
 Use a modern, minimal style with a white background, clean lines, rounded rectangles for nodes, and a professional blue/gray color scheme.

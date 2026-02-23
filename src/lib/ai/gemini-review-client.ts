@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { geminiHeliconeOptions } from "@/lib/observability/helicone";
 
 let geminiClient: GoogleGenerativeAI | null = null;
 
@@ -12,6 +13,8 @@ function getClient(): GoogleGenerativeAI {
   }
   return geminiClient;
 }
+
+const heliconeOpts = geminiHeliconeOptions();
 
 /**
  * Review a proposal section using Gemini.
@@ -32,7 +35,7 @@ export async function reviewWithGemini(prompt: string): Promise<{
       maxOutputTokens: 2048,
       responseMimeType: "application/json",
     },
-  });
+  }, heliconeOpts);
 
   // Race against a 45s timeout to prevent hanging
   const GEMINI_REVIEW_TIMEOUT_MS = 45_000;

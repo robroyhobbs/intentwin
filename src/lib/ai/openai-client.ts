@@ -1,10 +1,11 @@
 import OpenAI from "openai";
 import { createReviewClient, type ReviewScores } from "./review-client-factory";
+import { openaiHeliconeOptions } from "@/lib/observability/helicone";
 
 const { getClient, review } = createReviewClient<OpenAI>({
   providerName: "GPT-4o",
   envVar: "OPENAI_API_KEY",
-  createClient: (apiKey) => new OpenAI({ apiKey }),
+  createClient: (apiKey) => new OpenAI({ apiKey, ...openaiHeliconeOptions() }),
   callApi: async (client, prompt, options) => {
     const response = await client.chat.completions.create({
       model: "gpt-4o",

@@ -1,4 +1,4 @@
-const VOYAGE_API_URL = "https://api.voyageai.com/v1/embeddings";
+import { voyageApiUrl, voyageHeliconeHeaders } from "@/lib/observability/helicone";
 
 interface EmbeddingResponse {
   data: Array<{ embedding: number[] }>;
@@ -16,6 +16,9 @@ export async function generateEmbeddings(
     throw new Error("VOYAGE_API_KEY is not set");
   }
 
+  const embeddingUrl = voyageApiUrl();
+  const heliconeHeaders = voyageHeliconeHeaders();
+
   // Batch in groups of 128 (Voyage API limit)
   const batchSize = 128;
   const allEmbeddings: number[][] = [];
@@ -27,11 +30,12 @@ export async function generateEmbeddings(
 
     while (retries < maxRetries) {
       try {
-        const response = await fetch(VOYAGE_API_URL, {
+        const response = await fetch(embeddingUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${apiKey}`,
+            ...heliconeHeaders,
           },
           body: JSON.stringify({
             model,

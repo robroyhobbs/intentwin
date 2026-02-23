@@ -1,10 +1,11 @@
 import { Mistral } from "@mistralai/mistralai";
 import { createReviewClient, type ReviewScores } from "./review-client-factory";
+import { mistralHeliconeOptions } from "@/lib/observability/helicone";
 
 const { getClient, review } = createReviewClient<Mistral>({
   providerName: "Mistral",
   envVar: "MISTRAL_API_KEY",
-  createClient: (apiKey) => new Mistral({ apiKey }),
+  createClient: (apiKey) => new Mistral({ apiKey, ...mistralHeliconeOptions() }),
   callApi: async (client, prompt) => {
     const response = await client.chat.complete({
       model: "mistral-small-latest",
