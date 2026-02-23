@@ -1,6 +1,7 @@
 "use client";
 
 import { Globe } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useIntelligence } from "./_components/use-intelligence";
 import { IntelligenceLoading } from "./_components/intelligence-loading";
 import { NotConfigured } from "./_components/not-configured-view";
@@ -8,9 +9,11 @@ import { StatsCards } from "./_components/stats-cards";
 import { AwardsTimeline } from "./_components/awards-timeline";
 import { CompetitionChart } from "./_components/competition-chart";
 import { TopAgenciesChart } from "./_components/top-agencies-chart";
+import { SourceAttribution } from "./_components/source-attribution";
 import type { DashboardStatsResponse } from "./_components/types";
 
 export default function IntelligenceDashboard() {
+  const router = useRouter();
   const { data, loading, error, configured } = useIntelligence<DashboardStatsResponse>(
     "/api/v1/awards/stats",
   );
@@ -83,15 +86,19 @@ export default function IntelligenceDashboard() {
             <span className="text-right">Total Value</span>
           </div>
           {data.top_naics.map((item) => (
-            <div key={item.code} className="grid grid-cols-3 gap-4 py-3 text-sm">
-              <span className="font-mono text-[var(--accent)]">{item.code}</span>
+            <button
+              key={item.code}
+              onClick={() => router.push(`/intelligence/naics/${item.code}`)}
+              className="grid grid-cols-3 gap-4 py-3 text-sm w-full text-left hover:bg-[var(--background-tertiary)] transition-colors rounded-lg px-2 -mx-2"
+            >
+              <span className="font-mono text-[var(--accent)] hover:underline">{item.code}</span>
               <span className="text-right text-[var(--foreground)]">
                 {item.award_count.toLocaleString()}
               </span>
               <span className="text-right text-[var(--foreground-muted)]">
                 ${(item.total_amount / 1_000_000).toFixed(1)}M
               </span>
-            </div>
+            </button>
           ))}
         </div>
       </div>
@@ -100,6 +107,8 @@ export default function IntelligenceDashboard() {
       <p className="text-xs text-[var(--foreground-subtle)] text-right">
         Data as of {new Date(data.last_updated).toLocaleDateString()}
       </p>
+
+      <SourceAttribution />
     </div>
   );
 }

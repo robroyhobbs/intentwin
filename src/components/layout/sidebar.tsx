@@ -18,6 +18,8 @@ import {
   Globe,
   DollarSign,
   FileText,
+  Hash,
+  Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
@@ -47,6 +49,7 @@ const navGroups = [
       { name: "Agency Explorer", href: "/intelligence/agencies", icon: Building2 },
       { name: "Rate Benchmarks", href: "/intelligence/rates", icon: DollarSign },
       { name: "Award Search", href: "/intelligence/awards", icon: FileText },
+      { name: "About Data", href: "/intelligence/about", icon: Info },
     ],
   },
   {

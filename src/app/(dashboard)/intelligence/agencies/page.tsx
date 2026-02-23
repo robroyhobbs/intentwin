@@ -1,16 +1,25 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Building2, Search, ChevronRight } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useIntelligence } from "../_components/use-intelligence";
 import { IntelligenceLoading } from "../_components/intelligence-loading";
 import { NotConfigured } from "../_components/not-configured-view";
+import { SourceAttribution } from "../_components/source-attribution";
 import type { AgencyListResponse, AgencyListItem } from "../_components/types";
 import { AgencyDetail } from "./_components/agency-detail";
 
 export default function AgencyExplorerPage() {
+  const searchParams = useSearchParams();
   const [search, setSearch] = useState("");
   const [selectedAgency, setSelectedAgency] = useState<string | null>(null);
+
+  // Support deep-linking from dashboard/NAICS page
+  useEffect(() => {
+    const select = searchParams.get("select");
+    if (select) setSelectedAgency(select);
+  }, [searchParams]);
 
   const params = useMemo(() => {
     const p: Record<string, string> = { limit: "100" };
@@ -92,6 +101,8 @@ export default function AgencyExplorerPage() {
           </div>
         </div>
       )}
+
+      <SourceAttribution />
     </div>
   );
 }

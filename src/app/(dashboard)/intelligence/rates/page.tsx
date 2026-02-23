@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { DollarSign, Search } from "lucide-react";
+import { DollarSign, Search, Info } from "lucide-react";
 import { useIntelligence } from "../_components/use-intelligence";
 import { IntelligenceLoading } from "../_components/intelligence-loading";
 import { NotConfigured } from "../_components/not-configured-view";
+import { SourceAttribution } from "../_components/source-attribution";
 import type { PricingLookupResponse, RateBenchmark } from "../_components/types";
 
 export default function RateBenchmarksPage() {
@@ -99,8 +100,57 @@ export default function RateBenchmarksPage() {
               <RateRow key={rate.category} rate={rate} />
             ))}
           </div>
+
+          {/* Pricing model patterns */}
+          {data.pricing_model_patterns.length > 0 && (
+            <div className="card p-6">
+              <h2 className="text-lg font-semibold text-[var(--foreground)] mb-4">
+                Common Pricing Models
+              </h2>
+              <div className="space-y-3">
+                {data.pricing_model_patterns.map((pattern) => (
+                  <div key={pattern.model} className="flex items-center gap-3">
+                    <span className="text-sm text-[var(--foreground)] w-48 truncate">
+                      {pattern.model}
+                    </span>
+                    <div className="flex-1 h-2 bg-[var(--background-tertiary)] rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-[var(--accent)] rounded-full transition-all"
+                        style={{ width: `${Math.min(pattern.frequency_pct, 100)}%` }}
+                      />
+                    </div>
+                    <span className="text-xs font-mono text-[var(--foreground-muted)] w-12 text-right">
+                      {pattern.frequency_pct}%
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Cost realism notes */}
+          {data.cost_realism_notes.length > 0 && (
+            <div className="rounded-xl bg-[var(--background-tertiary)] border border-[var(--border)] p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Info className="h-4 w-4 text-[var(--accent)]" />
+                <h3 className="text-sm font-semibold text-[var(--foreground)]">
+                  Cost Realism Notes
+                </h3>
+              </div>
+              <ul className="space-y-1.5">
+                {data.cost_realism_notes.map((note, i) => (
+                  <li key={i} className="text-sm text-[var(--foreground-muted)] flex items-start gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)] mt-1.5 flex-shrink-0" />
+                    {note}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </>
       )}
+
+      <SourceAttribution />
     </div>
   );
 }

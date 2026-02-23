@@ -1,6 +1,7 @@
 "use client";
 
 import { Building2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import {
   BarChart,
   Bar,
@@ -24,10 +25,17 @@ function truncate(s: string, max: number): string {
 }
 
 export function TopAgenciesChart({ data }: Props) {
+  const router = useRouter();
   const chartData = data.map((d) => ({
     ...d,
     shortName: truncate(d.name, 20),
   }));
+
+  const handleBarClick = (entry: { name?: string }) => {
+    if (entry.name) {
+      router.push(`/intelligence/agencies?select=${encodeURIComponent(entry.name)}`);
+    }
+  };
 
   return (
     <div className="card p-6">
@@ -67,7 +75,7 @@ export function TopAgenciesChart({ data }: Props) {
               return full?.name ?? String(label);
             }}
           />
-          <Bar dataKey="award_count" fill={ACCENT} radius={[0, 4, 4, 0]} name="Awards" />
+          <Bar dataKey="award_count" fill={ACCENT} radius={[0, 4, 4, 0]} name="Awards" className="cursor-pointer" onClick={handleBarClick} />
         </BarChart>
       </ResponsiveContainer>
     </div>

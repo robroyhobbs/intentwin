@@ -61,18 +61,26 @@ export interface AwardRecord {
   source: string;
   source_id: string | null;
   title: string | null;
+  description: string | null;
   awarding_agency: string | null;
   agency_level: string | null;
   awardee_name: string | null;
+  awardee_id: string | null;
   award_amount: number | null;
   contract_type: string | null;
   pricing_type: string | null;
   award_date: string | null;
+  period_of_performance_start: string | null;
+  period_of_performance_end: string | null;
   naics_code: string | null;
   psc_code: string | null;
   competition_type: string | null;
   num_offers_received: number | null;
   set_aside_type: string | null;
+  source_selection_method: string | null;
+  solicitation_number: string | null;
+  place_of_performance_state: string | null;
+  place_of_performance_city: string | null;
 }
 
 // ── Dashboard Stats ──────────────────────────────────────────────────────────

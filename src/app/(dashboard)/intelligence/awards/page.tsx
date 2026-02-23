@@ -1,19 +1,36 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { FileText, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useIntelligence } from "../_components/use-intelligence";
 import { IntelligenceLoading } from "../_components/intelligence-loading";
 import { NotConfigured } from "../_components/not-configured-view";
+import { AwardDetailPanel } from "../_components/award-detail-panel";
+import { SourceAttribution } from "../_components/source-attribution";
 import type { AwardsSearchResponse, AwardRecord } from "../_components/types";
 
 const PAGE_SIZE = 20;
 
 export default function AwardSearchPage() {
-  const [agency, setAgency] = useState("");
-  const [naicsCode, setNaicsCode] = useState("");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [agency, setAgency] = useState(searchParams.get("agency") ?? "");
+  const [naicsCode, setNaicsCode] = useState(searchParams.get("naics") ?? "");
   const [competitionType, setCompetitionType] = useState("");
+  const [awardeeFilter, setAwardeeFilter] = useState(searchParams.get("awardee") ?? "");
   const [offset, setOffset] = useState(0);
+  const [selectedAward, setSelectedAward] = useState<AwardRecord | null>(null);
+
+  // Sync URL params on mount
+  useEffect(() => {
+    const naics = searchParams.get("naics");
+    const ag = searchParams.get("agency");
+    const aw = searchParams.get("awardee");
+    if (naics) setNaicsCode(naics);
+    if (ag) setAgency(ag);
+    if (aw) setAwardeeFilter(aw);
+  }, [searchParams]);
 
   const params = useMemo(() => {
     const p: Record<string, string> = {
@@ -23,8 +40,9 @@ export default function AwardSearchPage() {
     if (agency.trim()) p.agency = agency.trim();
     if (naicsCode.trim()) p.naics_code = naicsCode.trim();
     if (competitionType) p.competition_type = competitionType;
+    if (awardeeFilter.trim()) p.awardee = awardeeFilter.trim();
     return p;
-  }, [agency, naicsCode, competitionType, offset]);
+  }, [agency, naicsCode, competitionType, awardeeFilter, offset]);
 
   const { data, loading, error, configured } = useIntelligence<AwardsSearchResponse>(
     "/api/v1/awards/search",
@@ -61,7 +79,7 @@ export default function AwardSearchPage() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-end gap-4">
-        <div className="flex-1 min-w-[200px]">
+        <div className="flex-1 min-w-[180px]">
           <label className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide block mb-1.5">
             Agency
           </label>
@@ -76,7 +94,19 @@ export default function AwardSearchPage() {
             />
           </div>
         </div>
-        <div className="w-40">
+        <div className="flex-1 min-w-[180px]">
+          <label className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide block mb-1.5">
+            Awardee
+          </label>
+          <input
+            type="text"
+            placeholder="e.g., Lockheed Martin"
+            value={awardeeFilter}
+            onChange={(e) => { setAwardeeFilter(e.target.value); setOffset(0); }}
+            className="w-full px-4 py-2.5 rounded-xl text-sm"
+          />
+        </div>
+        <div className="w-36">
           <label className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide block mb-1.5">
             NAICS Code
           </label>
@@ -88,7 +118,7 @@ export default function AwardSearchPage() {
             className="w-full px-4 py-2.5 rounded-xl text-sm"
           />
         </div>
-        <div className="w-48">
+        <div className="w-44">
           <label className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide block mb-1.5">
             Competition
           </label>
@@ -152,7 +182,7 @@ export default function AwardSearchPage() {
             <span className="col-span-1 text-right">Date</span>
           </div>
           {awards.map((award) => (
-            <AwardRow key={award.id} award={award} />
+            <AwardRow key={award.id} award={award} onClick={() => setSelectedAward(award)} />
           ))}
         </div>
       )}
@@ -170,11 +200,34 @@ export default function AwardSearchPage() {
           <p className="text-sm text-[var(--foreground-muted)] animate-pulse">Loading...</p>
         </div>
       )}
+
+      <SourceAttribution />
+
+      {/* Award detail slide-out */}
+      {selectedAward && (
+        <AwardDetailPanel
+          award={selectedAward}
+          onClose={() => setSelectedAward(null)}
+          onAgencyClick={(name) => {
+            setSelectedAward(null);
+            router.push(`/intelligence/agencies?select=${encodeURIComponent(name)}`);
+          }}
+          onAwardeeClick={(name) => {
+            setSelectedAward(null);
+            setAwardeeFilter(name);
+            setOffset(0);
+          }}
+          onNaicsClick={(code) => {
+            setSelectedAward(null);
+            router.push(`/intelligence/naics/${code}`);
+          }}
+        />
+      )}
     </div>
   );
 }
 
-function AwardRow({ award }: { award: AwardRecord }) {
+function AwardRow({ award, onClick }: { award: AwardRecord; onClick: () => void }) {
   const formatAmount = (v: number | null) => {
     if (v == null) return "-";
     if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
@@ -188,7 +241,7 @@ function AwardRow({ award }: { award: AwardRecord }) {
   };
 
   return (
-    <div className="grid grid-cols-12 gap-2 px-5 py-3 text-sm hover:bg-[var(--background-tertiary)] transition-colors">
+    <button onClick={onClick} className="grid grid-cols-12 gap-2 px-5 py-3 text-sm hover:bg-[var(--background-tertiary)] transition-colors w-full text-left cursor-pointer">
       <span className="col-span-3 text-[var(--foreground)] truncate" title={award.title ?? ""}>
         {award.title ?? "Untitled"}
       </span>
@@ -213,6 +266,6 @@ function AwardRow({ award }: { award: AwardRecord }) {
       <span className="col-span-1 text-right text-[var(--foreground-muted)]">
         {award.award_date ? new Date(award.award_date).toLocaleDateString() : "-"}
       </span>
-    </div>
+    </button>
   );
 }
