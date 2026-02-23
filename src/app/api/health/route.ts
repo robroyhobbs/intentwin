@@ -31,13 +31,14 @@ export async function GET(request: NextRequest) {
   const checks: Record<string, HealthCheck> = {};
 
   // Run independent checks in parallel for faster response
-  const [supabaseCheck, storageCheck, documentsCheck, vectorCheck, voyageCheck] =
+  const [supabaseCheck, storageCheck, documentsCheck, vectorCheck, voyageCheck, geminiCheck] =
     await Promise.allSettled([
       checkSupabase(),
       checkStorage(),
       checkDocuments(),
       checkVectorSearch(),
       checkVoyageAI(),
+      checkGeminiAI(),
     ]);
 
   // Collect results
@@ -66,10 +67,10 @@ export async function GET(request: NextRequest) {
       ? voyageCheck.value
       : { ok: false, message: `${voyageCheck.reason}` };
 
-  // Env var checks (instant)
-  checks.gemini = process.env.GEMINI_API_KEY
-    ? { ok: true, message: "Key configured" }
-    : { ok: false, message: "GEMINI_API_KEY not set" };
+  checks.gemini =
+    geminiCheck.status === "fulfilled"
+      ? geminiCheck.value
+      : { ok: false, message: `${geminiCheck.reason}` };
 
   // Note: Anthropic SDK was removed — project uses Gemini. No claude check needed.
 
@@ -187,6 +188,39 @@ async function checkVectorSearch(): Promise<HealthCheck> {
   } catch (e) {
     const responseTimeMs = Math.round(performance.now() - start);
     return { ok: false, message: `${e}`, responseTimeMs };
+  }
+}
+
+async function checkGeminiAI(): Promise<HealthCheck> {
+  if (!process.env.GEMINI_API_KEY) {
+    return { ok: false, message: "GEMINI_API_KEY not set" };
+  }
+
+  const start = performance.now();
+  try {
+    const { generateText } = await import("@/lib/ai/gemini");
+    const result = await Promise.race([
+      generateText("Reply with exactly: OK", {
+        maxTokens: 10,
+        temperature: 0,
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Gemini timed out after 15s")), 15_000)
+      ),
+    ]);
+    const responseTimeMs = Math.round(performance.now() - start);
+    return {
+      ok: true,
+      message: `Gemini responding (${result.length} chars)`,
+      responseTimeMs,
+    };
+  } catch (e) {
+    const responseTimeMs = Math.round(performance.now() - start);
+    return {
+      ok: false,
+      message: `Gemini error: ${e instanceof Error ? e.message : String(e)}`,
+      responseTimeMs,
+    };
   }
 }
 

@@ -614,44 +614,68 @@ export default function ProposalPage() {
             </div>
           )}
         </div>
-      ) : (
-        proposal.status !== ProposalStatus.GENERATING && (
-          <div className="flex flex-col items-center justify-center py-24">
-            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[var(--accent-subtle)] mb-6">
-              <Sparkles className="h-10 w-10 text-[var(--accent)]" />
-            </div>
-            <h3 className="text-xl font-bold text-[var(--foreground)]">
-              Ready to generate
-            </h3>
-            <p className="mt-2 text-sm text-[var(--foreground-muted)] max-w-md text-center">
-              Your proposal is configured. Click Generate to start creating all
-              sections with AI-powered content.
-            </p>
-
-            {/* Preflight readiness report */}
-            <div className="mt-6 w-full max-w-lg">
-              <ReadinessReport
-                preflight={preflight}
-                loading={preflightLoading}
-                onRetry={fetchPreflight}
-                onUploadComplete={fetchPreflight}
-              />
-            </div>
-
-            <button
-              onClick={handleGenerate}
-              disabled={generating}
-              className="btn-primary mt-6"
-            >
-              {generating ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="h-4 w-4" />
-              )}
-              Generate Proposal
-            </button>
+      ) : proposal.status === ProposalStatus.GENERATING ? (
+        /* Generating but no sections created yet — show spinner */
+        <div className="flex flex-col items-center justify-center py-24">
+          <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[var(--accent-subtle)] mb-6">
+            <Loader2 className="h-10 w-10 animate-spin text-[var(--accent)]" />
           </div>
-        )
+          <h3 className="text-xl font-bold text-[var(--foreground)]">
+            Preparing generation...
+          </h3>
+          <p className="mt-2 text-sm text-[var(--foreground-muted)] max-w-md text-center">
+            Building pipeline context and creating section structure.
+            This may take 30-60 seconds.
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-24">
+          <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[var(--accent-subtle)] mb-6">
+            <Sparkles className="h-10 w-10 text-[var(--accent)]" />
+          </div>
+          <h3 className="text-xl font-bold text-[var(--foreground)]">
+            Ready to generate
+          </h3>
+          <p className="mt-2 text-sm text-[var(--foreground-muted)] max-w-md text-center">
+            Your proposal is configured. Click Generate to start creating all
+            sections with AI-powered content.
+          </p>
+
+          {/* Show generation error if previous attempt failed */}
+          {proposal.generation_error && (
+            <div className="mt-4 w-full max-w-lg rounded-lg border border-red-500/30 bg-red-500/10 p-4">
+              <p className="text-sm font-semibold text-red-700 dark:text-red-400">
+                Previous generation failed
+              </p>
+              <p className="text-xs text-red-600/80 dark:text-red-300/80 mt-1">
+                {proposal.generation_error}
+              </p>
+            </div>
+          )}
+
+          {/* Preflight readiness report */}
+          <div className="mt-6 w-full max-w-lg">
+            <ReadinessReport
+              preflight={preflight}
+              loading={preflightLoading}
+              onRetry={fetchPreflight}
+              onUploadComplete={fetchPreflight}
+            />
+          </div>
+
+          <button
+            onClick={handleGenerate}
+            disabled={generating}
+            className="btn-primary mt-6"
+          >
+            {generating ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4" />
+            )}
+            Generate Proposal
+          </button>
+        </div>
       )}
     </div>
   );

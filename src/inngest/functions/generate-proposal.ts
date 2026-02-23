@@ -31,13 +31,66 @@ const log = createLogger({ operation: "generate-proposal" });
 export const generateProposalFn = inngest.createFunction(
   {
     id: "generate-proposal",
-    retries: 2,
+    // CRITICAL: retries must be 0 to prevent the deadly retry loop.
+    // When the function retries, build-context re-runs and DELETES all
+    // existing sections — including ones that already completed successfully.
+    // This causes the user to see sections appear, then vanish.
+    // Individual steps still get their own retries (default 3 per step).
+    retries: 0,
     cancelOn: [
       {
         event: "proposal/generate.cancelled",
         match: "data.proposalId",
       },
     ],
+    // When the function fails permanently (a step exhausted its retries),
+    // ensure the proposal doesn't stay stuck in "generating" forever.
+    onFailure: async ({ event }) => {
+      const proposalId = event.data.event?.data?.proposalId;
+      if (!proposalId) return;
+
+      const failLog = createLogger({ operation: "generate-proposal-failure", proposalId });
+      failLog.error("Proposal generation PERMANENTLY FAILED", {
+        error: event.data.error?.message,
+        functionId: event.data.function_id,
+      });
+
+      const supabase = createAdminClient();
+
+      // Check if any sections completed (partial success)
+      const { data: sections } = await supabase
+        .from("proposal_sections")
+        .select("generation_status")
+        .eq("proposal_id", proposalId);
+
+      const completedCount = sections?.filter(
+        (s) => s.generation_status === GenerationStatus.COMPLETED
+      ).length ?? 0;
+
+      if (completedCount > 0) {
+        // Partial success — move to review with warning
+        await supabase
+          .from("proposals")
+          .update({
+            status: ProposalStatus.REVIEW,
+            generation_completed_at: new Date().toISOString(),
+            generation_error: `Generation partially failed: ${completedCount} of ${sections?.length ?? 0} sections completed. Some sections failed permanently. You can regenerate failed sections individually.`,
+          })
+          .eq("id", proposalId);
+        failLog.info("Partial success — moved to review", { completedCount, total: sections?.length });
+      } else {
+        // Total failure — revert to draft
+        await supabase
+          .from("proposals")
+          .update({
+            status: ProposalStatus.DRAFT,
+            generation_completed_at: new Date().toISOString(),
+            generation_error: `Generation failed: ${event.data.error?.message || "Unknown error"}. Please try again.`,
+          })
+          .eq("id", proposalId);
+        failLog.error("Total failure — reverted to draft");
+      }
+    },
   },
   { event: "proposal/generate.requested" },
   async ({ event, step }) => {
@@ -58,7 +111,8 @@ export const generateProposalFn = inngest.createFunction(
         enhancedAnalysisLength: ctx.enhancedAnalysis.length,
       });
 
-      // Delete existing sections (idempotent)
+      // Delete existing sections — safe because this is the first step
+      // and individual section generation steps are separately retryable
       await supabase
         .from("proposal_sections")
         .delete()
