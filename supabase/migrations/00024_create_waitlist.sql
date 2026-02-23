@@ -33,3 +33,7 @@ create index if not exists idx_waitlist_email on public.waitlist (email);
 
 -- Index on status for admin filtering
 create index if not exists idx_waitlist_status on public.waitlist (status);
+
+-- Nurture tracking columns (originally in 00022, but table created here)
+ALTER TABLE public.waitlist ADD COLUMN IF NOT EXISTS nurture_step integer NOT NULL DEFAULT 0;
+ALTER TABLE public.waitlist ADD COLUMN IF NOT EXISTS nurture_last_sent_at timestamptz;
