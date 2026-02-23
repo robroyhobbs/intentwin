@@ -6,8 +6,11 @@ import {
   X,
   Target,
   AlertTriangle,
+  Globe,
+  Building2,
+  DollarSign,
 } from "lucide-react";
-import type { BidEvaluation, FactorKey } from "@/lib/ai/bid-scoring";
+import type { BidEvaluation, FactorKey, BidIntelligenceContext } from "@/lib/ai/bid-scoring";
 import { SCORING_FACTORS } from "@/lib/ai/bid-scoring";
 
 const recConfig = {
@@ -143,9 +146,19 @@ export function BidEvaluationScreen({
                   </p>
                   <p className="text-sm text-[var(--foreground-muted)] mt-1">
                     Based on 5-factor weighted analysis
+                    {bidEvaluation.intelligence?.has_agency_profile && (
+                      <span className="text-[var(--accent)]">
+                        {" "}+ {bidEvaluation.intelligence.agency_total_awards?.toLocaleString()} tracked awards
+                      </span>
+                    )}
                   </p>
                 </div>
               </div>
+
+              {/* Intelligence context */}
+              {bidEvaluation.intelligence && (bidEvaluation.intelligence.has_agency_profile || bidEvaluation.intelligence.has_pricing_data) && (
+                <IntelligencePanel intelligence={bidEvaluation.intelligence} />
+              )}
 
               {/* Factor scores */}
               <div className="space-y-4">
@@ -249,6 +262,61 @@ export function BidEvaluationScreen({
             </>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function IntelligencePanel({ intelligence }: { intelligence: BidIntelligenceContext }) {
+  const formatCurrency = (v: number | null) => {
+    if (v == null) return null;
+    if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
+    if (v >= 1_000) return `$${(v / 1_000).toFixed(0)}K`;
+    return `$${v.toLocaleString()}`;
+  };
+
+  return (
+    <div className="rounded-xl border border-[var(--accent-muted)] bg-[var(--accent-subtle)] p-5">
+      <div className="flex items-center gap-2 mb-3">
+        <Globe className="h-4 w-4 text-[var(--accent)]" />
+        <span className="text-sm font-semibold text-[var(--foreground)]">
+          Procurement Intelligence
+        </span>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        {intelligence.has_agency_profile && (
+          <>
+            <div className="flex items-center gap-2">
+              <Building2 className="h-3.5 w-3.5 text-[var(--foreground-subtle)]" />
+              <span className="text-xs text-[var(--foreground-muted)]">
+                <strong className="text-[var(--foreground)]">{intelligence.agency_name}</strong>
+              </span>
+            </div>
+            {intelligence.agency_eval_method && (
+              <div className="text-xs text-[var(--foreground-muted)]">
+                Eval: <strong className="text-[var(--foreground)]">{intelligence.agency_eval_method}</strong>
+              </div>
+            )}
+            {intelligence.agency_avg_offers != null && (
+              <div className="text-xs text-[var(--foreground-muted)]">
+                Avg Competing Offers: <strong className="text-[var(--foreground)]">{intelligence.agency_avg_offers.toFixed(1)}</strong>
+              </div>
+            )}
+            {intelligence.agency_avg_amount != null && (
+              <div className="text-xs text-[var(--foreground-muted)]">
+                Avg Award: <strong className="text-[var(--foreground)]">{formatCurrency(intelligence.agency_avg_amount)}</strong>
+              </div>
+            )}
+          </>
+        )}
+        {intelligence.has_pricing_data && (
+          <div className="flex items-center gap-2">
+            <DollarSign className="h-3.5 w-3.5 text-[var(--foreground-subtle)]" />
+            <span className="text-xs text-[var(--foreground-muted)]">
+              <strong className="text-[var(--foreground)]">{intelligence.pricing_categories_found}</strong> rate benchmarks matched
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

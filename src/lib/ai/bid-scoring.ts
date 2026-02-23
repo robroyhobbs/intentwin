@@ -20,6 +20,18 @@ export interface FactorScore {
   rationale: string;
 }
 
+/** Intelligence context returned alongside bid scoring */
+export interface BidIntelligenceContext {
+  agency_name: string | null;
+  agency_eval_method: string | null;
+  agency_avg_offers: number | null;
+  agency_total_awards: number | null;
+  agency_avg_amount: number | null;
+  has_agency_profile: boolean;
+  has_pricing_data: boolean;
+  pricing_categories_found: number;
+}
+
 export interface BidEvaluation {
   ai_scores: Record<FactorKey, FactorScore>;
   user_scores?: Partial<Record<FactorKey, number>>;
@@ -28,6 +40,7 @@ export interface BidEvaluation {
   user_decision?: "proceed" | "skip";
   scored_at: string;
   decided_at?: string;
+  intelligence?: BidIntelligenceContext;
 }
 
 function computeWeightedTotal(
@@ -140,11 +153,24 @@ Based on the above, score each of the 5 bid evaluation factors (0-100) with rati
   const weightedTotal = computeWeightedTotal(aiScores);
   const recommendation = getRecommendation(weightedTotal);
 
+  // Build intelligence context summary for the client
+  const intelligence: BidIntelligenceContext = {
+    agency_name: agencyProfile?.agency_name ?? agencyName,
+    agency_eval_method: agencyProfile?.preferred_eval_method ?? null,
+    agency_avg_offers: agencyProfile?.avg_num_offers ?? null,
+    agency_total_awards: agencyProfile?.total_awards_tracked ?? null,
+    agency_avg_amount: agencyProfile?.avg_award_amount ?? null,
+    has_agency_profile: agencyProfile !== null,
+    has_pricing_data: pricingRates !== null,
+    pricing_categories_found: pricingRates?.rate_benchmarks?.length ?? 0,
+  };
+
   return {
     ai_scores: aiScores,
     weighted_total: weightedTotal,
     recommendation,
     scored_at: new Date().toISOString(),
+    intelligence,
   };
 }
 

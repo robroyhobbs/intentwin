@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Check,
   AlertTriangle,
@@ -10,8 +10,11 @@ import {
   Lightbulb,
   Building2,
   ArrowRight,
+  Globe,
 } from "lucide-react";
 import type { ExtractedIntake, ClientResearch, ExtractedField } from "@/types/intake";
+import { useAuthFetch } from "@/hooks/use-auth-fetch";
+import type { AgencyProfileResponse } from "@/lib/intelligence/types";
 
 interface ExtractionReviewProps {
   extracted: ExtractedIntake;
@@ -132,6 +135,36 @@ export function ExtractionReview({
   onBack,
 }: ExtractionReviewProps) {
   const [showResearch, setShowResearch] = useState(false);
+  const [agencyIntel, setAgencyIntel] = useState<AgencyProfileResponse | null>(null);
+  const [intelLoading, setIntelLoading] = useState(false);
+  const authFetch = useAuthFetch();
+
+  // Fetch agency intelligence when client name is available
+  const clientName = extracted.extracted?.client_name?.value;
+  const fetchIntelligence = useCallback(async () => {
+    if (!clientName) return;
+    setIntelLoading(true);
+    try {
+      const params = new URLSearchParams({
+        path: `/api/v1/agency/${encodeURIComponent(clientName)}`,
+      });
+      const res = await authFetch(`/api/intelligence?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.total_awards_tracked > 0) {
+          setAgencyIntel(data as AgencyProfileResponse);
+        }
+      }
+    } catch {
+      // Silent fallback — intelligence is optional
+    } finally {
+      setIntelLoading(false);
+    }
+  }, [clientName, authFetch]);
+
+  useEffect(() => {
+    fetchIntelligence();
+  }, [fetchIntelligence]);
 
   // Initialize editable state from extracted data
   const [editedData, setEditedData] = useState<Record<string, string | string[]>>(() => {
@@ -303,6 +336,53 @@ export function ExtractionReview({
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Agency Intelligence Panel */}
+      {(agencyIntel || intelLoading) && (
+        <div className="rounded-xl border border-[var(--accent-muted)] bg-[var(--accent-subtle)] p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Globe className="h-4 w-4 text-[var(--accent)]" />
+            <span className="text-sm font-semibold text-[var(--foreground)]">
+              Procurement Intelligence
+            </span>
+          </div>
+          {intelLoading ? (
+            <p className="text-xs text-[var(--foreground-muted)] animate-pulse">
+              Loading agency data...
+            </p>
+          ) : agencyIntel ? (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="text-xs text-[var(--foreground-muted)]">
+                <strong className="text-[var(--foreground)]">{agencyIntel.total_awards_tracked.toLocaleString()}</strong> tracked awards
+              </div>
+              {agencyIntel.preferred_eval_method && (
+                <div className="text-xs text-[var(--foreground-muted)]">
+                  Eval: <strong className="text-[var(--foreground)]">{agencyIntel.preferred_eval_method}</strong>
+                </div>
+              )}
+              {agencyIntel.avg_num_offers != null && (
+                <div className="text-xs text-[var(--foreground-muted)]">
+                  Avg Competing Offers: <strong className="text-[var(--foreground)]">{agencyIntel.avg_num_offers.toFixed(1)}</strong>
+                </div>
+              )}
+              {agencyIntel.avg_award_amount != null && (
+                <div className="text-xs text-[var(--foreground-muted)]">
+                  Avg Award: <strong className="text-[var(--foreground)]">
+                    ${agencyIntel.avg_award_amount >= 1_000_000
+                      ? (agencyIntel.avg_award_amount / 1_000_000).toFixed(1) + "M"
+                      : (agencyIntel.avg_award_amount / 1_000).toFixed(0) + "K"}
+                  </strong>
+                </div>
+              )}
+              {agencyIntel.common_contract_types && agencyIntel.common_contract_types.length > 0 && (
+                <div className="col-span-2 text-xs text-[var(--foreground-muted)]">
+                  Common Types: {agencyIntel.common_contract_types.slice(0, 3).join(", ")}
+                </div>
+              )}
+            </div>
+          ) : null}
         </div>
       )}
 
