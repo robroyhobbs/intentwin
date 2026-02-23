@@ -11,7 +11,7 @@ IntentWin is an AI-powered proposal generation SaaS using Intent-Driven Developm
 
 - Next.js 16 with React 19
 - Supabase (PostgreSQL + Auth + Storage)
-- Claude AI (Anthropic) for proposal generation
+- Google Gemini (gemini-3.1-pro-preview) for proposal generation
 - Voyage AI for embeddings
 - Stripe for billing (checkout, webhooks, customer portal)
 
@@ -111,7 +111,7 @@ All tables now have `organization_id` columns with RLS policies:
 
 ## AI Generation Guidelines
 
-- Use Claude Sonnet 4 for all generation
+- Use Gemini 3.1 Pro Preview for all generation (via `@/lib/ai/gemini.ts`)
 - Temperature: 0.7 for creative content, 0.3 for structured extraction
 - Max tokens: 4096 per section
 - Always inject L1 context (company truth) into prompts
@@ -120,6 +120,18 @@ All tables now have `organization_id` columns with RLS policies:
 ## Gotchas & Learnings
 
 <!-- Updated nightly by compound review -->
+
+### 2026-02-22 - Realism Pipeline (6 Phases), Intelligence Integration, Test Coverage Push
+
+- **Inngest step serialization silently drops `undefined` values**: `JSON.stringify` omits keys with `undefined` values, so `PipelineContext` fields like `serviceLine` became absent after passing through Inngest `step.run()`. Downstream code checking `=== undefined` still matched, but TypeScript's type narrowing broke. Fix: explicitly default optional fields to `null` before returning from step functions, then reconstruct with `?? undefined` on the receiving side. Pattern: treat Inngest steps as a JSON serialization boundary — no `undefined`, no `Date` objects, no class instances
+- **Inngest finalize step must never throw when all sections fail**: Throwing in the finalize step causes Inngest to retry the *entire* function, which deletes all sections (idempotent cleanup) and re-generates — creating a loop where users see sections appear then vanish. Fix: finalize catches all errors, sets proposal status to DRAFT, and returns gracefully. Reduced retries from 3→2 to limit blast radius
+- **AI JSON parsing needs a triple-strategy extractor**: Bid scoring responses come in 3+ formats: markdown code-fenced JSON, raw JSON with preamble text, and pure JSON. A single `JSON.parse` with regex code-block extraction fails ~20% of the time. Fix: cascading strategy — (1) code block match, (2) outermost brace extraction, (3) raw parse. Also accept string-typed scores (`"85"` → `85`) since models inconsistently quote numbers. Pattern: any `parseXFromResponse()` function should use `extractJsonFromResponse()` with multi-strategy fallback
+- **`maxTokens` for structured JSON output should be 2x your estimate**: Bid scoring parser was truncating at 2048 tokens, producing broken JSON with no parse error (just incomplete). Doubled to 4096. This is the fourth time this pattern has surfaced (generation, quality review, extraction, now scoring). Rule of thumb: if the AI returns structured JSON, set `maxTokens` to at least 2x the expected output size
+- **Realism phases ship best as a sequential stack**: Phases 0-5 (Pre-Flight Gate → Named Personnel → Assumptions → Repetition Limiter → Review Mode UI → Task Mirroring) each built on prior phase infrastructure. Phase 0 added preflight checks that Phase 1 populated with team member data, Phase 2 used the section config system Phase 3 extended, etc. Pattern: when planning a multi-phase feature, design the data model and extension points in Phase 0 even if they're not immediately used
+- **Task-mirrored section generation requires fail-open extraction**: RFP task structure extraction via AI can return malformed JSON, duplicate tasks, or miss sections entirely. `parseTaskStructureResponse()` never throws — it deduplicates by normalized title, caps at 50 tasks, validates categories, and returns an empty structure on total failure. The section builder falls back to fixed sections when < 3 tasks are extracted. Pattern: AI extraction at pipeline boundaries must be fail-open with reasonable defaults
+- **Splitting large files mid-sprint pays for itself immediately**: `context.ts` (606 lines) → `context.ts` + `build-pipeline-context.ts`; `generate-proposal.ts` (479 lines) → `generate-proposal.ts` + `generate-single-section.ts`. Each subsequent phase was faster to implement because the split files had clear single responsibilities. Do the split *before* adding new features, not after
+- **360 tests in one session is achievable by targeting untested utility modules**: Coverage jumped 54%→74% by focusing on pure-function modules (`sources/parser`, `documents/chunker`, `utils/ttl-cache`, `email/nurture-templates`) that need zero mocking infrastructure. Pattern: when pushing for coverage thresholds, identify modules with 0% coverage and high line counts first — they're usually pure functions with easy test surfaces
+- **External service integration should be env-var gated with null returns**: `IntelligenceClient` returns `T | null` for all methods, is a singleton with 10-min TTL cache, and silently falls back when `INTELLIGENCE_SERVICE_URL` is unset. UI pages show a friendly "not configured" empty state. Zero-latency impact: intelligence is fetched in parallel with L1 context. Pattern: external service SDKs should be (1) singleton, (2) TTL-cached, (3) timeout-bounded (5s), (4) null-returning on failure, (5) env-var gated
 
 ### 2026-02-21 - Quiet Day; Solicitation Type Extraction
 
