@@ -24,6 +24,8 @@ import { retrieveContext } from "@/lib/ai/pipeline/retrieval";
 import { shouldGenerateDiagram, generateDiagram } from "@/lib/ai/diagram-generator";
 import { buildTaskResponsePrompt } from "@/lib/ai/prompts/task-response";
 import type { PipelineContext } from "@/lib/ai/pipeline/types";
+import type { BidEvaluation, FactorKey } from "@/lib/ai/bid-scoring";
+import { SCORING_FACTORS } from "@/lib/ai/bid-scoring";
 
 /** Metadata stored on rfp_task section rows */
 interface TaskSectionMeta {
@@ -32,6 +34,56 @@ interface TaskSectionMeta {
   description: string;
   category: string;
   parent_task_number: string | null;
+}
+
+// ── Bid Evaluation → Section Mapping ─────────────────────────────────────────
+
+/** Map bid scoring factor keys to the section types they most affect */
+const FACTOR_SECTION_MAP: Record<FactorKey, string[]> = {
+  requirement_match: ["approach", "compliance_matrix_section", "rfp_task"],
+  past_performance: ["case_studies", "why_us"],
+  capability_alignment: ["approach", "team", "why_us"],
+  timeline_feasibility: ["timeline", "approach"],
+  strategic_value: ["executive_summary", "cover_letter", "why_us"],
+};
+
+/** Weak factor threshold — factors scoring below this get injected as risk guidance */
+const WEAK_FACTOR_THRESHOLD = 60;
+
+/**
+ * Build a prompt block from bid evaluation weak factors relevant to this section type.
+ * Returns empty string if no weak factors affect this section.
+ */
+export function buildBidEvalRiskBlock(
+  bidEvaluation: BidEvaluation | null | undefined,
+  sectionType: string,
+): string {
+  if (!bidEvaluation?.ai_scores) return "";
+
+  // Find weak factors that affect this section type
+  const weakFactors = SCORING_FACTORS.filter((factor) => {
+    const score = bidEvaluation.ai_scores[factor.key]?.score ?? 100;
+    if (score >= WEAK_FACTOR_THRESHOLD) return false;
+    // Check if this factor maps to the current section type
+    const relevantSections = FACTOR_SECTION_MAP[factor.key] || [];
+    return relevantSections.includes(sectionType);
+  });
+
+  if (weakFactors.length === 0) return "";
+
+  const factorLines = weakFactors.map((factor) => {
+    const data = bidEvaluation.ai_scores[factor.key];
+    return `  - **${factor.label}** (score: ${data.score}/100): ${data.rationale}`;
+  }).join("\n");
+
+  return `\n\n---\n\n## BID RISK AREAS — ADDRESS IN THIS SECTION
+The bid evaluation identified these areas as weak for this opportunity:
+${factorLines}
+
+IMPORTANT: This section should proactively address these concerns by:
+- Providing specific evidence, metrics, or examples that counter the weakness
+- Framing your response to directly mitigate evaluator concerns in these areas
+- If a gap genuinely exists, acknowledge it honestly and describe your mitigation plan`;
 }
 
 /**
@@ -185,6 +237,9 @@ export async function generateSingleSection(
       ? buildRepetitionLimiterBlock(differentiators)
       : "";
 
+    // Bid evaluation risk guidance — injects weak factor rationale for relevant sections
+    const bidEvalBlock = buildBidEvalRiskBlock(ctx.bidEvaluation, isTaskSection ? "rfp_task" : sectionType);
+
     const prompt = [
       basePrompt,
       industryContext ? `\n\n---\n\n${industryContext}` : "",
@@ -192,6 +247,7 @@ export async function generateSingleSection(
         ? `\n\n---\n\n## Persuasion & Quality Guidance\n\n${persuasionContext}`
         : "",
       repetitionBlock,
+      bidEvalBlock,
     ]
       .filter(Boolean)
       .join("");

@@ -27,6 +27,21 @@ export interface L1Summary {
   fetchedAt: string;
 }
 
+export interface BidEvalFactor {
+  score: number;
+  rationale: string;
+}
+
+export interface BidEvalData {
+  ai_scores: Record<string, BidEvalFactor>;
+  user_scores?: Record<string, number>;
+  weighted_total: number;
+  recommendation: "bid" | "evaluate" | "pass";
+  user_decision?: "proceed" | "skip";
+  scored_at: string;
+  decided_at?: string;
+}
+
 export interface Proposal {
   id: string;
   title: string;
@@ -37,6 +52,7 @@ export interface Proposal {
   deal_value?: number;
   generation_error?: string | null;
   l1_summary?: L1Summary | null;
+  bid_evaluation?: BidEvalData | null;
   quality_review?: {
     status: string;
     sections?: QualityReviewSection[];

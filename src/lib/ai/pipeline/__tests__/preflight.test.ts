@@ -417,3 +417,144 @@ describe("runPreflightCheck — Data Damage", () => {
     expect(result1.summary).toEqual(result2.summary);
   });
 });
+
+// ════════════════════════════════════════════════════════════════════════════
+// BID EVALUATION CROSS-REFERENCING
+// ════════════════════════════════════════════════════════════════════════════
+
+import type { BidEvaluation } from "@/lib/ai/bid-scoring";
+
+function makeBidEval(overrides: Partial<Record<string, { score: number; rationale: string }>> = {}): BidEvaluation {
+  const defaults: BidEvaluation["ai_scores"] = {
+    requirement_match: { score: 80, rationale: "Strong requirement alignment." },
+    past_performance: { score: 75, rationale: "Decent portfolio of work." },
+    capability_alignment: { score: 70, rationale: "Good capability overlap." },
+    timeline_feasibility: { score: 65, rationale: "Timeline is tight but doable." },
+    strategic_value: { score: 60, rationale: "Moderate strategic fit." },
+  };
+  return {
+    ai_scores: { ...defaults, ...overrides } as BidEvaluation["ai_scores"],
+    weighted_total: 72,
+    recommendation: "bid",
+    scored_at: new Date().toISOString(),
+  };
+}
+
+describe("runPreflightCheck — Bid Evaluation Cross-Reference", () => {
+  it("adds no bid eval gaps when all scores are above threshold", () => {
+    const l1 = makeL1();
+    const intake = makeIntakeData();
+    const bidEval = makeBidEval(); // all >= 60
+    const result = runPreflightCheck(l1, intake, [], bidEval);
+
+    // Should not have any bid-eval-specific gaps
+    const bidGaps = result.gaps.filter(g => g.description.includes("Bid evaluation"));
+    expect(bidGaps).toHaveLength(0);
+  });
+
+  it("adds gap when low past_performance + few evidence entries", () => {
+    const l1 = makeL1({ evidenceLibrary: [] }); // 0 evidence
+    const intake = makeIntakeData();
+    const bidEval = makeBidEval({
+      past_performance: { score: 35, rationale: "No relevant case studies in healthcare." },
+    });
+    const result = runPreflightCheck(l1, intake, [], bidEval);
+
+    const bidGaps = result.gaps.filter(g => g.description.includes("Past Performance"));
+    expect(bidGaps.length).toBeGreaterThanOrEqual(1);
+    expect(bidGaps[0].description).toContain("35/100");
+    expect(bidGaps[0].affectedSection).toBe("case_studies");
+  });
+
+  it("does NOT add past_performance gap when evidence is sufficient", () => {
+    const l1 = makeL1(); // has 2 evidence entries (meets minimum)
+    const intake = makeIntakeData();
+    // Even with bad past_performance score, if we have enough evidence, we skip
+    // Actually the threshold checks evidenceCount < 3, so let's add 3 evidence entries
+    const l1Full = makeL1({
+      evidenceLibrary: [
+        makeEvidence({ id: "ev-1" }),
+        makeEvidence({ id: "ev-2" }),
+        makeEvidence({ id: "ev-3" }),
+      ],
+    });
+    const bidEval = makeBidEval({
+      past_performance: { score: 35, rationale: "No relevant case studies." },
+    });
+    const result = runPreflightCheck(l1Full, intake, [], bidEval);
+
+    const bidGaps = result.gaps.filter(g => g.description.includes("Past Performance") && g.description.includes("Bid evaluation"));
+    expect(bidGaps).toHaveLength(0);
+  });
+
+  it("adds gap when low capability_alignment + no products", () => {
+    const l1 = makeL1({ productContexts: [] }); // 0 products
+    const intake = makeIntakeData();
+    const bidEval = makeBidEval({
+      capability_alignment: { score: 40, rationale: "Partial capability overlap." },
+    });
+    const result = runPreflightCheck(l1, intake, [], bidEval);
+
+    const bidGaps = result.gaps.filter(g => g.description.includes("Capability Alignment"));
+    expect(bidGaps.length).toBeGreaterThanOrEqual(1);
+    expect(bidGaps[0].description).toContain("40/100");
+    expect(bidGaps[0].affectedSection).toBe("approach");
+  });
+
+  it("adds gap when requirement_match is very low (< 40)", () => {
+    const l1 = makeL1();
+    const intake = makeIntakeData();
+    const bidEval = makeBidEval({
+      requirement_match: { score: 25, rationale: "Major gaps in requirements." },
+    });
+    const result = runPreflightCheck(l1, intake, [], bidEval);
+
+    const bidGaps = result.gaps.filter(g => g.description.includes("Requirement Match"));
+    expect(bidGaps.length).toBeGreaterThanOrEqual(1);
+    expect(bidGaps[0].description).toContain("25/100");
+  });
+
+  it("adds gap when timeline_feasibility is very low (< 40)", () => {
+    const l1 = makeL1();
+    const intake = makeIntakeData();
+    const bidEval = makeBidEval({
+      timeline_feasibility: { score: 30, rationale: "Impossible timeline." },
+    });
+    const result = runPreflightCheck(l1, intake, [], bidEval);
+
+    const bidGaps = result.gaps.filter(g => g.description.includes("Timeline Feasibility"));
+    expect(bidGaps.length).toBeGreaterThanOrEqual(1);
+    expect(bidGaps[0].description).toContain("30/100");
+  });
+
+  it("handles null bidEvaluation gracefully (no extra gaps)", () => {
+    const l1 = makeL1();
+    const intake = makeIntakeData();
+    const result = runPreflightCheck(l1, intake, [], null);
+
+    const bidGaps = result.gaps.filter(g => g.description.includes("Bid evaluation"));
+    expect(bidGaps).toHaveLength(0);
+  });
+
+  it("handles undefined bidEvaluation gracefully", () => {
+    const l1 = makeL1();
+    const intake = makeIntakeData();
+    const result = runPreflightCheck(l1, intake, [], undefined);
+
+    const bidGaps = result.gaps.filter(g => g.description.includes("Bid evaluation"));
+    expect(bidGaps).toHaveLength(0);
+  });
+
+  it("changes overall status to needs_data when bid eval surfaces gaps", () => {
+    const l1 = makeL1({ evidenceLibrary: [], productContexts: [] });
+    const intake = makeIntakeData();
+    const bidEval = makeBidEval({
+      past_performance: { score: 30, rationale: "No relevant case studies." },
+      capability_alignment: { score: 35, rationale: "No products defined." },
+    });
+    const result = runPreflightCheck(l1, intake, [], bidEval);
+
+    expect(result.status).toBe("needs_data");
+    expect(result.summary.needsDataCount).toBeGreaterThanOrEqual(2);
+  });
+});

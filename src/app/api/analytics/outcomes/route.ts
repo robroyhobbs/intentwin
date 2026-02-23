@@ -26,7 +26,8 @@ export async function GET(request: NextRequest) {
         loss_reason_category,
         intake_data,
         created_at,
-        quality_review
+        quality_review,
+        bid_evaluation
       `)
       .eq("organization_id", context.organizationId)
       .in("status", [ProposalStatus.EXPORTED, ProposalStatus.FINAL, ProposalStatus.REVIEW, ProposalStatus.DRAFT])
@@ -218,6 +219,80 @@ export async function GET(request: NextRequest) {
       avgDaysToClose = Math.round((totalDays / closedProposals.length) * 10) / 10;
     }
 
+    // ── NEW: Bid score analysis ──
+    interface BidEvalData {
+      ai_scores: Record<string, { score: number; rationale: string }>;
+      weighted_total: number;
+      recommendation: string;
+    }
+
+    const proposalsWithBidEval = (proposals || []).filter((p) => {
+      const be = p.bid_evaluation as BidEvalData | null;
+      return be && typeof be === "object" && typeof be.weighted_total === "number";
+    });
+
+    // Scatter data: bid score vs outcome
+    const bidScoreCorrelation = proposalsWithBidEval.map((p) => {
+      const be = p.bid_evaluation as BidEvalData;
+      return {
+        id: p.id,
+        title: p.title,
+        bidScore: be.weighted_total,
+        recommendation: be.recommendation,
+        outcome: p.deal_outcome || DealOutcome.PENDING,
+        dealValue: p.deal_value ?? null,
+      };
+    });
+
+    // Avg bid score for won vs lost
+    const wonWithBidScore = proposalsWithBidEval.filter((p) => p.deal_outcome === DealOutcome.WON);
+    const lostWithBidScore = proposalsWithBidEval.filter((p) => p.deal_outcome === DealOutcome.LOST);
+
+    const avgBidScoreWon = wonWithBidScore.length > 0
+      ? Math.round(wonWithBidScore.reduce((sum, p) => sum + (p.bid_evaluation as BidEvalData).weighted_total, 0) / wonWithBidScore.length * 10) / 10
+      : null;
+    const avgBidScoreLost = lostWithBidScore.length > 0
+      ? Math.round(lostWithBidScore.reduce((sum, p) => sum + (p.bid_evaluation as BidEvalData).weighted_total, 0) / lostWithBidScore.length * 10) / 10
+      : null;
+
+    // Recommendation accuracy: how often did "bid" → won, "pass" → lost
+    const bidRecommended = proposalsWithBidEval.filter((p) => (p.bid_evaluation as BidEvalData).recommendation === "bid");
+    const passRecommended = proposalsWithBidEval.filter((p) => (p.bid_evaluation as BidEvalData).recommendation === "pass");
+
+    const bidRecommendedWon = bidRecommended.filter((p) => p.deal_outcome === DealOutcome.WON).length;
+    const bidRecommendedDecided = bidRecommended.filter((p) => p.deal_outcome === DealOutcome.WON || p.deal_outcome === DealOutcome.LOST).length;
+    const passRecommendedLost = passRecommended.filter((p) => p.deal_outcome === DealOutcome.LOST).length;
+    const passRecommendedDecided = passRecommended.filter((p) => p.deal_outcome === DealOutcome.WON || p.deal_outcome === DealOutcome.LOST).length;
+
+    const bidAccuracy = bidRecommendedDecided > 0 ? Math.round((bidRecommendedWon / bidRecommendedDecided) * 100) : null;
+    const passAccuracy = passRecommendedDecided > 0 ? Math.round((passRecommendedLost / passRecommendedDecided) * 100) : null;
+
+    // Factor-by-factor breakdown: average score for won vs lost
+    const factorKeys = ["requirement_match", "past_performance", "capability_alignment", "timeline_feasibility", "strategic_value"];
+    const factorBreakdown = factorKeys.map((key) => {
+      const wonScores = wonWithBidScore
+        .map((p) => (p.bid_evaluation as BidEvalData).ai_scores[key]?.score)
+        .filter((s): s is number => typeof s === "number");
+      const lostScores = lostWithBidScore
+        .map((p) => (p.bid_evaluation as BidEvalData).ai_scores[key]?.score)
+        .filter((s): s is number => typeof s === "number");
+      return {
+        factor: key,
+        avgWon: wonScores.length > 0 ? Math.round(wonScores.reduce((a, b) => a + b, 0) / wonScores.length) : null,
+        avgLost: lostScores.length > 0 ? Math.round(lostScores.reduce((a, b) => a + b, 0) / lostScores.length) : null,
+      };
+    });
+
+    const bidScoreAnalysis = {
+      totalScored: proposalsWithBidEval.length,
+      avgBidScoreWon,
+      avgBidScoreLost,
+      bidAccuracy,
+      passAccuracy,
+      factorBreakdown,
+      correlation: bidScoreCorrelation,
+    };
+
     return NextResponse.json({
       summary: {
         total,
@@ -247,6 +322,7 @@ export async function GET(request: NextRequest) {
       pipelineFunnel,
       qualityCorrelation,
       avgDaysToClose,
+      bidScoreAnalysis,
     });
   } catch (error) {
     console.error("Analytics error:", error);

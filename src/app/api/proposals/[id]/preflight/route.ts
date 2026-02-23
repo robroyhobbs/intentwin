@@ -3,6 +3,7 @@ import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchL1Context } from "@/lib/ai/pipeline/context";
 import { runPreflightCheck } from "@/lib/ai/pipeline/preflight";
+import type { BidEvaluation } from "@/lib/ai/bid-scoring";
 import { logger } from "@/lib/utils/logger";
 
 /**
@@ -49,7 +50,10 @@ export async function GET(
     const requirements =
       (proposal.rfp_extracted_requirements as Record<string, unknown>[] | null) ?? null;
 
-    const result = runPreflightCheck(l1Context, intakeData, requirements);
+    // Pass bid evaluation for cross-referencing (may be null if not scored)
+    const bidEvaluation = (proposal.bid_evaluation as BidEvaluation | null) ?? null;
+
+    const result = runPreflightCheck(l1Context, intakeData, requirements, bidEvaluation);
 
     return NextResponse.json({
       proposalId: id,

@@ -18,6 +18,7 @@ import { SectionStatusBadge } from "@/components/ui/section-status-badge";
 import type { ProposalReview, ReviewSummary } from "@/types/review";
 import type { Proposal, Section, L1Summary } from "./types";
 import { ProposalStatus } from "@/lib/constants/statuses";
+import { BidEvalBanner } from "./bid-eval-banner";
 
 interface ProposalTopBarProps {
   proposal: Proposal;
@@ -214,6 +215,11 @@ export function ProposalTopBar({
           <AlertTriangle className="h-3.5 w-3.5" />
           <span>L1 data unknown — proposal was generated before tracking was enabled</span>
         </div>
+      )}
+
+      {/* Bid Evaluation Banner */}
+      {proposal.bid_evaluation && proposal.status !== ProposalStatus.GENERATING && (
+        <BidEvalBanner bidEvaluation={proposal.bid_evaluation} />
       )}
 
       {/* Generation Progress */}

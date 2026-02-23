@@ -13,6 +13,7 @@ import { WinRateTrend } from "./_components/win-rate-trend";
 import { PipelineLossCharts } from "./_components/pipeline-loss-charts";
 import { IndustryOpportunityCharts } from "./_components/industry-opportunity-charts";
 import { QualityScatter } from "./_components/quality-scatter";
+import { BidScoreAnalysis } from "./_components/bid-score-analysis";
 import { RecentOutcomes } from "./_components/recent-outcomes";
 
 export default function AnalyticsPage() {
@@ -186,6 +187,11 @@ export default function AnalyticsPage() {
         opportunityChartData={opportunityChartData}
         axisStyle={axisStyle}
       />
+
+      {/* Bid Score Analysis (full width) */}
+      {data.bidScoreAnalysis && (
+        <BidScoreAnalysis data={data.bidScoreAnalysis} axisStyle={axisStyle} />
+      )}
 
       {/* Quality vs Outcome (full width) */}
       <QualityScatter

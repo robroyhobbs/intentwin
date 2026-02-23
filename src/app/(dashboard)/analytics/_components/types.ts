@@ -54,4 +54,24 @@ export interface AnalyticsData {
     dealValue: number | null;
   }>;
   avgDaysToClose?: number;
+  bidScoreAnalysis?: {
+    totalScored: number;
+    avgBidScoreWon: number | null;
+    avgBidScoreLost: number | null;
+    bidAccuracy: number | null;
+    passAccuracy: number | null;
+    factorBreakdown: Array<{
+      factor: string;
+      avgWon: number | null;
+      avgLost: number | null;
+    }>;
+    correlation: Array<{
+      id: string;
+      title: string;
+      bidScore: number;
+      recommendation: string;
+      outcome: string;
+      dealValue: number | null;
+    }>;
+  };
 }

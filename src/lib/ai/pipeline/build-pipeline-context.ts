@@ -18,6 +18,7 @@ import type { WinStrategyData } from "@/types/outcomes";
 import type { OutcomeContract, CompanyInfo } from "@/types/idd";
 import type { BrandVoice } from "../persuasion";
 import type { PipelineContext } from "./types";
+import type { BidEvaluation } from "../bid-scoring";
 import { fetchL1Context, buildL1ContextString, buildOutcomeContractContext } from "./context";
 
 /** Build the shared pipeline context for a proposal.
@@ -29,7 +30,7 @@ export async function buildPipelineContext(
   // Fetch proposal with organization
   const { data: proposal, error: fetchError } = await supabase
     .from("proposals")
-    .select("id, organization_id, title, status, intake_data, win_strategy_data, outcome_contract, rfp_extracted_requirements, organizations(name, settings)")
+    .select("id, organization_id, title, status, intake_data, win_strategy_data, outcome_contract, rfp_extracted_requirements, bid_evaluation, organizations(name, settings)")
     .eq("id", proposalId)
     .single();
 
@@ -41,6 +42,7 @@ export async function buildPipelineContext(
   const winStrategy = (proposal.win_strategy_data as WinStrategyData) || null;
   const outcomeContract =
     (proposal.outcome_contract as OutcomeContract) || null;
+  const bidEvaluation = (proposal.bid_evaluation as BidEvaluation) || null;
 
   // Get company info from organization (Supabase join may return object or array)
   const rawOrg = proposal.organizations;
@@ -227,6 +229,7 @@ Industry: ${(intakeData.client_industry as string) || "Not specified"}`;
     industry,
     industryConfig,
     intelligence,
+    bidEvaluation,
   };
 }
 

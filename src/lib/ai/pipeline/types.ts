@@ -10,6 +10,7 @@ import type {
 import type { BrandVoice } from "../persuasion";
 import type { getIndustryConfig } from "../industry-configs";
 import type { ProposalIntelligence } from "@/lib/intelligence";
+import type { BidEvaluation } from "../bid-scoring";
 
 // ── RFP Task Structure Types ─────────────────────────────────────────────────
 
@@ -125,4 +126,6 @@ export interface PipelineContext {
   industryConfig: ReturnType<typeof getIndustryConfig>;
   /** External procurement intelligence (null if service unavailable or unconfigured) */
   intelligence: ProposalIntelligence | null;
+  /** Bid evaluation scores from intake (null if not scored) */
+  bidEvaluation: BidEvaluation | null;
 }

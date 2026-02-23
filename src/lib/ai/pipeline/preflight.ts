@@ -7,6 +7,7 @@
  */
 
 import type { L1Context } from "./types";
+import type { BidEvaluation, FactorKey } from "../bid-scoring";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -60,6 +61,7 @@ export function runPreflightCheck(
   l1Context: L1Context,
   intakeData: Record<string, unknown>,
   requirements: Record<string, unknown>[] | null | undefined,
+  bidEvaluation?: BidEvaluation | null,
 ): PreflightResult {
   const gaps: PreflightGap[] = [];
   const safeRequirements = Array.isArray(requirements) ? requirements : [];
@@ -171,6 +173,71 @@ export function runPreflightCheck(
           affectedSection: "pricing",
         });
       }
+    }
+  }
+
+  // ── Check 5: Bid evaluation cross-reference ──────────────────────────────
+  // When bid scoring identified weak factors AND L1 data has corresponding gaps,
+  // surface compound risks that the user can address before generation.
+
+  if (bidEvaluation?.ai_scores) {
+    const scores = bidEvaluation.ai_scores;
+
+    // Low past_performance + few evidence entries → "Add more case studies"
+    const pastPerfScore = scores.past_performance?.score ?? 100;
+    if (pastPerfScore < 60 && evidenceCount < 3) {
+      // Only add if not already flagged by basic evidence check
+      if (!gaps.some(g => g.type === "evidence" && g.description.includes("bid evaluation"))) {
+        gaps.push({
+          type: "evidence",
+          category: "needs_data",
+          description: `Bid evaluation scored Past Performance at ${pastPerfScore}/100 and only ${evidenceCount} case studies are available`,
+          detail: scores.past_performance?.rationale,
+          uploadHint: "Upload case study documents or add evidence in the Evidence Library to strengthen your past performance narrative.",
+          affectedSection: "case_studies",
+        });
+      }
+    }
+
+    // Low capability_alignment + no products → "Define your service offerings"
+    const capScore = scores.capability_alignment?.score ?? 100;
+    if (capScore < 60 && productCount === 0) {
+      if (!gaps.some(g => g.type === "product" && g.description.includes("bid evaluation"))) {
+        gaps.push({
+          type: "product",
+          category: "needs_data",
+          description: `Bid evaluation scored Capability Alignment at ${capScore}/100 and no products/services are defined`,
+          detail: scores.capability_alignment?.rationale,
+          uploadHint: "Add your products and services in Settings > Company Profile to demonstrate capability alignment.",
+          affectedSection: "approach",
+        });
+      }
+    }
+
+    // Low requirement_match → advisory warning (no specific L1 fix, but useful feedback)
+    const reqMatchScore = scores.requirement_match?.score ?? 100;
+    if (reqMatchScore < 40) {
+      gaps.push({
+        type: "compliance",
+        category: "needs_data",
+        description: `Bid evaluation scored Requirement Match at ${reqMatchScore}/100 — significant gaps between RFP requirements and your capabilities`,
+        detail: scores.requirement_match?.rationale,
+        uploadHint: "Review the RFP requirements carefully. Consider adding relevant capabilities, certifications, or team members.",
+        affectedSection: "compliance_matrix_section",
+      });
+    }
+
+    // Low timeline_feasibility → advisory
+    const timelineScore = scores.timeline_feasibility?.score ?? 100;
+    if (timelineScore < 40) {
+      gaps.push({
+        type: "compliance",
+        category: "needs_data",
+        description: `Bid evaluation scored Timeline Feasibility at ${timelineScore}/100 — the proposed timeline may be unrealistic`,
+        detail: scores.timeline_feasibility?.rationale,
+        uploadHint: "Review the RFP timeline. Consider whether you can realistically deliver or if a phased approach is needed.",
+        affectedSection: "timeline",
+      });
     }
   }
 

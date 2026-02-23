@@ -5,6 +5,7 @@ import { inngest } from "@/inngest/client";
 import { ProposalStatus } from "@/lib/constants/statuses";
 import { fetchL1Context } from "@/lib/ai/pipeline/context";
 import { runPreflightCheck, type PreflightResult } from "@/lib/ai/pipeline/preflight";
+import type { BidEvaluation } from "@/lib/ai/bid-scoring";
 import { logger } from "@/lib/utils/logger";
 
 export async function POST(
@@ -44,7 +45,8 @@ export async function POST(
       );
       const requirements =
         (proposal.rfp_extracted_requirements as Record<string, unknown>[] | null) ?? null;
-      preflight = runPreflightCheck(l1Context, intakeData, requirements);
+      const bidEvaluation = (proposal.bid_evaluation as BidEvaluation | null) ?? null;
+      preflight = runPreflightCheck(l1Context, intakeData, requirements, bidEvaluation);
     } catch (preflightError) {
       // Fail-open: log and continue without preflight data
       logger.warn("Preflight check failed (non-blocking)", {
