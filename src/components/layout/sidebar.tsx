@@ -15,6 +15,9 @@ import {
   Palette,
   MessageSquare,
   Library,
+  Globe,
+  DollarSign,
+  FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
@@ -35,6 +38,15 @@ const navGroups = [
       { name: "Uploaded Docs", href: "/knowledge-base", icon: Database },
       { name: "Upload", href: "/knowledge-base/upload", icon: Upload },
       { name: "Search", href: "/knowledge-base/search", icon: Search },
+    ],
+  },
+  {
+    label: "Intelligence",
+    items: [
+      { name: "Market Overview", href: "/intelligence", icon: Globe },
+      { name: "Agency Explorer", href: "/intelligence/agencies", icon: Building2 },
+      { name: "Rate Benchmarks", href: "/intelligence/rates", icon: DollarSign },
+      { name: "Award Search", href: "/intelligence/awards", icon: FileText },
     ],
   },
   {

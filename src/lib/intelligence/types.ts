@@ -75,6 +75,71 @@ export interface AwardRecord {
   set_aside_type: string | null;
 }
 
+// ── Dashboard Stats ──────────────────────────────────────────────────────────
+
+export interface DashboardStatsResponse {
+  total_awards: number;
+  total_labor_rates: number;
+  total_agency_profiles: number;
+  unique_naics_codes: number;
+  top_agencies: { name: string; award_count: number; avg_amount: number | null }[];
+  top_naics: { code: string; award_count: number; total_amount: number }[];
+  competition_breakdown: Record<string, number>;
+  set_aside_breakdown: Record<string, number>;
+  awards_by_month: { month: string; count: number }[];
+  last_updated: string;
+}
+
+// ── NAICS Intelligence ───────────────────────────────────────────────────────
+
+export interface NaicsListItem {
+  code: string;
+  award_count: number;
+  total_amount: number;
+}
+
+export interface NaicsListResponse {
+  naics_codes: NaicsListItem[];
+  total: number;
+}
+
+export interface NaicsIntelligenceResponse {
+  naics_code: string;
+  description: string | null;
+  industry_config: {
+    key: string;
+    displayName: string;
+    painPoints: string[];
+    keywords: string[];
+    priorities: string[];
+    winThemes: string[];
+    sectionGuidance: Record<string, string>;
+  } | null;
+  award_stats: {
+    total_awards: number;
+    avg_amount: number | null;
+    common_agencies: string[];
+    competition_breakdown: Record<string, number>;
+  };
+}
+
+// ── Agency List ──────────────────────────────────────────────────────────────
+
+export interface AgencyListItem {
+  agency_name: string;
+  agency_level: string;
+  total_awards_tracked: number;
+  avg_award_amount: number | null;
+  preferred_eval_method: string | null;
+  avg_num_offers: number | null;
+  common_naics_codes: string[] | null;
+}
+
+export interface AgencyListResponse {
+  agencies: AgencyListItem[];
+  total: number;
+}
+
 // ── Composite: Proposal Intelligence Bundle ──────────────────────────────────
 
 export interface ProposalIntelligence {

@@ -13,4 +13,10 @@ export type {
   AwardsSearchResponse,
   AwardRecord,
   ProposalIntelligence,
+  DashboardStatsResponse,
+  NaicsListItem,
+  NaicsListResponse,
+  NaicsIntelligenceResponse,
+  AgencyListItem,
+  AgencyListResponse,
 } from "./types";
