@@ -3,7 +3,25 @@ import { defineConfig, devices } from "@playwright/test";
 /**
  * Playwright configuration for IntentWin E2E tests
  * @see https://playwright.dev/docs/test-configuration
+ *
+ * AI Safety: All E2E tests run with dummy AI API keys so that any
+ * server-side AI SDK calls will auth-fail rather than hitting real
+ * provider endpoints. Browser-side calls are blocked by the AI blocker
+ * fixture (see __tests__/e2e/fixtures/ai-blocker.ts).
  */
+
+/**
+ * Dummy API keys that cause auth failures on every AI provider.
+ * These prevent real AI calls from server-side code during E2E runs.
+ * The AI blocker Playwright fixture handles browser-side blocking.
+ */
+const DUMMY_AI_ENV = {
+  GEMINI_API_KEY: "test-mock-do-not-use",
+  OPENAI_API_KEY: "test-mock-do-not-use",
+  GROQ_API_KEY: "test-mock-do-not-use",
+  MISTRAL_API_KEY: "test-mock-do-not-use",
+  VOYAGE_API_KEY: "test-mock-do-not-use",
+};
 
 export default defineConfig({
   testDir: "./__tests__/e2e",
@@ -61,6 +79,9 @@ export default defineConfig({
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
+    env: {
+      ...DUMMY_AI_ENV,
+    },
   },
 
   /* Global timeout */

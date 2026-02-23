@@ -12,6 +12,15 @@ concurrency:
 
 env:
   NODE_VERSION: "22"
+  # ── AI Provider Dummy Keys ──
+  # Prevents ANY real AI API calls from CI. Server-side SDK clients will
+  # receive auth failures from providers. Browser-side calls are blocked
+  # by the Playwright AI blocker fixture.
+  GEMINI_API_KEY: test-mock-do-not-use
+  OPENAI_API_KEY: test-mock-do-not-use
+  GROQ_API_KEY: test-mock-do-not-use
+  MISTRAL_API_KEY: test-mock-do-not-use
+  VOYAGE_API_KEY: test-mock-do-not-use
 
 jobs:
   lint:

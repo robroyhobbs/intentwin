@@ -4,12 +4,15 @@
  * Utilities for Playwright end-to-end tests
  */
 
-import { test as base, expect, Page } from "@playwright/test";
+import { test as aiBlockerTest, expect } from "../../../../__tests__/e2e/fixtures/ai-blocker";
+import type { Page } from "@playwright/test";
 
 /**
- * Extended test fixture with authentication
+ * Extended test fixture with authentication AND AI blocker.
+ * Builds on the AI blocker base so all E2E tests automatically
+ * block real AI API calls.
  */
-export const test = base.extend<{
+export const test = aiBlockerTest.extend<{
   authenticatedPage: Page;
 }>({
    

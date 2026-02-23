@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures/ai-blocker";
 import path from "path";
 
 test.describe("Knowledge Base Flow", () => {

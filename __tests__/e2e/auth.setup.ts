@@ -1,4 +1,4 @@
-import { test as setup, expect } from "@playwright/test";
+import { test as setup, expect } from "./fixtures/ai-blocker";
 import { testUsers } from "@/lib/test-utils/e2e";
 
 const authFile = "__tests__/e2e/.auth/user.json";
