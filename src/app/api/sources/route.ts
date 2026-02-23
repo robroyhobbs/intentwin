@@ -19,8 +19,8 @@ export async function GET(request: NextRequest) {
     const adminClient = createAdminClient();
     const orgId = context.organizationId;
 
-    // Fetch all three L1 tables in parallel, scoped to the user's org
-    const [companyRes, productsRes, evidenceRes] = await Promise.all([
+    // Fetch all four L1 tables in parallel, scoped to the user's org
+    const [companyRes, productsRes, evidenceRes, teamRes] = await Promise.all([
       adminClient
         .from("company_context")
         .select(
@@ -46,11 +46,19 @@ export async function GET(request: NextRequest) {
         .order("evidence_type")
         .order("title")
         .limit(500),
+      adminClient
+        .from("team_members")
+        .select(
+          "id, name, role, title, clearance_level, years_experience, certifications, skills, is_verified, resume_document_id, created_at",
+        )
+        .eq("organization_id", orgId)
+        .order("name"),
     ]);
 
     const companyContextItems = companyRes.data ?? [];
     const productItems = productsRes.data ?? [];
     const evidenceItems = evidenceRes.data ?? [];
+    const teamItems = teamRes.data ?? [];
 
     // Map company_context categories to source categories
     const categoryMap: Record<
@@ -133,12 +141,28 @@ export async function GET(request: NextRequest) {
       };
     }
 
+    // Group team members
+    if (teamItems.length > 0) {
+      categoryMap["team-members"] = {
+        name: "team members",
+        key: "team-members",
+        files: teamItems.map((t) => ({
+          fileName: t.id,
+          category: "team-members",
+          title: t.name,
+          status: t.is_verified ? "VERIFIED" : "UNVERIFIED",
+          contentType: t.role,
+        })),
+      };
+    }
+
     // Return categories in a consistent order
     const orderedKeys = [
       "company-context",
       "service-catalog",
       "case-studies",
       "evidence-library",
+      "team-members",
     ];
     const categories = orderedKeys
       .filter((k) => categoryMap[k])

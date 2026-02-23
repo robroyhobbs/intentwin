@@ -14,6 +14,7 @@ import {
   Database,
   Shield,
   ArrowLeft,
+  Users,
 } from "lucide-react";
 
 interface SourceFile {
@@ -83,6 +84,7 @@ export default function SourcesPage() {
     "case-studies": <Briefcase className="h-5 w-5" />,
     "service-catalog": <FileText className="h-5 w-5" />,
     "evidence-library": <Award className="h-5 w-5" />,
+    "team-members": <Users className="h-5 w-5" />,
     "proposal-examples": <FileText className="h-5 w-5" />,
   };
 
@@ -92,6 +94,7 @@ export default function SourcesPage() {
     "case-studies": "Real client success stories with verified metrics",
     "service-catalog": "Service offerings and capabilities",
     "evidence-library": "Certifications, partnerships, and success metrics",
+    "team-members": "Key personnel with credentials, clearances, and past performance",
     "proposal-examples": "Templates and structure guides",
   };
 
@@ -218,14 +221,8 @@ export default function SourcesPage() {
       </div>
 
       {/* Stats */}
-      <div className="mb-8 grid grid-cols-4 gap-4">
+      <div className="mb-8 grid grid-cols-5 gap-4">
         {[
-          {
-            label: "Methodologies",
-            count:
-              sources.find((s) => s.key === "methodologies")?.files.length || 0,
-            icon: <BookOpen className="h-5 w-5" />,
-          },
           {
             label: "Case Studies",
             count:
@@ -238,6 +235,18 @@ export default function SourcesPage() {
               sources.find((s) => s.key === "evidence-library")?.files.length ||
               0,
             icon: <Award className="h-5 w-5" />,
+          },
+          {
+            label: "Team Members",
+            count:
+              sources.find((s) => s.key === "team-members")?.files.length || 0,
+            icon: <Users className="h-5 w-5" />,
+          },
+          {
+            label: "Services",
+            count:
+              sources.find((s) => s.key === "service-catalog")?.files.length || 0,
+            icon: <FileText className="h-5 w-5" />,
           },
           {
             label: "Total Sources",

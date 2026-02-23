@@ -121,6 +121,41 @@ export async function GET(
       });
     }
 
+    if (category === "team-members") {
+      const { data, error } = await adminClient
+        .from("team_members")
+        .select(
+          "id, name, role, title, email, skills, certifications, clearance_level, years_experience, project_history, bio, is_verified, resume_document_id",
+        )
+        .eq("organization_id", orgId)
+        .eq("id", file)
+        .single();
+
+      if (error || !data) {
+        return NextResponse.json(
+          { error: "Source not found" },
+          { status: 404 },
+        );
+      }
+
+      const content = buildTeamMemberContent(data);
+
+      return NextResponse.json({
+        fileName: file,
+        category,
+        title: data.name,
+        content,
+        metadata: {
+          status: data.is_verified ? "VERIFIED" : "UNVERIFIED",
+          role: data.role,
+          title: data.title,
+          clearance_level: data.clearance_level,
+          years_experience: data.years_experience,
+          has_resume: !!data.resume_document_id,
+        },
+      });
+    }
+
     return NextResponse.json({ error: "Unknown category" }, { status: 404 });
   } catch (error) {
     console.error("Failed to load source:", error);
@@ -129,6 +164,65 @@ export async function GET(
       { status: 500 },
     );
   }
+}
+
+function buildTeamMemberContent(member: Record<string, unknown>): string {
+  const lines: string[] = [];
+  lines.push(`# ${member.name}`);
+  lines.push(`**${member.role}**${member.title ? ` | ${member.title}` : ""}`);
+  lines.push("");
+
+  if (member.clearance_level) {
+    lines.push(`**Security Clearance:** ${member.clearance_level}`);
+  }
+  if (member.years_experience) {
+    lines.push(`**Years of Experience:** ${member.years_experience}`);
+  }
+  if (member.email) {
+    lines.push(`**Email:** ${member.email}`);
+  }
+  lines.push("");
+
+  if (member.bio) {
+    lines.push("## Bio");
+    lines.push(String(member.bio));
+    lines.push("");
+  }
+
+  const certs = member.certifications as string[] | undefined;
+  if (certs?.length) {
+    lines.push("## Certifications");
+    for (const cert of certs) {
+      lines.push(`- ${cert}`);
+    }
+    lines.push("");
+  }
+
+  const skills = member.skills as string[] | undefined;
+  if (skills?.length) {
+    lines.push("## Skills");
+    lines.push(skills.join(", "));
+    lines.push("");
+  }
+
+  const projects = member.project_history as Array<Record<string, string>> | undefined;
+  if (projects?.length) {
+    lines.push("## Past Performance");
+    for (const proj of projects) {
+      lines.push(`### ${proj.title}${proj.dates ? ` (${proj.dates})` : ""}`);
+      if (proj.client_industry) lines.push(`**Industry:** ${proj.client_industry}`);
+      if (proj.scope) lines.push(`**Scope:** ${proj.scope}`);
+      if (proj.results) lines.push(`**Results:** ${proj.results}`);
+      lines.push("");
+    }
+  }
+
+  if (member.resume_document_id) {
+    lines.push("---");
+    lines.push("*Resume on file*");
+  }
+
+  return lines.join("\n");
 }
 
 function buildProductContent(product: Record<string, unknown>): string {
