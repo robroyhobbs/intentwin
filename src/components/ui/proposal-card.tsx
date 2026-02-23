@@ -1,7 +1,13 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
-import { FileText, Play, Download, ArrowUpRight } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { FileText, Play, Download, ArrowUpRight, Trash2, Loader2 } from "lucide-react";
 import { SectionStatusBadge } from "./section-status-badge";
 import { ProposalStatus } from "@/lib/constants/statuses";
+import { useAuthFetch } from "@/hooks/use-auth-fetch";
+import { toast } from "sonner";
 
 interface ProposalCardProps {
   id: string;
@@ -33,14 +39,59 @@ export function ProposalCard({
 }: ProposalCardProps) {
   const progress = sectionCount > 0 ? (completedSections / sectionCount) * 100 : 0;
   const action = QUICK_ACTIONS[status];
+  const [deleting, setDeleting] = useState(false);
+  const authFetch = useAuthFetch();
+  const router = useRouter();
+
+  async function handleDelete(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!confirm(`Delete "${title}"? This will permanently remove the proposal and all its sections. This cannot be undone.`)) {
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      const res = await authFetch(`/api/proposals/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as { error?: string }).error || "Failed to delete");
+      }
+
+      toast.success("Proposal deleted");
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete proposal");
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   return (
     <Link
       href={`/proposals/${id}`}
-      className="group block rounded-xl bg-[var(--card-bg)] border border-[var(--card-border)] shadow-sm transition-all duration-200 hover:border-[var(--accent)] hover:shadow-[var(--shadow-glow)] hover:-translate-y-1"
+      className="group relative block rounded-xl bg-[var(--card-bg)] border border-[var(--card-border)] shadow-sm transition-all duration-200 hover:border-[var(--accent)] hover:shadow-[var(--shadow-glow)] hover:-translate-y-1"
     >
       {/* Top accent line */}
       <div className="h-0.5 rounded-t-xl bg-[var(--accent)]" />
+
+      {/* Delete button — visible on hover */}
+      <button
+        onClick={handleDelete}
+        disabled={deleting}
+        className="absolute top-3 right-3 z-10 rounded-lg p-1.5 text-[var(--foreground-subtle)] opacity-0 group-hover:opacity-100 hover:text-[var(--danger)] hover:bg-[var(--danger)]/10 transition-all disabled:opacity-50"
+        title="Delete proposal"
+      >
+        {deleting ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <Trash2 className="h-3.5 w-3.5" />
+        )}
+      </button>
 
       <div className="p-5">
         <div className="flex items-start justify-between gap-3">

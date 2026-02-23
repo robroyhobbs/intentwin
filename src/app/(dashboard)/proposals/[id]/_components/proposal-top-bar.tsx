@@ -1,6 +1,6 @@
 "use client";
 
-import type { ComponentType } from "react";
+import { useState, type ComponentType } from "react";
 import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import {
   Loader2,
@@ -12,9 +12,12 @@ import {
   History,
   Database,
   AlertTriangle,
+  Trash2,
 } from "lucide-react";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { SectionStatusBadge } from "@/components/ui/section-status-badge";
+import { useAuthFetch } from "@/hooks/use-auth-fetch";
+import { toast } from "sonner";
 import type { ProposalReview, ReviewSummary } from "@/types/review";
 import type { Proposal, Section, L1Summary } from "./types";
 import { ProposalStatus } from "@/lib/constants/statuses";
@@ -66,6 +69,29 @@ export function ProposalTopBar({
   ReviewSummaryBar,
   DealOutcomeSetter,
 }: ProposalTopBarProps) {
+  const [deleting, setDeleting] = useState(false);
+  const authFetch = useAuthFetch();
+
+  async function handleDelete() {
+    if (!confirm(`Delete "${proposal.title}"? This will permanently remove the proposal and all its sections. This cannot be undone.`)) {
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      const res = await authFetch(`/api/proposals/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as { error?: string }).error || "Failed to delete");
+      }
+      toast.success("Proposal deleted");
+      router.push("/proposals");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete proposal");
+      setDeleting(false);
+    }
+  }
+
   return (
     <div className="border-b border-[var(--border)] bg-[var(--card-bg)] px-6 py-4">
       <div className="flex items-center justify-between">
@@ -104,6 +130,20 @@ export function ProposalTopBar({
               onUpdate={() => fetchProposal()}
             />
           )}
+
+          {/* Delete Proposal */}
+          <button
+            onClick={handleDelete}
+            disabled={deleting || generating}
+            className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] px-3 py-2 text-sm font-medium text-[var(--foreground-subtle)] hover:text-[var(--danger)] hover:border-[var(--danger)]/50 hover:bg-[var(--danger)]/10 transition-all disabled:opacity-50"
+            title="Delete proposal"
+          >
+            {deleting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
+          </button>
 
           {/* Version History Toggle */}
           <button
