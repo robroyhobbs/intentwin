@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures/ai-blocker";
 
 test.describe("Multi-Tenancy Security", () => {
   test("organization A cannot access organization B data", async ({ page, context }) => {

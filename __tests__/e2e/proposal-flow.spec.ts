@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures/ai-blocker";
 
 test.describe("Proposal Flow", () => {
   test("create proposal and generate sections", async ({ page }) => {
