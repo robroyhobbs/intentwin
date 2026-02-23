@@ -117,7 +117,7 @@ Based on the above, score each of the 5 bid evaluation factors (0-100) with rati
   const response = await generateText(prompt, {
     systemPrompt: BID_SCORING_SYSTEM_PROMPT,
     temperature: 0.3,
-    maxTokens: 2048,
+    maxTokens: 4096,
   });
 
   const aiScores = parseScoresFromResponse(response);
@@ -184,7 +184,7 @@ Based on the above, score each of the 5 bid evaluation factors (0-100) with rati
   const response = await generateText(prompt, {
     systemPrompt: BID_SCORING_SYSTEM_PROMPT,
     temperature: 0.3,
-    maxTokens: 2048,
+    maxTokens: 4096,
   });
 
   // Parse structured response
@@ -443,21 +443,53 @@ function buildL1Summary(l1Context: L1Context): string {
   return sections.join("\n\n") || "No L1 context available.";
 }
 
+/**
+ * Extract JSON from an AI response using multiple strategies.
+ * Returns null if no valid JSON can be found.
+ */
+function extractJsonFromResponse(response: string): Record<string, unknown> | null {
+  // Strategy 1: Markdown code block (greedy to handle nested content)
+  const codeBlockMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (codeBlockMatch) {
+    try {
+      return JSON.parse(codeBlockMatch[1].trim());
+    } catch {
+      // Code block found but content isn't valid JSON — continue to other strategies
+    }
+  }
+
+  // Strategy 2: Find the outermost { ... } in the response
+  const firstBrace = response.indexOf("{");
+  const lastBrace = response.lastIndexOf("}");
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    try {
+      return JSON.parse(response.slice(firstBrace, lastBrace + 1));
+    } catch {
+      // Braces found but not valid JSON — continue
+    }
+  }
+
+  // Strategy 3: Try parsing the entire response as-is (raw JSON, no wrapper)
+  try {
+    return JSON.parse(response.trim());
+  } catch {
+    // Nothing worked
+  }
+
+  return null;
+}
+
 function parseScoresFromResponse(
   response: string,
 ): Record<FactorKey, FactorScore> {
-  // Extract JSON from markdown code block
-  let jsonStr = response;
-  const jsonMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (jsonMatch) {
-    jsonStr = jsonMatch[1];
-  }
+  const parsed = extractJsonFromResponse(response);
 
-  let parsed: Record<string, { score: number; rationale: string }>;
-  try {
-    parsed = JSON.parse(jsonStr.trim());
-  } catch {
-    logger.error("Failed to parse bid scoring response, using defaults", { detail: response.slice(0, 200) });
+  if (!parsed) {
+    logger.error("Failed to parse bid scoring response after all strategies", {
+      responseLength: response.length,
+      first200: response.slice(0, 200),
+      last200: response.slice(-200),
+    });
     // Return neutral scores as fallback
     const defaults: Record<string, FactorScore> = {};
     for (const factor of SCORING_FACTORS) {
@@ -472,10 +504,18 @@ function parseScoresFromResponse(
   // Validate and clamp scores
   const result: Record<string, FactorScore> = {};
   for (const factor of SCORING_FACTORS) {
-    const raw = parsed[factor.key];
-    if (raw && typeof raw.score === "number") {
+    const raw = parsed[factor.key] as { score?: unknown; rationale?: unknown } | undefined;
+    // Accept score as number or numeric string
+    const rawScore = raw?.score;
+    const score = typeof rawScore === "number"
+      ? rawScore
+      : typeof rawScore === "string" && !isNaN(Number(rawScore))
+        ? Number(rawScore)
+        : null;
+
+    if (raw && score !== null) {
       result[factor.key] = {
-        score: Math.max(0, Math.min(100, Math.round(raw.score))),
+        score: Math.max(0, Math.min(100, Math.round(score))),
         rationale:
           typeof raw.rationale === "string"
             ? raw.rationale.slice(0, 500)
