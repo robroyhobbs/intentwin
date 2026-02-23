@@ -27,13 +27,13 @@ SELECT tests.create_test_org('b0000000-0000-0000-0000-000000000002'::uuid, 'Org 
 
 -- Org Alpha users
 SELECT tests.create_test_user(
-  'u0000000-0000-0000-0000-000000000001'::uuid,
+  'a0000000-0000-0000-0000-000000000001'::uuid,
   'alice@alpha.com',
   'a0000000-0000-0000-0000-000000000001'::uuid,
   'admin'
 );
 SELECT tests.create_test_user(
-  'u0000000-0000-0000-0000-000000000002'::uuid,
+  'a0000000-0000-0000-0000-000000000002'::uuid,
   'bob@alpha.com',
   'a0000000-0000-0000-0000-000000000001'::uuid,
   'member'
@@ -41,7 +41,7 @@ SELECT tests.create_test_user(
 
 -- Org Beta admin
 SELECT tests.create_test_user(
-  'u0000000-0000-0000-0000-000000000003'::uuid,
+  'a0000000-0000-0000-0000-000000000003'::uuid,
   'charlie@beta.com',
   'b0000000-0000-0000-0000-000000000002'::uuid,
   'admin'
@@ -49,14 +49,14 @@ SELECT tests.create_test_user(
 
 -- Orphan user
 SELECT tests.create_test_user_no_org(
-  'u0000000-0000-0000-0000-000000000099'::uuid,
+  'a0000000-0000-0000-0000-000000000099'::uuid,
   'orphan@nowhere.com'
 );
 
 -- ============================================================
 -- TEST 1: Happy — Admin (Alice) sees own org
 -- ============================================================
-SELECT tests.set_auth_user('u0000000-0000-0000-0000-000000000001'::uuid);
+SELECT tests.set_auth_user('a0000000-0000-0000-0000-000000000001'::uuid);
 
 SELECT is(
   (SELECT count(*)::integer FROM public.organizations
@@ -68,7 +68,7 @@ SELECT is(
 -- ============================================================
 -- TEST 2: Happy — Member (Bob) sees own org
 -- ============================================================
-SELECT tests.set_auth_user('u0000000-0000-0000-0000-000000000002'::uuid);
+SELECT tests.set_auth_user('a0000000-0000-0000-0000-000000000002'::uuid);
 
 SELECT is(
   (SELECT count(*)::integer FROM public.organizations
@@ -80,15 +80,11 @@ SELECT is(
 -- ============================================================
 -- TEST 3: Happy — Admin can update own org name
 -- ============================================================
-SELECT tests.set_auth_user('u0000000-0000-0000-0000-000000000001'::uuid);
+SELECT tests.set_auth_user('a0000000-0000-0000-0000-000000000001'::uuid);
 
-SELECT is(
-  (SELECT count(*)::integer FROM (
-    UPDATE public.organizations SET name = 'Org Alpha Updated'
-    WHERE id = 'a0000000-0000-0000-0000-000000000001'::uuid
-    RETURNING id
-  ) t),
-  1,
+SELECT lives_ok(
+  $$UPDATE public.organizations SET name = 'Org Alpha Updated'
+    WHERE id = 'a0000000-0000-0000-0000-000000000001'::uuid$$,
   'Alice (admin) can update Org Alpha'
 );
 
@@ -114,30 +110,24 @@ SELECT is(
 -- ============================================================
 -- TEST 6: Bad — Non-admin (Bob) CANNOT update own org
 -- ============================================================
-SELECT tests.set_auth_user('u0000000-0000-0000-0000-000000000002'::uuid);
+SELECT tests.set_auth_user('a0000000-0000-0000-0000-000000000002'::uuid);
 
-SELECT is(
-  (SELECT count(*)::integer FROM (
-    UPDATE public.organizations SET name = 'HACKED by Bob'
+SELECT is_empty(
+  $$UPDATE public.organizations SET name = 'HACKED by Bob'
     WHERE id = 'a0000000-0000-0000-0000-000000000001'::uuid
-    RETURNING id
-  ) t),
-  0,
+    RETURNING id$$,
   'Bob (member) cannot update Org Alpha'
 );
 
 -- ============================================================
 -- TEST 7: Bad — Admin CANNOT update Org B (cross-tenant)
 -- ============================================================
-SELECT tests.set_auth_user('u0000000-0000-0000-0000-000000000001'::uuid);
+SELECT tests.set_auth_user('a0000000-0000-0000-0000-000000000001'::uuid);
 
-SELECT is(
-  (SELECT count(*)::integer FROM (
-    UPDATE public.organizations SET name = 'HACKED by Alice'
+SELECT is_empty(
+  $$UPDATE public.organizations SET name = 'HACKED by Alice'
     WHERE id = 'b0000000-0000-0000-0000-000000000002'::uuid
-    RETURNING id
-  ) t),
-  0,
+    RETURNING id$$,
   'Alice (admin, Org Alpha) cannot update Org Beta'
 );
 
@@ -156,7 +146,7 @@ SELECT throws_ok(
 -- ============================================================
 -- TEST 9: Edge — Orphan user (NULL org_id) sees 0 orgs
 -- ============================================================
-SELECT tests.set_auth_user('u0000000-0000-0000-0000-000000000099'::uuid);
+SELECT tests.set_auth_user('a0000000-0000-0000-0000-000000000099'::uuid);
 
 SELECT is(
   (SELECT count(*)::integer FROM public.organizations),

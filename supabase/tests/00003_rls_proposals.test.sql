@@ -30,13 +30,13 @@ SELECT tests.create_test_org('b0000000-0000-0000-0000-000000000002'::uuid, 'Org 
 
 -- Org Alpha: admin + member
 SELECT tests.create_test_user(
-  'u0000000-0000-0000-0000-000000000001'::uuid,
+  'a0000000-0000-0000-0000-000000000001'::uuid,
   'alice@alpha.com',
   'a0000000-0000-0000-0000-000000000001'::uuid,
   'admin'
 );
 SELECT tests.create_test_user(
-  'u0000000-0000-0000-0000-000000000002'::uuid,
+  'a0000000-0000-0000-0000-000000000002'::uuid,
   'bob@alpha.com',
   'a0000000-0000-0000-0000-000000000001'::uuid,
   'member'
@@ -44,13 +44,13 @@ SELECT tests.create_test_user(
 
 -- Org Beta: admin + member
 SELECT tests.create_test_user(
-  'u0000000-0000-0000-0000-000000000003'::uuid,
+  'a0000000-0000-0000-0000-000000000003'::uuid,
   'charlie@beta.com',
   'b0000000-0000-0000-0000-000000000002'::uuid,
   'admin'
 );
 SELECT tests.create_test_user(
-  'u0000000-0000-0000-0000-000000000004'::uuid,
+  'a0000000-0000-0000-0000-000000000004'::uuid,
   'diana@beta.com',
   'b0000000-0000-0000-0000-000000000002'::uuid,
   'member'
@@ -63,8 +63,8 @@ SELECT tests.create_test_user(
 -- Proposals
 INSERT INTO public.proposals (id, title, status, intake_data, created_by, organization_id, created_at, updated_at)
 VALUES
-  ('d0000000-0000-0000-0000-000000000001'::uuid, 'Alpha Proposal', 'draft', '{}', 'u0000000-0000-0000-0000-000000000001'::uuid, 'a0000000-0000-0000-0000-000000000001'::uuid, now(), now()),
-  ('d0000000-0000-0000-0000-000000000002'::uuid, 'Beta Proposal',  'draft', '{}', 'u0000000-0000-0000-0000-000000000003'::uuid, 'b0000000-0000-0000-0000-000000000002'::uuid, now(), now());
+  ('d0000000-0000-0000-0000-000000000001'::uuid, 'Alpha Proposal', 'draft', '{}', 'a0000000-0000-0000-0000-000000000001'::uuid, 'a0000000-0000-0000-0000-000000000001'::uuid, now(), now()),
+  ('d0000000-0000-0000-0000-000000000002'::uuid, 'Beta Proposal',  'draft', '{}', 'a0000000-0000-0000-0000-000000000003'::uuid, 'b0000000-0000-0000-0000-000000000002'::uuid, now(), now());
 
 -- Proposal Sections
 INSERT INTO public.proposal_sections (id, proposal_id, section_type, section_order, title, created_at, updated_at)
@@ -75,7 +75,7 @@ VALUES
 -- Documents + Chunks (needed for section_sources FK)
 INSERT INTO public.documents (id, title, file_name, file_type, file_size_bytes, storage_path, mime_type, processing_status, uploaded_by, organization_id, created_at, updated_at)
 VALUES
-  ('f0000000-0000-0000-0000-000000000001'::uuid, 'Alpha Doc', 'alpha.pdf', 'pdf', 1024, '/alpha.pdf', 'application/pdf', 'completed', 'u0000000-0000-0000-0000-000000000001'::uuid, 'a0000000-0000-0000-0000-000000000001'::uuid, now(), now());
+  ('f0000000-0000-0000-0000-000000000001'::uuid, 'Alpha Doc', 'alpha.pdf', 'pdf', 1024, '/alpha.pdf', 'application/pdf', 'completed', 'a0000000-0000-0000-0000-000000000001'::uuid, 'a0000000-0000-0000-0000-000000000001'::uuid, now(), now());
 
 INSERT INTO public.document_chunks (id, document_id, content, chunk_index, created_at)
 VALUES
@@ -107,20 +107,20 @@ VALUES
 -- Deal Outcome History
 INSERT INTO public.deal_outcome_history (id, proposal_id, new_outcome, changed_by, changed_at)
 VALUES
-  ('a5000000-0000-0000-0000-000000000001'::uuid, 'd0000000-0000-0000-0000-000000000001'::uuid, 'won', 'u0000000-0000-0000-0000-000000000001'::uuid, now()),
-  ('a5000000-0000-0000-0000-000000000002'::uuid, 'd0000000-0000-0000-0000-000000000002'::uuid, 'lost', 'u0000000-0000-0000-0000-000000000003'::uuid, now());
+  ('a5000000-0000-0000-0000-000000000001'::uuid, 'd0000000-0000-0000-0000-000000000001'::uuid, 'won', 'a0000000-0000-0000-0000-000000000001'::uuid, now()),
+  ('a5000000-0000-0000-0000-000000000002'::uuid, 'd0000000-0000-0000-0000-000000000002'::uuid, 'lost', 'a0000000-0000-0000-0000-000000000003'::uuid, now());
 
 -- Section Feedback
 INSERT INTO public.section_feedback (id, section_id, proposal_id, feedback_type, created_by, created_at)
 VALUES
-  ('a6000000-0000-0000-0000-000000000001'::uuid, 'e0000000-0000-0000-0000-000000000001'::uuid, 'd0000000-0000-0000-0000-000000000001'::uuid, 'helpful', 'u0000000-0000-0000-0000-000000000001'::uuid, now()),
-  ('a6000000-0000-0000-0000-000000000002'::uuid, 'e0000000-0000-0000-0000-000000000002'::uuid, 'd0000000-0000-0000-0000-000000000002'::uuid, 'excellent', 'u0000000-0000-0000-0000-000000000003'::uuid, now());
+  ('a6000000-0000-0000-0000-000000000001'::uuid, 'e0000000-0000-0000-0000-000000000001'::uuid, 'd0000000-0000-0000-0000-000000000001'::uuid, 'helpful', 'a0000000-0000-0000-0000-000000000001'::uuid, now()),
+  ('a6000000-0000-0000-0000-000000000002'::uuid, 'e0000000-0000-0000-0000-000000000002'::uuid, 'd0000000-0000-0000-0000-000000000002'::uuid, 'excellent', 'a0000000-0000-0000-0000-000000000003'::uuid, now());
 
 -- Proposal Versions (created by Alice in Alpha, but should be visible to Bob too)
 INSERT INTO public.proposal_versions (id, proposal_id, version_number, title, trigger_event, created_by, created_at)
 VALUES
-  ('a7000000-0000-0000-0000-000000000001'::uuid, 'd0000000-0000-0000-0000-000000000001'::uuid, 1, 'Alpha Proposal v1', 'manual_save', 'u0000000-0000-0000-0000-000000000001'::uuid, now()),
-  ('a7000000-0000-0000-0000-000000000002'::uuid, 'd0000000-0000-0000-0000-000000000002'::uuid, 1, 'Beta Proposal v1', 'manual_save', 'u0000000-0000-0000-0000-000000000003'::uuid, now());
+  ('a7000000-0000-0000-0000-000000000001'::uuid, 'd0000000-0000-0000-0000-000000000001'::uuid, 1, 'Alpha Proposal v1', 'manual_save', 'a0000000-0000-0000-0000-000000000001'::uuid, now()),
+  ('a7000000-0000-0000-0000-000000000002'::uuid, 'd0000000-0000-0000-0000-000000000002'::uuid, 1, 'Beta Proposal v1', 'manual_save', 'a0000000-0000-0000-0000-000000000003'::uuid, now());
 
 -- Section Versions
 INSERT INTO public.section_versions (id, proposal_version_id, original_section_id, title, section_type, section_order, created_at)
@@ -132,7 +132,7 @@ VALUES
 -- ============================================================
 -- TEST 1: Happy — Alice sees own org's proposal
 -- ============================================================
-SELECT tests.set_auth_user('u0000000-0000-0000-0000-000000000001'::uuid);
+SELECT tests.set_auth_user('a0000000-0000-0000-0000-000000000001'::uuid);
 
 SELECT is(
   (SELECT count(*)::integer FROM public.proposals),
@@ -195,7 +195,7 @@ SELECT is(
 SELECT throws_ok(
   $$INSERT INTO public.proposals (id, title, status, intake_data, created_by, organization_id)
     VALUES ('d0000000-0000-0000-0000-000000000099', 'Sneaky', 'draft', '{}',
-            'u0000000-0000-0000-0000-000000000001',
+            'a0000000-0000-0000-0000-000000000001',
             'b0000000-0000-0000-0000-000000000002')$$,
   NULL,
   NULL,
@@ -205,33 +205,27 @@ SELECT throws_ok(
 -- ============================================================
 -- TEST 8: Bad — Alice CANNOT update proposals in other org
 -- ============================================================
-SELECT is(
-  (SELECT count(*)::integer FROM (
-    UPDATE public.proposals SET title = 'HACKED'
+SELECT is_empty(
+  $$UPDATE public.proposals SET title = 'HACKED'
     WHERE id = 'd0000000-0000-0000-0000-000000000002'::uuid
-    RETURNING id
-  ) t),
-  0,
+    RETURNING id$$,
   'Alice cannot update Beta proposal (0 rows affected)'
 );
 
 -- ============================================================
 -- TEST 9: Bad — Alice CANNOT delete proposals in other org
 -- ============================================================
-SELECT is(
-  (SELECT count(*)::integer FROM (
-    DELETE FROM public.proposals
+SELECT is_empty(
+  $$DELETE FROM public.proposals
     WHERE id = 'd0000000-0000-0000-0000-000000000002'::uuid
-    RETURNING id
-  ) t),
-  0,
+    RETURNING id$$,
   'Alice cannot delete Beta proposal (0 rows affected)'
 );
 
 -- ============================================================
 -- TEST 10: Edge — proposal_versions visible to org member (Bob), not just creator
 -- ============================================================
-SELECT tests.set_auth_user('u0000000-0000-0000-0000-000000000002'::uuid);
+SELECT tests.set_auth_user('a0000000-0000-0000-0000-000000000002'::uuid);
 
 SELECT is(
   (SELECT count(*)::integer FROM public.proposal_versions

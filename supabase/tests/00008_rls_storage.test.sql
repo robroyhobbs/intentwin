@@ -29,7 +29,7 @@ SELECT tests.create_test_org('a0000000-0000-0000-0000-000000000001'::uuid, 'Org 
 SELECT tests.create_test_org('b0000000-0000-0000-0000-000000000002'::uuid, 'Org Beta');
 
 SELECT tests.create_test_user(
-  'u0000000-0000-0000-0000-000000000001'::uuid,
+  'a0000000-0000-0000-0000-000000000001'::uuid,
   'alice@alpha.com',
   'a0000000-0000-0000-0000-000000000001'::uuid,
   'admin'

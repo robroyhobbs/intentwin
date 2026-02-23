@@ -6,9 +6,12 @@
 -- ============================================================
 
 BEGIN;
+SELECT plan(1);
 
 -- Create test helper schema
 CREATE SCHEMA IF NOT EXISTS tests;
+
+
 
 -- ============================================================
 -- Helper: Create a test organization
@@ -175,4 +178,18 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- ============================================================
+-- Grant access to tests schema for authenticated and anon roles
+-- so that tests can call helper functions after SET LOCAL ROLE
+-- (must come AFTER all functions are created)
+-- ============================================================
+GRANT USAGE ON SCHEMA tests TO authenticated;
+GRANT USAGE ON SCHEMA tests TO anon;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA tests TO authenticated;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA tests TO anon;
+
+-- Verify helpers are installed
+SELECT pass('Test helper schema and functions created successfully');
+
+SELECT * FROM finish();
 COMMIT;

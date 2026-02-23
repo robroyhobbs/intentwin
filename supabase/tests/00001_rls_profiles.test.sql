@@ -26,13 +26,13 @@ SELECT tests.create_test_org('b0000000-0000-0000-0000-000000000002'::uuid, 'Org 
 
 -- Org Alpha users
 SELECT tests.create_test_user(
-  'u0000000-0000-0000-0000-000000000001'::uuid,
+  'a0000000-0000-0000-0000-000000000001'::uuid,
   'alice@alpha.com',
   'a0000000-0000-0000-0000-000000000001'::uuid,
   'admin'
 );
 SELECT tests.create_test_user(
-  'u0000000-0000-0000-0000-000000000002'::uuid,
+  'a0000000-0000-0000-0000-000000000002'::uuid,
   'bob@alpha.com',
   'a0000000-0000-0000-0000-000000000001'::uuid,
   'member'
@@ -40,7 +40,7 @@ SELECT tests.create_test_user(
 
 -- Org Beta user
 SELECT tests.create_test_user(
-  'u0000000-0000-0000-0000-000000000003'::uuid,
+  'a0000000-0000-0000-0000-000000000003'::uuid,
   'charlie@beta.com',
   'b0000000-0000-0000-0000-000000000002'::uuid,
   'admin'
@@ -48,17 +48,17 @@ SELECT tests.create_test_user(
 
 -- Orphan user (NULL org_id)
 SELECT tests.create_test_user_no_org(
-  'u0000000-0000-0000-0000-000000000099'::uuid,
+  'a0000000-0000-0000-0000-000000000099'::uuid,
   'orphan@nowhere.com'
 );
 
 -- ============================================================
 -- TEST 1: Happy — User A (Alice) sees own profile
 -- ============================================================
-SELECT tests.set_auth_user('u0000000-0000-0000-0000-000000000001'::uuid);
+SELECT tests.set_auth_user('a0000000-0000-0000-0000-000000000001'::uuid);
 
 SELECT is(
-  (SELECT count(*)::integer FROM public.profiles WHERE id = 'u0000000-0000-0000-0000-000000000001'::uuid),
+  (SELECT count(*)::integer FROM public.profiles WHERE id = 'a0000000-0000-0000-0000-000000000001'::uuid),
   1,
   'Alice can see her own profile'
 );
@@ -67,7 +67,7 @@ SELECT is(
 -- TEST 2: Happy — Alice sees Bob (same org)
 -- ============================================================
 SELECT is(
-  (SELECT count(*)::integer FROM public.profiles WHERE id = 'u0000000-0000-0000-0000-000000000002'::uuid),
+  (SELECT count(*)::integer FROM public.profiles WHERE id = 'a0000000-0000-0000-0000-000000000002'::uuid),
   1,
   'Alice can see Bob (same org Alpha)'
 );
@@ -87,7 +87,7 @@ SELECT is(
 -- ============================================================
 SELECT lives_ok(
   $$UPDATE public.profiles SET full_name = 'Alice Updated'
-    WHERE id = 'u0000000-0000-0000-0000-000000000001'::uuid$$,
+    WHERE id = 'a0000000-0000-0000-0000-000000000001'::uuid$$,
   'Alice can update her own profile'
 );
 
@@ -106,13 +106,11 @@ SELECT is(
 -- ============================================================
 -- profiles_update_own policy: USING ((select auth.uid()) = id)
 -- Alice's uid != Bob's id, so this should affect 0 rows
-SELECT is(
-  (SELECT count(*)::integer FROM (
-    UPDATE public.profiles SET full_name = 'HACKED'
-    WHERE id = 'u0000000-0000-0000-0000-000000000002'::uuid
-    RETURNING id
-  ) t),
-  0,
+-- Use is_empty with dollar-quoting since UPDATE inside subquery is not allowed
+SELECT is_empty(
+  $$UPDATE public.profiles SET full_name = 'HACKED'
+    WHERE id = 'a0000000-0000-0000-0000-000000000002'::uuid
+    RETURNING id$$,
   'Alice cannot update Bob''s profile (update returns 0 rows)'
 );
 
@@ -121,7 +119,7 @@ SELECT is(
 -- ============================================================
 SELECT is(
   (SELECT count(*)::integer FROM public.profiles
-   WHERE id = 'u0000000-0000-0000-0000-000000000003'::uuid),
+   WHERE id = 'a0000000-0000-0000-0000-000000000003'::uuid),
   0,
   'Alice cannot see Charlie (different org)'
 );
@@ -129,7 +127,7 @@ SELECT is(
 -- ============================================================
 -- TEST 8: Edge — Orphan user (NULL org_id) sees only own profile
 -- ============================================================
-SELECT tests.set_auth_user('u0000000-0000-0000-0000-000000000099'::uuid);
+SELECT tests.set_auth_user('a0000000-0000-0000-0000-000000000099'::uuid);
 
 SELECT is(
   (SELECT count(*)::integer FROM public.profiles),
@@ -140,7 +138,7 @@ SELECT is(
 -- ============================================================
 -- TEST 9: Edge — get_user_organization_id() returns correct value
 -- ============================================================
-SELECT tests.set_auth_user('u0000000-0000-0000-0000-000000000001'::uuid);
+SELECT tests.set_auth_user('a0000000-0000-0000-0000-000000000001'::uuid);
 
 SELECT is(
   get_user_organization_id(),
@@ -151,7 +149,7 @@ SELECT is(
 -- ============================================================
 -- TEST 10: Edge — get_user_organization_id() returns NULL for orphan
 -- ============================================================
-SELECT tests.set_auth_user('u0000000-0000-0000-0000-000000000099'::uuid);
+SELECT tests.set_auth_user('a0000000-0000-0000-0000-000000000099'::uuid);
 
 SELECT is(
   get_user_organization_id(),

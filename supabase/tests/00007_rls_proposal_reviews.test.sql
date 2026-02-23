@@ -29,19 +29,19 @@ SELECT tests.create_test_org('b0000000-0000-0000-0000-000000000002'::uuid, 'Org 
 
 -- Users
 SELECT tests.create_test_user(
-  'u0000000-0000-0000-0000-000000000001'::uuid,
+  'a0000000-0000-0000-0000-000000000001'::uuid,
   'alice@alpha.com',
   'a0000000-0000-0000-0000-000000000001'::uuid,
   'admin'
 );
 SELECT tests.create_test_user(
-  'u0000000-0000-0000-0000-000000000002'::uuid,
+  'a0000000-0000-0000-0000-000000000002'::uuid,
   'bob@alpha.com',
   'a0000000-0000-0000-0000-000000000001'::uuid,
   'member'
 );
 SELECT tests.create_test_user(
-  'u0000000-0000-0000-0000-000000000003'::uuid,
+  'a0000000-0000-0000-0000-000000000003'::uuid,
   'charlie@beta.com',
   'b0000000-0000-0000-0000-000000000002'::uuid,
   'admin'
@@ -52,8 +52,8 @@ SELECT tests.create_test_user(
 -- -----------------------------------------------
 INSERT INTO public.proposals (id, title, status, intake_data, created_by, organization_id, created_at, updated_at)
 VALUES
-  ('d0000000-0000-0000-0000-000000000001'::uuid, 'Alpha Proposal', 'draft', '{}', 'u0000000-0000-0000-0000-000000000001'::uuid, 'a0000000-0000-0000-0000-000000000001'::uuid, now(), now()),
-  ('d0000000-0000-0000-0000-000000000002'::uuid, 'Beta Proposal',  'draft', '{}', 'u0000000-0000-0000-0000-000000000003'::uuid, 'b0000000-0000-0000-0000-000000000002'::uuid, now(), now());
+  ('d0000000-0000-0000-0000-000000000001'::uuid, 'Alpha Proposal', 'draft', '{}', 'a0000000-0000-0000-0000-000000000001'::uuid, 'a0000000-0000-0000-0000-000000000001'::uuid, now(), now()),
+  ('d0000000-0000-0000-0000-000000000002'::uuid, 'Beta Proposal',  'draft', '{}', 'a0000000-0000-0000-0000-000000000003'::uuid, 'b0000000-0000-0000-0000-000000000002'::uuid, now(), now());
 
 -- Sections (needed for section_id FK in reviews)
 INSERT INTO public.proposal_sections (id, proposal_id, section_type, section_order, title, created_at, updated_at)
@@ -64,14 +64,14 @@ VALUES
 -- Reviews (superuser insert)
 INSERT INTO public.proposal_reviews (id, proposal_id, section_id, reviewer_id, reviewer_email, content, created_at, updated_at)
 VALUES
-  ('r0000000-0000-0000-0000-000000000001'::uuid, 'd0000000-0000-0000-0000-000000000001'::uuid, 'e0000000-0000-0000-0000-000000000001'::uuid, 'u0000000-0000-0000-0000-000000000001'::uuid, 'alice@alpha.com', 'Looks good', now(), now()),
-  ('r0000000-0000-0000-0000-000000000002'::uuid, 'd0000000-0000-0000-0000-000000000001'::uuid, 'e0000000-0000-0000-0000-000000000001'::uuid, 'u0000000-0000-0000-0000-000000000002'::uuid, 'bob@alpha.com', 'Needs work', now(), now()),
-  ('r0000000-0000-0000-0000-000000000003'::uuid, 'd0000000-0000-0000-0000-000000000002'::uuid, 'e0000000-0000-0000-0000-000000000002'::uuid, 'u0000000-0000-0000-0000-000000000003'::uuid, 'charlie@beta.com', 'Beta review', now(), now());
+  ('cc000000-0000-0000-0000-000000000001'::uuid, 'd0000000-0000-0000-0000-000000000001'::uuid, 'e0000000-0000-0000-0000-000000000001'::uuid, 'a0000000-0000-0000-0000-000000000001'::uuid, 'alice@alpha.com', 'Looks good', now(), now()),
+  ('cc000000-0000-0000-0000-000000000002'::uuid, 'd0000000-0000-0000-0000-000000000001'::uuid, 'e0000000-0000-0000-0000-000000000001'::uuid, 'a0000000-0000-0000-0000-000000000002'::uuid, 'bob@alpha.com', 'Needs work', now(), now()),
+  ('cc000000-0000-0000-0000-000000000003'::uuid, 'd0000000-0000-0000-0000-000000000002'::uuid, 'e0000000-0000-0000-0000-000000000002'::uuid, 'a0000000-0000-0000-0000-000000000003'::uuid, 'charlie@beta.com', 'Beta review', now(), now());
 
 -- ============================================================
 -- TEST 1: Happy — Alice sees reviews for own org's proposals
 -- ============================================================
-SELECT tests.set_auth_user('u0000000-0000-0000-0000-000000000001'::uuid);
+SELECT tests.set_auth_user('a0000000-0000-0000-0000-000000000001'::uuid);
 
 SELECT is(
   (SELECT count(*)::integer FROM public.proposal_reviews),
@@ -84,10 +84,10 @@ SELECT is(
 -- ============================================================
 SELECT lives_ok(
   $$INSERT INTO public.proposal_reviews (id, proposal_id, section_id, reviewer_id, reviewer_email, content)
-    VALUES ('r0000000-0000-0000-0000-000000000099',
+    VALUES ('cc000000-0000-0000-0000-000000000099',
             'd0000000-0000-0000-0000-000000000001',
             'e0000000-0000-0000-0000-000000000001',
-            'u0000000-0000-0000-0000-000000000001',
+            'a0000000-0000-0000-0000-000000000001',
             'alice@alpha.com',
             'Another review from Alice')$$,
   'Alice can insert review for her org proposal'
@@ -109,10 +109,10 @@ SELECT is(
 -- ============================================================
 SELECT throws_ok(
   $$INSERT INTO public.proposal_reviews (id, proposal_id, section_id, reviewer_id, reviewer_email, content)
-    VALUES ('r0000000-0000-0000-0000-000000000098',
+    VALUES ('cc000000-0000-0000-0000-000000000098',
             'd0000000-0000-0000-0000-000000000002',
             'e0000000-0000-0000-0000-000000000002',
-            'u0000000-0000-0000-0000-000000000001',
+            'a0000000-0000-0000-0000-000000000001',
             'alice@alpha.com',
             'Sneaky cross-org review')$$,
   NULL,
@@ -123,7 +123,7 @@ SELECT throws_ok(
 -- ============================================================
 -- TEST 5: Bad — Charlie (Beta) CANNOT see Alpha's reviews
 -- ============================================================
-SELECT tests.set_auth_user('u0000000-0000-0000-0000-000000000003'::uuid);
+SELECT tests.set_auth_user('a0000000-0000-0000-0000-000000000003'::uuid);
 
 SELECT is(
   (SELECT count(*)::integer FROM public.proposal_reviews
@@ -144,28 +144,21 @@ SELECT is(
 -- ============================================================
 -- TEST 7: Edge — Alice can update her own review (reviewer_id match)
 -- ============================================================
-SELECT tests.set_auth_user('u0000000-0000-0000-0000-000000000001'::uuid);
+SELECT tests.set_auth_user('a0000000-0000-0000-0000-000000000001'::uuid);
 
-SELECT is(
-  (SELECT count(*)::integer FROM (
-    UPDATE public.proposal_reviews SET content = 'Updated by Alice'
-    WHERE id = 'r0000000-0000-0000-0000-000000000001'::uuid
-    RETURNING id
-  ) t),
-  1,
+SELECT lives_ok(
+  $$UPDATE public.proposal_reviews SET content = 'Updated by Alice'
+    WHERE id = 'cc000000-0000-0000-0000-000000000001'::uuid$$,
   'Alice can update her own review'
 );
 
 -- ============================================================
 -- TEST 8: Edge — Alice CANNOT update Bob's review (different reviewer_id)
 -- ============================================================
-SELECT is(
-  (SELECT count(*)::integer FROM (
-    UPDATE public.proposal_reviews SET content = 'HACKED by Alice'
-    WHERE id = 'r0000000-0000-0000-0000-000000000002'::uuid
-    RETURNING id
-  ) t),
-  0,
+SELECT is_empty(
+  $$UPDATE public.proposal_reviews SET content = 'HACKED by Alice'
+    WHERE id = 'cc000000-0000-0000-0000-000000000002'::uuid
+    RETURNING id$$,
   'Alice cannot update Bob''s review (reviewer_id mismatch)'
 );
 

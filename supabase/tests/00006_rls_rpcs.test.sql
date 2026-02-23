@@ -31,7 +31,7 @@ SELECT plan(10);
 SELECT tests.create_test_org('a0000000-0000-0000-0000-000000000001'::uuid, 'Org Alpha');
 
 SELECT tests.create_test_user(
-  'u0000000-0000-0000-0000-000000000001'::uuid,
+  'a0000000-0000-0000-0000-000000000001'::uuid,
   'alice@alpha.com',
   'a0000000-0000-0000-0000-000000000001'::uuid,
   'admin'
@@ -40,7 +40,7 @@ SELECT tests.create_test_user(
 -- Insert a document + chunk with a dummy embedding for completeness
 INSERT INTO public.documents (id, title, file_name, file_type, file_size_bytes, storage_path, mime_type, processing_status, uploaded_by, organization_id, created_at, updated_at)
 VALUES
-  ('f0000000-0000-0000-0000-000000000001'::uuid, 'Alpha Doc', 'alpha.pdf', 'pdf', 1024, '/alpha.pdf', 'application/pdf', 'completed', 'u0000000-0000-0000-0000-000000000001'::uuid, 'a0000000-0000-0000-0000-000000000001'::uuid, now(), now());
+  ('f0000000-0000-0000-0000-000000000001'::uuid, 'Alpha Doc', 'alpha.pdf', 'pdf', 1024, '/alpha.pdf', 'application/pdf', 'completed', 'a0000000-0000-0000-0000-000000000001'::uuid, 'a0000000-0000-0000-0000-000000000001'::uuid, now(), now());
 
 -- Insert chunk WITHOUT embedding (embedding IS NULL) — won't match any search
 INSERT INTO public.document_chunks (id, document_id, content, chunk_index, created_at)
@@ -90,7 +90,7 @@ SELECT has_function(
 -- would skip the org filter entirely, leaking all chunks.
 -- After the fix, NULL org_id returns empty set immediately.
 -- ============================================================
-SELECT tests.set_auth_user('u0000000-0000-0000-0000-000000000001'::uuid);
+SELECT tests.set_auth_user('a0000000-0000-0000-0000-000000000001'::uuid);
 
 -- Generate a dummy 1024-dim vector for the query
 SELECT is(
@@ -172,7 +172,7 @@ SELECT is(
 -- TEST 10: Security — match_document_chunks_org with valid org but no
 -- matching embeddings returns 0 rows (not an error)
 -- ============================================================
-SELECT tests.set_auth_user('u0000000-0000-0000-0000-000000000001'::uuid);
+SELECT tests.set_auth_user('a0000000-0000-0000-0000-000000000001'::uuid);
 
 SELECT is(
   (SELECT count(*)::integer FROM public.match_document_chunks_org(
