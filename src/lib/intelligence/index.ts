@@ -9,6 +9,8 @@ export {
   buildIntelligenceContext,
   buildWinProbabilityContext,
   buildCompetitiveLandscapeContext,
+  buildPricingSuggestionsContext,
+  buildAgencySectionContext,
 } from "./context-builder";
 export type {
   AgencyProfileResponse,

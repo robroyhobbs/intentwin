@@ -31,6 +31,23 @@ vi.mock("@/lib/utils/logger", () => ({
     event: vi.fn(),
     time: vi.fn(() => vi.fn()),
   },
+  createLogger: vi.fn(() => ({
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    event: vi.fn(),
+    time: vi.fn(() => vi.fn()),
+  })),
+}));
+
+// Mock intelligence client (used for dynamic quality threshold)
+vi.mock("@/lib/intelligence", () => ({
+  intelligenceClient: {
+    getProposalIntelligence: vi.fn().mockResolvedValue(null),
+    isConfigured: false,
+  },
+  getQualityThreshold: vi.fn().mockReturnValue(8.5),
 }));
 
 // Mock Gemini review client

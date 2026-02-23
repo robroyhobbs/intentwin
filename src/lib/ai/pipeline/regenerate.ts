@@ -103,6 +103,15 @@ export async function regenerateSection(
     const industryContext = buildIndustryContext(industryConfig, config.type);
 
     let prompt = basePrompt;
+
+    // Inject intelligence context (Stream A: Deeper Pipeline)
+    if (ctx.agencyContext) {
+      prompt += `\n\n---\n\n${ctx.agencyContext}`;
+    }
+    if (section.section_type === "pricing" && ctx.pricingContext) {
+      prompt += `\n\n---\n\n${ctx.pricingContext}`;
+    }
+
     if (industryContext) {
       prompt += `\n\n---\n\n${industryContext}`;
     }
