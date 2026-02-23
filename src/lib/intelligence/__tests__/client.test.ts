@@ -132,7 +132,7 @@ describe("IntelligenceClient", () => {
         expect.objectContaining({
           method: "GET",
           headers: expect.objectContaining({
-            Authorization: "Bearer test-service-key",
+            "X-Service-Key": "test-service-key",
           }),
         }),
       );
@@ -403,15 +403,15 @@ describe("IntelligenceClient", () => {
   // ── Security ────────────────────────────────────────────────────────────
 
   describe("Security", () => {
-    it("always sends Authorization header with Bearer token", async () => {
+    it("always sends X-Service-Key header with service key", async () => {
       mockFetch.mockResolvedValueOnce(mockResponse(MOCK_AGENCY_PROFILE));
       const client = await getClient();
 
       await client.getAgencyProfile("VA");
 
       const calledOptions = mockFetch.mock.calls[0][1] as RequestInit;
-      expect((calledOptions.headers as Record<string, string>).Authorization).toBe(
-        "Bearer test-service-key",
+      expect((calledOptions.headers as Record<string, string>)["X-Service-Key"]).toBe(
+        "test-service-key",
       );
     });
 

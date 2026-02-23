@@ -60,3 +60,4 @@ tasks/
 
 # IDD planning documents (process artifacts, not source code)
 .intent/
+.env*.local

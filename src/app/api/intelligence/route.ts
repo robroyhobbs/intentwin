@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
     const response = await fetch(targetUrl, {
       method: "GET",
       headers: {
-        Authorization: `Bearer ${INTELLIGENCE_SERVICE_KEY}`,
+        "X-Service-Key": INTELLIGENCE_SERVICE_KEY!,
         Accept: "application/json",
       },
       signal: controller.signal,

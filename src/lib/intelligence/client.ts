@@ -182,7 +182,7 @@ class IntelligenceClient {
       const response = await fetch(`${this.baseUrl}${path}`, {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${this.apiKey}`,
+          "X-Service-Key": this.apiKey!,
           Accept: "application/json",
         },
         signal: controller.signal,
