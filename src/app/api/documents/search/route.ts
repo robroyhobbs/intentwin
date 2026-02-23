@@ -1,23 +1,21 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext } from "@/lib/supabase/auth-api";
 import { generateQueryEmbedding } from "@/lib/ai/embeddings";
+import { unauthorized, badRequest, ok, serverError } from "@/lib/api/response";
 
 export async function POST(request: NextRequest) {
   try {
     const context = await getUserContext(request);
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const body = await request.json();
     const { query, document_type, limit = 10, threshold = 0.3 } = body;
 
     if (!query || typeof query !== "string") {
-      return NextResponse.json(
-        { error: "Search query is required" },
-        { status: 400 },
-      );
+      return badRequest("Search query is required");
     }
 
     const adminClient = createAdminClient();
@@ -85,13 +83,9 @@ export async function POST(request: NextRequest) {
     // Filter by threshold (only applies to vector results; keyword results have similarity = text_rank)
     const filtered = merged.filter((r) => r.similarity >= threshold);
 
-    return NextResponse.json({ results: filtered });
+    return ok({ results: filtered });
   } catch (error) {
-    console.error("Search error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return serverError("Internal server error", error);
   }
 }
 

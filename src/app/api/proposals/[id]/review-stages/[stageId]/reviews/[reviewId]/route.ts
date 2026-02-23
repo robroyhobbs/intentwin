@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
+import { unauthorized, notFound, badRequest, forbidden, ok, serverError } from "@/lib/api/response";
 
 /**
  * PATCH /api/proposals/[id]/review-stages/[stageId]/reviews/[reviewId]
@@ -15,22 +16,19 @@ export async function PATCH(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const hasAccess = await checkProposalAccess(context, id);
     if (!hasAccess) {
-      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+      return notFound("Proposal not found");
     }
 
     const body = await request.json();
     const { score, comment, strengths, weaknesses, recommendations } = body;
 
     if (score != null && (typeof score !== "number" || score < 0 || score > 100)) {
-      return NextResponse.json(
-        { error: "score must be a number between 0 and 100" },
-        { status: 400 }
-      );
+      return badRequest("score must be a number between 0 and 100");
     }
 
     const adminClient = createAdminClient();
@@ -45,7 +43,7 @@ export async function PATCH(
       .single();
 
     if (stageError || !stage) {
-      return NextResponse.json({ error: "Review stage not found" }, { status: 404 });
+      return notFound("Review stage not found");
     }
 
     // Get the review and verify it belongs to the current user's stage_reviewer record
@@ -58,7 +56,7 @@ export async function PATCH(
       .single();
 
     if (reviewError || !existingReview) {
-      return NextResponse.json({ error: "Review not found" }, { status: 404 });
+      return notFound("Review not found");
     }
 
     // Verify the review's stage_reviewer record belongs to the current user
@@ -69,10 +67,7 @@ export async function PATCH(
       .single();
 
     if (srError || !stageReviewer || stageReviewer.reviewer_id !== context.user.id) {
-      return NextResponse.json(
-        { error: "You can only update your own reviews" },
-        { status: 403 }
-      );
+      return forbidden("You can only update your own reviews");
     }
 
     // Build update data
@@ -84,7 +79,7 @@ export async function PATCH(
     if (recommendations !== undefined) updateData.recommendations = recommendations || null;
 
     if (Object.keys(updateData).length === 0) {
-      return NextResponse.json({ error: "No fields to update" }, { status: 400 });
+      return badRequest("No fields to update");
     }
 
     const { data: updatedReview, error: updateError } = await adminClient
@@ -96,13 +91,11 @@ export async function PATCH(
       .single();
 
     if (updateError) {
-      console.error("Update section review error:", updateError);
-      return NextResponse.json({ error: "Failed to update review" }, { status: 500 });
+      return serverError("Failed to update review", updateError);
     }
 
-    return NextResponse.json({ review: updatedReview });
+    return ok({ review: updatedReview });
   } catch (error) {
-    console.error("Update section review error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return serverError("Internal server error", error);
   }
 }

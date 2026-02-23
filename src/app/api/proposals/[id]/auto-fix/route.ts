@@ -1,10 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
 import { generateText } from "@/lib/ai/gemini";
 import { buildAutoFixPrompt } from "@/lib/ai/prompts/auto-fix";
 import { getQualityFeedbackForSection } from "@/lib/ai/quality-overseer";
 import { ReviewStatus } from "@/lib/constants/statuses";
+import { unauthorized, notFound, badRequest, ok, serverError } from "@/lib/api/response";
+import { logger } from "@/lib/utils/logger";
 
 /** AI-powered section rewrite */
 export const maxDuration = 120;
@@ -18,26 +20,20 @@ export async function POST(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     // Verify proposal belongs to user's organization
     const hasAccess = await checkProposalAccess(context, id);
     if (!hasAccess) {
-      return NextResponse.json(
-        { error: "Proposal not found" },
-        { status: 404 },
-      );
+      return notFound("Proposal not found");
     }
 
     const body = await request.json();
     const { sectionId } = body;
 
     if (!sectionId) {
-      return NextResponse.json(
-        { error: "sectionId is required" },
-        { status: 400 },
-      );
+      return badRequest("sectionId is required");
     }
 
     const adminClient = createAdminClient();
@@ -51,17 +47,14 @@ export async function POST(
       .single();
 
     if (sectionError || !section) {
-      return NextResponse.json({ error: "Section not found" }, { status: 404 });
+      return notFound("Section not found");
     }
 
     const currentContent =
       section.edited_content || section.generated_content || "";
 
     if (!currentContent) {
-      return NextResponse.json(
-        { error: "Section has no content to revise" },
-        { status: 400 },
-      );
+      return badRequest("Section has no content to revise");
     }
 
     // Fetch open reviews for this section
@@ -73,10 +66,7 @@ export async function POST(
       .or(`section_id.eq.${sectionId},section_id.is.null`);
 
     if (reviewsError) {
-      return NextResponse.json(
-        { error: "Failed to fetch reviews" },
-        { status: 500 },
-      );
+      return serverError("Failed to fetch reviews", reviewsError);
     }
 
     // Fetch quality judge feedback (non-blocking — null if unavailable)
@@ -88,10 +78,7 @@ export async function POST(
     const hasManualReviews = openReviews && openReviews.length > 0;
 
     if (!hasManualReviews && !qualityFeedback) {
-      return NextResponse.json(
-        { error: "No open reviews or quality feedback to address" },
-        { status: 400 },
-      );
+      return badRequest("No open reviews or quality feedback to address");
     }
 
     // Build the auto-fix prompt with both feedback sources
@@ -116,10 +103,7 @@ export async function POST(
     });
 
     if (!revisedContent) {
-      return NextResponse.json(
-        { error: "AI returned empty response" },
-        { status: 500 },
-      );
+      return serverError("AI returned empty response");
     }
 
     // Update section content
@@ -133,10 +117,7 @@ export async function POST(
       .eq("id", sectionId);
 
     if (updateError) {
-      return NextResponse.json(
-        { error: "Failed to update section" },
-        { status: 500 },
-      );
+      return serverError("Failed to update section", updateError);
     }
 
     // Mark all addressed manual reviews as resolved
@@ -151,20 +132,16 @@ export async function POST(
         .in("id", reviewIds);
 
       if (resolveError) {
-        console.error("Failed to resolve reviews:", resolveError);
+        logger.warn("Failed to resolve reviews", { error: resolveError });
       }
     }
 
-    return NextResponse.json({
+    return ok({
       success: true,
       resolvedCount: reviewIds.length,
       content: revisedContent,
     });
   } catch (error) {
-    console.error("Auto-fix error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return serverError("Internal server error", error);
   }
 }

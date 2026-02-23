@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   getUserContext,
@@ -14,6 +14,7 @@ import {
   identifyAffectedSections,
 } from "@/lib/documents/incremental-merge";
 import type { IncrementalExtractionResult } from "@/types/proposal-documents";
+import { unauthorized, notFound, badRequest, conflict, ok, serverError } from "@/lib/api/response";
 
 export const maxDuration = 300; // 5 min — extraction + embedding can be slow
 
@@ -38,15 +39,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const hasAccess = await checkProposalAccess(context, proposalId);
     if (!hasAccess) {
-      return NextResponse.json(
-        { error: "Proposal not found" },
-        { status: 404 }
-      );
+      return notFound("Proposal not found");
     }
 
     const adminClient = createAdminClient();
@@ -61,10 +59,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .single();
 
     if (!proposalDoc) {
-      return NextResponse.json(
-        { error: "Document not associated with this proposal" },
-        { status: 404 }
-      );
+      return notFound("Document not associated with this proposal");
     }
 
     const doc = proposalDoc.document as {
@@ -74,10 +69,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     };
 
     if (doc.processing_status !== "completed") {
-      return NextResponse.json(
-        { error: "Document is still processing. Please wait and retry." },
-        { status: 409 }
-      );
+      return conflict("Document is still processing. Please wait and retry.");
     }
 
     // Fetch document content from chunks
@@ -88,10 +80,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .order("chunk_index", { ascending: true });
 
     if (!chunks || chunks.length === 0) {
-      return NextResponse.json(
-        { error: "No content found in document" },
-        { status: 400 }
-      );
+      return badRequest("No content found in document");
     }
 
     const docContent = chunks
@@ -185,12 +174,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       },
     };
 
-    return NextResponse.json(result);
+    return ok(result);
   } catch (error) {
-    console.error("Incremental extraction error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return serverError("Internal server error", error);
   }
 }

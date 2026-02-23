@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext } from "@/lib/supabase/auth-api";
 import {
@@ -7,21 +7,19 @@ import {
   PRICING_TIERS,
   type PricingTier,
 } from "@/lib/stripe/client";
+import { unauthorized, forbidden, badRequest, notFound, ok, serverError } from "@/lib/api/response";
 
 export async function POST(request: NextRequest) {
   try {
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     // Only admins can manage billing
     if (context.role !== "admin") {
-      return NextResponse.json(
-        { error: "Only organization admins can manage billing" },
-        { status: 403 },
-      );
+      return forbidden("Only organization admins can manage billing");
     }
 
     const body = await request.json();
@@ -31,10 +29,7 @@ export async function POST(request: NextRequest) {
     };
 
     if (!tier || !PRICING_TIERS[tier]) {
-      return NextResponse.json(
-        { error: "Invalid pricing tier" },
-        { status: 400 },
-      );
+      return badRequest("Invalid pricing tier");
     }
 
     const adminClient = createAdminClient();
@@ -47,10 +42,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (orgError || !org) {
-      return NextResponse.json(
-        { error: "Organization not found" },
-        { status: 404 },
-      );
+      return notFound("Organization not found");
     }
 
     // Get or create Stripe customer
@@ -77,10 +69,7 @@ export async function POST(request: NextRequest) {
         : PRICING_TIERS[tier].monthlyPrice;
 
     if (!priceAmount) {
-      return NextResponse.json(
-        { error: "Invalid price for selected tier" },
-        { status: 400 },
-      );
+      return badRequest("Invalid price for selected tier");
     }
 
     // Create a price on the fly (in production, use pre-created prices)
@@ -130,12 +119,8 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ url: session.url });
+    return ok({ url: session.url });
   } catch (error) {
-    console.error("Checkout error:", error);
-    return NextResponse.json(
-      { error: "Failed to create checkout session" },
-      { status: 500 },
-    );
+    return serverError("Failed to create checkout session", error);
   }
 }

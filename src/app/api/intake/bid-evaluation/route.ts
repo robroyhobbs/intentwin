@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getUserContext } from "@/lib/supabase/auth-api";
 import { scoreFromRequirements } from "@/lib/ai/bid-scoring";
+import { unauthorized, badRequest, ok, serverError } from "@/lib/api/response";
 
 /** AI scoring call + L1 context fetch */
 export const maxDuration = 120;
@@ -15,17 +16,14 @@ export async function POST(request: NextRequest) {
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const body = await request.json();
     const { rfp_requirements, service_line, industry } = body;
 
     if (!rfp_requirements || typeof rfp_requirements !== "object") {
-      return NextResponse.json(
-        { error: "rfp_requirements object is required" },
-        { status: 400 },
-      );
+      return badRequest("rfp_requirements object is required");
     }
 
     const evaluation = await scoreFromRequirements(
@@ -35,15 +33,11 @@ export async function POST(request: NextRequest) {
       industry,
     );
 
-    return NextResponse.json({
+    return ok({
       status: "scored",
       evaluation,
     });
   } catch (error) {
-    console.error("Intake bid evaluation failed:", error);
-    return NextResponse.json(
-      { error: "Bid evaluation scoring failed. Please try again." },
-      { status: 500 },
-    );
+    return serverError("Bid evaluation scoring failed. Please try again.", error);
   }
 }

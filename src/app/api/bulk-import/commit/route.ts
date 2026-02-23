@@ -5,7 +5,7 @@
  * Scopes all inserts to the authenticated user's organization.
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext } from "@/lib/supabase/auth-api";
 import {
@@ -13,12 +13,14 @@ import {
   VALID_EVIDENCE_TYPES,
 } from "@/lib/ai/l1-extractor";
 import { clearL1Cache } from "@/lib/ai/pipeline/context";
+import { unauthorized, badRequest, ok, serverError } from "@/lib/api/response";
+import { logger } from "@/lib/utils/logger";
 
 export async function POST(request: NextRequest) {
   try {
     const context = await getUserContext(request);
     if (!context || !context.organizationId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const body = await request.json();
@@ -34,42 +36,28 @@ export async function POST(request: NextRequest) {
       product_contexts.length === 0 &&
       evidence_library.length === 0
     ) {
-      return NextResponse.json(
-        { error: "At least one item is required" },
-        { status: 400 },
-      );
+      return badRequest("At least one item is required");
     }
 
     // Validate company_context items
     for (const item of company_context) {
       if (!item.category || !item.key || !item.title || !item.content) {
-        return NextResponse.json(
-          {
-            error:
-              "Company context items require category, key, title, and content",
-          },
-          { status: 400 },
+        return badRequest(
+          "Company context items require category, key, title, and content",
         );
       }
       if (
         !(VALID_COMPANY_CATEGORIES as readonly string[]).includes(item.category)
       ) {
-        return NextResponse.json(
-          { error: `Invalid category: ${item.category}` },
-          { status: 400 },
-        );
+        return badRequest(`Invalid category: ${item.category}`);
       }
     }
 
     // Validate product_contexts items
     for (const item of product_contexts) {
       if (!item.product_name || !item.service_line || !item.description) {
-        return NextResponse.json(
-          {
-            error:
-              "Product items require product_name, service_line, and description",
-          },
-          { status: 400 },
+        return badRequest(
+          "Product items require product_name, service_line, and description",
         );
       }
     }
@@ -82,12 +70,8 @@ export async function POST(request: NextRequest) {
         !item.summary ||
         !item.full_content
       ) {
-        return NextResponse.json(
-          {
-            error:
-              "Evidence items require evidence_type, title, summary, and full_content",
-          },
-          { status: 400 },
+        return badRequest(
+          "Evidence items require evidence_type, title, summary, and full_content",
         );
       }
       if (
@@ -95,10 +79,7 @@ export async function POST(request: NextRequest) {
           item.evidence_type,
         )
       ) {
-        return NextResponse.json(
-          { error: `Invalid evidence type: ${item.evidence_type}` },
-          { status: 400 },
-        );
+        return badRequest(`Invalid evidence type: ${item.evidence_type}`);
       }
     }
 
@@ -116,8 +97,8 @@ export async function POST(request: NextRequest) {
         .from("company_context")
         .upsert(ccData, { onConflict: "category,key,organization_id" });
       if (ccError) {
-        console.error("company_context upsert failed:", ccError);
-        errors.push(`Company context: ${ccError.message}`);
+        logger.error("company_context upsert failed", ccError);
+        errors.push("Company context save failed");
       }
     }
 
@@ -133,8 +114,8 @@ export async function POST(request: NextRequest) {
           onConflict: "product_name,service_line,organization_id",
         });
       if (pcError) {
-        console.error("product_contexts upsert failed:", pcError);
-        errors.push(`Products: ${pcError.message}`);
+        logger.error("product_contexts upsert failed", pcError);
+        errors.push("Products save failed");
       }
     }
 
@@ -150,22 +131,19 @@ export async function POST(request: NextRequest) {
         .from("evidence_library")
         .upsert(elData, { onConflict: "title,organization_id" });
       if (elError) {
-        console.error("evidence_library upsert failed:", elError);
-        errors.push(`Evidence: ${elError.message}`);
+        logger.error("evidence_library upsert failed", elError);
+        errors.push("Evidence save failed");
       }
     }
 
     if (errors.length > 0) {
-      return NextResponse.json(
-        { error: `Some items failed to save: ${errors.join("; ")}` },
-        { status: 500 },
-      );
+      return serverError(`Some items failed to save: ${errors.join("; ")}`);
     }
 
     // Invalidate L1 cache so next generation uses fresh data
     clearL1Cache();
 
-    return NextResponse.json({
+    return ok({
       counts: {
         company_context: company_context.length,
         product_contexts: product_contexts.length,
@@ -173,9 +151,6 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch {
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return serverError("Internal server error");
   }
 }

@@ -10,8 +10,9 @@
  * All other query params are forwarded to the intelligence service.
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getUserContext } from "@/lib/supabase/auth-api";
+import { unauthorized, badRequest, ok, serverError, apiError } from "@/lib/api/response";
 
 const INTELLIGENCE_API_URL = process.env.INTELLIGENCE_API_URL?.trim() || null;
 const INTELLIGENCE_SERVICE_KEY =
@@ -25,24 +26,22 @@ export async function GET(request: NextRequest) {
   // Verify user is authenticated
   const context = await getUserContext(request);
   if (!context) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return unauthorized();
   }
 
   if (!isConfigured()) {
-    return NextResponse.json(
-      { error: "Intelligence service not configured", configured: false },
-      { status: 503 },
-    );
+    return apiError({
+      message: "Intelligence service not configured",
+      status: 503,
+      code: "SERVICE_UNAVAILABLE",
+    });
   }
 
   const { searchParams } = new URL(request.url);
   const path = searchParams.get("path");
 
   if (!path || !path.startsWith("/api/v1/")) {
-    return NextResponse.json(
-      { error: "Invalid path parameter" },
-      { status: 400 },
-    );
+    return badRequest("Invalid path parameter");
   }
 
   // Build forwarded query string (exclude the `path` param)
@@ -72,25 +71,28 @@ export async function GET(request: NextRequest) {
     clearTimeout(timeout);
 
     if (!response.ok) {
-      return NextResponse.json(
-        { error: "Intelligence service error", status: response.status },
-        { status: response.status },
-      );
+      return apiError({
+        message: "Intelligence service error",
+        status: response.status,
+        code: "UPSTREAM_ERROR",
+      });
     }
 
     const data = await response.json();
-    return NextResponse.json(data);
+    return ok(data);
   } catch (err) {
     if (err instanceof DOMException && err.name === "AbortError") {
-      return NextResponse.json(
-        { error: "Intelligence service timeout" },
-        { status: 504 },
-      );
+      return apiError({
+        message: "Intelligence service timeout",
+        status: 504,
+        code: "GATEWAY_TIMEOUT",
+      });
     }
-    console.error("Intelligence proxy error:", err);
-    return NextResponse.json(
-      { error: "Intelligence service unavailable" },
-      { status: 502 },
-    );
+    return apiError({
+      message: "Intelligence service unavailable",
+      status: 502,
+      code: "BAD_GATEWAY",
+      internal: err,
+    });
   }
 }

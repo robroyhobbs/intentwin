@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext } from "@/lib/supabase/auth-api";
 import { generateDocx } from "@/lib/export/docx-generator";
@@ -10,6 +10,8 @@ import { createProposalVersion } from "@/lib/versioning/create-version";
 import { nanoid } from "nanoid";
 import { format } from "date-fns";
 import { ProposalStatus, GenerationStatus } from "@/lib/constants/statuses";
+import { logger } from "@/lib/utils/logger";
+import { unauthorized, notFound, badRequest, ok, serverError } from "@/lib/api/response";
 
 export const maxDuration = 120; // PDF generation with Chromium can take 30-60s
 
@@ -22,7 +24,7 @@ export async function POST(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const body = await request.json();
@@ -34,10 +36,7 @@ export async function POST(
       | "pdf";
 
     if (!["docx", "pptx", "html", "slides", "pdf"].includes(formatType)) {
-      return NextResponse.json(
-        { error: 'Format must be "docx", "pptx", "html", "slides", or "pdf"' },
-        { status: 400 },
-      );
+      return badRequest('Format must be "docx", "pptx", "html", "slides", or "pdf"');
     }
 
     const adminClient = createAdminClient();
@@ -56,10 +55,7 @@ export async function POST(
       .single();
 
     if (!proposal) {
-      return NextResponse.json(
-        { error: "Proposal not found" },
-        { status: 404 },
-      );
+      return notFound("Proposal not found");
     }
 
     // Get organization name and branding for exports
@@ -85,10 +81,7 @@ export async function POST(
       .order("section_order", { ascending: true });
 
     if (!sections || sections.length === 0) {
-      return NextResponse.json(
-        { error: "No completed sections to export" },
-        { status: 400 },
-      );
+      return badRequest("No completed sections to export");
     }
 
     // Create a version snapshot before export (non-blocking)
@@ -100,7 +93,9 @@ export async function POST(
         userId: context.user.id,
       });
     } catch (versionError) {
-      console.warn("Version snapshot failed (non-blocking):", versionError);
+      logger.warn("Version snapshot failed (non-blocking)", {
+        error: versionError instanceof Error ? versionError.message : String(versionError),
+      });
     }
 
     const intakeData = proposal.intake_data as Record<string, string>;
@@ -160,10 +155,7 @@ export async function POST(
       });
 
     if (uploadError) {
-      return NextResponse.json(
-        { error: `Export upload failed: ${uploadError.message}` },
-        { status: 500 },
-      );
+      return serverError("Export upload failed", uploadError);
     }
 
     // Generate signed URL (1 hour expiry)
@@ -177,19 +169,12 @@ export async function POST(
       .update({ status: ProposalStatus.EXPORTED })
       .eq("id", id);
 
-    return NextResponse.json({
+    return ok({
       downloadUrl: signedUrl?.signedUrl,
       fileName,
       format: formatType,
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Unknown export error";
-    const stack = error instanceof Error ? error.stack : undefined;
-    console.error("Export error:", message, stack);
-    return NextResponse.json(
-      { error: `Export failed: ${message}` },
-      { status: 500 },
-    );
+    return serverError("Export failed", error);
   }
 }

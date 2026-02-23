@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
 import { generateText } from "@/lib/ai/gemini";
@@ -10,6 +10,7 @@ import {
   parseExtractionResponse,
   VALID_SECTION_TYPES,
 } from "@/lib/ai/prompts/extract-requirements";
+import { unauthorized, badRequest, notFound, ok, serverError } from "@/lib/api/response";
 
 const EXTRACTION_SYSTEM_PROMPT = `You are an expert at analyzing business documents and extracting requirements. You are precise, thorough, and always respond with valid JSON arrays only.`;
 
@@ -28,22 +29,19 @@ export async function POST(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const hasAccess = await checkProposalAccess(context, id);
     if (!hasAccess) {
-      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+      return notFound("Proposal not found");
     }
 
     const body = await request.json();
     const { document_ids } = body;
 
     if (!Array.isArray(document_ids) || document_ids.length === 0) {
-      return NextResponse.json(
-        { error: "No documents to extract from" },
-        { status: 400 },
-      );
+      return badRequest("No documents to extract from");
     }
 
     const adminClient = createAdminClient();
@@ -92,10 +90,7 @@ export async function POST(
     }
 
     if (!combinedContent.trim()) {
-      return NextResponse.json(
-        { error: "No documents to extract from" },
-        { status: 400 },
-      );
+      return badRequest("No documents to extract from");
     }
 
     // Build prompt and call AI
@@ -162,22 +157,15 @@ export async function POST(
         .insert(rows);
 
       if (insertError) {
-        return NextResponse.json(
-          { error: "Failed to save extracted requirements" },
-          { status: 500 },
-        );
+        return serverError("Failed to save extracted requirements", insertError);
       }
     }
 
-    return NextResponse.json({
+    return ok({
       count: extracted.length,
       requirements: extracted,
     });
   } catch (error) {
-    console.error("Requirements extraction error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return serverError("Internal server error", error);
   }
 }

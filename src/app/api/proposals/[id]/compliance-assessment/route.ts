@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
 import { createLogger } from "@/lib/utils/logger";
 import { inngest } from "@/inngest/client";
 import { ProposalStatus, ComplianceAssessmentStatus } from "@/lib/constants/statuses";
+import { unauthorized, notFound, conflict, ok, serverError } from "@/lib/api/response";
 
 const STALE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -20,12 +21,12 @@ export async function POST(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const hasAccess = await checkProposalAccess(context, id);
     if (!hasAccess) {
-      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+      return notFound("Proposal not found");
     }
 
     const supabase = createAdminClient();
@@ -40,15 +41,12 @@ export async function POST(
       .single();
 
     if (!proposal) {
-      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+      return notFound("Proposal not found");
     }
 
     // Block if proposal is still generating
     if (proposal.status === ProposalStatus.GENERATING) {
-      return NextResponse.json(
-        { error: "Cannot assess while proposal is generating" },
-        { status: 409 },
-      );
+      return conflict("Cannot assess while proposal is generating");
     }
 
     // Check for stale/stuck assessment
@@ -60,10 +58,7 @@ export async function POST(
       const elapsed = Date.now() - startTime;
 
       if (elapsed < STALE_THRESHOLD_MS) {
-        return NextResponse.json(
-          { error: "Assessment already in progress" },
-          { status: 409 },
-        );
+        return conflict("Assessment already in progress");
       }
 
       // Stale — explicitly reset to "failed" in DB before re-triggering
@@ -89,12 +84,9 @@ export async function POST(
       data: { proposalId: id, trigger: "manual" },
     });
 
-    return NextResponse.json({ status: ComplianceAssessmentStatus.ASSESSING });
+    return ok({ status: ComplianceAssessmentStatus.ASSESSING });
   } catch (error) {
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return serverError("Internal server error", error);
   }
 }
 
@@ -111,12 +103,12 @@ export async function GET(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const hasAccess = await checkProposalAccess(context, id);
     if (!hasAccess) {
-      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+      return notFound("Proposal not found");
     }
 
     const supabase = createAdminClient();
@@ -127,13 +119,10 @@ export async function GET(
       .eq("organization_id", context.organizationId)
       .single();
 
-    return NextResponse.json({
+    return ok({
       assessment: proposal?.compliance_assessment || null,
     });
   } catch (error) {
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return serverError("Internal server error", error);
   }
 }

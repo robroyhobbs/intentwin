@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext } from "@/lib/supabase/auth-api";
 import { WaitlistStatus, WAITLIST_STATUSES, type WaitlistStatusType } from "@/lib/constants/statuses";
+import { unauthorized, forbidden, badRequest, notFound, ok, serverError } from "@/lib/api/response";
 
 /**
  * PATCH /api/admin/waitlist/[id]
@@ -15,11 +16,11 @@ export async function PATCH(
   try {
     const context = await getUserContext(request);
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     if (context.role !== "admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return forbidden();
     }
 
     const { id } = await params;
@@ -32,11 +33,8 @@ export async function PATCH(
 
     if (status !== undefined) {
       if (!WAITLIST_STATUSES.includes(status as WaitlistStatusType)) {
-        return NextResponse.json(
-          {
-            error: `Invalid status. Must be one of: ${WAITLIST_STATUSES.join(", ")}`,
-          },
-          { status: 400 },
+        return badRequest(
+          `Invalid status. Must be one of: ${WAITLIST_STATUSES.join(", ")}`,
         );
       }
       updateData.status = status;
@@ -44,19 +42,13 @@ export async function PATCH(
 
     if (notes !== undefined) {
       if (typeof notes !== "string") {
-        return NextResponse.json(
-          { error: "Notes must be a string" },
-          { status: 400 },
-        );
+        return badRequest("Notes must be a string");
       }
       updateData.notes = notes;
     }
 
     if (Object.keys(updateData).length === 0) {
-      return NextResponse.json(
-        { error: "At least one of status or notes must be provided" },
-        { status: 400 },
-      );
+      return badRequest("At least one of status or notes must be provided");
     }
 
     const adminClient = createAdminClient();
@@ -69,16 +61,9 @@ export async function PATCH(
 
     if (error || !entry) {
       if (error?.code === "PGRST116" || !entry) {
-        return NextResponse.json(
-          { error: "Waitlist entry not found" },
-          { status: 404 },
-        );
+        return notFound("Waitlist entry not found");
       }
-      console.error("Admin waitlist update error:", error);
-      return NextResponse.json(
-        { error: "Failed to update waitlist entry" },
-        { status: 500 },
-      );
+      return serverError("Failed to update waitlist entry", error);
     }
 
     // When approved, auto-add email to allowed_emails so the user can sign up
@@ -88,11 +73,8 @@ export async function PATCH(
         .upsert({ email: entry.email }, { onConflict: "email" });
     }
 
-    return NextResponse.json({ entry });
+    return ok({ entry });
   } catch {
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return serverError("Internal server error");
   }
 }

@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
 import { sendReviewerAssignedEmail } from "@/lib/email/review-notifications";
+import { unauthorized, notFound, badRequest, conflict, ok, serverError, created } from "@/lib/api/response";
 
 /**
  * GET /api/proposals/[id]/review-stages/[stageId]/reviewers
@@ -16,15 +17,12 @@ export async function GET(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const proposal = await verifyProposalAccess(context, id);
     if (!proposal) {
-      return NextResponse.json(
-        { error: "Proposal not found" },
-        { status: 404 },
-      );
+      return notFound("Proposal not found");
     }
 
     const adminClient = createAdminClient();
@@ -39,10 +37,7 @@ export async function GET(
       .single();
 
     if (stageError || !stage) {
-      return NextResponse.json(
-        { error: "Review stage not found" },
-        { status: 404 },
-      );
+      return notFound("Review stage not found");
     }
 
     // Get reviewers with profile info
@@ -54,11 +49,7 @@ export async function GET(
       .order("assigned_at", { ascending: true });
 
     if (error) {
-      console.error("Fetch stage reviewers error:", error);
-      return NextResponse.json(
-        { error: "Failed to fetch reviewers" },
-        { status: 500 },
-      );
+      return serverError("Failed to fetch reviewers", error);
     }
 
     // Enrich with profile names
@@ -78,13 +69,9 @@ export async function GET(
       }),
     );
 
-    return NextResponse.json({ reviewers: enrichedReviewers });
+    return ok({ reviewers: enrichedReviewers });
   } catch (error) {
-    console.error("Fetch stage reviewers error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return serverError("Internal server error", error);
   }
 }
 
@@ -101,25 +88,19 @@ export async function POST(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const proposal = await verifyProposalAccess(context, id);
     if (!proposal) {
-      return NextResponse.json(
-        { error: "Proposal not found" },
-        { status: 404 },
-      );
+      return notFound("Proposal not found");
     }
 
     const body = await request.json();
     const { reviewer_id } = body;
 
     if (!reviewer_id) {
-      return NextResponse.json(
-        { error: "reviewer_id is required" },
-        { status: 400 },
-      );
+      return badRequest("reviewer_id is required");
     }
 
     const adminClient = createAdminClient();
@@ -134,10 +115,7 @@ export async function POST(
       .single();
 
     if (stageError || !stageRecord) {
-      return NextResponse.json(
-        { error: "Review stage not found" },
-        { status: 404 },
-      );
+      return notFound("Review stage not found");
     }
 
     // Validate reviewer is an org member
@@ -149,10 +127,7 @@ export async function POST(
       .single();
 
     if (profileError || !profile) {
-      return NextResponse.json(
-        { error: "Reviewer not found in your organization" },
-        { status: 404 },
-      );
+      return notFound("Reviewer not found in your organization");
     }
 
     // Insert reviewer assignment
@@ -169,16 +144,9 @@ export async function POST(
     if (insertError) {
       // Check for unique constraint violation (already assigned)
       if (insertError.code === "23505") {
-        return NextResponse.json(
-          { error: "Reviewer is already assigned to this stage" },
-          { status: 409 },
-        );
+        return conflict("Reviewer is already assigned to this stage");
       }
-      console.error("Assign reviewer error:", insertError);
-      return NextResponse.json(
-        { error: "Failed to assign reviewer" },
-        { status: 500 },
-      );
+      return serverError("Failed to assign reviewer", insertError);
     }
 
     // Send assignment email notification (fire-and-forget)
@@ -190,21 +158,14 @@ export async function POST(
       stage: stageRecord.stage,
     }).catch(() => {});
 
-    return NextResponse.json(
-      {
-        reviewer: {
-          ...reviewer,
-          full_name: profile.full_name,
-          email: profile.email,
-        },
+    return created({
+      reviewer: {
+        ...reviewer,
+        full_name: profile.full_name,
+        email: profile.email,
       },
-      { status: 201 },
-    );
+    });
   } catch (error) {
-    console.error("Assign reviewer error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return serverError("Internal server error", error);
   }
 }

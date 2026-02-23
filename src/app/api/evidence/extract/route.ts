@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext } from "@/lib/supabase/auth-api";
 import { generateText } from "@/lib/ai/gemini";
@@ -10,6 +10,8 @@ import {
   parseEvidenceResponse,
 } from "@/lib/ai/prompts/extract-evidence";
 import { clearL1Cache } from "@/lib/ai/pipeline/context";
+import { unauthorized, badRequest, ok, serverError } from "@/lib/api/response";
+import { logger } from "@/lib/utils/logger";
 
 /**
  * POST /api/evidence/extract
@@ -23,17 +25,14 @@ export async function POST(request: NextRequest) {
   try {
     const context = await getUserContext(request);
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const body = await request.json();
     const { document_ids } = body;
 
     if (!document_ids || !Array.isArray(document_ids) || document_ids.length === 0) {
-      return NextResponse.json(
-        { error: "document_ids array is required and must not be empty" },
-        { status: 400 },
-      );
+      return badRequest("document_ids array is required and must not be empty");
     }
 
     const adminClient = createAdminClient();
@@ -47,10 +46,7 @@ export async function POST(request: NextRequest) {
       .eq("processing_status", "completed");
 
     if (docError || !documents || documents.length === 0) {
-      return NextResponse.json(
-        { error: "No processed documents found for the given IDs" },
-        { status: 400 },
-      );
+      return badRequest("No processed documents found for the given IDs");
     }
 
     // Concatenate document texts
@@ -62,10 +58,7 @@ export async function POST(request: NextRequest) {
       .join("\n\n");
 
     if (!combinedText.trim()) {
-      return NextResponse.json(
-        { error: "Selected documents have no extracted text" },
-        { status: 400 },
-      );
+      return badRequest("Selected documents have no extracted text");
     }
 
     // Build prompt and call AI
@@ -76,7 +69,7 @@ export async function POST(request: NextRequest) {
     const extracted = parseEvidenceResponse(rawResponse);
 
     if (extracted.length === 0) {
-      return NextResponse.json({
+      return ok({
         count: 0,
         evidence: [],
         message: "No evidence found in the selected documents",
@@ -105,23 +98,16 @@ export async function POST(request: NextRequest) {
       );
 
     if (insertError) {
-      console.error("Failed to insert extracted evidence:", insertError);
-      return NextResponse.json(
-        { error: "Failed to save extracted evidence" },
-        { status: 500 },
-      );
+      logger.error("Failed to insert extracted evidence:", insertError);
+      return serverError("Failed to save extracted evidence", insertError);
     }
 
     clearL1Cache();
-    return NextResponse.json({
+    return ok({
       count: inserted?.length || 0,
       evidence: inserted || [],
     });
   } catch (error) {
-    console.error("Evidence extraction error:", error);
-    return NextResponse.json(
-      { error: "Failed to extract evidence" },
-      { status: 500 },
-    );
+    return serverError("Failed to extract evidence", error);
   }
 }

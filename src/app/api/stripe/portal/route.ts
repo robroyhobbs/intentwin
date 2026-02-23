@@ -1,22 +1,20 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext } from "@/lib/supabase/auth-api";
 import { createBillingPortalSession } from "@/lib/stripe/client";
+import { unauthorized, forbidden, notFound, ok, serverError } from "@/lib/api/response";
 
 export async function POST(request: NextRequest) {
   try {
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     // Only admins can access billing portal
     if (context.role !== "admin") {
-      return NextResponse.json(
-        { error: "Only organization admins can manage billing" },
-        { status: 403 },
-      );
+      return forbidden("Only organization admins can manage billing");
     }
 
     const adminClient = createAdminClient();
@@ -29,10 +27,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (orgError || !org?.stripe_customer_id) {
-      return NextResponse.json(
-        { error: "No billing account found. Please subscribe first." },
-        { status: 404 },
-      );
+      return notFound("No billing account found. Please subscribe first.");
     }
 
     const origin =
@@ -44,12 +39,8 @@ export async function POST(request: NextRequest) {
       `${origin}/settings`,
     );
 
-    return NextResponse.json({ url: session.url });
+    return ok({ url: session.url });
   } catch (error) {
-    console.error("Portal error:", error);
-    return NextResponse.json(
-      { error: "Failed to create portal session" },
-      { status: 500 },
-    );
+    return serverError("Failed to create portal session", error);
   }
 }

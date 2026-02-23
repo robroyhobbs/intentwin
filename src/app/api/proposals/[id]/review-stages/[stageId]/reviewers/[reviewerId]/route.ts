@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
+import { unauthorized, notFound, ok, serverError } from "@/lib/api/response";
 
 /**
  * DELETE /api/proposals/[id]/review-stages/[stageId]/reviewers/[reviewerId]
@@ -15,12 +16,12 @@ export async function DELETE(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const hasAccess = await checkProposalAccess(context, id);
     if (!hasAccess) {
-      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+      return notFound("Proposal not found");
     }
 
     const adminClient = createAdminClient();
@@ -35,7 +36,7 @@ export async function DELETE(
       .single();
 
     if (stageError || !stage) {
-      return NextResponse.json({ error: "Review stage not found" }, { status: 404 });
+      return notFound("Review stage not found");
     }
 
     // Verify reviewer assignment exists
@@ -48,7 +49,7 @@ export async function DELETE(
       .single();
 
     if (checkError || !existing) {
-      return NextResponse.json({ error: "Reviewer assignment not found" }, { status: 404 });
+      return notFound("Reviewer assignment not found");
     }
 
     // Delete the reviewer assignment
@@ -59,13 +60,11 @@ export async function DELETE(
       .eq("organization_id", context.organizationId);
 
     if (deleteError) {
-      console.error("Remove reviewer error:", deleteError);
-      return NextResponse.json({ error: "Failed to remove reviewer" }, { status: 500 });
+      return serverError("Failed to remove reviewer", deleteError);
     }
 
-    return NextResponse.json({ deleted: true });
+    return ok({ deleted: true });
   } catch (error) {
-    console.error("Remove reviewer error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return serverError("Internal server error", error);
   }
 }

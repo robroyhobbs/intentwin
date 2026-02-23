@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getUserContext, checkDocumentAccess } from "@/lib/supabase/auth-api";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateText } from "@/lib/ai/gemini";
@@ -11,6 +11,7 @@ import type { DocumentForExtraction } from "@/lib/ai/prompts/extract-intake";
 import type { ExtractedIntake } from "@/types/intake";
 import type { DocumentRole } from "@/types/proposal-documents";
 import { logger } from "@/lib/utils/logger";
+import { unauthorized, badRequest, notFound, ok, serverError } from "@/lib/api/response";
 
 /** Allow up to 5 minutes for document processing wait + AI extraction */
 export const maxDuration = 300;
@@ -81,7 +82,7 @@ export async function POST(request: NextRequest) {
   try {
     const context = await getUserContext(request);
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     let body;
@@ -89,10 +90,7 @@ export async function POST(request: NextRequest) {
       body = await request.json();
     } catch {
       logger.error("Extract: Failed to parse request body");
-      return NextResponse.json(
-        { error: "Invalid request body" },
-        { status: 400 },
-      );
+      return badRequest("Invalid request body");
     }
     const {
       content,
@@ -111,10 +109,7 @@ export async function POST(request: NextRequest) {
 
     if (!content && (!document_ids || document_ids.length === 0)) {
       logger.error("Extract: No content and no document_ids provided");
-      return NextResponse.json(
-        { error: "Either content or document_ids is required" },
-        { status: 400 },
-      );
+      return badRequest("Either content or document_ids is required");
     }
 
     let combinedContent = content || "";
@@ -132,10 +127,7 @@ export async function POST(request: NextRequest) {
         // Verify document belongs to user's organization
         const hasDocAccess = await checkDocumentAccess(context, docId);
         if (!hasDocAccess) {
-          return NextResponse.json(
-            { error: `Document ${docId} not found or access denied` },
-            { status: 404 },
-          );
+          return notFound(`Document ${docId} not found or access denied`);
         }
 
         // First check document processing status
@@ -263,7 +255,7 @@ export async function POST(request: NextRequest) {
         document_ids?.length > 0
           ? "The uploaded documents could not be parsed. Try pasting the content directly or uploading a different file format (PDF, DOCX, or TXT)."
           : "No content to analyze. Please enter some text or upload a document.";
-      return NextResponse.json({ error: hint }, { status: 400 });
+      return badRequest(hint);
     }
 
     // Build extraction prompt
@@ -288,10 +280,7 @@ export async function POST(request: NextRequest) {
         first200: response?.slice(0, 200),
         last200: response?.slice(-200),
       });
-      return NextResponse.json(
-        { error: "Failed to parse extraction results" },
-        { status: 500 },
-      );
+      return serverError("Failed to parse extraction results");
     }
     extracted = parsed as unknown as ExtractedIntake;
 
@@ -363,12 +352,9 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return NextResponse.json({ extracted, assumptions });
+    return ok({ extracted, assumptions });
   } catch (error) {
     logger.error("Extraction error", error);
-    return NextResponse.json(
-      { error: "Failed to extract intake data" },
-      { status: 500 },
-    );
+    return serverError("Failed to extract intake data", error);
   }
 }

@@ -6,13 +6,15 @@
  * then checks existing L1 data for conflicts before returning results.
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { extractL1FromText } from "@/lib/ai/l1-extractor";
 import { parseDocument } from "@/lib/documents/parser";
 import { processDocument } from "@/lib/documents/pipeline";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext, incrementUsage } from "@/lib/supabase/auth-api";
 import { nanoid } from "nanoid";
+import { unauthorized, badRequest, ok, serverError } from "@/lib/api/response";
+import { logger } from "@/lib/utils/logger";
 
 export const maxDuration = 300; // 5 min for large document parsing + AI extraction
 
@@ -27,27 +29,21 @@ export async function POST(request: NextRequest) {
   try {
     const context = await getUserContext(request);
     if (!context || !context.organizationId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
 
     if (!file || !(file instanceof File) || file.size === 0) {
-      return NextResponse.json(
-        { error: "A non-empty file is required" },
-        { status: 400 },
-      );
+      return badRequest("A non-empty file is required");
     }
 
     const fileName = file.name;
     const fileType = getFileType(fileName);
 
     if (!fileType) {
-      return NextResponse.json(
-        { error: `Unsupported file type: ${fileName}` },
-        { status: 400 },
-      );
+      return badRequest(`Unsupported file type: ${fileName}`);
     }
 
     // Parse file into sections using existing document parsers
@@ -61,27 +57,18 @@ export async function POST(request: NextRequest) {
         .map((s) => (s.heading ? `${s.heading}\n${s.content}` : s.content))
         .join("\n\n");
     } catch {
-      return NextResponse.json(
-        { error: "Failed to parse document" },
-        { status: 400 },
-      );
+      return badRequest("Failed to parse document");
     }
 
     if (!parsedText.trim()) {
-      return NextResponse.json(
-        { error: "Document contains no extractable text" },
-        { status: 400 },
-      );
+      return badRequest("Document contains no extractable text");
     }
 
     // Extract L1 data from parsed text via Gemini
     const result = await extractL1FromText(parsedText, fileName);
 
     if (result.error) {
-      return NextResponse.json(
-        { error: "Failed to extract data from document" },
-        { status: 500 },
-      );
+      return serverError("Failed to extract data from document");
     }
 
     // Save file as a document record (so it appears in Uploaded Documents)
@@ -126,11 +113,11 @@ export async function POST(request: NextRequest) {
         await incrementUsage(orgId, "documents_uploaded");
         // Process chunks in background
         processDocument(document.id).catch((err) => {
-          console.error(`Failed to process document ${document.id}:`, err);
+          logger.error(`Failed to process document ${document.id}`, err);
         });
       }
     } else {
-      console.error("Bulk import file storage failed:", uploadError.message);
+      logger.error("Bulk import file storage failed", uploadError);
     }
 
     // Fetch existing L1 data for conflict detection
@@ -198,15 +185,12 @@ export async function POST(request: NextRequest) {
       };
     });
 
-    return NextResponse.json({
+    return ok({
       company_context,
       product_contexts,
       evidence_library,
     });
   } catch {
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return serverError("Internal server error");
   }
 }

@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext } from "@/lib/supabase/auth-api";
+import { unauthorized, forbidden, ok, serverError } from "@/lib/api/response";
 
 /**
  * GET /api/admin/waitlist
@@ -11,11 +12,11 @@ export async function GET(request: NextRequest) {
   try {
     const context = await getUserContext(request);
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     if (context.role !== "admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return forbidden();
     }
 
     // Pagination params
@@ -33,22 +34,15 @@ export async function GET(request: NextRequest) {
       .range(from, to);
 
     if (error) {
-      console.error("Admin waitlist fetch error:", error);
-      return NextResponse.json(
-        { error: "Failed to fetch waitlist entries" },
-        { status: 500 },
-      );
+      return serverError("Failed to fetch waitlist entries", error);
     }
 
     const total = count ?? 0;
-    return NextResponse.json({
+    return ok({
       entries: entries || [],
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
   } catch {
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return serverError("Internal server error");
   }
 }

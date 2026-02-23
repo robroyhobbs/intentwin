@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   getUserContext,
@@ -7,6 +7,8 @@ import {
 import { VALID_SECTION_TYPES } from "@/lib/ai/prompts/extract-requirements";
 import type { MergeRequest, MergeResponse } from "@/types/proposal-documents";
 import { ComplianceStatus, SectionReviewStatus } from "@/lib/constants/statuses";
+import { unauthorized, notFound, badRequest, conflict, ok, serverError } from "@/lib/api/response";
+import { logger } from "@/lib/utils/logger";
 
 type RouteParams = {
   params: Promise<{ id: string; docId: string }>;
@@ -27,25 +29,19 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const hasAccess = await checkProposalAccess(context, proposalId);
     if (!hasAccess) {
-      return NextResponse.json(
-        { error: "Proposal not found" },
-        { status: 404 }
-      );
+      return notFound("Proposal not found");
     }
 
     let body: MergeRequest;
     try {
       body = await request.json();
     } catch {
-      return NextResponse.json(
-        { error: "Invalid request body" },
-        { status: 400 }
-      );
+      return badRequest("Invalid request body");
     }
 
     const {
@@ -67,19 +63,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .single();
 
     if (!proposalDoc) {
-      return NextResponse.json(
-        { error: "Document not associated with this proposal" },
-        { status: 404 }
-      );
+      return notFound("Document not associated with this proposal");
     }
 
     if (proposalDoc.extraction_status !== "extracted") {
-      return NextResponse.json(
-        {
-          error: `Document extraction_status is '${proposalDoc.extraction_status}', expected 'extracted'. Run extraction first.`,
-        },
-        { status: 409 }
-      );
+      return conflict(`Document extraction_status is '${proposalDoc.extraction_status}', expected 'extracted'. Run extraction first.`);
     }
 
     let requirementsAdded = 0;
@@ -161,7 +149,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           .insert(rows);
 
         if (insertError) {
-          console.error("Failed to insert new requirements:", insertError);
+          logger.warn("Failed to insert new requirements", { error: insertError });
         } else {
           requirementsAdded = rows.length;
         }
@@ -285,7 +273,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .single();
 
     if (eventError) {
-      console.error("Failed to log merge event:", eventError);
+      logger.warn("Failed to log merge event", { error: eventError });
     }
 
     const response: MergeResponse = {
@@ -296,12 +284,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       event: event ?? null,
     };
 
-    return NextResponse.json(response);
+    return ok(response);
   } catch (error) {
-    console.error("Merge error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return serverError("Internal server error", error);
   }
 }

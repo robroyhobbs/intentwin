@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
 import { getReviewModelLabel } from "@/lib/ai/quality-overseer";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createLogger } from "@/lib/utils/logger";
 import { inngest } from "@/inngest/client";
 import { ProposalStatus, QualityReviewStatus, GenerationStatus } from "@/lib/constants/statuses";
+import { unauthorized, notFound, badRequest, conflict, ok, serverError } from "@/lib/api/response";
 
 /** If a review has been "reviewing" for longer than this, treat it as stale/zombie. */
 const STALE_REVIEW_MS = 5 * 60 * 1000; // 5 minutes
@@ -39,15 +40,12 @@ export async function POST(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const proposal = await verifyProposalAccess(context, id);
     if (!proposal) {
-      return NextResponse.json(
-        { error: "Proposal not found" },
-        { status: 404 },
-      );
+      return notFound("Proposal not found");
     }
 
     // Parse and validate body
@@ -60,12 +58,8 @@ export async function POST(
       ) {
         trigger = body.trigger;
       } else if (body.trigger !== undefined) {
-        return NextResponse.json(
-          {
-            error:
-              "Invalid trigger value. Must be 'manual' or 'auto_post_generation'.",
-          },
-          { status: 400 },
+        return badRequest(
+          "Invalid trigger value. Must be 'manual' or 'auto_post_generation'.",
         );
       }
     } catch {
@@ -74,12 +68,8 @@ export async function POST(
 
     // Block reviews while proposal is still generating
     if (proposal.status === ProposalStatus.GENERATING) {
-      return NextResponse.json(
-        {
-          error:
-            "Cannot run quality review while the proposal is still generating. Please wait for generation to complete.",
-        },
-        { status: 409 },
+      return conflict(
+        "Cannot run quality review while the proposal is still generating. Please wait for generation to complete.",
       );
     }
 
@@ -95,10 +85,7 @@ export async function POST(
       const elapsed = Date.now() - runAt;
 
       if (elapsed < STALE_REVIEW_MS) {
-        return NextResponse.json(
-          { error: "Quality review is already in progress" },
-          { status: 409 },
-        );
+        return conflict("Quality review is already in progress");
       }
 
       // Stale review — reset it and allow re-trigger
@@ -118,12 +105,8 @@ export async function POST(
       .eq("generation_status", GenerationStatus.GENERATING);
 
     if (regeneratingCount && regeneratingCount > 0) {
-      return NextResponse.json(
-        {
-          error:
-            "Cannot run quality review while sections are being regenerated. Please wait for regeneration to complete.",
-        },
-        { status: 409 },
+      return conflict(
+        "Cannot run quality review while sections are being regenerated. Please wait for regeneration to complete.",
       );
     }
 
@@ -152,17 +135,13 @@ export async function POST(
       data: { proposalId: id, trigger },
     });
 
-    return NextResponse.json({
+    return ok({
       status: QualityReviewStatus.REVIEWING,
       proposalId: id,
       message: "Quality review started.",
     });
   } catch (error) {
-    console.error("Quality review trigger error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return serverError("Failed to trigger quality review", error);
   }
 }
 
@@ -179,23 +158,16 @@ export async function GET(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const proposal = await verifyProposalAccess(context, id);
     if (!proposal) {
-      return NextResponse.json(
-        { error: "Proposal not found" },
-        { status: 404 },
-      );
+      return notFound("Proposal not found");
     }
 
-    return NextResponse.json(proposal.quality_review || null);
+    return ok(proposal.quality_review || null);
   } catch (error) {
-    console.error("Quality review fetch error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return serverError("Failed to fetch quality review", error);
   }
 }

@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
 import { getQualityFeedbackForSection } from "@/lib/ai/quality-overseer";
 import { inngest } from "@/inngest/client";
 import { GenerationStatus, QualityReviewStatus } from "@/lib/constants/statuses";
+import { unauthorized, notFound, conflict, ok, serverError } from "@/lib/api/response";
 
 export async function POST(
   request: NextRequest,
@@ -13,26 +14,19 @@ export async function POST(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const proposal = await verifyProposalAccess(context, id);
     if (!proposal) {
-      return NextResponse.json(
-        { error: "Proposal not found" },
-        { status: 404 },
-      );
+      return notFound("Proposal not found");
     }
 
     // Block regeneration while quality review is in progress
     const qualityReview = proposal.quality_review as { status?: string } | null;
     if (qualityReview?.status === QualityReviewStatus.REVIEWING) {
-      return NextResponse.json(
-        {
-          error:
-            "Cannot regenerate sections while a quality review is in progress. Please wait for the review to complete.",
-        },
-        { status: 409 },
+      return conflict(
+        "Cannot regenerate sections while a quality review is in progress. Please wait for the review to complete.",
       );
     }
 
@@ -52,7 +46,7 @@ export async function POST(
       },
     });
 
-    return NextResponse.json({
+    return ok({
       status: GenerationStatus.REGENERATING,
       sectionId,
       message: qualityFeedback
@@ -60,10 +54,6 @@ export async function POST(
         : "Section regeneration started.",
     });
   } catch (error) {
-    console.error("Regenerate section error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return serverError("Internal server error", error);
   }
 }

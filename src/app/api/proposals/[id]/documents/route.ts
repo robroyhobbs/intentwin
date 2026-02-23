@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   getUserContext,
@@ -15,6 +15,8 @@ import type {
   AddDocumentResponse,
   ListDocumentsResponse,
 } from "@/types/proposal-documents";
+import { unauthorized, notFound, badRequest, conflict, ok, serverError, created } from "@/lib/api/response";
+import { logger } from "@/lib/utils/logger";
 
 /**
  * GET /api/proposals/[id]/documents
@@ -29,15 +31,12 @@ export async function GET(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const hasAccess = await checkProposalAccess(context, proposalId);
     if (!hasAccess) {
-      return NextResponse.json(
-        { error: "Proposal not found" },
-        { status: 404 }
-      );
+      return notFound("Proposal not found");
     }
 
     const adminClient = createAdminClient();
@@ -58,11 +57,7 @@ export async function GET(
       .order("upload_order", { ascending: true });
 
     if (error) {
-      console.error("List proposal documents error:", error);
-      return NextResponse.json(
-        { error: "Failed to fetch documents" },
-        { status: 500 }
-      );
+      return serverError("Failed to fetch documents", error);
     }
 
     const response: ListDocumentsResponse = {
@@ -70,13 +65,9 @@ export async function GET(
       count: rows?.length ?? 0,
     };
 
-    return NextResponse.json(response);
+    return ok(response);
   } catch (error) {
-    console.error("List proposal documents error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return serverError("Internal server error", error);
   }
 }
 
@@ -94,51 +85,36 @@ export async function POST(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const hasAccess = await checkProposalAccess(context, proposalId);
     if (!hasAccess) {
-      return NextResponse.json(
-        { error: "Proposal not found" },
-        { status: 404 }
-      );
+      return notFound("Proposal not found");
     }
 
     let body: AddDocumentRequest;
     try {
       body = await request.json();
     } catch {
-      return NextResponse.json(
-        { error: "Invalid request body" },
-        { status: 400 }
-      );
+      return badRequest("Invalid request body");
     }
 
     const { document_id, document_role, notes } = body;
 
     // Validate required fields
     if (!document_id) {
-      return NextResponse.json(
-        { error: "document_id is required" },
-        { status: 400 }
-      );
+      return badRequest("document_id is required");
     }
 
     if (!document_role || !DOCUMENT_ROLES.includes(document_role as DocumentRole)) {
-      return NextResponse.json(
-        { error: `document_role must be one of: ${DOCUMENT_ROLES.join(", ")}` },
-        { status: 400 }
-      );
+      return badRequest(`document_role must be one of: ${DOCUMENT_ROLES.join(", ")}`);
     }
 
     // Verify document exists and belongs to org
     const docExists = await checkDocumentAccess(context, document_id);
     if (!docExists) {
-      return NextResponse.json(
-        { error: "Document not found" },
-        { status: 404 }
-      );
+      return notFound("Document not found");
     }
 
     const adminClient = createAdminClient();
@@ -151,12 +127,7 @@ export async function POST(
       .eq("organization_id", context.organizationId);
 
     if ((count ?? 0) >= MAX_DOCUMENTS_PER_PROPOSAL) {
-      return NextResponse.json(
-        {
-          error: `Maximum ${MAX_DOCUMENTS_PER_PROPOSAL} documents per proposal`,
-        },
-        { status: 400 }
-      );
+      return badRequest(`Maximum ${MAX_DOCUMENTS_PER_PROPOSAL} documents per proposal`);
     }
 
     // Determine upload_order (next sequential value)
@@ -190,16 +161,9 @@ export async function POST(
     if (insertError) {
       // Handle duplicate
       if (insertError.code === "23505") {
-        return NextResponse.json(
-          { error: "Document is already associated with this proposal" },
-          { status: 409 }
-        );
+        return conflict("Document is already associated with this proposal");
       }
-      console.error("Insert proposal document error:", insertError);
-      return NextResponse.json(
-        { error: "Failed to associate document" },
-        { status: 500 }
-      );
+      return serverError("Failed to associate document", insertError);
     }
 
     // Log the event
@@ -217,7 +181,7 @@ export async function POST(
       .single();
 
     if (eventError) {
-      console.error("Failed to log document add event:", eventError);
+      logger.warn("Failed to log document add event", { error: eventError });
     }
 
     const response: AddDocumentResponse = {
@@ -225,12 +189,8 @@ export async function POST(
       event: event ?? null,
     };
 
-    return NextResponse.json(response, { status: 201 });
+    return created(response);
   } catch (error) {
-    console.error("Add proposal document error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return serverError("Internal server error", error);
   }
 }

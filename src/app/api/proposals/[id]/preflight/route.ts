@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchL1Context } from "@/lib/ai/pipeline/context";
 import { runPreflightCheck } from "@/lib/ai/pipeline/preflight";
 import type { BidEvaluation } from "@/lib/ai/bid-scoring";
-import { logger } from "@/lib/utils/logger";
+import { unauthorized, notFound, ok, serverError } from "@/lib/api/response";
 
 /**
  * GET /api/proposals/[id]/preflight
@@ -22,15 +22,12 @@ export async function GET(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const proposal = await verifyProposalAccess(context, id);
     if (!proposal) {
-      return NextResponse.json(
-        { error: "Proposal not found" },
-        { status: 404 },
-      );
+      return notFound("Proposal not found");
     }
 
     const intakeData = (proposal.intake_data as Record<string, unknown>) || {};
@@ -55,15 +52,11 @@ export async function GET(
 
     const result = runPreflightCheck(l1Context, intakeData, requirements, bidEvaluation);
 
-    return NextResponse.json({
+    return ok({
       proposalId: id,
       ...result,
     });
   } catch (error) {
-    logger.error("Preflight check error", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return serverError("Internal server error", error);
   }
 }

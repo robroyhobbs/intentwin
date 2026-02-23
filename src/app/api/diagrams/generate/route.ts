@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getUserContext } from "@/lib/supabase/auth-api";
+import { unauthorized, badRequest, ok, serverError } from "@/lib/api/response";
 
 /** AI image generation can be slow */
 export const maxDuration = 120;
@@ -11,24 +12,18 @@ export async function POST(request: NextRequest) {
   try {
     const context = await getUserContext(request);
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const { description, mermaidCode } = await request.json();
 
     if (!description && !mermaidCode) {
-      return NextResponse.json(
-        { error: "Either description or mermaidCode is required" },
-        { status: 400 },
-      );
+      return badRequest("Either description or mermaidCode is required");
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return NextResponse.json(
-        { error: "GEMINI_API_KEY is not configured" },
-        { status: 500 },
-      );
+      return serverError("GEMINI_API_KEY is not configured");
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -58,31 +53,21 @@ Make it look like a high-quality consulting deliverable diagram.`;
     // Extract image data from response
     const parts = response.candidates?.[0]?.content?.parts;
     if (!parts) {
-      return NextResponse.json(
-        { error: "No content generated" },
-        { status: 500 },
-      );
+      return serverError("No content generated");
     }
 
     for (const part of parts) {
       if (part.inlineData) {
         const { mimeType, data } = part.inlineData;
-        return NextResponse.json({
+        return ok({
           image: `data:${mimeType};base64,${data}`,
           mimeType,
         });
       }
     }
 
-    return NextResponse.json(
-      { error: "No image was generated" },
-      { status: 500 },
-    );
+    return serverError("No image was generated");
   } catch (error) {
-    console.error("Diagram generation error:", error);
-    return NextResponse.json(
-      { error: "Failed to generate diagram" },
-      { status: 500 },
-    );
+    return serverError("Failed to generate diagram", error);
   }
 }

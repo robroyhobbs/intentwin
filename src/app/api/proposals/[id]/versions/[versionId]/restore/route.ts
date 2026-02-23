@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
+import { unauthorized, notFound, ok, serverError } from "@/lib/api/response";
 
 /**
  * POST /api/proposals/[id]/versions/[versionId]/restore
@@ -15,13 +16,13 @@ export async function POST(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     // Verify proposal belongs to user's organization
     const hasAccess = await checkProposalAccess(context, id);
     if (!hasAccess) {
-      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+      return notFound("Proposal not found");
     }
 
     const supabase = createAdminClient();
@@ -35,7 +36,7 @@ export async function POST(
       .single();
 
     if (!version) {
-      return NextResponse.json({ error: "Version not found" }, { status: 404 });
+      return notFound("Version not found");
     }
 
     // Call the restore function
@@ -45,8 +46,7 @@ export async function POST(
     });
 
     if (error) {
-      console.error("Error restoring version:", error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return serverError("Failed to restore version", error);
     }
 
     // Fetch the updated proposal
@@ -56,16 +56,12 @@ export async function POST(
       .eq("id", id)
       .single();
 
-    return NextResponse.json({
+    return ok({
       success: true,
       message: `Restored to version ${version.version_number}${version.label ? ` (${version.label})` : ""}`,
       proposal: updatedProposal,
     });
   } catch (error) {
-    console.error("Version restore error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return serverError("Internal server error", error);
   }
 }

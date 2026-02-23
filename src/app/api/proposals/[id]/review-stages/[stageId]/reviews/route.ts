@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
 import { StageReviewerStatus } from "@/lib/constants/statuses";
+import { unauthorized, notFound, badRequest, forbidden, conflict, ok, serverError, created } from "@/lib/api/response";
 
 /**
  * GET /api/proposals/[id]/review-stages/[stageId]/reviews
@@ -16,12 +17,12 @@ export async function GET(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const hasAccess = await checkProposalAccess(context, id);
     if (!hasAccess) {
-      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+      return notFound("Proposal not found");
     }
 
     const adminClient = createAdminClient();
@@ -36,7 +37,7 @@ export async function GET(
       .single();
 
     if (stageError || !stage) {
-      return NextResponse.json({ error: "Review stage not found" }, { status: 404 });
+      return notFound("Review stage not found");
     }
 
     // Get all reviews for this stage (capped at 200 for safety)
@@ -49,8 +50,7 @@ export async function GET(
       .order("created_at", { ascending: true });
 
     if (reviewsError) {
-      console.error("Fetch section reviews error:", reviewsError);
-      return NextResponse.json({ error: "Failed to fetch reviews" }, { status: 500 });
+      return serverError("Failed to fetch reviews", reviewsError);
     }
 
     // Batch-fetch all related data to avoid N+1 queries
@@ -140,13 +140,12 @@ export async function GET(
       }
     }
 
-    return NextResponse.json({
+    return ok({
       reviews: enrichedReviews,
       sectionAverages: Object.values(sectionAverages),
     });
   } catch (error) {
-    console.error("Fetch section reviews error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return serverError("Internal server error", error);
   }
 }
 
@@ -163,26 +162,23 @@ export async function POST(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const hasAccess = await checkProposalAccess(context, id);
     if (!hasAccess) {
-      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+      return notFound("Proposal not found");
     }
 
     const body = await request.json();
     const { section_id, score, comment, strengths, weaknesses, recommendations } = body;
 
     if (!section_id) {
-      return NextResponse.json({ error: "section_id is required" }, { status: 400 });
+      return badRequest("section_id is required");
     }
 
     if (score != null && (typeof score !== "number" || score < 0 || score > 100)) {
-      return NextResponse.json(
-        { error: "score must be a number between 0 and 100" },
-        { status: 400 }
-      );
+      return badRequest("score must be a number between 0 and 100");
     }
 
     const adminClient = createAdminClient();
@@ -197,7 +193,7 @@ export async function POST(
       .single();
 
     if (stageError || !stage) {
-      return NextResponse.json({ error: "Review stage not found" }, { status: 404 });
+      return notFound("Review stage not found");
     }
 
     // Verify the current user is assigned as a reviewer to this stage
@@ -210,10 +206,7 @@ export async function POST(
       .single();
 
     if (reviewerError || !stageReviewer) {
-      return NextResponse.json(
-        { error: "You are not assigned as a reviewer for this stage" },
-        { status: 403 }
-      );
+      return forbidden("You are not assigned as a reviewer for this stage");
     }
 
     // Verify section belongs to this proposal
@@ -225,10 +218,7 @@ export async function POST(
       .single();
 
     if (sectionError || !section) {
-      return NextResponse.json(
-        { error: "Section not found in this proposal" },
-        { status: 404 }
-      );
+      return notFound("Section not found in this proposal");
     }
 
     // Insert the review
@@ -251,13 +241,9 @@ export async function POST(
     if (insertError) {
       // Check for unique constraint violation (already reviewed this section)
       if (insertError.code === "23505") {
-        return NextResponse.json(
-          { error: "You have already reviewed this section for this stage" },
-          { status: 409 }
-        );
+        return conflict("You have already reviewed this section for this stage");
       }
-      console.error("Create section review error:", insertError);
-      return NextResponse.json({ error: "Failed to create review" }, { status: 500 });
+      return serverError("Failed to create review", insertError);
     }
 
     // If this is the reviewer's first review, update stage_reviewers status to 'in_progress'
@@ -269,9 +255,8 @@ export async function POST(
         .eq("organization_id", context.organizationId);
     }
 
-    return NextResponse.json({ review }, { status: 201 });
+    return created({ review });
   } catch (error) {
-    console.error("Create section review error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return serverError("Internal server error", error);
   }
 }

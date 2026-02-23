@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { inngest } from "@/inngest/client";
@@ -7,6 +7,7 @@ import { fetchL1Context } from "@/lib/ai/pipeline/context";
 import { runPreflightCheck, type PreflightResult } from "@/lib/ai/pipeline/preflight";
 import type { BidEvaluation } from "@/lib/ai/bid-scoring";
 import { logger } from "@/lib/utils/logger";
+import { unauthorized, notFound, conflict, ok, serverError } from "@/lib/api/response";
 
 export async function POST(
   request: NextRequest,
@@ -17,16 +18,13 @@ export async function POST(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     // Verify user has access to this proposal (organization check)
     const proposal = await verifyProposalAccess(context, id);
     if (!proposal) {
-      return NextResponse.json(
-        { error: "Proposal not found" },
-        { status: 404 }
-      );
+      return notFound("Proposal not found");
     }
 
     // ── Pre-flight readiness check (fail-open) ───────────────────────────
@@ -70,17 +68,11 @@ export async function POST(
 
     if (claimError) {
       logger.error("Generation claim error", claimError);
-      return NextResponse.json(
-        { error: "Failed to start generation" },
-        { status: 500 }
-      );
+      return serverError("Failed to start generation");
     }
 
     if (!claimed) {
-      return NextResponse.json(
-        { error: "Proposal is already being generated" },
-        { status: 409 }
-      );
+      return conflict("Proposal is already being generated");
     }
 
     // Send event to Inngest for durable background execution.
@@ -90,17 +82,13 @@ export async function POST(
       data: { proposalId: id },
     });
 
-    return NextResponse.json({
+    return ok({
       status: ProposalStatus.GENERATING,
       proposalId: id,
       message: "Proposal generation started.",
       preflight: preflight ?? undefined,
     });
   } catch (error) {
-    logger.error("Generate proposal error", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return serverError("Failed to start generation", error);
   }
 }

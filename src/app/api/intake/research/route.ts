@@ -1,8 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getUserContext } from "@/lib/supabase/auth-api";
 import { generateText } from "@/lib/ai/gemini";
 import { buildResearchPrompt } from "@/lib/ai/prompts/extract-intake";
 import type { ClientResearch } from "@/types/intake";
+import { unauthorized, badRequest, ok, serverError } from "@/lib/api/response";
+import { logger } from "@/lib/utils/logger";
 
 /** AI research call */
 export const maxDuration = 120;
@@ -13,17 +15,14 @@ export async function POST(request: NextRequest) {
   try {
     const context = await getUserContext(request);
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const body = await request.json();
     const { client_name, industry_hint } = body;
 
     if (!client_name) {
-      return NextResponse.json(
-        { error: "client_name is required" },
-        { status: 400 }
-      );
+      return badRequest("client_name is required");
     }
 
     // Build research prompt
@@ -49,22 +48,15 @@ export async function POST(request: NextRequest) {
       }
       research = JSON.parse(jsonStr.trim());
     } catch (_parseError) {
-      console.error("Failed to parse research response:", response);
-      return NextResponse.json(
-        { error: "Failed to parse research results" },
-        { status: 500 }
-      );
+      logger.error("Failed to parse research response", _parseError);
+      return serverError("Failed to parse research results", _parseError);
     }
 
     // Add timestamp
     research.researched_at = new Date().toISOString();
 
-    return NextResponse.json({ research });
+    return ok({ research });
   } catch (error) {
-    console.error("Research error:", error);
-    return NextResponse.json(
-      { error: "Failed to research client" },
-      { status: 500 }
-    );
+    return serverError("Failed to research client", error);
   }
 }

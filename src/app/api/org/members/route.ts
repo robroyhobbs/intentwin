@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext } from "@/lib/supabase/auth-api";
+import { unauthorized, ok, serverError } from "@/lib/api/response";
 
 /**
  * GET /api/org/members
@@ -11,7 +12,7 @@ export async function GET(request: NextRequest) {
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const adminClient = createAdminClient();
@@ -22,13 +23,11 @@ export async function GET(request: NextRequest) {
       .order("full_name", { ascending: true });
 
     if (error) {
-      console.error("Fetch org members error:", error);
-      return NextResponse.json({ error: "Failed to fetch members" }, { status: 500 });
+      return serverError("Failed to fetch members", error);
     }
 
-    return NextResponse.json({ members: members || [] });
+    return ok({ members: members || [] });
   } catch (error) {
-    console.error("Fetch org members error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return serverError("Internal server error", error);
   }
 }

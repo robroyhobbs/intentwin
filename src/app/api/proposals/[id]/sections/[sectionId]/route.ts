@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
+import { unauthorized, notFound, badRequest, ok, serverError } from "@/lib/api/response";
 
 export async function PATCH(
   request: NextRequest,
@@ -11,25 +12,19 @@ export async function PATCH(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const hasAccess = await checkProposalAccess(context, id);
     if (!hasAccess) {
-      return NextResponse.json(
-        { error: "Proposal not found" },
-        { status: 404 }
-      );
+      return notFound("Proposal not found");
     }
 
     const body = await request.json();
     const { edited_content } = body;
 
     if (typeof edited_content !== "string") {
-      return NextResponse.json(
-        { error: "edited_content is required" },
-        { status: 400 }
-      );
+      return badRequest("edited_content is required");
     }
 
     const adminClient = createAdminClient();
@@ -45,18 +40,11 @@ export async function PATCH(
       .single();
 
     if (error) {
-      return NextResponse.json(
-        { error: `Update failed: ${error.message}` },
-        { status: 500 }
-      );
+      return serverError("Failed to update section", error);
     }
 
-    return NextResponse.json({ section });
+    return ok({ section });
   } catch (error) {
-    console.error("Update section error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return serverError("Internal server error", error);
   }
 }

@@ -1,13 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext } from "@/lib/supabase/auth-api";
 import { ProposalStatus, DealOutcome } from "@/lib/constants/statuses";
+import { unauthorized, ok, serverError } from "@/lib/api/response";
 
 export async function GET(request: NextRequest) {
   try {
     const context = await getUserContext(request);
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const adminClient = createAdminClient();
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
       .limit(1000);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return serverError("Failed to load analytics", error);
     }
 
     // ── Pipeline funnel: count ALL proposals (not filtered by status, capped at 1000) ──
@@ -46,7 +47,7 @@ export async function GET(request: NextRequest) {
       .limit(1000);
 
     if (funnelError) {
-      return NextResponse.json({ error: funnelError.message }, { status: 500 });
+      return serverError("Failed to load analytics", funnelError);
     }
 
     const pipelineFunnel = {
@@ -293,7 +294,7 @@ export async function GET(request: NextRequest) {
       correlation: bidScoreCorrelation,
     };
 
-    return NextResponse.json({
+    return ok({
       summary: {
         total,
         won,
@@ -325,10 +326,6 @@ export async function GET(request: NextRequest) {
       bidScoreAnalysis,
     });
   } catch (error) {
-    console.error("Analytics error:", error);
-    return NextResponse.json(
-      { error: "Failed to load analytics" },
-      { status: 500 }
-    );
+    return serverError("Failed to load analytics", error);
   }
 }

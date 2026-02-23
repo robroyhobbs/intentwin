@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
 import { sendStageAdvancedEmail } from "@/lib/email/review-notifications";
 import { ReviewStageStatus } from "@/lib/constants/statuses";
+import { unauthorized, notFound, badRequest, ok, serverError } from "@/lib/api/response";
 
 const STAGE_ORDER = ["pink", "red", "gold", "white"] as const;
 
@@ -19,15 +20,12 @@ export async function POST(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const proposal = await verifyProposalAccess(context, id);
     if (!proposal) {
-      return NextResponse.json(
-        { error: "Proposal not found" },
-        { status: 404 },
-      );
+      return notFound("Proposal not found");
     }
 
     let body: { force?: boolean } = {};
@@ -49,17 +47,11 @@ export async function POST(
       .single();
 
     if (stageError || !currentStage) {
-      return NextResponse.json(
-        { error: "Review stage not found" },
-        { status: 404 },
-      );
+      return notFound("Review stage not found");
     }
 
     if (currentStage.status !== ReviewStageStatus.ACTIVE) {
-      return NextResponse.json(
-        { error: "Can only advance from an active stage" },
-        { status: 400 },
-      );
+      return badRequest("Can only advance from an active stage");
     }
 
     // Check if there is a next stage
@@ -67,10 +59,7 @@ export async function POST(
       currentStage.stage as (typeof STAGE_ORDER)[number],
     );
     if (currentIndex === STAGE_ORDER.length - 1) {
-      return NextResponse.json(
-        { error: "No next stage. White is the final stage." },
-        { status: 400 },
-      );
+      return badRequest("No next stage. White is the final stage.");
     }
 
     const nextStageName = STAGE_ORDER[currentIndex + 1];
@@ -85,7 +74,7 @@ export async function POST(
       );
 
       if (failures.length > 0) {
-        return NextResponse.json({
+        return ok({
           canAdvance: false,
           failures,
         });
@@ -105,11 +94,7 @@ export async function POST(
       .eq("organization_id", context.organizationId);
 
     if (completeError) {
-      console.error("Complete current stage error:", completeError);
-      return NextResponse.json(
-        { error: "Failed to complete current stage" },
-        { status: 500 },
-      );
+      return serverError("Failed to complete current stage", completeError);
     }
 
     // Activate next stage
@@ -126,11 +111,7 @@ export async function POST(
       .single();
 
     if (activateError) {
-      console.error("Activate next stage error:", activateError);
-      return NextResponse.json(
-        { error: "Failed to activate next stage" },
-        { status: 500 },
-      );
+      return serverError("Failed to activate next stage", activateError);
     }
 
     // Send email notifications to next stage reviewers (fire-and-forget)
@@ -165,17 +146,13 @@ export async function POST(
       }
     }
 
-    return NextResponse.json({
+    return ok({
       advanced: true,
       from: currentStage,
       to: nextStage,
     });
   } catch (error) {
-    console.error("Advance review stage error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return serverError("Internal server error", error);
   }
 }
 

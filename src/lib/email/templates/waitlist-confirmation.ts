@@ -46,7 +46,7 @@ export function waitlistConfirmationEmail(params: {
                 <tr>
                   <td style="background-color:#7c3aed12;border-left:3px solid #7c3aed;border-radius:0 8px 8px 0;padding:16px 20px;margin:0 0 24px 0;">
                     <p style="margin:0;font-size:15px;line-height:1.5;color:#c4b5fd;">
-                      IntentBid helps teams produce 10x more proposals with AI-powered persuasion intelligence.
+                      IntentBid helps teams produce 10x more proposals with outcome-driven persuasion intelligence.
                     </p>
                   </td>
                 </tr>

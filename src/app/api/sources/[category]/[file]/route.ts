@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getUserContext } from "@/lib/supabase/auth-api";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { unauthorized, notFound, ok, serverError } from "@/lib/api/response";
 
 /**
  * GET /api/sources/:category/:file
@@ -15,7 +16,7 @@ export async function GET(
   try {
     const context = await getUserContext(request);
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const { category, file } = await params;
@@ -32,13 +33,10 @@ export async function GET(
         .single();
 
       if (error || !data) {
-        return NextResponse.json(
-          { error: "Source not found" },
-          { status: 404 },
-        );
+        return notFound("Source not found");
       }
 
-      return NextResponse.json({
+      return ok({
         fileName: data.key,
         category,
         title: data.title,
@@ -65,16 +63,13 @@ export async function GET(
 
       const product = data?.[0];
       if (error || !product) {
-        return NextResponse.json(
-          { error: "Source not found" },
-          { status: 404 },
-        );
+        return notFound("Source not found");
       }
 
       // Build readable content from product fields
       const content = buildProductContent(product);
 
-      return NextResponse.json({
+      return ok({
         fileName: file,
         category,
         title: product.product_name,
@@ -98,15 +93,12 @@ export async function GET(
         .single();
 
       if (error || !data) {
-        return NextResponse.json(
-          { error: "Source not found" },
-          { status: 404 },
-        );
+        return notFound("Source not found");
       }
 
       const content = data.full_content || data.summary || "";
 
-      return NextResponse.json({
+      return ok({
         fileName: file,
         category,
         title: data.title,
@@ -132,15 +124,12 @@ export async function GET(
         .single();
 
       if (error || !data) {
-        return NextResponse.json(
-          { error: "Source not found" },
-          { status: 404 },
-        );
+        return notFound("Source not found");
       }
 
       const content = buildTeamMemberContent(data);
 
-      return NextResponse.json({
+      return ok({
         fileName: file,
         category,
         title: data.name,
@@ -156,13 +145,9 @@ export async function GET(
       });
     }
 
-    return NextResponse.json({ error: "Unknown category" }, { status: 404 });
+    return notFound("Unknown category");
   } catch (error) {
-    console.error("Failed to load source:", error);
-    return NextResponse.json(
-      { error: "Failed to load source" },
-      { status: 500 },
-    );
+    return serverError("Failed to load source", error);
   }
 }
 

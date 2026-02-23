@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getUserContext } from "@/lib/supabase/auth-api";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { unauthorized, ok, serverError } from "@/lib/api/response";
 
 /**
  * GET /api/sources
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
   try {
     const context = await getUserContext(request);
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const adminClient = createAdminClient();
@@ -168,13 +169,9 @@ export async function GET(request: NextRequest) {
       .filter((k) => categoryMap[k])
       .map((k) => categoryMap[k]);
 
-    return NextResponse.json({ categories });
+    return ok({ categories });
   } catch (error) {
-    console.error("Failed to load sources:", error);
-    return NextResponse.json(
-      { error: "Failed to load sources" },
-      { status: 500 },
-    );
+    return serverError("Failed to load sources", error);
   }
 }
 

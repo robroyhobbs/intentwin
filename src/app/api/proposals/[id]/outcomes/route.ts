@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
 import { generateText } from "@/lib/ai/gemini";
 import { buildOutcomesPrompt } from "@/lib/ai/prompts/outcomes";
 import { getIndustryConfig } from "@/lib/ai/industry-configs";
+import { unauthorized, notFound, badRequest, ok, serverError } from "@/lib/api/response";
 import type { WinStrategyData } from "@/types/outcomes";
 
 /** AI outcome generation */
@@ -17,26 +18,20 @@ export async function POST(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     // Verify proposal belongs to user's organization
     const hasAccess = await checkProposalAccess(context, id);
     if (!hasAccess) {
-      return NextResponse.json(
-        { error: "Proposal not found" },
-        { status: 404 },
-      );
+      return notFound("Proposal not found");
     }
 
     const body = await request.json();
     const { intake_data } = body;
 
     if (!intake_data) {
-      return NextResponse.json(
-        { error: "Intake data is required" },
-        { status: 400 },
-      );
+      return badRequest("Intake data is required");
     }
 
     // Generate outcomes using Claude, with industry win themes if available
@@ -58,12 +53,8 @@ export async function POST(
         .replace(/\s*```$/m, "")
         .trim();
       parsed = JSON.parse(cleaned);
-    } catch {
-      console.error("Failed to parse outcomes JSON:", rawResponse);
-      return NextResponse.json(
-        { error: "Failed to parse AI-generated outcomes" },
-        { status: 500 },
-      );
+    } catch (parseError) {
+      return serverError("Failed to parse AI-generated outcomes", parseError);
     }
 
     // Add IDs and metadata to target outcomes
@@ -82,12 +73,8 @@ export async function POST(
       generated_at: new Date().toISOString(),
     };
 
-    return NextResponse.json({ win_strategy: winStrategy });
+    return ok({ win_strategy: winStrategy });
   } catch (error) {
-    console.error("Generate outcomes error:", error);
-    return NextResponse.json(
-      { error: "Failed to generate outcomes" },
-      { status: 500 },
-    );
+    return serverError("Failed to generate outcomes", error);
   }
 }

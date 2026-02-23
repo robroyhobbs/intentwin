@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import Stripe from "stripe";
 import { stripe, PRICING_TIERS, type PricingTier } from "@/lib/stripe/client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logger } from "@/lib/utils/logger";
+import { badRequest, ok, serverError } from "@/lib/api/response";
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -12,10 +13,7 @@ export async function POST(request: NextRequest) {
     const signature = request.headers.get("stripe-signature");
 
     if (!signature || !webhookSecret) {
-      return NextResponse.json(
-        { error: "Missing signature or webhook secret" },
-        { status: 400 }
-      );
+      return badRequest("Missing signature or webhook secret");
     }
 
     let event: Stripe.Event;
@@ -24,10 +22,7 @@ export async function POST(request: NextRequest) {
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
     } catch (err) {
       logger.error("Webhook signature verification failed:", err);
-      return NextResponse.json(
-        { error: "Invalid signature" },
-        { status: 400 }
-      );
+      return badRequest("Invalid signature");
     }
 
     const adminClient = createAdminClient();
@@ -201,12 +196,9 @@ export async function POST(request: NextRequest) {
         logger.debug(`Unhandled Stripe event type: ${event.type}`);
     }
 
-    return NextResponse.json({ received: true });
+    return ok({ received: true });
   } catch (error) {
     logger.error("Webhook error:", error);
-    return NextResponse.json(
-      { error: "Webhook handler failed" },
-      { status: 500 }
-    );
+    return serverError("Webhook handler failed", error);
   }
 }

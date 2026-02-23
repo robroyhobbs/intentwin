@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
 import { ReviewStageStatus } from "@/lib/constants/statuses";
+import { unauthorized, notFound, ok, serverError } from "@/lib/api/response";
 
 /**
  * GET /api/proposals/[id]/review-stages/current
@@ -16,12 +17,12 @@ export async function GET(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const hasAccess = await checkProposalAccess(context, id);
     if (!hasAccess) {
-      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+      return notFound("Proposal not found");
     }
 
     const adminClient = createAdminClient();
@@ -34,13 +35,11 @@ export async function GET(
       .maybeSingle();
 
     if (error) {
-      console.error("Fetch current stage error:", error);
-      return NextResponse.json({ error: "Failed to fetch current stage" }, { status: 500 });
+      return serverError("Failed to fetch current stage", error);
     }
 
-    return NextResponse.json({ stage: stage || null });
+    return ok({ stage: stage || null });
   } catch (error) {
-    console.error("Fetch current stage error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return serverError("Internal server error", error);
   }
 }

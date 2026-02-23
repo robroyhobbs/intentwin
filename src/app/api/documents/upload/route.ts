@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   getUserContext,
@@ -7,6 +7,7 @@ import {
 } from "@/lib/supabase/auth-api";
 import { nanoid } from "nanoid";
 import { inngest } from "@/inngest/client";
+import { unauthorized, forbidden, badRequest, ok, serverError } from "@/lib/api/response";
 
 const ALLOWED_TYPES: Record<string, string> = {
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     // Check plan limits
@@ -50,10 +51,7 @@ export async function POST(request: NextRequest) {
       "max_documents",
     );
     if (!limitCheck.allowed) {
-      return NextResponse.json(
-        { error: limitCheck.message || "Document limit reached" },
-        { status: 403 },
-      );
+      return forbidden(limitCheck.message || "Document limit reached");
     }
 
     const formData = await request.formData();
@@ -68,40 +66,30 @@ export async function POST(request: NextRequest) {
     const description = formData.get("description") as string | null;
 
     if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 });
+      return badRequest("No file provided");
     }
 
     if (!title) {
-      return NextResponse.json({ error: "Title is required" }, { status: 400 });
+      return badRequest("Title is required");
     }
 
     // Validate file type
     const fileType = ALLOWED_TYPES[file.type];
     if (!fileType) {
-      return NextResponse.json(
-        {
-          error:
-            "Unsupported file type. Please upload DOCX, PDF, PPTX, TXT, or MD.",
-        },
-        { status: 400 },
+      return badRequest(
+        "Unsupported file type. Please upload DOCX, PDF, PPTX, TXT, or MD.",
       );
     }
 
     // Validate file size
     if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        { error: "File too large. Maximum size is 50MB." },
-        { status: 400 },
-      );
+      return badRequest("File too large. Maximum size is 50MB.");
     }
 
     // Verify magic bytes match claimed file type
     const fileBuffer = await file.arrayBuffer();
     if (!verifyMagicBytes(fileBuffer, fileType)) {
-      return NextResponse.json(
-        { error: "File content does not match its declared type." },
-        { status: 400 },
-      );
+      return badRequest("File content does not match its declared type.");
     }
 
     const adminClient = createAdminClient();
@@ -116,10 +104,7 @@ export async function POST(request: NextRequest) {
       });
 
     if (uploadError) {
-      return NextResponse.json(
-        { error: `Upload failed: ${uploadError.message}` },
-        { status: 500 },
-      );
+      return serverError("Upload failed", uploadError);
     }
 
     // Create document record with organization scoping
@@ -147,10 +132,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (dbError || !document) {
-      return NextResponse.json(
-        { error: `Database error: ${dbError?.message}` },
-        { status: 500 },
-      );
+      return serverError("Failed to save document record", dbError);
     }
 
     // Increment usage counter
@@ -163,16 +145,12 @@ export async function POST(request: NextRequest) {
       data: { documentId: document.id },
     });
 
-    return NextResponse.json({
+    return ok({
       documentId: document.id,
       status: "pending",
       message: "Document uploaded and processing started.",
     });
   } catch (error) {
-    console.error("Upload error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return serverError("Internal server error", error);
   }
 }

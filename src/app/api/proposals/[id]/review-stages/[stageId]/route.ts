@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
 import { ReviewStageStatus, REVIEW_STAGE_STATUSES } from "@/lib/constants/statuses";
+import { unauthorized, notFound, badRequest, ok, serverError } from "@/lib/api/response";
 
 /**
  * PATCH /api/proposals/[id]/review-stages/[stageId]
@@ -16,22 +17,19 @@ export async function PATCH(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const hasAccess = await checkProposalAccess(context, id);
     if (!hasAccess) {
-      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+      return notFound("Proposal not found");
     }
 
     const body = await request.json();
     const { status } = body;
 
     if (!status || !REVIEW_STAGE_STATUSES.includes(status)) {
-      return NextResponse.json(
-        { error: `Invalid status. Must be one of: ${REVIEW_STAGE_STATUSES.join(", ")}` },
-        { status: 400 }
-      );
+      return badRequest(`Invalid status. Must be one of: ${REVIEW_STAGE_STATUSES.join(", ")}`);
     }
 
     const adminClient = createAdminClient();
@@ -46,7 +44,7 @@ export async function PATCH(
       .single();
 
     if (fetchError || !existingStage) {
-      return NextResponse.json({ error: "Review stage not found" }, { status: 404 });
+      return notFound("Review stage not found");
     }
 
     const updateData: Record<string, unknown> = { status };
@@ -71,13 +69,11 @@ export async function PATCH(
       .single();
 
     if (updateError) {
-      console.error("Update review stage error:", updateError);
-      return NextResponse.json({ error: "Failed to update review stage" }, { status: 500 });
+      return serverError("Failed to update review stage", updateError);
     }
 
-    return NextResponse.json({ stage: updatedStage });
+    return ok({ stage: updatedStage });
   } catch (error) {
-    console.error("Update review stage error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return serverError("Internal server error", error);
   }
 }

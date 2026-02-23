@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   getUserContext,
@@ -9,6 +9,7 @@ import type {
   DocumentRole,
   UpdateDocumentRequest,
 } from "@/types/proposal-documents";
+import { unauthorized, notFound, badRequest, ok, serverError } from "@/lib/api/response";
 
 type RouteParams = { params: Promise<{ id: string; docId: string }> };
 
@@ -22,25 +23,19 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const hasAccess = await checkProposalAccess(context, proposalId);
     if (!hasAccess) {
-      return NextResponse.json(
-        { error: "Proposal not found" },
-        { status: 404 }
-      );
+      return notFound("Proposal not found");
     }
 
     let body: UpdateDocumentRequest;
     try {
       body = await request.json();
     } catch {
-      return NextResponse.json(
-        { error: "Invalid request body" },
-        { status: 400 }
-      );
+      return badRequest("Invalid request body");
     }
 
     // Validate document_role if provided
@@ -48,12 +43,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       body.document_role &&
       !DOCUMENT_ROLES.includes(body.document_role as DocumentRole)
     ) {
-      return NextResponse.json(
-        {
-          error: `document_role must be one of: ${DOCUMENT_ROLES.join(", ")}`,
-        },
-        { status: 400 }
-      );
+      return badRequest(`document_role must be one of: ${DOCUMENT_ROLES.join(", ")}`);
     }
 
     // Build update payload (only include provided fields)
@@ -63,10 +53,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (body.extraction_status !== undefined) updates.extraction_status = body.extraction_status;
 
     if (Object.keys(updates).length === 0) {
-      return NextResponse.json(
-        { error: "No fields to update" },
-        { status: 400 }
-      );
+      return badRequest("No fields to update");
     }
 
     const adminClient = createAdminClient();
@@ -81,19 +68,12 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       .single();
 
     if (error || !updated) {
-      return NextResponse.json(
-        { error: "Document association not found" },
-        { status: 404 }
-      );
+      return notFound("Document association not found");
     }
 
-    return NextResponse.json({ proposal_document: updated });
+    return ok({ proposal_document: updated });
   } catch (error) {
-    console.error("Update proposal document error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return serverError("Internal server error", error);
   }
 }
 
@@ -107,15 +87,12 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const hasAccess = await checkProposalAccess(context, proposalId);
     if (!hasAccess) {
-      return NextResponse.json(
-        { error: "Proposal not found" },
-        { status: 404 }
-      );
+      return notFound("Proposal not found");
     }
 
     const adminClient = createAdminClient();
@@ -129,11 +106,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       .eq("organization_id", context.organizationId);
 
     if (error) {
-      console.error("Delete proposal document error:", error);
-      return NextResponse.json(
-        { error: "Failed to remove document" },
-        { status: 500 }
-      );
+      return serverError("Failed to remove document", error);
     }
 
     // Log the event
@@ -146,12 +119,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       created_by: context.user.id,
     });
 
-    return NextResponse.json({ success: true });
+    return ok({ success: true });
   } catch (error) {
-    console.error("Delete proposal document error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return serverError("Internal server error", error);
   }
 }

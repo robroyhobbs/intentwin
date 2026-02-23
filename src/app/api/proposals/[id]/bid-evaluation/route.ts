@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
 import {
   scoreBidOpportunity,
   saveBidDecision,
   type FactorKey,
 } from "@/lib/ai/bid-scoring";
+import { unauthorized, notFound, badRequest, ok, serverError } from "@/lib/api/response";
 
 /** AI scoring call + L1 context fetch */
 export const maxDuration = 120;
@@ -23,37 +24,27 @@ export async function POST(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const proposal = await verifyProposalAccess(context, id);
     if (!proposal) {
-      return NextResponse.json(
-        { error: "Proposal not found" },
-        { status: 404 },
-      );
+      return notFound("Proposal not found");
     }
 
     // Verify extraction is complete
     if (!proposal.rfp_extracted_requirements) {
-      return NextResponse.json(
-        { error: "RFP extraction must complete before bid evaluation" },
-        { status: 400 },
-      );
+      return badRequest("RFP extraction must complete before bid evaluation");
     }
 
     const evaluation = await scoreBidOpportunity(id);
 
-    return NextResponse.json({
+    return ok({
       status: "scored",
       evaluation,
     });
   } catch (error) {
-    console.error("Bid evaluation scoring failed:", error);
-    return NextResponse.json(
-      { error: "Bid evaluation scoring failed. Please try again." },
-      { status: 500 },
-    );
+    return serverError("Bid evaluation scoring failed. Please try again.", error);
   }
 }
 
@@ -70,15 +61,12 @@ export async function PATCH(
     const context = await getUserContext(request);
 
     if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorized();
     }
 
     const proposal = await verifyProposalAccess(context, id);
     if (!proposal) {
-      return NextResponse.json(
-        { error: "Proposal not found" },
-        { status: 404 },
-      );
+      return notFound("Proposal not found");
     }
 
     const body = await request.json();
@@ -86,10 +74,7 @@ export async function PATCH(
 
     // Validate user_decision
     if (!user_decision || !["proceed", "skip"].includes(user_decision)) {
-      return NextResponse.json(
-        { error: 'user_decision must be "proceed" or "skip"' },
-        { status: 400 },
-      );
+      return badRequest('user_decision must be "proceed" or "skip"');
     }
 
     // Validate user_scores if provided
@@ -103,18 +88,10 @@ export async function PATCH(
       ];
       for (const [key, value] of Object.entries(user_scores)) {
         if (!validKeys.includes(key as FactorKey)) {
-          return NextResponse.json(
-            { error: `Invalid factor key: ${key}` },
-            { status: 400 },
-          );
+          return badRequest(`Invalid factor key: ${key}`);
         }
         if (typeof value !== "number" || value < 0 || value > 100) {
-          return NextResponse.json(
-            {
-              error: `Score for ${key} must be a number between 0 and 100`,
-            },
-            { status: 400 },
-          );
+          return badRequest(`Score for ${key} must be a number between 0 and 100`);
         }
       }
     }
@@ -125,14 +102,11 @@ export async function PATCH(
       user_scores || undefined,
     );
 
-    return NextResponse.json({
+    return ok({
       status: "saved",
       evaluation,
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to save bid decision";
-    console.error("Bid decision save failed:", message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return serverError("Failed to save bid decision", error);
   }
 }
