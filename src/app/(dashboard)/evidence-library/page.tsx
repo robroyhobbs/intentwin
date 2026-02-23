@@ -28,6 +28,7 @@ export default function EvidenceLibraryPage() {
   const authFetch = useAuthFetch();
   const [evidence, setEvidence] = useState<Evidence[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   // Filters
@@ -60,6 +61,7 @@ export default function EvidenceLibraryPage() {
       setEvidence(json.evidence || []);
     } catch {
       setEvidence([]);
+      setLoadError("Failed to load evidence items. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -275,8 +277,21 @@ export default function EvidenceLibraryPage() {
         </div>
       )}
 
+      {/* Error State */}
+      {!loading && loadError && (
+        <div className="card p-8 text-center">
+          <p className="text-[var(--foreground-muted)]">{loadError}</p>
+          <button
+            onClick={() => { setLoadError(null); setLoading(true); loadEvidence(); }}
+            className="mt-4 text-sm text-[var(--accent)] hover:underline"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       {/* Evidence Groups */}
-      {!loading &&
+      {!loading && !loadError &&
         EVIDENCE_TYPES.map(({ value: type, label, icon }) => {
           const items = grouped[type];
           return (

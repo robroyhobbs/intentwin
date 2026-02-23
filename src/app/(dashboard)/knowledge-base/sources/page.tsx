@@ -37,6 +37,7 @@ interface SourceCategory {
 export default function SourcesPage() {
   const [sources, setSources] = useState<SourceCategory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedSource, setSelectedSource] = useState<{
     category: string;
     fileName: string;
@@ -52,8 +53,8 @@ export default function SourcesPage() {
           const data = await response.json();
           setSources(data.categories);
         }
-      } catch (error) {
-        console.error("Failed to load sources:", error);
+      } catch {
+        setLoadError("Failed to load sources. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -106,6 +107,22 @@ export default function SourcesPage() {
           <p className="text-sm text-[var(--foreground-muted)]">
             Loading L1 Context...
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-[var(--foreground-muted)]">{loadError}</p>
+          <button
+            onClick={() => { setLoadError(null); setLoading(true); window.location.reload(); }}
+            className="mt-4 text-sm text-[var(--accent)] hover:underline"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );

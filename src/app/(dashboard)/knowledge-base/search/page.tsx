@@ -20,6 +20,7 @@ export default function SearchPage() {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [documentType, setDocumentType] = useState("");
 
   const authFetch = useAuthFetch();
@@ -30,6 +31,7 @@ export default function SearchPage() {
 
     setLoading(true);
     setSearched(true);
+    setSearchError(null);
     try {
       const response = await authFetch("/api/documents/search", {
         method: "POST",
@@ -43,13 +45,15 @@ export default function SearchPage() {
       });
 
       if (!response.ok) {
-        throw new Error("Search failed");
+        setSearchError("Search failed. Please try again.");
+        setResults([]);
+        return;
       }
 
       const data = await response.json();
       setResults(data.results || []);
-    } catch (error) {
-      console.error("Search error:", error);
+    } catch {
+      setSearchError("Search failed. Please check your connection and try again.");
       setResults([]);
     } finally {
       setLoading(false);
@@ -113,7 +117,13 @@ export default function SearchPage() {
           </div>
         )}
 
-        {!loading && searched && results.length === 0 && (
+        {!loading && searchError && (
+          <div className="card p-8 text-center">
+            <p className="text-[var(--foreground-muted)]">{searchError}</p>
+          </div>
+        )}
+
+        {!loading && searched && !searchError && results.length === 0 && (
           <div className="card p-8 text-center">
             <Search className="mx-auto h-10 w-10 text-[var(--foreground-subtle)]" />
             <p className="mt-3 text-sm text-[var(--foreground-muted)]">
