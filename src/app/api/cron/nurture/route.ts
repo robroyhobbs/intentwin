@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
   }
   const authHeader = request.headers.get("authorization");
   if (authHeader !== `Bearer ${cronSecret}`) {
-    console.error("[NURTURE-CRON] Unauthorized request — invalid cron secret");
+    logger.error("NURTURE-CRON: unauthorized request — invalid cron secret");
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -54,10 +54,7 @@ export async function GET(request: NextRequest) {
         .lt("created_at", windowEnd.toISOString());
 
       if (queryError) {
-        console.error(
-          `[NURTURE-CRON] Query error for step ${step}:`,
-          queryError,
-        );
+        logger.error(`NURTURE-CRON: query error for step ${step}`, queryError, { step });
         totalErrors++;
         continue;
       }
@@ -100,17 +97,14 @@ export async function GET(request: NextRequest) {
           .in("id", successfulIds);
 
         if (updateError) {
-          console.error(
-            `[NURTURE-CRON] Failed to batch update nurture_step for ${successfulIds.length} entries:`,
-            updateError,
-          );
+          logger.error(`NURTURE-CRON: failed to batch update nurture_step for ${successfulIds.length} entries`, updateError, { step, count: successfulIds.length });
           totalErrors += successfulIds.length;
         } else {
           totalSent += successfulIds.length;
         }
       }
     } catch (err) {
-      console.error(`[NURTURE-CRON] Unexpected error for step ${step}:`, err);
+      logger.error(`NURTURE-CRON: unexpected error for step ${step}`, err, { step });
       totalErrors++;
     }
   }

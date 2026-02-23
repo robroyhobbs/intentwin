@@ -39,31 +39,34 @@ export async function GET(request: NextRequest) {
       return serverError("Failed to load analytics", error);
     }
 
-    // ── Pipeline funnel: count ALL proposals (not filtered by status, capped at 1000) ──
-    const { data: allProposals, error: funnelError } = await adminClient
-      .from("proposals")
-      .select("status")
-      .eq("organization_id", context.organizationId)
-      .limit(1000);
+    // ── Pipeline funnel: lightweight head-only counts per status ──
+    const funnelStatuses = [
+      ProposalStatus.DRAFT,
+      ProposalStatus.INTAKE,
+      ProposalStatus.GENERATING,
+      ProposalStatus.REVIEW,
+      ProposalStatus.FINAL,
+      ProposalStatus.EXPORTED,
+    ] as const;
 
+    const funnelResults = await Promise.all(
+      funnelStatuses.map((status) =>
+        adminClient
+          .from("proposals")
+          .select("id", { count: "exact", head: true })
+          .eq("organization_id", context.organizationId)
+          .eq("status", status)
+      )
+    );
+
+    const funnelError = funnelResults.find((r) => r.error)?.error;
     if (funnelError) {
       return serverError("Failed to load analytics", funnelError);
     }
 
-    const pipelineFunnel = {
-      [ProposalStatus.DRAFT]: 0,
-      [ProposalStatus.INTAKE]: 0,
-      [ProposalStatus.GENERATING]: 0,
-      [ProposalStatus.REVIEW]: 0,
-      [ProposalStatus.FINAL]: 0,
-      [ProposalStatus.EXPORTED]: 0,
-    };
-    for (const p of allProposals || []) {
-      const status = p.status as keyof typeof pipelineFunnel;
-      if (status in pipelineFunnel) {
-        pipelineFunnel[status]++;
-      }
-    }
+    const pipelineFunnel = Object.fromEntries(
+      funnelStatuses.map((status, i) => [status, funnelResults[i].count ?? 0])
+    ) as Record<(typeof funnelStatuses)[number], number>;
 
     // ── Calculate summary stats (existing) ──
     const total = proposals?.length || 0;

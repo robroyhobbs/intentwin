@@ -2,6 +2,20 @@ import { resend } from "./resend";
 import { waitlistConfirmationEmail } from "./templates/waitlist-confirmation";
 import { logger } from "@/lib/utils/logger";
 
+/**
+ * Sends a waitlist confirmation email to a newly registered user via Resend.
+ * Silently skips sending if the RESEND_API_KEY is not configured (non-throwing).
+ * Logs warnings/errors but never throws, so callers don't need error handling.
+ *
+ * @param params - Recipient details for the confirmation email
+ * @param params.name - Full name of the waitlist entrant
+ * @param params.email - Email address to send the confirmation to
+ * @param params.company - Company name for personalization in the email template
+ * @returns Resolves when the email is sent (or skipped)
+ *
+ * @example
+ * await sendWaitlistConfirmation({ name: "Jane Doe", email: "jane@acme.com", company: "Acme" });
+ */
 export async function sendWaitlistConfirmation(params: {
   name: string;
   email: string;

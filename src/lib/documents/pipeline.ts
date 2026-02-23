@@ -6,6 +6,21 @@ import { chunkSections } from "./chunker";
 import { generateEmbeddings } from "@/lib/ai/embeddings";
 import { PdfParseError } from "./parsers/pdf";
 
+/**
+ * Processes an uploaded document through the full ingestion pipeline:
+ * download from storage, parse into sections, chunk for RAG, generate embeddings,
+ * and store chunks in the database.
+ *
+ * Updates the document's `processing_status` to PROCESSING, COMPLETED, or FAILED
+ * throughout the pipeline. On failure, records the error message on the document row.
+ *
+ * @param documentId - UUID of the document record in the `documents` table
+ * @returns Resolves when processing completes successfully
+ * @throws {Error} Re-throws after recording failure status on the document
+ *
+ * @example
+ * await processDocument("550e8400-e29b-41d4-a716-446655440000");
+ */
 export async function processDocument(documentId: string): Promise<void> {
   const supabase = createAdminClient();
 

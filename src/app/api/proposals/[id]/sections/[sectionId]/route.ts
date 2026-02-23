@@ -1,23 +1,15 @@
-import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
-import { unauthorized, notFound, badRequest, ok, serverError } from "@/lib/api/response";
+import { badRequest, ok, serverError, withProposalRoute } from "@/lib/api/response";
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string; sectionId: string }> }
-) {
-  try {
-    const { id, sectionId } = await params;
-    const context = await getUserContext(request);
+export const PATCH = withProposalRoute(
+  async (request, id, _context) => {
+    // Extract sectionId from URL: /api/proposals/[id]/sections/[sectionId]
+    const url = new URL(request.url);
+    const segments = url.pathname.split("/");
+    const sectionId = segments[segments.indexOf("sections") + 1];
 
-    if (!context) {
-      return unauthorized();
-    }
-
-    const hasAccess = await checkProposalAccess(context, id);
-    if (!hasAccess) {
-      return notFound("Proposal not found");
+    if (!sectionId) {
+      return badRequest("sectionId is required");
     }
 
     const body = await request.json();
@@ -44,7 +36,5 @@ export async function PATCH(
     }
 
     return ok({ section });
-  } catch (error) {
-    return serverError("Internal server error", error);
-  }
-}
+  },
+);

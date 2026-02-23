@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
 import { unauthorized, notFound, badRequest, serverError, ok } from "@/lib/api/response";
 import { ReviewStatus, AnnotationType } from "@/lib/constants/statuses";
+import { logger } from "@/lib/utils/logger";
 
 export async function GET(
   request: NextRequest,
@@ -46,7 +47,7 @@ export async function GET(
 
     return ok({ reviews, summary });
   } catch (error) {
-    console.error("Fetch reviews error:", error);
+    logger.error("Fetch reviews error", error);
     return serverError("Failed to fetch reviews", error);
   }
 }
@@ -104,7 +105,7 @@ export async function POST(
 
     return ok({ review });
   } catch (error) {
-    console.error("Create review error:", error);
+    logger.error("Create review error", error);
     return serverError("Failed to create review", error);
   }
 }
@@ -149,7 +150,7 @@ export async function PATCH(
 
     return ok({ review });
   } catch (error) {
-    console.error("Update review error:", error);
+    logger.error("Update review error", error);
     return serverError("Failed to update review", error);
   }
 }

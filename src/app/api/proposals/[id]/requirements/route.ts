@@ -185,11 +185,14 @@ export async function PATCH(
     }
 
     const adminClient = createAdminClient();
-    const results = [];
+    const selectFields = "id, requirement_text, source_reference, category, requirement_type, compliance_status, mapped_section_id, notes, is_extracted, created_at, updated_at";
+    const now = new Date().toISOString();
 
+    // Process updates individually — batch sizes are typically 1-5, so N+1 is negligible
+    const results: Record<string, unknown>[] = [];
     for (const update of updates) {
       const { id: reqId, ...fields } = update;
-      const updateData: Record<string, unknown> = { updated_at: new Date().toISOString() };
+      const updateData: Record<string, unknown> = { updated_at: now };
 
       if (fields.compliance_status) updateData.compliance_status = fields.compliance_status;
       if (fields.category) updateData.category = fields.category;
@@ -203,14 +206,16 @@ export async function PATCH(
         .update(updateData)
         .eq("id", reqId)
         .eq("organization_id", context.organizationId)
-        .select("id, requirement_text, source_reference, category, requirement_type, compliance_status, mapped_section_id, notes, is_extracted, created_at, updated_at")
+        .select(selectFields)
         .single();
 
       if (error) {
-        return serverError(`Failed to update requirement ${reqId}`, error);
+        return serverError(`Failed to update requirements ${reqId}`, error);
       }
 
-      results.push(data);
+      if (data) {
+        results.push(data);
+      }
     }
 
     return ok({ requirements: results });

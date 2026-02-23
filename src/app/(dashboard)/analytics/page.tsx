@@ -8,13 +8,30 @@ import {
 import { DealOutcome } from "@/lib/constants/statuses";
 import type { AnalyticsData } from "./_components/types";
 import { COLORS } from "./_components/chart-tooltips";
+import dynamic from "next/dynamic";
 import { SummaryStats } from "./_components/summary-stats";
-import { WinRateTrend } from "./_components/win-rate-trend";
-import { PipelineLossCharts } from "./_components/pipeline-loss-charts";
-import { IndustryOpportunityCharts } from "./_components/industry-opportunity-charts";
-import { QualityScatter } from "./_components/quality-scatter";
-import { BidScoreAnalysis } from "./_components/bid-score-analysis";
 import { RecentOutcomes } from "./_components/recent-outcomes";
+
+const WinRateTrend = dynamic(
+  () => import("./_components/win-rate-trend").then((m) => m.WinRateTrend),
+  { ssr: false },
+);
+const PipelineLossCharts = dynamic(
+  () => import("./_components/pipeline-loss-charts").then((m) => m.PipelineLossCharts),
+  { ssr: false },
+);
+const IndustryOpportunityCharts = dynamic(
+  () => import("./_components/industry-opportunity-charts").then((m) => m.IndustryOpportunityCharts),
+  { ssr: false },
+);
+const QualityScatter = dynamic(
+  () => import("./_components/quality-scatter").then((m) => m.QualityScatter),
+  { ssr: false },
+);
+const BidScoreAnalysis = dynamic(
+  () => import("./_components/bid-score-analysis").then((m) => m.BidScoreAnalysis),
+  { ssr: false },
+);
 
 export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);

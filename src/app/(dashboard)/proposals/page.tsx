@@ -45,26 +45,28 @@ export default async function ProposalsPage({
 
   const { data: proposals } = await query;
 
-  // Count by status for tab badges (safety cap at 1000)
-  const { data: allProposals } = await supabase
-    .from("proposals")
-    .select("status")
-    .limit(1000);
+  // Count by status for tab badges — lightweight head-only counts (no row data fetched)
+  const [totalResult, draftResult, intakeResult, generatingResult, reviewResult, exportedResult] = await Promise.all([
+    supabase.from("proposals").select("id", { count: "exact", head: true }),
+    supabase.from("proposals").select("id", { count: "exact", head: true }).eq("status", ProposalStatus.DRAFT),
+    supabase.from("proposals").select("id", { count: "exact", head: true }).eq("status", ProposalStatus.INTAKE),
+    supabase.from("proposals").select("id", { count: "exact", head: true }).eq("status", ProposalStatus.GENERATING),
+    supabase.from("proposals").select("id", { count: "exact", head: true }).eq("status", ProposalStatus.REVIEW),
+    supabase.from("proposals").select("id", { count: "exact", head: true }).eq("status", ProposalStatus.EXPORTED),
+  ]);
+
+  const totalCount = totalResult.count ?? 0;
+  const reviewCount = reviewResult.count ?? 0;
+  const exportedCount = exportedResult.count ?? 0;
+  // "Draft" tab groups DRAFT + INTAKE + GENERATING
+  const draftGroupCount = (draftResult.count ?? 0) + (intakeResult.count ?? 0) + (generatingResult.count ?? 0);
 
   const statusCounts: Record<string, number> = {
-    all: allProposals?.length || 0,
+    all: totalCount,
+    [ProposalStatus.DRAFT]: draftGroupCount,
+    [ProposalStatus.REVIEW]: reviewCount,
+    [ProposalStatus.EXPORTED]: exportedCount,
   };
-  for (const p of allProposals || []) {
-    if ([ProposalStatus.DRAFT, ProposalStatus.INTAKE, ProposalStatus.GENERATING].includes(p.status)) {
-      statusCounts[ProposalStatus.DRAFT] = (statusCounts[ProposalStatus.DRAFT] || 0) + 1;
-    } else {
-      statusCounts[p.status] = (statusCounts[p.status] || 0) + 1;
-    }
-  }
-
-  const totalCount = allProposals?.length || 0;
-  const reviewCount = statusCounts[ProposalStatus.REVIEW] || 0;
-  const exportedCount = statusCounts[ProposalStatus.EXPORTED] || 0;
 
   return (
     <div className="animate-fade-in">

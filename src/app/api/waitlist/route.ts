@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
           { status: 409 },
         );
       }
-      console.error("Waitlist insert error:", error);
+      logger.error("Waitlist insert error", error);
       return NextResponse.json(
         { error: "Something went wrong. Please try again." },
         { status: 500 },

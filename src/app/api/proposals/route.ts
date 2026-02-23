@@ -8,6 +8,7 @@ import {
 import { unauthorized, badRequest, forbidden, serverError, ok, created } from "@/lib/api/response";
 import { sanitizeTitle } from "@/lib/security/sanitize";
 import { ProposalStatus, IntentStatus, ComplianceStatus } from "@/lib/constants/statuses";
+import { logger } from "@/lib/utils/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -50,7 +51,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Get proposals error:", error);
+    logger.error("Get proposals error", error);
     return serverError("Failed to fetch proposals", error);
   }
 }
@@ -154,7 +155,7 @@ export async function POST(request: NextRequest) {
           .insert(seedRows)
           .then(({ error: seedErr }) => {
             if (seedErr) {
-              console.error("Failed to seed compliance requirements:", seedErr);
+              logger.error("Failed to seed compliance requirements", seedErr);
             }
           });
       }
@@ -162,7 +163,7 @@ export async function POST(request: NextRequest) {
 
     return created({ proposal });
   } catch (error) {
-    console.error("Create proposal error:", error);
+    logger.error("Create proposal error", error);
     return serverError("Failed to create proposal", error);
   }
 }

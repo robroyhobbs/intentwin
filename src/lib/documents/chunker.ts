@@ -28,6 +28,20 @@ function countTokens(text: string): number {
   return getEncoder().encode(text).length;
 }
 
+/**
+ * Splits parsed document sections into token-bounded chunks suitable for embedding.
+ * Uses a sliding window algorithm with overlap to preserve context across chunk boundaries.
+ * Sections smaller than MAX_CHUNK_SIZE are kept intact; larger sections are split at
+ * ~512-token boundaries with ~50-token overlap.
+ *
+ * @param sections - Array of parsed document sections (headings + content)
+ * @returns Array of chunks with content, token counts, and source metadata
+ *
+ * @example
+ * const sections = await parseDocument(buffer, "pdf");
+ * const chunks = chunkSections(sections);
+ * // chunks[0].content, chunks[0].tokenCount, chunks[0].sectionHeading
+ */
 export function chunkSections(sections: ParsedSection[]): Chunk[] {
   const chunks: Chunk[] = [];
   let globalIndex = 0;

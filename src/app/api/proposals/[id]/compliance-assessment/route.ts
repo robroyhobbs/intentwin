@@ -1,10 +1,8 @@
-import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
 import { createLogger } from "@/lib/utils/logger";
 import { inngest } from "@/inngest/client";
 import { ProposalStatus, ComplianceAssessmentStatus } from "@/lib/constants/statuses";
-import { unauthorized, notFound, conflict, ok, serverError } from "@/lib/api/response";
+import { conflict, notFound, ok, withProposalRoute } from "@/lib/api/response";
 
 const STALE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -12,23 +10,8 @@ const STALE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
  * POST /api/proposals/[id]/compliance-assessment
  * Trigger compliance auto-assessment via Inngest. Returns immediately.
  */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  try {
-    const { id } = await params;
-    const context = await getUserContext(request);
-
-    if (!context) {
-      return unauthorized();
-    }
-
-    const hasAccess = await checkProposalAccess(context, id);
-    if (!hasAccess) {
-      return notFound("Proposal not found");
-    }
-
+export const POST = withProposalRoute(
+  async (_request, id, context) => {
     const supabase = createAdminClient();
     const log = createLogger({ operation: "complianceAssessmentRoute", proposalId: id });
 
@@ -85,32 +68,15 @@ export async function POST(
     });
 
     return ok({ status: ComplianceAssessmentStatus.ASSESSING });
-  } catch (error) {
-    return serverError("Internal server error", error);
-  }
-}
+  },
+);
 
 /**
  * GET /api/proposals/[id]/compliance-assessment
  * Returns the current assessment status/metadata.
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  try {
-    const { id } = await params;
-    const context = await getUserContext(request);
-
-    if (!context) {
-      return unauthorized();
-    }
-
-    const hasAccess = await checkProposalAccess(context, id);
-    if (!hasAccess) {
-      return notFound("Proposal not found");
-    }
-
+export const GET = withProposalRoute(
+  async (_request, id, context) => {
     const supabase = createAdminClient();
     const { data: proposal } = await supabase
       .from("proposals")
@@ -122,7 +88,5 @@ export async function GET(
     return ok({
       assessment: proposal?.compliance_assessment || null,
     });
-  } catch (error) {
-    return serverError("Internal server error", error);
-  }
-}
+  },
+);

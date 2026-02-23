@@ -5,11 +5,22 @@ import { useRouter } from "next/navigation";
 import { useIntelligence } from "./_components/use-intelligence";
 import { IntelligenceLoading } from "./_components/intelligence-loading";
 import { NotConfigured } from "./_components/not-configured-view";
+import dynamic from "next/dynamic";
 import { StatsCards } from "./_components/stats-cards";
-import { AwardsTimeline } from "./_components/awards-timeline";
-import { CompetitionChart } from "./_components/competition-chart";
-import { TopAgenciesChart } from "./_components/top-agencies-chart";
 import { SourceAttribution } from "./_components/source-attribution";
+
+const AwardsTimeline = dynamic(
+  () => import("./_components/awards-timeline").then((m) => m.AwardsTimeline),
+  { ssr: false },
+);
+const CompetitionChart = dynamic(
+  () => import("./_components/competition-chart").then((m) => m.CompetitionChart),
+  { ssr: false },
+);
+const TopAgenciesChart = dynamic(
+  () => import("./_components/top-agencies-chart").then((m) => m.TopAgenciesChart),
+  { ssr: false },
+);
 import type { DashboardStatsResponse } from "./_components/types";
 
 export default function IntelligenceDashboard() {

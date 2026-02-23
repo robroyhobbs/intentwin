@@ -1,10 +1,15 @@
 "use client";
 
 import { useMemo } from "react";
+import dynamic from "next/dynamic";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { extractMermaidBlocks } from "@/lib/diagrams/extract-mermaid";
-import { MermaidRenderer } from "@/components/mermaid-renderer";
+
+const MermaidRenderer = dynamic(
+  () => import("@/components/mermaid-renderer").then((m) => m.MermaidRenderer),
+  { ssr: false },
+);
 
 interface ProposalContentRendererProps {
   content: string;

@@ -1,10 +1,8 @@
-import { NextRequest } from "next/server";
-import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchL1Context } from "@/lib/ai/pipeline/context";
 import { runPreflightCheck } from "@/lib/ai/pipeline/preflight";
 import type { BidEvaluation } from "@/lib/ai/bid-scoring";
-import { unauthorized, notFound, ok, serverError } from "@/lib/api/response";
+import { ok, withProposalRoute } from "@/lib/api/response";
 
 /**
  * GET /api/proposals/[id]/preflight
@@ -13,24 +11,9 @@ import { unauthorized, notFound, ok, serverError } from "@/lib/api/response";
  * Returns gap analysis with actionable upload hints. Non-blocking — the UI can
  * show this alongside the "Generate" button.
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  try {
-    const { id } = await params;
-    const context = await getUserContext(request);
-
-    if (!context) {
-      return unauthorized();
-    }
-
-    const proposal = await verifyProposalAccess(context, id);
-    if (!proposal) {
-      return notFound("Proposal not found");
-    }
-
-    const intakeData = (proposal.intake_data as Record<string, unknown>) || {};
+export const GET = withProposalRoute(
+  async (_request, id, context, proposal) => {
+    const intakeData = (proposal!.intake_data as Record<string, unknown>) || {};
     const serviceLine = intakeData.service_line as string | undefined;
     const industry = intakeData.client_industry as string | undefined;
 
@@ -45,10 +28,10 @@ export async function GET(
 
     // Fetch extracted requirements if available
     const requirements =
-      (proposal.rfp_extracted_requirements as Record<string, unknown>[] | null) ?? null;
+      (proposal!.rfp_extracted_requirements as Record<string, unknown>[] | null) ?? null;
 
     // Pass bid evaluation for cross-referencing (may be null if not scored)
-    const bidEvaluation = (proposal.bid_evaluation as BidEvaluation | null) ?? null;
+    const bidEvaluation = (proposal!.bid_evaluation as BidEvaluation | null) ?? null;
 
     const result = runPreflightCheck(l1Context, intakeData, requirements, bidEvaluation);
 
@@ -56,7 +39,6 @@ export async function GET(
       proposalId: id,
       ...result,
     });
-  } catch (error) {
-    return serverError("Internal server error", error);
-  }
-}
+  },
+  { requireFullProposal: true },
+);

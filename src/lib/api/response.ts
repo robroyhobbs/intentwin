@@ -9,6 +9,7 @@
 
 import { NextResponse } from "next/server";
 import { logger } from "@/lib/utils/logger";
+import type { UserContext } from "@/lib/supabase/auth-api";
 
 // ── Response Types ─────────────────────────────────────────────────
 
@@ -159,6 +160,66 @@ export function withErrorHandler(
     } catch (error) {
       const _message = error instanceof Error ? error.message : "Unknown error";
       logger.error("[Unhandled API Error]", error);
+      return serverError();
+    }
+  };
+}
+
+// ── Proposal Route Wrapper ─────────────────────────────────────────
+
+/** Row shape returned by verifyProposalAccess */
+type ProposalRow = { id: string; organization_id: string; [key: string]: unknown };
+
+/**
+ * Wrap a proposal sub-route handler with auth + access verification.
+ * Extracts proposal ID from params, verifies user context and org access.
+ *
+ * @param handler - receives (request, proposalId, context) after verification.
+ *                  `proposal` is only populated when requireFullProposal=true.
+ * @param options.requireFullProposal - if true, uses verifyProposalAccess (fetches full row);
+ *                                       if false (default), uses checkProposalAccess (lightweight)
+ */
+export function withProposalRoute(
+  handler: (
+    request: Request,
+    proposalId: string,
+    context: UserContext,
+    proposal?: ProposalRow,
+  ) => Promise<Response>,
+  options?: { requireFullProposal?: boolean },
+) {
+  return async (
+    request: Request,
+    { params }: { params: Promise<{ id: string; [key: string]: string }> },
+  ): Promise<Response> => {
+    try {
+      // Lazy import to avoid circular dependency at module scope
+      const { getUserContext, verifyProposalAccess, checkProposalAccess } =
+        await import("@/lib/supabase/auth-api");
+
+      const { id } = await params;
+
+      const context = await getUserContext(request as never);
+      if (!context) {
+        return unauthorized();
+      }
+
+      if (options?.requireFullProposal) {
+        const proposal = await verifyProposalAccess(context, id);
+        if (!proposal) {
+          return notFound("Proposal not found");
+        }
+        return await handler(request, id, context, proposal);
+      }
+
+      const hasAccess = await checkProposalAccess(context, id);
+      if (!hasAccess) {
+        return notFound("Proposal not found");
+      }
+
+      return await handler(request, id, context);
+    } catch (error) {
+      logger.error("[withProposalRoute] Unhandled error", error);
       return serverError();
     }
   };

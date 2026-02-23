@@ -1,3 +1,5 @@
+/* TODO: Migrate Space Grotesk and Playfair Display to next/font/google in layout.tsx
+   to eliminate this render-blocking @import. Do not remove until fonts are loaded via next/font. */
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
@@ -35,11 +37,6 @@
   --accent-hover: #818CF8;
   --accent-subtle: rgba(192, 132, 252, 0.1);
   --accent-muted: rgba(192, 132, 252, 0.2);
-
-  /* Brand Colors (for exports/branding) */
-  --cap-blue: #0070AD;
-  --cap-dark: #1B365D;
-  --cap-accent: #12ABDB;
 
   /* Semantic Colors - Vibrant */
   --success: #34d399;
@@ -712,21 +709,6 @@ input[type="checkbox"] {
 .interactive:hover {
   background: var(--background-tertiary);
 }
-
-/* Smooth transitions */
-.transition-colors {
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
-}
-
-.transition-all {
-  transition: all 0.2s ease;
-}
-
-/* Shadow utilities */
-.shadow-sm { box-shadow: var(--shadow-sm); }
-.shadow-md { box-shadow: var(--shadow-md); }
-.shadow-lg { box-shadow: var(--shadow-lg); }
-.shadow-glow { box-shadow: var(--shadow-glow); }
 
 /* Hover glow effect */
 .hover-glow {

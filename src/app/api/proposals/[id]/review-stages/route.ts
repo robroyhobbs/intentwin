@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
 import { unauthorized, notFound, serverError, ok, created, conflict } from "@/lib/api/response";
 import { ReviewStageStatus } from "@/lib/constants/statuses";
+import { logger } from "@/lib/utils/logger";
 
 /**
  * GET /api/proposals/[id]/review-stages
@@ -34,7 +35,7 @@ export async function GET(
       .order("stage_order", { ascending: true });
 
     if (error) {
-      console.error("Fetch review stages error:", error);
+      logger.error("Fetch review stages error", error);
       return serverError("Failed to fetch review stages", error);
     }
 
@@ -72,7 +73,7 @@ export async function GET(
 
     return ok({ stages: stagesWithReviewers, currentStage });
   } catch (error) {
-    console.error("Fetch review stages error:", error);
+    logger.error("Fetch review stages error", error);
     return serverError("Failed to fetch review stages", error);
   }
 }
@@ -109,7 +110,7 @@ export async function POST(
       .limit(1);
 
     if (checkError) {
-      console.error("Check existing stages error:", checkError);
+      logger.error("Check existing stages error", checkError);
       return serverError("Failed to check existing stages", checkError);
     }
 
@@ -157,13 +158,13 @@ export async function POST(
       .order("stage_order", { ascending: true });
 
     if (insertError) {
-      console.error("Insert review stages error:", insertError);
+      logger.error("Insert review stages error", insertError);
       return serverError("Failed to create review stages", insertError);
     }
 
     return created({ stages: stages || [] });
   } catch (error) {
-    console.error("Create review stages error:", error);
+    logger.error("Create review stages error", error);
     return serverError("Failed to create review stages", error);
   }
 }

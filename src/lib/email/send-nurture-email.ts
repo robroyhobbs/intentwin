@@ -31,6 +31,22 @@ const TEMPLATE_MAP: Record<
   4: nurtureDay14Email,
 };
 
+/**
+ * Sends a nurture drip email for the specified step in the onboarding sequence.
+ * Steps 1-4 correspond to day 1, 3, 7, and 14 templates with step-specific subject lines.
+ * Silently handles missing Resend config and API errors without throwing.
+ *
+ * @param params - Nurture email parameters
+ * @param params.step - Nurture sequence step (1-4), determines template and subject line
+ * @param params.name - Full name of the recipient (first name extracted for subject personalization)
+ * @param params.email - Email address to send to
+ * @param params.company - Company name for template personalization
+ * @returns Object with `success: true` if sent, `success: false` on any failure
+ *
+ * @example
+ * const result = await sendNurtureEmail({ step: 1, name: "Jane Doe", email: "jane@acme.com", company: "Acme" });
+ * if (!result.success) console.warn("Nurture email failed");
+ */
 export async function sendNurtureEmail(
   params: SendNurtureEmailParams,
 ): Promise<{ success: boolean }> {

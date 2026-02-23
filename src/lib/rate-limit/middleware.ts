@@ -85,7 +85,19 @@ function rateLimitHeaders(result: RateLimitResult): Record<string, string> {
 }
 
 /**
- * Wrap an API route handler with rate limiting.
+ * Wraps a Next.js API route handler with automatic rate limiting.
+ * Auto-detects the rate limit config from the route path, or accepts an explicit config.
+ * Returns a 429 JSON response with `Retry-After` headers when the limit is exceeded.
+ * Appends `X-RateLimit-*` headers to all successful responses.
+ *
+ * @param handler - The API route handler function to protect
+ * @param options - Optional overrides for config, key strategy, or custom key generator
+ * @returns A wrapped route handler with rate limiting applied
+ *
+ * @example
+ * export const POST = withRateLimit(async (request) => {
+ *   return NextResponse.json({ ok: true });
+ * }, { config: AI_GENERATION_LIMIT });
  */
 export function withRateLimit(
   handler: RouteHandler,
@@ -143,10 +155,18 @@ export function withRateLimit(
 }
 
 /**
- * Standalone rate limit check for use inside route handlers.
- * Useful when you need the handler to execute some logic before rate limiting.
+ * Performs a standalone rate limit check for use inside route handlers.
+ * Useful when you need to execute logic (e.g., auth) before applying the rate limit.
  *
- * Returns a 429 Response if rate limited, or null if allowed.
+ * @param request - The incoming Next.js request
+ * @param config - Rate limit configuration to apply
+ * @param options - Optional key generation strategy overrides
+ * @returns A 429 Response if rate limited, or null if the request is allowed
+ *
+ * @example
+ * const blocked = rateLimitCheck(request, AUTH_LIMIT, { keyByIp: true });
+ * if (blocked) return blocked;
+ * // proceed with handler logic
  */
 export function rateLimitCheck(
   request: NextRequest,

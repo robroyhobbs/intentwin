@@ -44,7 +44,19 @@ Quality rules:
 - NEVER output Mermaid diagrams, code blocks, or raw code. Use markdown tables and bullet lists instead`;
 
 /**
- * Build a system prompt with organization-specific context and optional brand voice
+ * Builds a system prompt tailored to the organization's identity and brand voice.
+ * Falls back to a generic senior proposal strategist prompt when no company context is provided.
+ *
+ * @param companyContext - Optional organization details to personalize the prompt
+ * @param companyContext.name - Company name used throughout the prompt
+ * @param companyContext.description - Brief company description
+ * @param companyContext.capabilities - Key capabilities to reference in proposals
+ * @param companyContext.methodologies - Named methodologies the company uses
+ * @param companyContext.brandVoice - Brand voice profile for tone/style injection
+ * @returns The assembled system prompt string for AI generation
+ *
+ * @example
+ * const prompt = buildSystemPrompt({ name: "Acme Corp", capabilities: ["Cloud Migration"] });
  */
 export function buildSystemPrompt(companyContext?: {
   name?: string;
@@ -105,6 +117,19 @@ export interface GenerateOptions {
 
 const FALLBACK_MODEL = "gemini-2.0-flash";
 
+/**
+ * Generates text using Google Gemini with automatic model fallback.
+ * Tries the primary model first, then falls back to a stable model on retryable errors
+ * (503, 429, model not found, etc.).
+ *
+ * @param prompt - The user/content prompt to send to the model
+ * @param options - Generation configuration (model, temperature, maxTokens, systemPrompt)
+ * @returns The generated text response from Gemini
+ * @throws {Error} When all model attempts fail with non-retryable errors
+ *
+ * @example
+ * const text = await generateText("Write an executive summary", { temperature: 0.5 });
+ */
 export async function generateText(
   prompt: string,
   options: GenerateOptions = {},
@@ -162,6 +187,19 @@ export async function generateText(
   throw lastError || new Error("All models failed");
 }
 
+/**
+ * Generates a structured proposal opportunity analysis from intake data.
+ * Produces key themes, competitive positioning, technical approach, risk factors,
+ * win strategy, and required sections. Aligns with win strategy when provided.
+ *
+ * @param intakeData - Parsed intake/RFP data as key-value pairs
+ * @param rfpRequirements - Optional extracted RFP requirements for deeper analysis
+ * @param winStrategy - Optional user-defined win themes, differentiators, and target outcomes
+ * @returns The structured analysis as a formatted markdown string
+ *
+ * @example
+ * const analysis = await generateStructuredAnalysis(intake, requirements, winStrategy);
+ */
 export async function generateStructuredAnalysis(
   intakeData: Record<string, unknown>,
   rfpRequirements?: Record<string, unknown>,

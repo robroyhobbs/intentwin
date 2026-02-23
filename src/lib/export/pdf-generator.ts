@@ -1,5 +1,6 @@
 import { generateHtml } from "./html-generator";
 import puppeteerCore from "puppeteer-core";
+import { logger } from "@/lib/utils/logger";
 
 interface ProposalSection {
   title: string;
@@ -31,21 +32,18 @@ async function findBrowser(): Promise<{
   if (isVercel) {
     try {
       const chromium = await import("@sparticuz/chromium");
-      console.log("[pdf-export] @sparticuz/chromium imported successfully");
+      logger.debug("pdf-export: @sparticuz/chromium imported successfully");
       const execPath = await chromium.default.executablePath();
-      console.log("[pdf-export] executablePath:", execPath);
+      logger.debug("pdf-export: executablePath resolved", { execPath });
       if (execPath) {
         return { executablePath: execPath, args: chromium.default.args };
       }
-      console.warn("[pdf-export] executablePath was falsy, falling through");
+      logger.warn("pdf-export: executablePath was falsy, falling through");
     } catch (chromiumError) {
-      console.error(
-        "[pdf-export] @sparticuz/chromium failed:",
-        chromiumError instanceof Error ? chromiumError.message : chromiumError,
-      );
+      logger.error("pdf-export: @sparticuz/chromium failed", chromiumError);
     }
   } else {
-    console.log("[pdf-export] Not on Vercel, skipping @sparticuz/chromium");
+    logger.debug("pdf-export: not on Vercel, skipping @sparticuz/chromium");
   }
 
   // Local development: search for installed browsers
@@ -108,9 +106,9 @@ export async function generatePdf(data: ProposalData): Promise<Buffer> {
 
   const { executablePath, args } = await findBrowser();
 
-  console.log("[pdf-export] Launching browser...");
+  logger.debug("pdf-export: launching browser...");
   const browser = await launchBrowser(executablePath, args);
-  console.log("[pdf-export] Browser launched successfully");
+  logger.debug("pdf-export: browser launched successfully");
 
   try {
     const page = await browser.newPage();
@@ -125,7 +123,7 @@ export async function generatePdf(data: ProposalData): Promise<Buffer> {
     // Brief wait for any inline styles/fonts to apply
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    console.log("[pdf-export] Generating PDF...");
+    logger.debug("pdf-export: generating PDF...");
     const pdfBuffer = await page.pdf({
       format: "A4",
       printBackground: true,
@@ -147,11 +145,11 @@ export async function generatePdf(data: ProposalData): Promise<Buffer> {
       timeout: 60000,
     });
 
-    console.log("[pdf-export] PDF generated successfully, size:", pdfBuffer.length);
+    logger.info("pdf-export: PDF generated successfully", { size: pdfBuffer.length });
     return Buffer.from(pdfBuffer);
   } finally {
     await browser.close().catch((err: unknown) => {
-      console.warn("[pdf-export] Browser close error:", err);
+      logger.warn("pdf-export: browser close error", { error: err instanceof Error ? err.message : String(err) });
     });
   }
 }
