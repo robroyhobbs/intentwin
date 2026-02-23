@@ -96,6 +96,19 @@ jobs:
           path: coverage/
           retention-days: 14
 
+  rls-tests:
+    name: RLS Policy Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Start Supabase
+        run: supabase start
+      - name: Run RLS Tests
+        run: supabase test db
+
   build:
     name: Build
     runs-on: ubuntu-latest
