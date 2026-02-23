@@ -637,8 +637,8 @@ export default function ProposalPage() {
             Ready to generate
           </h3>
           <p className="mt-2 text-sm text-[var(--foreground-muted)] max-w-md text-center">
-            Your proposal is configured. Click Generate to start creating all
-            sections with AI-powered content.
+            Your proposal is configured. Click Generate to create all
+            sections based on your intent and company context.
           </p>
 
           {/* Show generation error if previous attempt failed */}

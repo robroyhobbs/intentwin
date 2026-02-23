@@ -42,7 +42,7 @@ export function WinStrategyPhase({
               Generating Win Strategy
             </p>
             <p className="text-[var(--foreground-muted)] mt-2">
-              AI is analyzing your context and creating themes...
+              Analyzing your context and building win themes...
             </p>
           </div>
           <Loader2 className="h-8 w-8 animate-spin text-[var(--accent)]" />

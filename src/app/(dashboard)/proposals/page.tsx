@@ -80,8 +80,7 @@ export default async function ProposalsPage({
                 Proposals
               </h1>
               <p className="mt-0.5 text-sm text-[var(--foreground-muted)]">
-                Create and manage AI-powered proposals with Intent-Driven
-                Development
+                Build, track, and refine your proposals
               </p>
             </div>
           </div>

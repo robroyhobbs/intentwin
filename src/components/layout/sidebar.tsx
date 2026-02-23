@@ -164,7 +164,7 @@ export function Sidebar() {
         <div className="flex items-center gap-2">
           <div className="status-dot status-dot-success" />
           <span className="text-xs font-medium text-[var(--foreground-muted)]">
-            AI Ready
+            System Ready
           </span>
         </div>
         <p className="mt-2 text-[10px] text-[var(--foreground-subtle)] font-medium">

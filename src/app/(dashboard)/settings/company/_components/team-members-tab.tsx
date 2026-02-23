@@ -303,8 +303,8 @@ export function TeamMembersTab() {
             Team Members
           </h3>
           <p className="text-sm text-[var(--foreground-muted)]">
-            Key personnel for proposals. The AI uses real names, roles, and
-            credentials instead of fabricating them.
+            Key personnel for proposals. Real names, roles, and credentials
+            replace generic placeholders.
           </p>
         </div>
         {!isFormOpen && (
@@ -691,8 +691,7 @@ export function TeamMembersTab() {
             instead of placeholders.
           </p>
           <p className="text-xs text-[var(--foreground-subtle)] mt-3">
-            Tip: Upload a resume (PDF/DOCX) and the AI will extract
-            credentials automatically.
+            Tip: Upload a resume (PDF/DOCX) to auto-extract credentials.
           </p>
         </div>
       )}

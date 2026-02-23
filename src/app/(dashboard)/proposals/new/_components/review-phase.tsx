@@ -33,8 +33,8 @@ export function ReviewPhase({
               Intent Approval Required
             </p>
             <p className="text-sm text-[var(--foreground-muted)] mt-1">
-              Review the summary below. Once approved, AI will
-              generate your proposal.
+              Review the summary below. Once approved, your proposal
+              will be generated.
             </p>
           </div>
         </div>
@@ -117,9 +117,9 @@ export function ReviewPhase({
               I approve this Intent
             </span>
             <p className="text-sm text-[var(--foreground-muted)] mt-1">
-              AI will generate proposal content that delivers these
-              specific outcomes, verified against your company&apos;s
-              capabilities and case studies.
+              Your proposal will be generated to deliver these specific
+              outcomes, verified against your company&apos;s capabilities
+              and case studies.
             </p>
           </div>
         </label>

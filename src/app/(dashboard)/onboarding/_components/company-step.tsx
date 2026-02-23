@@ -39,7 +39,7 @@ export function CompanyStep({
             Tell us about your company
           </h2>
           <p className="text-sm text-[var(--foreground-muted)]">
-            This helps the AI write in your voice
+            Your proposals will reflect this information
           </p>
         </div>
       </div>

@@ -46,7 +46,7 @@ export default function IntelligenceDashboard() {
         <div>
           <h1 className="text-2xl font-bold text-[var(--foreground)]">Market Intelligence</h1>
           <p className="mt-0.5 text-sm text-[var(--foreground-muted)]">
-            Real federal procurement data powering smarter proposals
+            Real federal procurement data to inform your proposals
           </p>
         </div>
       </div>

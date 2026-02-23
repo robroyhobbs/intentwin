@@ -179,10 +179,9 @@ export default function BrandVoiceSettingsPage() {
           <AlertCircle className="h-5 w-5 text-[var(--accent)] flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-sm text-[var(--foreground)]">
-              <strong>Why this matters:</strong> Brand voice settings are
-              injected into every AI-generated proposal section. The tone shapes
-              how the AI writes, and terminology constraints are validated after
-              each section is generated.
+              <strong>Why this matters:</strong> Brand voice settings shape
+              every proposal section. Tone controls how your proposals read,
+              and terminology constraints are enforced during generation.
             </p>
           </div>
         </div>
@@ -197,8 +196,8 @@ export default function BrandVoiceSettingsPage() {
           </h3>
         </div>
         <p className="text-sm text-[var(--foreground-muted)] mb-4">
-          Describe how your proposals should sound. This is injected into the AI
-          system prompt for every section.
+          Describe how your proposals should sound. This guides the tone of
+          every section.
         </p>
         <textarea
           value={tone}
@@ -220,7 +219,7 @@ export default function BrandVoiceSettingsPage() {
             Preferred Terminology
           </h3>
           <p className="text-sm text-[var(--foreground-muted)]">
-            Terms and phrases the AI should use in your proposals.
+            Terms and phrases to use in your proposals.
           </p>
         </div>
 
@@ -262,8 +261,8 @@ export default function BrandVoiceSettingsPage() {
             Terminology to Avoid
           </h3>
           <p className="text-sm text-[var(--foreground-muted)]">
-            Words and phrases the AI should never use. These are checked after
-            each section is generated.
+            Words and phrases to exclude. These are flagged during quality
+            review.
           </p>
         </div>
 

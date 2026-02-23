@@ -73,8 +73,8 @@ export function ProductsTab({
             Products & Services
           </h3>
           <p className="text-sm text-[var(--foreground-muted)]">
-            Define your products, service lines, and capabilities for
-            AI-generated proposals.
+            Define your products, service lines, and capabilities to
+            include in proposals.
           </p>
         </div>
         {!showAddProduct && !editingProduct && (
@@ -273,8 +273,8 @@ export function ProductsTab({
             No products or services defined yet.
           </p>
           <p className="text-sm text-[var(--foreground-subtle)] mt-1">
-            Add your products and capabilities so the AI can reference them
-            in proposals.
+            Add your products and capabilities so they appear in your
+            proposals.
           </p>
         </div>
       )}

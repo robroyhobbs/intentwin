@@ -275,10 +275,10 @@ export function FlexibleIntake({
       <div className="space-y-6">
         <div className="text-center mb-8">
           <h2 className="text-2xl font-bold text-[var(--foreground)]">
-            Start a New Proposal
+            How would you like to start?
           </h2>
           <p className="text-[var(--foreground-muted)] mt-2">
-            What do you have? We&apos;ll extract the details automatically.
+            Upload a document, paste content, or describe the opportunity.
           </p>
         </div>
 

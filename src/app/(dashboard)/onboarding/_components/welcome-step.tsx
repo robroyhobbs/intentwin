@@ -21,8 +21,8 @@ export function WelcomeStep({ firstName, onContinue }: WelcomeStepProps) {
         Welcome to IntentBid, {firstName}!
       </h1>
       <p className="text-[var(--foreground-muted)] mb-8 max-w-md mx-auto">
-        Let&apos;s set up your company profile so the AI can write
-        proposals that truly represent you.
+        Let&apos;s set up your company profile so every proposal
+        sounds like you wrote it.
       </p>
 
       <div className="bg-[var(--background-secondary)] rounded-xl p-6 mb-8 text-left">
@@ -31,7 +31,7 @@ export function WelcomeStep({ firstName, onContinue }: WelcomeStepProps) {
         </h3>
         <ul className="space-y-3">
           {[
-            "3 AI-generated proposals",
+            "3 full proposals",
             "Full export capabilities (DOCX, PDF, PPTX)",
             "Knowledge base with 10 documents",
             "All premium features unlocked",

@@ -112,7 +112,7 @@ export function GettingStartedChecklist() {
         {
           id: "proposal",
           title: "Create your first proposal",
-          description: "Generate an AI-powered proposal",
+          description: "Generate your first proposal",
           href: "/proposals/new",
           icon: <FileText className="h-4 w-4" />,
           isComplete: (proposalCount || 0) > 0,

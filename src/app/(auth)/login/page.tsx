@@ -66,8 +66,7 @@ export default function LoginPage() {
           </h1>
 
           <p className="text-lg text-[var(--foreground-muted)] mb-10 leading-relaxed">
-            AI-powered proposal generation with outcome-driven strategy. Write
-            better, win more.
+            Outcome-driven proposal generation. Write better, win more.
           </p>
 
           {/* Features */}
@@ -75,12 +74,12 @@ export default function LoginPage() {
             <Feature
               icon={Target}
               title="Intent-Driven"
-              description="Define outcomes first, let AI generate the content"
+              description="Define outcomes first, generate content that delivers"
             />
             <Feature
               icon={BarChart3}
-              title="Smart Diagrams"
-              description="Auto-generated visuals and architecture diagrams"
+              title="Visual Diagrams"
+              description="Architecture and process diagrams, generated from context"
             />
             <Feature
               icon={Users}

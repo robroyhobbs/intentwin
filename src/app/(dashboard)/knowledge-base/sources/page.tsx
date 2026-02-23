@@ -210,10 +210,9 @@ export default function SourcesPage() {
                 Intent-Driven Development (IDD)
               </p>
               <p className="text-xs text-[var(--foreground-muted)] mt-1">
-                L1 Context is verified company knowledge - methodologies, case
-                studies, and capabilities that are automatically injected into
-                every proposal. AI-generated content is always grounded in these
-                verified sources.
+                L1 Context is verified company knowledge — methodologies, case
+                studies, and capabilities injected into every proposal.
+                Generated content is always grounded in these verified sources.
               </p>
             </div>
           </div>

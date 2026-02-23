@@ -83,8 +83,8 @@ export function BidEvaluationScreen({
           Bid / No-Bid Evaluation
         </h1>
         <p className="mt-2 text-[var(--foreground-muted)]">
-          AI-assisted scoring to help you decide whether to pursue this
-          opportunity
+          Score this opportunity against your capabilities to decide whether
+          to pursue it
         </p>
       </div>
 
@@ -300,7 +300,7 @@ function IntelligencePanel({ intelligence }: { intelligence: BidIntelligenceCont
         </div>
       </div>
       <p className="text-xs text-[var(--foreground-muted)] mb-3">
-        This data was used to inform the AI scoring above and will be injected into proposal generation to tailor competitive positioning, pricing guidance, and win strategy.
+        This data informed the scoring above and will be used during proposal generation to tailor competitive positioning, pricing guidance, and win strategy.
       </p>
       <div className="grid grid-cols-2 gap-3">
         {intelligence.has_agency_profile && (

@@ -308,6 +308,18 @@ Tasks:
 
 ---
 
+## Future Considerations
+
+### Teaming & Government Partners
+Government proposals often involve teaming arrangements — prime/sub relationships, joint ventures, and partner capabilities. At some point, IntentWin should support:
+- Defining teaming partners (name, role, capabilities, past performance)
+- Incorporating partner strengths into bid evaluation scoring (e.g., a weak capability_alignment score could be mitigated by a teaming partner)
+- Injecting partner context into proposal generation (team section, past performance, org chart)
+- Partner-specific compliance tracking (small business set-asides, mentor-protege, 8(a), HUBZone, etc.)
+- Shared proposal workspaces where partners can contribute their sections
+
+This is not urgent but becomes important as users pursue larger government contracts where teaming is the norm.
+
 ## Notes
 
 - Focus on revenue-generating features first

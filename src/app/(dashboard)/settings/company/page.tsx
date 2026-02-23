@@ -426,8 +426,7 @@ export default function CompanySettingsPage() {
           Company Profile
         </h1>
         <p className="mt-1 text-sm text-[var(--foreground-muted)]">
-          Configure your company information to personalize AI-generated
-          proposals
+          Your company details are woven into every proposal you generate
         </p>
       </div>
 
@@ -437,10 +436,9 @@ export default function CompanySettingsPage() {
           <AlertCircle className="h-5 w-5 text-[var(--accent)] flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-sm text-[var(--foreground)]">
-              <strong>Why this matters:</strong> The AI uses your company
-              profile to write proposals that sound like you. Add your unique
-              differentiators and certifications to make every proposal
-              authentically represent your company.
+              <strong>Why this matters:</strong> Your company profile shapes
+              every proposal you generate. Add your unique differentiators and
+              certifications so proposals authentically represent your company.
             </p>
           </div>
         </div>

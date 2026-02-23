@@ -70,8 +70,8 @@ export function KnowledgeStep({
               Upload past proposals (optional)
             </h4>
             <p className="text-sm text-[var(--foreground-muted)] mt-1">
-              After setup, you can upload winning proposals and case
-              studies to train the AI on your style.
+              After setup, upload winning proposals and case studies
+              to improve your proposal quality.
             </p>
             <button
               onClick={() => router.push("/knowledge-base/upload")}

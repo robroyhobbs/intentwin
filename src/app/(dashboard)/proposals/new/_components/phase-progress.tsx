@@ -18,7 +18,7 @@ export const PHASES = [
   {
     id: "strategy",
     name: "Win Strategy",
-    description: "AI-generated approach based on your context",
+    description: "Tailored approach based on your context",
     icon: Trophy,
     color: "var(--warning)",
   },

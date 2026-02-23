@@ -92,7 +92,7 @@ export function ProposalSidebar({
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-[var(--accent)]">•</span>
-                AI will find relevant case studies automatically
+                Relevant case studies are matched automatically
               </li>
             </>
           )}
