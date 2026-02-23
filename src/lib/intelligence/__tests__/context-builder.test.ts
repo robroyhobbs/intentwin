@@ -3,6 +3,8 @@ import {
   buildIntelligenceContext,
   buildWinProbabilityContext,
   buildCompetitiveLandscapeContext,
+  buildPricingSuggestionsContext,
+  buildAgencySectionContext,
 } from "../context-builder";
 import type {
   AgencyProfileResponse,
@@ -555,6 +557,279 @@ describe("buildCompetitiveLandscapeContext", () => {
       const copy = JSON.parse(JSON.stringify(MOCK_LANDSCAPE));
       buildCompetitiveLandscapeContext(MOCK_LANDSCAPE);
       expect(MOCK_LANDSCAPE).toEqual(copy);
+    });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Pricing Suggestions Context Builder Tests (Stream A: Deeper Pipeline)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe("buildPricingSuggestionsContext", () => {
+  describe("Happy Path", () => {
+    it("formats rate benchmarks with Market Rate label for matching labor categories", () => {
+      const result = buildPricingSuggestionsContext(MOCK_PRICING, [
+        "Software Developer",
+        "Project Manager",
+      ]);
+
+      expect(result).toContain("## Pricing Benchmarks (GSA CALC+ Data)");
+      expect(result).toContain("Software Developer");
+      expect(result).toContain("Market Rate: $158/hr");
+      expect(result).toContain("Project Manager");
+      expect(result).toContain("Market Rate: $142/hr");
+    });
+
+    it("includes GSA source attribution", () => {
+      const result = buildPricingSuggestionsContext(MOCK_PRICING, [
+        "Software Developer",
+      ]);
+
+      expect(result).toContain("GSA CALC+");
+    });
+
+    it("includes rate range when available", () => {
+      const result = buildPricingSuggestionsContext(MOCK_PRICING, [
+        "Software Developer",
+      ]);
+
+      expect(result).toContain("$98");
+      expect(result).toContain("$245");
+    });
+
+    it("includes data points count", () => {
+      const result = buildPricingSuggestionsContext(MOCK_PRICING, [
+        "Software Developer",
+      ]);
+
+      expect(result).toContain("127 data points");
+    });
+
+    it("includes cost realism notes when available", () => {
+      const result = buildPricingSuggestionsContext(MOCK_PRICING, [
+        "Software Developer",
+      ]);
+
+      expect(result).toContain("GSA rates represent ceiling prices");
+    });
+  });
+
+  describe("Bad Path", () => {
+    it("returns empty string when pricing is null", () => {
+      const result = buildPricingSuggestionsContext(null, ["Software Developer"]);
+      expect(result).toBe("");
+    });
+
+    it("returns empty string when labor categories is empty", () => {
+      const result = buildPricingSuggestionsContext(MOCK_PRICING, []);
+      expect(result).toBe("");
+    });
+
+    it("returns empty string when no benchmarks have valid median", () => {
+      const pricing: PricingLookupResponse = {
+        ...MOCK_PRICING,
+        rate_benchmarks: [
+          {
+            category: "Unknown Role",
+            gsa_median: null,
+            gsa_range: null,
+            bid_tab_median: null,
+            competitive_range: null,
+            data_points: 0,
+            effective_date: null,
+          },
+        ],
+      };
+      const result = buildPricingSuggestionsContext(pricing, ["Unknown Role"]);
+      expect(result).toBe("");
+    });
+  });
+
+  describe("Edge Cases", () => {
+    it("only includes benchmarks for labor categories that exist in the pricing data", () => {
+      const result = buildPricingSuggestionsContext(MOCK_PRICING, [
+        "Software Developer",
+        "Data Scientist", // not in MOCK_PRICING
+      ]);
+
+      expect(result).toContain("Software Developer");
+      expect(result).not.toContain("Data Scientist");
+    });
+
+    it("handles case-insensitive category matching", () => {
+      const result = buildPricingSuggestionsContext(MOCK_PRICING, [
+        "software developer",
+      ]);
+
+      // Should still match "Software Developer" from pricing data
+      expect(result).toContain("Software Developer");
+      expect(result).toContain("Market Rate: $158/hr");
+    });
+
+    it("handles benchmark with no range", () => {
+      const pricing: PricingLookupResponse = {
+        ...MOCK_PRICING,
+        rate_benchmarks: [
+          {
+            category: "Analyst",
+            gsa_median: 100,
+            gsa_range: null,
+            bid_tab_median: null,
+            competitive_range: null,
+            data_points: 10,
+            effective_date: null,
+          },
+        ],
+      };
+      const result = buildPricingSuggestionsContext(pricing, ["Analyst"]);
+
+      expect(result).toContain("Market Rate: $100/hr");
+      expect(result).not.toContain("Range:");
+    });
+  });
+
+  describe("Data Damage", () => {
+    it("is a pure function — same inputs produce same output", () => {
+      const r1 = buildPricingSuggestionsContext(MOCK_PRICING, ["Software Developer"]);
+      const r2 = buildPricingSuggestionsContext(MOCK_PRICING, ["Software Developer"]);
+      expect(r1).toBe(r2);
+    });
+
+    it("does not mutate inputs", () => {
+      const pricingCopy = JSON.parse(JSON.stringify(MOCK_PRICING));
+      const categories = ["Software Developer"];
+      const categoriesCopy = [...categories];
+
+      buildPricingSuggestionsContext(MOCK_PRICING, categories);
+
+      expect(MOCK_PRICING).toEqual(pricingCopy);
+      expect(categories).toEqual(categoriesCopy);
+    });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Agency Section Context Builder Tests (Stream A: Deeper Pipeline)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe("buildAgencySectionContext", () => {
+  describe("Happy Path", () => {
+    it("includes eval method guidance", () => {
+      const result = buildAgencySectionContext(MOCK_AGENCY);
+
+      expect(result).toContain("## Agency Evaluation Guidance");
+      expect(result).toContain("tradeoff");
+    });
+
+    it("includes criteria weights as guidance", () => {
+      const result = buildAgencySectionContext(MOCK_AGENCY);
+
+      expect(result).toContain("technical");
+      expect(result).toContain("45%");
+      expect(result).toContain("past_performance");
+      expect(result).toContain("30%");
+    });
+
+    it("includes common contract types", () => {
+      const result = buildAgencySectionContext(MOCK_AGENCY);
+
+      expect(result).toContain("FFP");
+      expect(result).toContain("T&M");
+    });
+
+    it("includes competition level from avg_num_offers", () => {
+      const result = buildAgencySectionContext(MOCK_AGENCY);
+
+      expect(result).toContain("5.2");
+    });
+
+    it("frames information as guidance for LLM", () => {
+      const result = buildAgencySectionContext(MOCK_AGENCY);
+
+      expect(result).toContain("typically evaluates");
+    });
+  });
+
+  describe("Bad Path", () => {
+    it("returns empty string when agency is null", () => {
+      const result = buildAgencySectionContext(null);
+      expect(result).toBe("");
+    });
+  });
+
+  describe("Edge Cases", () => {
+    it("handles agency with no eval method", () => {
+      const agency: AgencyProfileResponse = {
+        ...MOCK_AGENCY,
+        preferred_eval_method: null,
+      };
+      const result = buildAgencySectionContext(agency);
+
+      expect(result).not.toContain("typically evaluates using");
+    });
+
+    it("handles agency with no criteria weights", () => {
+      const agency: AgencyProfileResponse = {
+        ...MOCK_AGENCY,
+        typical_criteria_weights: null,
+      };
+      const result = buildAgencySectionContext(agency);
+
+      expect(result).not.toContain("Evaluation criteria emphasis");
+    });
+
+    it("handles agency with no common contract types", () => {
+      const agency: AgencyProfileResponse = {
+        ...MOCK_AGENCY,
+        common_contract_types: null,
+      };
+      const result = buildAgencySectionContext(agency);
+
+      expect(result).not.toContain("Common contract types");
+    });
+
+    it("handles agency with no avg offers", () => {
+      const agency: AgencyProfileResponse = {
+        ...MOCK_AGENCY,
+        avg_num_offers: null,
+      };
+      const result = buildAgencySectionContext(agency);
+
+      expect(result).not.toContain("Average competing offers");
+    });
+
+    it("handles agency with all null optional fields", () => {
+      const agency: AgencyProfileResponse = {
+        agency_name: "Minimal Agency",
+        agency_level: "federal",
+        preferred_eval_method: null,
+        typical_criteria_weights: null,
+        avg_num_offers: null,
+        total_awards_tracked: 0,
+        avg_award_amount: null,
+        common_contract_types: null,
+        protest_insights: null,
+        recent_awards: [],
+      };
+      const result = buildAgencySectionContext(agency);
+
+      // Should still have the header with agency name
+      expect(result).toContain("Minimal Agency");
+      expect(result).toContain("## Agency Evaluation Guidance");
+    });
+  });
+
+  describe("Data Damage", () => {
+    it("is a pure function — same inputs produce same output", () => {
+      const r1 = buildAgencySectionContext(MOCK_AGENCY);
+      const r2 = buildAgencySectionContext(MOCK_AGENCY);
+      expect(r1).toBe(r2);
+    });
+
+    it("does not mutate input", () => {
+      const copy = JSON.parse(JSON.stringify(MOCK_AGENCY));
+      buildAgencySectionContext(MOCK_AGENCY);
+      expect(MOCK_AGENCY).toEqual(copy);
     });
   });
 });

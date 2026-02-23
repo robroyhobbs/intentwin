@@ -25,8 +25,10 @@ import {
   calculateSectionScore,
   REGEN_THRESHOLD,
   PASS_THRESHOLD,
+  getQualityThreshold,
   type QualityScores,
 } from "./prompts/quality-review";
+import { intelligenceClient } from "@/lib/intelligence";
 import { generateText, buildSystemPrompt } from "./gemini";
 import { createProposalVersion } from "@/lib/versioning/create-version";
 
@@ -395,6 +397,20 @@ export async function runQualityReview(
       differentiators?: string[];
     } | null;
 
+    // Fetch intelligence for dynamic quality threshold (non-blocking, returns null if unavailable)
+    const agencyName =
+      (intakeData.agency_name as string) ??
+      (intakeData.client_name as string) ??
+      null;
+    const naicsCode = (intakeData.naics_code as string) ?? null;
+    const intelligence = await intelligenceClient.getProposalIntelligence({
+      agencyName,
+      naicsCode,
+    }).catch(() => null);
+
+    // Dynamic threshold: competition-aware quality bar
+    const dynamicThreshold = getQualityThreshold(intelligence);
+
     // ── Round 1: Council reviews all sections ──
     const sectionReviews: CouncilSectionReview[] = [];
     const weakSections: {
@@ -438,11 +454,12 @@ export async function runQualityReview(
         };
 
         // Council consensus for remediation: 2+ judges must score below threshold
+        // Uses dynamic threshold based on intelligence (competition level)
         const successfulJudges = judgeResults.filter(
           (r) => r.status === "completed",
         );
         const weakJudgeCount = successfulJudges.filter(
-          (r) => r.score < REGEN_THRESHOLD,
+          (r) => r.score < dynamicThreshold,
         ).length;
 
         const isWeak =

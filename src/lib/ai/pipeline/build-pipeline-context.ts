@@ -12,7 +12,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { generateStructuredAnalysis, buildSystemPrompt } from "../gemini";
 import { loadSources, formatSourcesAsL1Context } from "@/lib/sources";
 import { getIndustryConfig } from "../industry-configs";
-import { intelligenceClient, buildCompetitiveLandscapeContext } from "@/lib/intelligence";
+import { intelligenceClient, buildCompetitiveLandscapeContext, buildAgencySectionContext, buildPricingSuggestionsContext } from "@/lib/intelligence";
 import { createLogger } from "@/lib/utils/logger";
 import type { WinStrategyData } from "@/types/outcomes";
 import type { OutcomeContract, CompanyInfo } from "@/types/idd";
@@ -191,6 +191,13 @@ Industry: ${(intakeData.client_industry as string) || "Not specified"}`;
     ? buildCompetitiveLandscapeContext(intelligence.competitiveLandscape)
     : "";
 
+  // Build agency + pricing context strings for section generation (Stream A: Deeper Pipeline)
+  const agencyContext = buildAgencySectionContext(intelligence?.agency ?? null);
+  const pricingContext = buildPricingSuggestionsContext(
+    intelligence?.pricing ?? null,
+    extractLaborCategoriesFromIntake(intakeData),
+  );
+
   // Enhanced analysis with outcome contract and competitive landscape (L1 is now passed separately)
   const enhancedAnalysis = `${analysis}\n${outcomeContractContext}${competitiveLandscapeContext ? `\n\n${competitiveLandscapeContext}` : ""}`;
 
@@ -235,6 +242,8 @@ Industry: ${(intakeData.client_industry as string) || "Not specified"}`;
     industryConfig,
     intelligence,
     bidEvaluation,
+    agencyContext,
+    pricingContext,
   };
 }
 

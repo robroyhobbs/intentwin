@@ -169,6 +169,116 @@ export function buildWinProbabilityContext(
 }
 
 /**
+ * Build a pricing suggestions context string for cost/pricing section prompts.
+ *
+ * Formats GSA CALC+ rate benchmarks as "Market Rate: $X/hr" for each
+ * extracted labor category. Only includes categories that have matching
+ * benchmarks with valid median rates.
+ *
+ * Returns empty string if pricing is null, no labor categories, or no matches.
+ */
+export function buildPricingSuggestionsContext(
+  pricing: PricingLookupResponse | null,
+  laborCategories: string[],
+): string {
+  if (!pricing || laborCategories.length === 0) return "";
+
+  // Build a case-insensitive lookup map from category name → benchmark
+  const benchmarkMap = new Map<string, (typeof pricing.rate_benchmarks)[0]>();
+  for (const benchmark of pricing.rate_benchmarks) {
+    if (benchmark.gsa_median != null) {
+      benchmarkMap.set(benchmark.category.toLowerCase(), benchmark);
+    }
+  }
+
+  // Match requested labor categories against available benchmarks
+  const matchedBenchmarks: (typeof pricing.rate_benchmarks)[0][] = [];
+  for (const category of laborCategories) {
+    const match = benchmarkMap.get(category.toLowerCase());
+    if (match) {
+      matchedBenchmarks.push(match);
+    }
+  }
+
+  if (matchedBenchmarks.length === 0) return "";
+
+  const lines: string[] = [];
+  lines.push("## Pricing Benchmarks (GSA CALC+ Data)");
+  lines.push("Use these market rates as reference when discussing pricing:");
+  lines.push("");
+
+  for (const benchmark of matchedBenchmarks) {
+    let line = `- **${benchmark.category}**: Market Rate: $${benchmark.gsa_median}/hr`;
+    if (benchmark.gsa_range) {
+      line += ` (Range: $${benchmark.gsa_range[0]}-$${benchmark.gsa_range[1]})`;
+    }
+    line += ` — ${benchmark.data_points} data points`;
+    lines.push(line);
+  }
+
+  if (pricing.cost_realism_notes.length > 0) {
+    lines.push("");
+    lines.push("Pricing notes:");
+    for (const note of pricing.cost_realism_notes) {
+      lines.push(`- ${note}`);
+    }
+  }
+
+  return lines.join("\n");
+}
+
+/**
+ * Build an agency-specific evaluation guidance context for section generation prompts.
+ *
+ * Includes the agency's preferred eval method, criteria weights, common contract types,
+ * and competition level. Framed as guidance so the LLM can tailor section content
+ * to what this specific agency cares about.
+ *
+ * Returns empty string if agency is null.
+ */
+export function buildAgencySectionContext(
+  agency: AgencyProfileResponse | null,
+): string {
+  if (!agency) return "";
+
+  const lines: string[] = [];
+  lines.push("## Agency Evaluation Guidance (Data-Driven)");
+  lines.push(`Agency: ${agency.agency_name} (${agency.agency_level})`);
+
+  if (agency.preferred_eval_method) {
+    lines.push(
+      `This agency typically evaluates using the "${agency.preferred_eval_method}" method.`,
+    );
+  }
+
+  if (agency.typical_criteria_weights) {
+    const sortedWeights = Object.entries(agency.typical_criteria_weights)
+      .sort(([, a], [, b]) => b - a);
+    lines.push("Evaluation criteria emphasis (tailor content accordingly):");
+    for (const [factor, weight] of sortedWeights) {
+      lines.push(`  - ${factor}: ${weight}%`);
+    }
+  }
+
+  if (agency.common_contract_types && agency.common_contract_types.length > 0) {
+    lines.push(
+      `Common contract types: ${agency.common_contract_types.join(", ")}`,
+    );
+  }
+
+  if (agency.avg_num_offers != null) {
+    lines.push(`Average competing offers: ${agency.avg_num_offers}`);
+    if (agency.avg_num_offers > 5) {
+      lines.push(
+        "NOTE: This is a highly competitive environment — emphasize differentiation and concrete evidence.",
+      );
+    }
+  }
+
+  return lines.join("\n");
+}
+
+/**
  * Build a prompt context string from competitive landscape data.
  *
  * Includes top competitors, average award size, and competition breakdown.

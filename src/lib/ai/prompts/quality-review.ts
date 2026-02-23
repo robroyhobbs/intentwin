@@ -9,6 +9,7 @@
  */
 
 import type { BrandVoice } from "../persuasion";
+import type { ProposalIntelligence } from "@/lib/intelligence";
 
 // ============================================================
 // Types
@@ -50,6 +51,30 @@ export const QUALITY_DIMENSIONS = [
 
 export const PASS_THRESHOLD = 9.0;
 export const REGEN_THRESHOLD = 8.5;
+
+/**
+ * Compute a dynamic quality threshold based on intelligence data.
+ *
+ * - Highly competitive (avg_offers > 5): threshold = 9.0 (need top-quality to win)
+ * - Moderate competition (avg_offers 3-5): threshold = 8.5 (default)
+ * - Low competition / sole-source (avg_offers < 3): threshold = 8.0 (less polish needed)
+ * - No intelligence: threshold = 8.5 (unchanged default)
+ *
+ * Silent degradation: returns REGEN_THRESHOLD (8.5) when intelligence is unavailable.
+ */
+export function getQualityThreshold(
+  intelligence: ProposalIntelligence | null | undefined,
+): number {
+  if (!intelligence?.agency?.avg_num_offers) {
+    return REGEN_THRESHOLD;
+  }
+
+  const avgOffers = intelligence.agency.avg_num_offers;
+
+  if (avgOffers > 5) return 9.0;
+  if (avgOffers >= 3) return 8.5;
+  return 8.0;
+}
 
 const MAX_CONTENT_LENGTH = 30000;
 

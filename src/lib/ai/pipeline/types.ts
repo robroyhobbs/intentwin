@@ -128,4 +128,8 @@ export interface PipelineContext {
   intelligence: ProposalIntelligence | null;
   /** Bid evaluation scores from intake (null if not scored) */
   bidEvaluation: BidEvaluation | null;
+  /** Agency evaluation guidance for section generation (empty string if no intelligence) */
+  agencyContext: string;
+  /** Pricing benchmark suggestions for cost/pricing sections (empty string if no intelligence) */
+  pricingContext: string;
 }

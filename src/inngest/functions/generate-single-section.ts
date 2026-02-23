@@ -240,8 +240,20 @@ export async function generateSingleSection(
     // Bid evaluation risk guidance — injects weak factor rationale for relevant sections
     const bidEvalBlock = buildBidEvalRiskBlock(ctx.bidEvaluation, isTaskSection ? "rfp_task" : sectionType);
 
+    // Inject intelligence context from pipeline (Stream A: Deeper Pipeline)
+    // Agency context goes into ALL sections; pricing context only for pricing/cost sections
+    const agencyBlock = ctx.agencyContext
+      ? `\n\n---\n\n${ctx.agencyContext}`
+      : "";
+    const pricingBlock = (sectionType === "pricing" || sectionType === "rfp_task")
+      && ctx.pricingContext
+      ? `\n\n---\n\n${ctx.pricingContext}`
+      : "";
+
     const prompt = [
       basePrompt,
+      agencyBlock,
+      pricingBlock,
       industryContext ? `\n\n---\n\n${industryContext}` : "",
       persuasionContext
         ? `\n\n---\n\n## Persuasion & Quality Guidance\n\n${persuasionContext}`

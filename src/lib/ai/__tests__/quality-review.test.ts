@@ -5,8 +5,10 @@ import {
   QUALITY_DIMENSIONS,
   PASS_THRESHOLD,
   REGEN_THRESHOLD,
+  getQualityThreshold,
   type QualityScores,
 } from "../prompts/quality-review";
+import type { ProposalIntelligence } from "@/lib/intelligence";
 
 // ============================================================
 // HAPPY PATH
@@ -314,5 +316,207 @@ describe("Data Damage", () => {
     const result1 = calculateSectionScore(scores);
     const result2 = calculateSectionScore(scores);
     expect(result1).toBe(result2);
+  });
+});
+
+// ============================================================
+// DYNAMIC QUALITY THRESHOLD (Stream A: Deeper Pipeline)
+// ============================================================
+describe("getQualityThreshold", () => {
+  it("returns 8.5 (default) when intelligence is null", () => {
+    expect(getQualityThreshold(null)).toBe(8.5);
+  });
+
+  it("returns 8.5 (default) when intelligence is undefined", () => {
+    expect(getQualityThreshold(undefined)).toBe(8.5);
+  });
+
+  it("returns 9.0 for highly competitive agencies (avg_offers > 5)", () => {
+    const intelligence: ProposalIntelligence = {
+      agency: {
+        agency_name: "DOD",
+        agency_level: "federal",
+        preferred_eval_method: "tradeoff",
+        typical_criteria_weights: null,
+        avg_num_offers: 7,
+        total_awards_tracked: 50,
+        avg_award_amount: 5000000,
+        common_contract_types: null,
+        protest_insights: null,
+        recent_awards: [],
+      },
+      pricing: null,
+      recentAwards: [],
+      totalMatchingAwards: 0,
+      competitiveLandscape: null,
+      fetchedAt: new Date().toISOString(),
+      fetchDurationMs: 100,
+    };
+
+    expect(getQualityThreshold(intelligence)).toBe(9.0);
+  });
+
+  it("returns 8.5 for moderately competitive agencies (avg_offers 3-5)", () => {
+    const intelligence: ProposalIntelligence = {
+      agency: {
+        agency_name: "VA",
+        agency_level: "federal",
+        preferred_eval_method: null,
+        typical_criteria_weights: null,
+        avg_num_offers: 4,
+        total_awards_tracked: 20,
+        avg_award_amount: null,
+        common_contract_types: null,
+        protest_insights: null,
+        recent_awards: [],
+      },
+      pricing: null,
+      recentAwards: [],
+      totalMatchingAwards: 0,
+      competitiveLandscape: null,
+      fetchedAt: new Date().toISOString(),
+      fetchDurationMs: 100,
+    };
+
+    expect(getQualityThreshold(intelligence)).toBe(8.5);
+  });
+
+  it("returns 8.0 for low-competition agencies (avg_offers < 3)", () => {
+    const intelligence: ProposalIntelligence = {
+      agency: {
+        agency_name: "Small Agency",
+        agency_level: "local",
+        preferred_eval_method: null,
+        typical_criteria_weights: null,
+        avg_num_offers: 2,
+        total_awards_tracked: 10,
+        avg_award_amount: null,
+        common_contract_types: null,
+        protest_insights: null,
+        recent_awards: [],
+      },
+      pricing: null,
+      recentAwards: [],
+      totalMatchingAwards: 0,
+      competitiveLandscape: null,
+      fetchedAt: new Date().toISOString(),
+      fetchDurationMs: 100,
+    };
+
+    expect(getQualityThreshold(intelligence)).toBe(8.0);
+  });
+
+  it("returns 8.5 when agency is present but avg_num_offers is null", () => {
+    const intelligence: ProposalIntelligence = {
+      agency: {
+        agency_name: "Unknown Agency",
+        agency_level: "federal",
+        preferred_eval_method: null,
+        typical_criteria_weights: null,
+        avg_num_offers: null,
+        total_awards_tracked: 0,
+        avg_award_amount: null,
+        common_contract_types: null,
+        protest_insights: null,
+        recent_awards: [],
+      },
+      pricing: null,
+      recentAwards: [],
+      totalMatchingAwards: 0,
+      competitiveLandscape: null,
+      fetchedAt: new Date().toISOString(),
+      fetchDurationMs: 100,
+    };
+
+    expect(getQualityThreshold(intelligence)).toBe(8.5);
+  });
+
+  it("returns 8.5 when agency is null in intelligence", () => {
+    const intelligence: ProposalIntelligence = {
+      agency: null,
+      pricing: null,
+      recentAwards: [],
+      totalMatchingAwards: 0,
+      competitiveLandscape: null,
+      fetchedAt: new Date().toISOString(),
+      fetchDurationMs: 100,
+    };
+
+    expect(getQualityThreshold(intelligence)).toBe(8.5);
+  });
+
+  it("returns 8.5 at exactly 3 offers (lower boundary of moderate)", () => {
+    const intelligence: ProposalIntelligence = {
+      agency: {
+        agency_name: "Boundary Agency",
+        agency_level: "federal",
+        preferred_eval_method: null,
+        typical_criteria_weights: null,
+        avg_num_offers: 3,
+        total_awards_tracked: 10,
+        avg_award_amount: null,
+        common_contract_types: null,
+        protest_insights: null,
+        recent_awards: [],
+      },
+      pricing: null,
+      recentAwards: [],
+      totalMatchingAwards: 0,
+      competitiveLandscape: null,
+      fetchedAt: new Date().toISOString(),
+      fetchDurationMs: 100,
+    };
+
+    expect(getQualityThreshold(intelligence)).toBe(8.5);
+  });
+
+  it("returns 8.5 at exactly 5 offers (upper boundary of moderate)", () => {
+    const intelligence: ProposalIntelligence = {
+      agency: {
+        agency_name: "Boundary Agency",
+        agency_level: "federal",
+        preferred_eval_method: null,
+        typical_criteria_weights: null,
+        avg_num_offers: 5,
+        total_awards_tracked: 10,
+        avg_award_amount: null,
+        common_contract_types: null,
+        protest_insights: null,
+        recent_awards: [],
+      },
+      pricing: null,
+      recentAwards: [],
+      totalMatchingAwards: 0,
+      competitiveLandscape: null,
+      fetchedAt: new Date().toISOString(),
+      fetchDurationMs: 100,
+    };
+
+    expect(getQualityThreshold(intelligence)).toBe(8.5);
+  });
+
+  it("returns 9.0 at 5.1 offers (just above moderate)", () => {
+    const intelligence: ProposalIntelligence = {
+      agency: {
+        agency_name: "Competitive Agency",
+        agency_level: "federal",
+        preferred_eval_method: null,
+        typical_criteria_weights: null,
+        avg_num_offers: 5.1,
+        total_awards_tracked: 10,
+        avg_award_amount: null,
+        common_contract_types: null,
+        protest_insights: null,
+        recent_awards: [],
+      },
+      pricing: null,
+      recentAwards: [],
+      totalMatchingAwards: 0,
+      competitiveLandscape: null,
+      fetchedAt: new Date().toISOString(),
+      fetchDurationMs: 100,
+    };
+
+    expect(getQualityThreshold(intelligence)).toBe(9.0);
   });
 });
