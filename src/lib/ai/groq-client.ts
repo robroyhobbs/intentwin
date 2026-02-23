@@ -1,10 +1,11 @@
 import Groq from "groq-sdk";
 import { createReviewClient, type ReviewScores } from "./review-client-factory";
+import { groqHeliconeOptions } from "@/lib/observability/helicone";
 
 const { getClient, review } = createReviewClient<Groq>({
   providerName: "Groq/Llama",
   envVar: "GROQ_API_KEY",
-  createClient: (apiKey) => new Groq({ apiKey }),
+  createClient: (apiKey) => new Groq({ apiKey, ...groqHeliconeOptions() }),
   callApi: async (client, prompt) => {
     const response = await client.chat.completions.create({
       model: "llama-3.3-70b-versatile",

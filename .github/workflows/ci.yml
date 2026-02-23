@@ -21,6 +21,8 @@ env:
   GROQ_API_KEY: test-mock-do-not-use
   MISTRAL_API_KEY: test-mock-do-not-use
   VOYAGE_API_KEY: test-mock-do-not-use
+  # Helicone disabled in CI — empty key means pass-through (no proxy)
+  HELICONE_API_KEY: ""
 
 jobs:
   lint:

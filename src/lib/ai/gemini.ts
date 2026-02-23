@@ -3,6 +3,7 @@ import { logger } from "@/lib/utils/logger";
 import type { WinStrategyData } from "@/types/outcomes";
 import type { BrandVoice } from "./persuasion";
 import { buildBrandVoiceSystemPrompt } from "./persuasion";
+import { geminiHeliconeOptions } from "@/lib/observability/helicone";
 
 let client: GoogleGenerativeAI | null = null;
 
@@ -16,6 +17,9 @@ function getClient(): GoogleGenerativeAI {
   }
   return client;
 }
+
+/** Helicone request options — merged into every getGenerativeModel call */
+const heliconeOpts = geminiHeliconeOptions();
 
 // Default system prompt - can be customized per organization
 const DEFAULT_SYSTEM_PROMPT = `You are a senior proposal strategist who writes presentation-ready proposal sections for consulting and technology services engagements.
@@ -129,7 +133,7 @@ export async function generateText(
           maxOutputTokens: options.maxTokens || 4096,
           temperature: options.temperature ?? 0.7,
         },
-      });
+      }, heliconeOpts);
 
       const result = await model.generateContent(prompt);
       const response = result.response;

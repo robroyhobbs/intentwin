@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createLogger } from "@/lib/utils/logger";
+import { geminiHeliconeOptions } from "@/lib/observability/helicone";
 
 const IMAGE_MODEL = "gemini-3-pro-image-preview";
 
@@ -155,13 +156,17 @@ export async function generateDiagram(
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: IMAGE_MODEL,
-      generationConfig: {
-        // @ts-expect-error -- Gemini image generation uses responseModalities
-        responseModalities: ["image", "text"],
+    const heliconeOpts = geminiHeliconeOptions();
+    const model = genAI.getGenerativeModel(
+      {
+        model: IMAGE_MODEL,
+        generationConfig: {
+          // @ts-expect-error -- Gemini image generation uses responseModalities
+          responseModalities: ["image", "text"],
+        },
       },
-    });
+      heliconeOpts,
+    );
 
     const prompt = config.buildPrompt(sectionContent, companyName, clientName);
     const result = await model.generateContent(prompt);

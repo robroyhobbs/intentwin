@@ -1,6 +1,18 @@
-status: ready
+status: phase2-complete
 owner: null
 assignee: null
-phase: 0/5
-updated: 2026-02-23T22:00:00Z
+phase: 2/5
+updated: 2026-02-24T00:00:00Z
 heartbeat: null
+notes: |
+  Phase 1 (Security & Testing) complete:
+  - PR #4: 45 migrations, 34 fixed RLS policies, 87 pgTAP tests passing
+  - PR #5: AI mock enforcement in CI, network-level blocking for 5 providers
+  Both PRs open and ready for merge.
+
+  Phase 2 (Migration Squash + HNSW + Helicone) complete:
+  - 2A: Squashed 45 migrations into single 00001_baseline.sql (3513 lines)
+  - 2B: HNSW index tuned (m=24, ef_construction=200, ef_search=100)
+  - 2C: Helicone observability wired into all 7 AI client files
+    (gemini, gemini-review, openai, groq, mistral, voyage, diagram-generator, mermaid-to-svg)
+  - Zero-overhead when HELICONE_API_KEY unset (pass-through)
