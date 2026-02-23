@@ -9,8 +9,13 @@ import {
   Globe,
   Building2,
   DollarSign,
+  TrendingUp,
+  TrendingDown,
+  Gauge,
+  ShieldCheck,
 } from "lucide-react";
 import type { BidEvaluation, FactorKey, BidIntelligenceContext } from "@/lib/ai/bid-scoring";
+import type { WinProbabilityResponse } from "@/lib/intelligence/types";
 import { SCORING_FACTORS } from "@/lib/ai/bid-scoring";
 
 const recConfig = {
@@ -169,6 +174,11 @@ export function BidEvaluationScreen({
                 </div>
               </div>
 
+              {/* Win Probability */}
+              {bidEvaluation.intelligence?.win_probability && (
+                <WinProbabilityPanel winProb={bidEvaluation.intelligence.win_probability} />
+              )}
+
               {/* Intelligence context */}
               {bidEvaluation.intelligence && (bidEvaluation.intelligence.has_agency_profile || bidEvaluation.intelligence.has_pricing_data) && (
                 <IntelligencePanel intelligence={bidEvaluation.intelligence} />
@@ -277,6 +287,127 @@ export function BidEvaluationScreen({
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function WinProbabilityPanel({ winProb }: { winProb: WinProbabilityResponse }) {
+  const pct = Math.round(winProb.probability * 100);
+  const color =
+    pct >= 50
+      ? "var(--success)"
+      : pct >= 25
+        ? "var(--warning)"
+        : "var(--danger)";
+
+  const confidenceConfig = {
+    high: { label: "High Confidence", bg: "bg-emerald-100 dark:bg-emerald-900/30", text: "text-emerald-700 dark:text-emerald-300" },
+    medium: { label: "Medium Confidence", bg: "bg-amber-100 dark:bg-amber-900/30", text: "text-amber-700 dark:text-amber-300" },
+    low: { label: "Low Confidence", bg: "bg-red-100 dark:bg-red-900/30", text: "text-red-700 dark:text-red-300" },
+  };
+  const conf = confidenceConfig[winProb.confidence];
+
+  const helpingFactors = winProb.factors.filter((f) => f.impact > 0);
+  const hurtingFactors = winProb.factors.filter((f) => f.impact < 0);
+
+  return (
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--background-elevated)] p-5">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Gauge className="h-5 w-5 text-[var(--accent)]" />
+          <span className="text-sm font-semibold text-[var(--foreground)]">
+            Win Likelihood
+          </span>
+        </div>
+        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${conf.bg} ${conf.text}`}>
+          <ShieldCheck className="h-3 w-3" />
+          {conf.label}
+        </span>
+      </div>
+
+      {/* Win probability gauge */}
+      <div className="flex items-center gap-6 mb-4">
+        <div className="relative flex items-center justify-center">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle
+              cx="40"
+              cy="40"
+              r="34"
+              fill="none"
+              stroke="var(--border)"
+              strokeWidth="8"
+            />
+            <circle
+              cx="40"
+              cy="40"
+              r="34"
+              fill="none"
+              stroke={color}
+              strokeWidth="8"
+              strokeDasharray={`${(pct / 100) * 2 * Math.PI * 34} ${2 * Math.PI * 34}`}
+              strokeLinecap="round"
+              transform="rotate(-90 40 40)"
+              className="transition-all duration-700"
+            />
+          </svg>
+          <span
+            className="absolute text-xl font-bold"
+            style={{ color }}
+          >
+            {pct}%
+          </span>
+        </div>
+        <div>
+          <p className="text-sm text-[var(--foreground)]">
+            Based on <strong>{winProb.matching_awards}</strong> similar historical awards
+          </p>
+          {winProb.comparable_awards.length > 0 && (
+            <p className="text-xs text-[var(--foreground-muted)] mt-1">
+              {winProb.comparable_awards.length} comparable awards analyzed
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Factor breakdown */}
+      {(helpingFactors.length > 0 || hurtingFactors.length > 0) && (
+        <div className="grid grid-cols-2 gap-3">
+          {helpingFactors.length > 0 && (
+            <div>
+              <div className="flex items-center gap-1 mb-1.5">
+                <TrendingUp className="h-3.5 w-3.5 text-[var(--success)]" />
+                <span className="text-xs font-medium text-[var(--success)]">Helps</span>
+              </div>
+              <div className="space-y-1">
+                {helpingFactors.map((f, i) => (
+                  <div key={i} className="text-xs text-[var(--foreground-muted)]">
+                    <strong className="text-[var(--foreground)]">{f.name}</strong>
+                    <span className="text-[var(--success)]"> +{Math.round(f.impact * 100)}%</span>
+                    <p className="text-[var(--foreground-muted)]">{f.description}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {hurtingFactors.length > 0 && (
+            <div>
+              <div className="flex items-center gap-1 mb-1.5">
+                <TrendingDown className="h-3.5 w-3.5 text-[var(--danger)]" />
+                <span className="text-xs font-medium text-[var(--danger)]">Hurts</span>
+              </div>
+              <div className="space-y-1">
+                {hurtingFactors.map((f, i) => (
+                  <div key={i} className="text-xs text-[var(--foreground-muted)]">
+                    <strong className="text-[var(--foreground)]">{f.name}</strong>
+                    <span className="text-[var(--danger)]"> {Math.round(f.impact * 100)}%</span>
+                    <p className="text-[var(--foreground-muted)]">{f.description}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -11,10 +11,13 @@ import {
   Building2,
   ArrowRight,
   Globe,
+  Users,
+  BarChart3,
+  Trophy,
 } from "lucide-react";
 import type { ExtractedIntake, ClientResearch, ExtractedField } from "@/types/intake";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
-import type { AgencyProfileResponse } from "@/lib/intelligence/types";
+import type { AgencyProfileResponse, CompetitiveLandscapeResponse } from "@/lib/intelligence/types";
 
 interface ExtractionReviewProps {
   extracted: ExtractedIntake;
@@ -136,11 +139,15 @@ export function ExtractionReview({
 }: ExtractionReviewProps) {
   const [showResearch, setShowResearch] = useState(false);
   const [agencyIntel, setAgencyIntel] = useState<AgencyProfileResponse | null>(null);
+  const [competitiveLandscape, setCompetitiveLandscape] = useState<CompetitiveLandscapeResponse | null>(null);
   const [intelLoading, setIntelLoading] = useState(false);
+  const [landscapeLoading, setLandscapeLoading] = useState(false);
   const authFetch = useAuthFetch();
 
   // Fetch agency intelligence when client name is available
   const clientName = extracted.extracted?.client_name?.value;
+  // NAICS code may be available from intake data passed as part of editable state
+  const naicsCode: string | null = null; // NAICS is not in ExtractedIntake — populated later during RFP extraction
   const fetchIntelligence = useCallback(async () => {
     if (!clientName) return;
     setIntelLoading(true);
@@ -162,9 +169,35 @@ export function ExtractionReview({
     }
   }, [clientName, authFetch]);
 
+  // Fetch competitive landscape when both agency and NAICS are available
+  const fetchCompetitiveLandscape = useCallback(async () => {
+    if (!clientName && !naicsCode) return;
+    setLandscapeLoading(true);
+    try {
+      const searchParams = new URLSearchParams();
+      if (clientName) searchParams.set("agency", clientName);
+      if (naicsCode) searchParams.set("naics_code", naicsCode);
+      const params = new URLSearchParams({
+        path: `/api/v1/competitive-landscape?${searchParams.toString()}`,
+      });
+      const res = await authFetch(`/api/intelligence?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.total_similar_awards > 0) {
+          setCompetitiveLandscape(data as CompetitiveLandscapeResponse);
+        }
+      }
+    } catch {
+      // Silent fallback — intelligence is optional
+    } finally {
+      setLandscapeLoading(false);
+    }
+  }, [clientName, naicsCode, authFetch]);
+
   useEffect(() => {
     fetchIntelligence();
-  }, [fetchIntelligence]);
+    fetchCompetitiveLandscape();
+  }, [fetchIntelligence, fetchCompetitiveLandscape]);
 
   // Initialize editable state from extracted data
   const [editedData, setEditedData] = useState<Record<string, string | string[]>>(() => {
@@ -386,6 +419,14 @@ export function ExtractionReview({
         </div>
       )}
 
+      {/* Competitive Landscape Panel */}
+      {(competitiveLandscape || landscapeLoading) && (
+        <CompetitiveLandscapePanel
+          landscape={competitiveLandscape}
+          loading={landscapeLoading}
+        />
+      )}
+
       {/* Extracted Fields */}
       <div className="grid grid-cols-2 gap-4">
         <EditableField
@@ -549,6 +590,96 @@ export function ExtractionReview({
           <ArrowRight className="h-4 w-4" />
         </button>
       </div>
+    </div>
+  );
+}
+
+function CompetitiveLandscapePanel({
+  landscape,
+  loading,
+}: {
+  landscape: CompetitiveLandscapeResponse | null;
+  loading: boolean;
+}) {
+  const formatCurrency = (v: number) => {
+    if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
+    if (v >= 1_000) return `$${(v / 1_000).toFixed(0)}K`;
+    return `$${v.toLocaleString()}`;
+  };
+
+  return (
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card-bg)] p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <BarChart3 className="h-4 w-4 text-[var(--accent)]" />
+        <span className="text-sm font-semibold text-[var(--foreground)]">
+          Competitive Landscape
+        </span>
+      </div>
+      {loading ? (
+        <p className="text-xs text-[var(--foreground-muted)] animate-pulse">
+          Analyzing competitive landscape...
+        </p>
+      ) : landscape ? (
+        <div className="space-y-4">
+          {/* Summary stats */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="text-xs text-[var(--foreground-muted)]">
+              <strong className="text-[var(--foreground)] text-sm">{landscape.total_similar_awards}</strong>
+              <br />similar awards
+            </div>
+            {landscape.avg_award_amount != null && (
+              <div className="text-xs text-[var(--foreground-muted)]">
+                <strong className="text-[var(--foreground)] text-sm">{formatCurrency(landscape.avg_award_amount)}</strong>
+                <br />avg award
+              </div>
+            )}
+            {landscape.avg_offers != null && (
+              <div className="text-xs text-[var(--foreground-muted)]">
+                <strong className="text-[var(--foreground)] text-sm">{landscape.avg_offers.toFixed(1)}</strong>
+                <br />avg offers
+              </div>
+            )}
+          </div>
+
+          {/* Top competitors */}
+          {landscape.top_competitors.length > 0 && (
+            <div>
+              <div className="flex items-center gap-1.5 mb-2">
+                <Users className="h-3.5 w-3.5 text-[var(--foreground-subtle)]" />
+                <span className="text-xs font-medium text-[var(--foreground-muted)]">Top Competitors</span>
+              </div>
+              <div className="space-y-1.5">
+                {landscape.top_competitors.slice(0, 5).map((comp, idx) => (
+                  <div key={idx} className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <Trophy className="h-3 w-3 text-[var(--foreground-subtle)]" />
+                      <span className="text-[var(--foreground)]">{comp.name}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-[var(--foreground-muted)]">
+                      <span><strong className="text-[var(--foreground)]">{comp.wins}</strong> wins</span>
+                      <span>{formatCurrency(comp.total_value)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Competition mix badges */}
+          {Object.keys(landscape.competition_mix).length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {Object.entries(landscape.competition_mix).map(([type, count]) => (
+                <span
+                  key={type}
+                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-[var(--background-tertiary)] text-[var(--foreground-muted)] border border-[var(--border)]"
+                >
+                  {type}: {count}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }

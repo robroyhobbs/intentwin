@@ -8,7 +8,12 @@
  * and no external dependencies. Input intelligence data, output strings.
  */
 
-import type { AgencyProfileResponse, PricingLookupResponse } from "./types";
+import type {
+  AgencyProfileResponse,
+  PricingLookupResponse,
+  WinProbabilityResponse,
+  CompetitiveLandscapeResponse,
+} from "./types";
 
 /**
  * Build a context string from agency and pricing intelligence for LLM prompts.
@@ -116,4 +121,100 @@ function buildPricingSection(pricing: PricingLookupResponse): string[] {
   }
 
   return lines;
+}
+
+/**
+ * Build a prompt context string from win probability data.
+ *
+ * Includes the probability percentage, confidence level,
+ * factor breakdown (helps/hurts), and comparable awards summary.
+ */
+export function buildWinProbabilityContext(
+  prob: WinProbabilityResponse,
+): string {
+  const lines: string[] = [];
+
+  lines.push("## Win Probability Analysis (Data-Driven)");
+  lines.push(
+    `Estimated win probability: ${(prob.probability * 100).toFixed(0)}% (confidence: ${prob.confidence})`,
+  );
+  lines.push(`Based on ${prob.matching_awards} similar historical awards`);
+
+  // Factor breakdown
+  const helpingFactors = prob.factors.filter((f) => f.impact > 0);
+  const hurtingFactors = prob.factors.filter((f) => f.impact < 0);
+
+  if (helpingFactors.length > 0) {
+    lines.push("\nFactors that help:");
+    for (const f of helpingFactors) {
+      lines.push(`  + ${f.name}: ${f.description} (+${(f.impact * 100).toFixed(0)}%)`);
+    }
+  }
+
+  if (hurtingFactors.length > 0) {
+    lines.push("\nFactors that hurt:");
+    for (const f of hurtingFactors) {
+      lines.push(`  - ${f.name}: ${f.description} (${(f.impact * 100).toFixed(0)}%)`);
+    }
+  }
+
+  // Comparable awards summary (without awardee names to avoid LLM referencing competitors)
+  if (prob.comparable_awards.length > 0) {
+    lines.push(
+      `\n${prob.comparable_awards.length} comparable awards found (avg competition: ${prob.comparable_awards.map((a) => a.competition_type).filter(Boolean).join(", ")})`,
+    );
+  }
+
+  return lines.join("\n");
+}
+
+/**
+ * Build a prompt context string from competitive landscape data.
+ *
+ * Includes top competitors, average award size, and competition breakdown.
+ * Intentionally includes competitor names — this is for internal analysis,
+ * not for injecting into generated proposal text.
+ */
+export function buildCompetitiveLandscapeContext(
+  landscape: CompetitiveLandscapeResponse,
+): string {
+  const lines: string[] = [];
+
+  lines.push("## Competitive Landscape (Data-Driven)");
+  lines.push(
+    `Total similar awards in this agency/NAICS: ${landscape.total_similar_awards}`,
+  );
+
+  if (landscape.avg_award_amount != null) {
+    lines.push(
+      `Average award amount: $${landscape.avg_award_amount.toLocaleString()}`,
+    );
+  }
+
+  if (landscape.avg_offers != null) {
+    lines.push(
+      `Average competing offers: ${landscape.avg_offers.toFixed(1)}`,
+    );
+  }
+
+  // Top competitors
+  if (landscape.top_competitors.length > 0) {
+    lines.push("\nTop competitors (by wins):");
+    for (const comp of landscape.top_competitors.slice(0, 5)) {
+      lines.push(
+        `  - ${comp.name}: ${comp.wins} wins, $${comp.total_value.toLocaleString()} total value`,
+      );
+    }
+  }
+
+  // Competition type breakdown
+  const mixEntries = Object.entries(landscape.competition_mix);
+  if (mixEntries.length > 0) {
+    lines.push("\nCompetition type breakdown:");
+    for (const [type, count] of mixEntries) {
+      lines.push(`  - ${type}: ${count} awards`);
+    }
+  }
+
+  return lines.join("\n");
 }

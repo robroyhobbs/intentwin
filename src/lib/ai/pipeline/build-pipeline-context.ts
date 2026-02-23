@@ -12,7 +12,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { generateStructuredAnalysis, buildSystemPrompt } from "../gemini";
 import { loadSources, formatSourcesAsL1Context } from "@/lib/sources";
 import { getIndustryConfig } from "../industry-configs";
-import { intelligenceClient } from "@/lib/intelligence";
+import { intelligenceClient, buildCompetitiveLandscapeContext } from "@/lib/intelligence";
 import { createLogger } from "@/lib/utils/logger";
 import type { WinStrategyData } from "@/types/outcomes";
 import type { OutcomeContract, CompanyInfo } from "@/types/idd";
@@ -186,8 +186,13 @@ Client: ${(intakeData.client_name as string) || "Not specified"}
 Industry: ${(intakeData.client_industry as string) || "Not specified"}`;
   }
 
-  // Enhanced analysis with outcome contract (L1 is now passed separately)
-  const enhancedAnalysis = `${analysis}\n${outcomeContractContext}`;
+  // Build competitive landscape context if available
+  const competitiveLandscapeContext = intelligence?.competitiveLandscape
+    ? buildCompetitiveLandscapeContext(intelligence.competitiveLandscape)
+    : "";
+
+  // Enhanced analysis with outcome contract and competitive landscape (L1 is now passed separately)
+  const enhancedAnalysis = `${analysis}\n${outcomeContractContext}${competitiveLandscapeContext ? `\n\n${competitiveLandscapeContext}` : ""}`;
 
   // Store L1 metadata on proposal for auditability (non-blocking)
   const l1Summary = {

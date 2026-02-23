@@ -93,6 +93,69 @@ const MOCK_AWARDS_RESPONSE = {
   offset: 0,
 };
 
+const MOCK_WIN_PROBABILITY = {
+  probability: 0.35,
+  confidence: "medium" as const,
+  matching_awards: 47,
+  factors: [
+    { name: "Full & open competition", impact: 0.12, description: "Historically increases win rate" },
+    { name: "Small business set-aside", impact: 0.08, description: "Favorable for small businesses" },
+    { name: "High competition", impact: -0.05, description: "Agency averages 5+ offers" },
+  ],
+  comparable_awards: [
+    {
+      title: "IT Support Services",
+      agency: "VA",
+      awardee: "Tech Solutions Inc",
+      amount: 3000000,
+      date: "2025-10-15",
+      competition_type: "full",
+    },
+  ],
+  meta: {
+    agency_match: true,
+    naics_match: true,
+    data_freshness: "2026-02-01",
+  },
+};
+
+const MOCK_COMPETITIVE_LANDSCAPE = {
+  total_similar_awards: 42,
+  top_competitors: [
+    {
+      name: "Acme Corp",
+      wins: 8,
+      total_value: 24000000,
+      avg_value: 3000000,
+      most_recent_win: "2025-12-01",
+    },
+    {
+      name: "Beta Solutions",
+      wins: 5,
+      total_value: 15000000,
+      avg_value: 3000000,
+      most_recent_win: "2025-11-15",
+    },
+  ],
+  avg_award_amount: 3500000,
+  median_award_amount: 2800000,
+  avg_offers: 4.5,
+  competition_mix: { "Full and Open": 30, "Sole Source": 8, "Set-Aside": 4 },
+  set_aside_mix: { "Small Business": 10, "8(a)": 3 },
+  recent_winners: [
+    {
+      title: "Cloud Services",
+      agency: "VA",
+      awardee: "Acme Corp",
+      amount: 4000000,
+      date: "2025-12-01",
+      naics: "541511",
+      competition_type: "full",
+    },
+  ],
+  query: { agency: "VA", naics_code: "541511" },
+};
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // Tests
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -176,7 +239,8 @@ describe("IntelligenceClient", () => {
       mockFetch
         .mockResolvedValueOnce(mockResponse(MOCK_AGENCY_PROFILE))
         .mockResolvedValueOnce(mockResponse(MOCK_PRICING_RESPONSE))
-        .mockResolvedValueOnce(mockResponse(MOCK_AWARDS_RESPONSE));
+        .mockResolvedValueOnce(mockResponse(MOCK_AWARDS_RESPONSE))
+        .mockResolvedValueOnce(mockResponse(MOCK_COMPETITIVE_LANDSCAPE));
 
       const client = await getClient();
       const result = await client.getProposalIntelligence({
@@ -192,8 +256,8 @@ describe("IntelligenceClient", () => {
       expect(result!.totalMatchingAwards).toBe(1);
       expect(result!.fetchedAt).toBeTruthy();
       expect(result!.fetchDurationMs).toBeGreaterThanOrEqual(0);
-      // All 3 fetches should have been made
-      expect(mockFetch).toHaveBeenCalledTimes(3);
+      // All 4 fetches should have been made (agency + pricing + awards + competitive landscape)
+      expect(mockFetch).toHaveBeenCalledTimes(4);
     });
 
     it("caches responses within TTL", async () => {
@@ -206,6 +270,63 @@ describe("IntelligenceClient", () => {
       await client.getAgencyProfile("VA");
 
       expect(mockFetch).toHaveBeenCalledOnce(); // Only one network call
+    });
+
+    it("fetches win probability successfully", async () => {
+      mockFetch.mockResolvedValueOnce(mockResponse(MOCK_WIN_PROBABILITY));
+      const client = await getClient();
+
+      const result = await client.getWinProbability({
+        agency: "VA",
+        naicsCode: "541511",
+        awardAmount: 3000000,
+        competitionType: "full",
+        businessSize: "small",
+      });
+
+      expect(result).toEqual(MOCK_WIN_PROBABILITY);
+      expect(mockFetch).toHaveBeenCalledOnce();
+      const calledUrl = mockFetch.mock.calls[0][0] as string;
+      expect(calledUrl).toContain("agency=VA");
+      expect(calledUrl).toContain("naics_code=541511");
+      expect(calledUrl).toContain("award_amount=3000000");
+      expect(calledUrl).toContain("competition_type=full");
+      expect(calledUrl).toContain("business_size=small");
+    });
+
+    it("fetches competitive landscape successfully", async () => {
+      mockFetch.mockResolvedValueOnce(mockResponse(MOCK_COMPETITIVE_LANDSCAPE));
+      const client = await getClient();
+
+      const result = await client.getCompetitiveLandscape({
+        agency: "VA",
+        naicsCode: "541511",
+      });
+
+      expect(result).toEqual(MOCK_COMPETITIVE_LANDSCAPE);
+      expect(mockFetch).toHaveBeenCalledOnce();
+      const calledUrl = mockFetch.mock.calls[0][0] as string;
+      expect(calledUrl).toContain("agency=VA");
+      expect(calledUrl).toContain("naics_code=541511");
+    });
+
+    it("includes competitive landscape in composite proposal intelligence", async () => {
+      mockFetch
+        .mockResolvedValueOnce(mockResponse(MOCK_AGENCY_PROFILE))
+        .mockResolvedValueOnce(mockResponse(MOCK_PRICING_RESPONSE))
+        .mockResolvedValueOnce(mockResponse(MOCK_AWARDS_RESPONSE))
+        .mockResolvedValueOnce(mockResponse(MOCK_COMPETITIVE_LANDSCAPE));
+
+      const client = await getClient();
+      const result = await client.getProposalIntelligence({
+        agencyName: "VA",
+        naicsCode: "541511",
+        laborCategories: ["Software Developer"],
+      });
+
+      expect(result).not.toBeNull();
+      expect(result!.competitiveLandscape).toEqual(MOCK_COMPETITIVE_LANDSCAPE);
+      expect(mockFetch).toHaveBeenCalledTimes(4);
     });
   });
 
@@ -296,16 +417,63 @@ describe("IntelligenceClient", () => {
 
       expect(result).toBeNull();
     });
+
+    it("getWinProbability returns null when service is unconfigured", async () => {
+      vi.stubEnv("INTELLIGENCE_API_URL", "");
+      vi.resetModules();
+      const client = await getClient();
+
+      const result = await client.getWinProbability({
+        agency: "VA",
+        naicsCode: "541511",
+      });
+
+      expect(result).toBeNull();
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it("getCompetitiveLandscape returns null when service is unconfigured", async () => {
+      vi.stubEnv("INTELLIGENCE_API_URL", "");
+      vi.resetModules();
+      const client = await getClient();
+
+      const result = await client.getCompetitiveLandscape({
+        agency: "VA",
+        naicsCode: "541511",
+      });
+
+      expect(result).toBeNull();
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it("getWinProbability returns null on HTTP 500", async () => {
+      mockFetch.mockResolvedValueOnce(mockResponse({ error: "Internal Error" }, 500));
+      const client = await getClient();
+
+      const result = await client.getWinProbability({ agency: "VA" });
+
+      expect(result).toBeNull();
+    });
+
+    it("getCompetitiveLandscape returns null on network error", async () => {
+      mockFetch.mockRejectedValueOnce(new Error("Connection refused"));
+      const client = await getClient();
+
+      const result = await client.getCompetitiveLandscape({ agency: "VA" });
+
+      expect(result).toBeNull();
+    });
   });
 
   // ── Edge Cases ──────────────────────────────────────────────────────────
 
   describe("Edge Cases", () => {
     it("handles null agencyName in getProposalIntelligence", async () => {
-      // Only pricing and awards should be fetched (not agency)
+      // Only pricing, awards, and competitive landscape should be fetched (not agency)
       mockFetch
         .mockResolvedValueOnce(mockResponse(MOCK_PRICING_RESPONSE))
-        .mockResolvedValueOnce(mockResponse(MOCK_AWARDS_RESPONSE));
+        .mockResolvedValueOnce(mockResponse(MOCK_AWARDS_RESPONSE))
+        .mockResolvedValueOnce(mockResponse(MOCK_COMPETITIVE_LANDSCAPE));
 
       const client = await getClient();
       const result = await client.getProposalIntelligence({
@@ -317,12 +485,14 @@ describe("IntelligenceClient", () => {
       expect(result).not.toBeNull();
       expect(result!.agency).toBeNull();
       expect(result!.pricing).toEqual(MOCK_PRICING_RESPONSE);
-      // Only 2 fetches (no agency)
-      expect(mockFetch).toHaveBeenCalledTimes(2);
+      // 3 fetches (pricing + awards + competitive landscape, no agency)
+      expect(mockFetch).toHaveBeenCalledTimes(3);
     });
 
     it("handles null naicsCode in getProposalIntelligence", async () => {
-      mockFetch.mockResolvedValueOnce(mockResponse(MOCK_AGENCY_PROFILE));
+      mockFetch
+        .mockResolvedValueOnce(mockResponse(MOCK_AGENCY_PROFILE))
+        .mockResolvedValueOnce(mockResponse(MOCK_COMPETITIVE_LANDSCAPE));
 
       const client = await getClient();
       const result = await client.getProposalIntelligence({
@@ -333,14 +503,15 @@ describe("IntelligenceClient", () => {
       expect(result).not.toBeNull();
       expect(result!.agency).toEqual(MOCK_AGENCY_PROFILE);
       expect(result!.recentAwards).toHaveLength(0);
-      // Only 1 fetch (just agency — no pricing since no categories, no awards since no NAICS)
-      expect(mockFetch).toHaveBeenCalledTimes(1);
+      // 2 fetches (agency + competitive landscape — no pricing since no categories, no awards since no NAICS)
+      expect(mockFetch).toHaveBeenCalledTimes(2);
     });
 
     it("handles empty labor categories", async () => {
       mockFetch
         .mockResolvedValueOnce(mockResponse(MOCK_AGENCY_PROFILE))
-        .mockResolvedValueOnce(mockResponse(MOCK_AWARDS_RESPONSE));
+        .mockResolvedValueOnce(mockResponse(MOCK_AWARDS_RESPONSE))
+        .mockResolvedValueOnce(mockResponse(MOCK_COMPETITIVE_LANDSCAPE));
 
       const client = await getClient();
       const result = await client.getProposalIntelligence({
@@ -351,15 +522,16 @@ describe("IntelligenceClient", () => {
 
       expect(result).not.toBeNull();
       expect(result!.pricing).toBeNull(); // No categories to look up
-      expect(mockFetch).toHaveBeenCalledTimes(2); // agency + awards only
+      expect(mockFetch).toHaveBeenCalledTimes(3); // agency + awards + competitive landscape
     });
 
     it("handles partial failure in composite fetch gracefully", async () => {
-      // Agency succeeds, pricing fails, awards succeed
+      // Agency succeeds, pricing fails, awards succeed, competitive landscape succeeds
       mockFetch
         .mockResolvedValueOnce(mockResponse(MOCK_AGENCY_PROFILE))
         .mockResolvedValueOnce(mockResponse({ error: "Server Error" }, 500))
-        .mockResolvedValueOnce(mockResponse(MOCK_AWARDS_RESPONSE));
+        .mockResolvedValueOnce(mockResponse(MOCK_AWARDS_RESPONSE))
+        .mockResolvedValueOnce(mockResponse(MOCK_COMPETITIVE_LANDSCAPE));
 
       const client = await getClient();
       const result = await client.getProposalIntelligence({
@@ -382,6 +554,31 @@ describe("IntelligenceClient", () => {
 
       const calledUrl = mockFetch.mock.calls[0][0] as string;
       expect(calledUrl).toContain("U.S.%20Army%20Corps%20of%20Engineers");
+    });
+
+    it("getWinProbability omits optional params from URL", async () => {
+      mockFetch.mockResolvedValueOnce(mockResponse(MOCK_WIN_PROBABILITY));
+      const client = await getClient();
+
+      await client.getWinProbability({ agency: "VA" });
+
+      const calledUrl = mockFetch.mock.calls[0][0] as string;
+      expect(calledUrl).toContain("agency=VA");
+      expect(calledUrl).not.toContain("naics_code");
+      expect(calledUrl).not.toContain("award_amount");
+      expect(calledUrl).not.toContain("business_size");
+    });
+
+    it("getCompetitiveLandscape works with only naicsCode", async () => {
+      mockFetch.mockResolvedValueOnce(mockResponse(MOCK_COMPETITIVE_LANDSCAPE));
+      const client = await getClient();
+
+      const result = await client.getCompetitiveLandscape({ naicsCode: "541511" });
+
+      expect(result).toEqual(MOCK_COMPETITIVE_LANDSCAPE);
+      const calledUrl = mockFetch.mock.calls[0][0] as string;
+      expect(calledUrl).toContain("naics_code=541511");
+      expect(calledUrl).not.toContain("agency=");
     });
 
     it("uses separate cache keys for different parameters", async () => {

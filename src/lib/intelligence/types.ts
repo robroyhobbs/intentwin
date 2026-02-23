@@ -148,6 +148,63 @@ export interface AgencyListResponse {
   total: number;
 }
 
+// ── Win Probability ──────────────────────────────────────────────────────────
+
+export interface WinProbabilityResponse {
+  probability: number; // 0-1
+  confidence: "high" | "medium" | "low";
+  matching_awards: number;
+  factors: {
+    name: string;
+    impact: number; // positive = helps, negative = hurts
+    description: string;
+  }[];
+  comparable_awards: {
+    title: string;
+    agency: string;
+    awardee: string;
+    amount: number;
+    date: string;
+    competition_type: string;
+  }[];
+  meta: {
+    agency_match: boolean;
+    naics_match: boolean;
+    data_freshness: string;
+  };
+}
+
+// ── Competitive Landscape ────────────────────────────────────────────────────
+
+export interface CompetitiveLandscapeResponse {
+  total_similar_awards: number;
+  top_competitors: {
+    name: string;
+    wins: number;
+    total_value: number;
+    avg_value: number;
+    most_recent_win: string;
+  }[];
+  avg_award_amount: number | null;
+  median_award_amount: number | null;
+  avg_offers: number | null;
+  competition_mix: Record<string, number>;
+  set_aside_mix: Record<string, number>;
+  recent_winners: {
+    title: string;
+    agency: string;
+    awardee: string;
+    amount: number;
+    date: string;
+    naics: string;
+    competition_type: string;
+  }[];
+  query: {
+    agency: string | null;
+    naics_code: string | null;
+  };
+}
+
 // ── Composite: Proposal Intelligence Bundle ──────────────────────────────────
 
 export interface ProposalIntelligence {
@@ -155,6 +212,7 @@ export interface ProposalIntelligence {
   pricing: PricingLookupResponse | null;
   recentAwards: AwardRecord[];
   totalMatchingAwards: number;
+  competitiveLandscape: CompetitiveLandscapeResponse | null;
   fetchedAt: string;
   fetchDurationMs: number;
 }

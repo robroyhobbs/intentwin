@@ -12,6 +12,8 @@ import type {
   PricingLookupResponse,
   AwardsSearchResponse,
   ProposalIntelligence,
+  WinProbabilityResponse,
+  CompetitiveLandscapeResponse,
 } from "./types";
 
 const logger = createLogger({ module: "intelligence-client" });
@@ -99,6 +101,50 @@ class IntelligenceClient {
     );
   }
 
+  // ── Win Probability ───────────────────────────────────────────────────
+
+  async getWinProbability(params: {
+    agency?: string;
+    naicsCode?: string;
+    awardAmount?: number;
+    competitionType?: string;
+    setAsideType?: string;
+    businessSize?: "small" | "large";
+  }): Promise<WinProbabilityResponse | null> {
+    const searchParams = new URLSearchParams();
+    if (params.agency) searchParams.set("agency", params.agency);
+    if (params.naicsCode) searchParams.set("naics_code", params.naicsCode);
+    if (params.awardAmount != null)
+      searchParams.set("award_amount", String(params.awardAmount));
+    if (params.competitionType)
+      searchParams.set("competition_type", params.competitionType);
+    if (params.setAsideType)
+      searchParams.set("set_aside_type", params.setAsideType);
+    if (params.businessSize)
+      searchParams.set("business_size", params.businessSize);
+
+    return this.cachedGet<WinProbabilityResponse>(
+      `/api/v1/win-probability?${searchParams.toString()}`,
+      `win-prob:${searchParams.toString()}`,
+    );
+  }
+
+  // ── Competitive Landscape ──────────────────────────────────────────────
+
+  async getCompetitiveLandscape(params: {
+    agency?: string;
+    naicsCode?: string;
+  }): Promise<CompetitiveLandscapeResponse | null> {
+    const searchParams = new URLSearchParams();
+    if (params.agency) searchParams.set("agency", params.agency);
+    if (params.naicsCode) searchParams.set("naics_code", params.naicsCode);
+
+    return this.cachedGet<CompetitiveLandscapeResponse>(
+      `/api/v1/competitive-landscape?${searchParams.toString()}`,
+      `comp-landscape:${searchParams.toString()}`,
+    );
+  }
+
   // ── Composite: Proposal Intelligence Bundle ──────────────────────────
   //
   // Single method that fetches all intelligence needed for a proposal.
@@ -114,7 +160,7 @@ class IntelligenceClient {
     const start = Date.now();
     try {
       // Run all lookups in parallel with individual timeouts
-      const [agencyProfile, pricingRates, awardsResult] = await Promise.all([
+      const [agencyProfile, pricingRates, awardsResult, competitiveLandscape] = await Promise.all([
         params.agencyName
           ? this.getAgencyProfile(params.agencyName)
           : Promise.resolve(null),
@@ -131,6 +177,12 @@ class IntelligenceClient {
               limit: 10,
             })
           : Promise.resolve(null),
+        params.agencyName || params.naicsCode
+          ? this.getCompetitiveLandscape({
+              agency: params.agencyName ?? undefined,
+              naicsCode: params.naicsCode ?? undefined,
+            })
+          : Promise.resolve(null),
       ]);
 
       const intelligence: ProposalIntelligence = {
@@ -138,6 +190,7 @@ class IntelligenceClient {
         pricing: pricingRates,
         recentAwards: awardsResult?.awards ?? [],
         totalMatchingAwards: awardsResult?.total ?? 0,
+        competitiveLandscape,
         fetchedAt: new Date().toISOString(),
         fetchDurationMs: Date.now() - start,
       };
@@ -147,6 +200,7 @@ class IntelligenceClient {
         naics: params.naicsCode,
         hasAgency: !!agencyProfile,
         hasPricing: !!pricingRates,
+        hasCompetitiveLandscape: !!competitiveLandscape,
         awardCount: intelligence.totalMatchingAwards,
         durationMs: intelligence.fetchDurationMs,
       });

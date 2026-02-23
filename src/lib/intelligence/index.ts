@@ -5,7 +5,11 @@
  */
 
 export { intelligenceClient } from "./client";
-export { buildIntelligenceContext } from "./context-builder";
+export {
+  buildIntelligenceContext,
+  buildWinProbabilityContext,
+  buildCompetitiveLandscapeContext,
+} from "./context-builder";
 export type {
   AgencyProfileResponse,
   PricingLookupResponse,
@@ -13,6 +17,8 @@ export type {
   AwardsSearchResponse,
   AwardRecord,
   ProposalIntelligence,
+  WinProbabilityResponse,
+  CompetitiveLandscapeResponse,
   DashboardStatsResponse,
   NaicsListItem,
   NaicsListResponse,

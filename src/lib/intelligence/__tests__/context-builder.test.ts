@@ -1,6 +1,15 @@
 import { describe, it, expect } from "vitest";
-import { buildIntelligenceContext } from "../context-builder";
-import type { AgencyProfileResponse, PricingLookupResponse } from "../types";
+import {
+  buildIntelligenceContext,
+  buildWinProbabilityContext,
+  buildCompetitiveLandscapeContext,
+} from "../context-builder";
+import type {
+  AgencyProfileResponse,
+  PricingLookupResponse,
+  WinProbabilityResponse,
+  CompetitiveLandscapeResponse,
+} from "../types";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Intelligence Context Builder Tests — TDD
@@ -277,6 +286,275 @@ describe("buildIntelligenceContext", () => {
 
       expect(MOCK_AGENCY).toEqual(agencyCopy);
       expect(MOCK_PRICING).toEqual(pricingCopy);
+    });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Win Probability Context Builder Tests
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const MOCK_WIN_PROB: WinProbabilityResponse = {
+  probability: 0.35,
+  confidence: "medium",
+  matching_awards: 47,
+  factors: [
+    { name: "Full & open competition", impact: 0.12, description: "Historically increases win rate" },
+    { name: "Small business set-aside", impact: 0.08, description: "Favorable for small businesses" },
+    { name: "High competition", impact: -0.05, description: "Agency averages 5+ offers" },
+  ],
+  comparable_awards: [
+    {
+      title: "IT Support Services",
+      agency: "VA",
+      awardee: "Tech Solutions Inc",
+      amount: 3000000,
+      date: "2025-10-15",
+      competition_type: "full",
+    },
+  ],
+  meta: {
+    agency_match: true,
+    naics_match: true,
+    data_freshness: "2026-02-01",
+  },
+};
+
+describe("buildWinProbabilityContext", () => {
+  describe("Happy Path", () => {
+    it("includes probability percentage and confidence", () => {
+      const result = buildWinProbabilityContext(MOCK_WIN_PROB);
+
+      expect(result).toContain("35%");
+      expect(result).toContain("medium");
+      expect(result).toContain("47 similar historical awards");
+    });
+
+    it("includes helping factors with positive impact", () => {
+      const result = buildWinProbabilityContext(MOCK_WIN_PROB);
+
+      expect(result).toContain("Factors that help");
+      expect(result).toContain("Full & open competition");
+      expect(result).toContain("+12%");
+      expect(result).toContain("Small business set-aside");
+      expect(result).toContain("+8%");
+    });
+
+    it("includes hurting factors with negative impact", () => {
+      const result = buildWinProbabilityContext(MOCK_WIN_PROB);
+
+      expect(result).toContain("Factors that hurt");
+      expect(result).toContain("High competition");
+      expect(result).toContain("-5%");
+    });
+
+    it("includes comparable awards count", () => {
+      const result = buildWinProbabilityContext(MOCK_WIN_PROB);
+
+      expect(result).toContain("1 comparable awards found");
+    });
+  });
+
+  describe("Edge Cases", () => {
+    it("handles zero probability", () => {
+      const prob: WinProbabilityResponse = {
+        ...MOCK_WIN_PROB,
+        probability: 0,
+        matching_awards: 5,
+      };
+      const result = buildWinProbabilityContext(prob);
+
+      expect(result).toContain("0%");
+    });
+
+    it("handles 100% probability", () => {
+      const prob: WinProbabilityResponse = {
+        ...MOCK_WIN_PROB,
+        probability: 1.0,
+      };
+      const result = buildWinProbabilityContext(prob);
+
+      expect(result).toContain("100%");
+    });
+
+    it("handles no factors", () => {
+      const prob: WinProbabilityResponse = {
+        ...MOCK_WIN_PROB,
+        factors: [],
+      };
+      const result = buildWinProbabilityContext(prob);
+
+      expect(result).not.toContain("Factors that help");
+      expect(result).not.toContain("Factors that hurt");
+    });
+
+    it("handles no comparable awards", () => {
+      const prob: WinProbabilityResponse = {
+        ...MOCK_WIN_PROB,
+        comparable_awards: [],
+      };
+      const result = buildWinProbabilityContext(prob);
+
+      expect(result).not.toContain("comparable awards found");
+    });
+
+    it("handles only hurting factors", () => {
+      const prob: WinProbabilityResponse = {
+        ...MOCK_WIN_PROB,
+        factors: [{ name: "High competition", impact: -0.1, description: "Too many bidders" }],
+      };
+      const result = buildWinProbabilityContext(prob);
+
+      expect(result).not.toContain("Factors that help");
+      expect(result).toContain("Factors that hurt");
+    });
+  });
+
+  describe("Data Damage", () => {
+    it("is a pure function — same inputs produce same output", () => {
+      const r1 = buildWinProbabilityContext(MOCK_WIN_PROB);
+      const r2 = buildWinProbabilityContext(MOCK_WIN_PROB);
+      expect(r1).toBe(r2);
+    });
+
+    it("does not mutate input", () => {
+      const copy = JSON.parse(JSON.stringify(MOCK_WIN_PROB));
+      buildWinProbabilityContext(MOCK_WIN_PROB);
+      expect(MOCK_WIN_PROB).toEqual(copy);
+    });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Competitive Landscape Context Builder Tests
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const MOCK_LANDSCAPE: CompetitiveLandscapeResponse = {
+  total_similar_awards: 42,
+  top_competitors: [
+    { name: "Acme Corp", wins: 8, total_value: 24000000, avg_value: 3000000, most_recent_win: "2025-12-01" },
+    { name: "Beta Solutions", wins: 5, total_value: 15000000, avg_value: 3000000, most_recent_win: "2025-11-15" },
+  ],
+  avg_award_amount: 3500000,
+  median_award_amount: 2800000,
+  avg_offers: 4.5,
+  competition_mix: { "Full and Open": 30, "Sole Source": 8 },
+  set_aside_mix: { "Small Business": 10 },
+  recent_winners: [],
+  query: { agency: "VA", naics_code: "541511" },
+};
+
+describe("buildCompetitiveLandscapeContext", () => {
+  describe("Happy Path", () => {
+    it("includes total similar awards", () => {
+      const result = buildCompetitiveLandscapeContext(MOCK_LANDSCAPE);
+
+      expect(result).toContain("42");
+      expect(result).toContain("## Competitive Landscape");
+    });
+
+    it("includes average award amount", () => {
+      const result = buildCompetitiveLandscapeContext(MOCK_LANDSCAPE);
+
+      expect(result).toContain("$3,500,000");
+    });
+
+    it("includes average offers", () => {
+      const result = buildCompetitiveLandscapeContext(MOCK_LANDSCAPE);
+
+      expect(result).toContain("4.5");
+    });
+
+    it("includes top competitors with wins and values", () => {
+      const result = buildCompetitiveLandscapeContext(MOCK_LANDSCAPE);
+
+      expect(result).toContain("Acme Corp");
+      expect(result).toContain("8 wins");
+      expect(result).toContain("Beta Solutions");
+      expect(result).toContain("5 wins");
+    });
+
+    it("includes competition type breakdown", () => {
+      const result = buildCompetitiveLandscapeContext(MOCK_LANDSCAPE);
+
+      expect(result).toContain("Full and Open");
+      expect(result).toContain("30 awards");
+      expect(result).toContain("Sole Source");
+      expect(result).toContain("8 awards");
+    });
+  });
+
+  describe("Edge Cases", () => {
+    it("handles null average award amount", () => {
+      const landscape: CompetitiveLandscapeResponse = {
+        ...MOCK_LANDSCAPE,
+        avg_award_amount: null,
+      };
+      const result = buildCompetitiveLandscapeContext(landscape);
+
+      expect(result).not.toContain("Average award amount");
+    });
+
+    it("handles null average offers", () => {
+      const landscape: CompetitiveLandscapeResponse = {
+        ...MOCK_LANDSCAPE,
+        avg_offers: null,
+      };
+      const result = buildCompetitiveLandscapeContext(landscape);
+
+      expect(result).not.toContain("Average competing offers");
+    });
+
+    it("handles no competitors", () => {
+      const landscape: CompetitiveLandscapeResponse = {
+        ...MOCK_LANDSCAPE,
+        top_competitors: [],
+      };
+      const result = buildCompetitiveLandscapeContext(landscape);
+
+      expect(result).not.toContain("Top competitors");
+    });
+
+    it("handles empty competition mix", () => {
+      const landscape: CompetitiveLandscapeResponse = {
+        ...MOCK_LANDSCAPE,
+        competition_mix: {},
+      };
+      const result = buildCompetitiveLandscapeContext(landscape);
+
+      expect(result).not.toContain("Competition type breakdown");
+    });
+
+    it("limits competitors to top 5", () => {
+      const landscape: CompetitiveLandscapeResponse = {
+        ...MOCK_LANDSCAPE,
+        top_competitors: Array.from({ length: 10 }, (_, i) => ({
+          name: `Company ${i}`,
+          wins: 10 - i,
+          total_value: 1000000 * (10 - i),
+          avg_value: 1000000,
+          most_recent_win: "2025-12-01",
+        })),
+      };
+      const result = buildCompetitiveLandscapeContext(landscape);
+
+      expect(result).toContain("Company 0");
+      expect(result).toContain("Company 4");
+      expect(result).not.toContain("Company 5");
+    });
+  });
+
+  describe("Data Damage", () => {
+    it("is a pure function — same inputs produce same output", () => {
+      const r1 = buildCompetitiveLandscapeContext(MOCK_LANDSCAPE);
+      const r2 = buildCompetitiveLandscapeContext(MOCK_LANDSCAPE);
+      expect(r1).toBe(r2);
+    });
+
+    it("does not mutate input", () => {
+      const copy = JSON.parse(JSON.stringify(MOCK_LANDSCAPE));
+      buildCompetitiveLandscapeContext(MOCK_LANDSCAPE);
+      expect(MOCK_LANDSCAPE).toEqual(copy);
     });
   });
 });

@@ -14,4 +14,6 @@ export type {
   AwardRecord,
   RateBenchmark,
   PricingLookupResponse,
+  WinProbabilityResponse,
+  CompetitiveLandscapeResponse,
 } from "@/lib/intelligence/types";

@@ -1,7 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logger } from "@/lib/utils/logger";
 import { generateText } from "./gemini";
-import { intelligenceClient, buildIntelligenceContext } from "@/lib/intelligence";
+import { intelligenceClient, buildIntelligenceContext, buildWinProbabilityContext } from "@/lib/intelligence";
+import type { WinProbabilityResponse } from "@/lib/intelligence";
 import type { L1Context } from "./pipeline/types";
 
 // Fixed scoring factors and weights
@@ -30,6 +31,7 @@ export interface BidIntelligenceContext {
   has_agency_profile: boolean;
   has_pricing_data: boolean;
   pricing_categories_found: number;
+  win_probability: WinProbabilityResponse | null;
 }
 
 export interface BidEvaluation {
@@ -114,8 +116,11 @@ export async function scoreFromRequirements(
     (rfpRequirements.client_name as string) ??
     null;
   const naicsCode = (rfpRequirements.naics_code as string) ?? null;
+  const budgetRange = (rfpRequirements.budget_range as string) ?? null;
+  const setAside = (rfpRequirements.set_aside as string) ?? null;
+  const competitionType = (rfpRequirements.competition_type as string) ?? null;
 
-  const [l1Context, agencyProfile, pricingRates] = await Promise.all([
+  const [l1Context, agencyProfile, pricingRates, winProbability] = await Promise.all([
     fetchL1ContextForScoring(supabase, serviceLine, industry, organizationId),
     agencyName
       ? intelligenceClient.getAgencyProfile(agencyName)
@@ -123,6 +128,14 @@ export async function scoreFromRequirements(
     intelligenceClient.getPricingRates({
       categories: ["Software Developer", "Project Manager", "Systems Engineer"],
       naicsCode: naicsCode ?? undefined,
+    }),
+    intelligenceClient.getWinProbability({
+      agency: agencyName ?? undefined,
+      naicsCode: naicsCode ?? undefined,
+      awardAmount: budgetRange ? parseFloat(budgetRange.replace(/[^0-9.]/g, "")) || undefined : undefined,
+      competitionType: competitionType ?? undefined,
+      setAsideType: setAside ?? undefined,
+      businessSize: "small",
     }),
   ]);
 
@@ -132,6 +145,9 @@ export async function scoreFromRequirements(
     agencyProfile,
     pricingRates,
   );
+  const winProbContext = winProbability
+    ? buildWinProbabilityContext(winProbability)
+    : "";
 
   const prompt = `## RFP Opportunity Analysis
 
@@ -141,7 +157,8 @@ ${rfpSummary}
 ### Firm Context (L1 - Verified)
 ${l1Summary}
 ${intelligenceContext ? `\n### Procurement Intelligence\n${intelligenceContext}` : ""}
-Based on the above, score each of the 5 bid evaluation factors (0-100) with rationale.`;
+${winProbContext ? `\n### Win Probability Data\n${winProbContext}` : ""}
+Based on the above, score each of the 5 bid evaluation factors (0-100) with rationale.${winProbability ? ` Historical win probability for similar opportunities is ${(winProbability.probability * 100).toFixed(0)}% — factor this into your strategic value assessment.` : ""}`;
 
   const response = await generateText(prompt, {
     systemPrompt: BID_SCORING_SYSTEM_PROMPT,
@@ -163,6 +180,7 @@ Based on the above, score each of the 5 bid evaluation factors (0-100) with rati
     has_agency_profile: agencyProfile !== null,
     has_pricing_data: pricingRates !== null,
     pricing_categories_found: pricingRates?.rate_benchmarks?.length ?? 0,
+    win_probability: winProbability,
   };
 
   return {
