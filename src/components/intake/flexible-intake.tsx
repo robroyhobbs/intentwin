@@ -11,6 +11,8 @@ import {
   Loader2,
   Sparkles,
   File,
+  CheckCircle2,
+  Circle,
 } from "lucide-react";
 import type {
   IntakeMode,
@@ -35,6 +37,9 @@ export function FlexibleIntake({
   const [verbalDescription, setVerbalDescription] = useState("");
   const [researchEnabled, setResearchEnabled] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [processingStep, setProcessingStep] = useState<
+    "extracting" | "researching" | null
+  >(null);
   const [uploadProgress, setUploadProgress] = useState<Record<string, string>>(
     {},
   );
@@ -170,6 +175,7 @@ export function FlexibleIntake({
 
   const handleAnalyze = async () => {
     setIsProcessing(true);
+    setProcessingStep("extracting");
     setError(null);
 
     try {
@@ -217,6 +223,7 @@ export function FlexibleIntake({
       // If research enabled, call research API
       let research: ClientResearch | null = null;
       if (researchEnabled && extracted.extracted?.client_name?.value) {
+        setProcessingStep("researching");
         const researchResponse = await fetch("/api/intake/research", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -237,6 +244,7 @@ export function FlexibleIntake({
       setError(err instanceof Error ? err.message : "Analysis failed");
     } finally {
       setIsProcessing(false);
+      setProcessingStep(null);
     }
   };
 
@@ -503,6 +511,31 @@ export function FlexibleIntake({
         </div>
       )}
 
+      {/* Processing progress indicator */}
+      {isProcessing && (
+        <div className="rounded-xl border border-[var(--accent-muted)] bg-[var(--accent-subtle)] p-5">
+          <div className="space-y-3">
+            <ExtractionStep
+              label="Reading & parsing document content"
+              status={processingStep === "extracting" ? "active" : "done"}
+            />
+            <ExtractionStep
+              label="Extracting structured fields with AI"
+              status={processingStep === "extracting" ? "active" : processingStep === "researching" ? "done" : "pending"}
+            />
+            {researchEnabled && (
+              <ExtractionStep
+                label="Researching client background"
+                status={processingStep === "researching" ? "active" : "pending"}
+              />
+            )}
+          </div>
+          <p className="mt-4 text-xs text-[var(--foreground-subtle)]">
+            This typically takes 15-45 seconds depending on document complexity.
+          </p>
+        </div>
+      )}
+
       <div className="flex justify-end gap-3 pt-4">
         <button onClick={() => setMode(null)} className="btn-secondary">
           Cancel
@@ -515,7 +548,7 @@ export function FlexibleIntake({
           {isProcessing ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              Analyzing...
+              {processingStep === "researching" ? "Researching client..." : "Extracting..."}
             </>
           ) : anyFilesProcessing ? (
             <>
@@ -530,6 +563,41 @@ export function FlexibleIntake({
           )}
         </button>
       </div>
+    </div>
+  );
+}
+
+// ── Extraction Progress Step ────────────────────────────────────────────────
+
+function ExtractionStep({
+  label,
+  status,
+}: {
+  label: string;
+  status: "pending" | "active" | "done";
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      {status === "done" && (
+        <CheckCircle2 className="h-4 w-4 text-[var(--success)] shrink-0" />
+      )}
+      {status === "active" && (
+        <Loader2 className="h-4 w-4 animate-spin text-[var(--accent)] shrink-0" />
+      )}
+      {status === "pending" && (
+        <Circle className="h-4 w-4 text-[var(--foreground-subtle)] shrink-0" />
+      )}
+      <span
+        className={`text-sm ${
+          status === "active"
+            ? "text-[var(--foreground)] font-medium"
+            : status === "done"
+              ? "text-[var(--foreground-muted)]"
+              : "text-[var(--foreground-subtle)]"
+        }`}
+      >
+        {label}
+      </span>
     </div>
   );
 }

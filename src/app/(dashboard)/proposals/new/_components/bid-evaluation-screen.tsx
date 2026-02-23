@@ -16,18 +16,21 @@ import { SCORING_FACTORS } from "@/lib/ai/bid-scoring";
 const recConfig = {
   bid: {
     label: "Recommended to Bid",
+    description: "Strong alignment between your capabilities and this opportunity. You have a competitive advantage.",
     color: "var(--success)",
     bg: "bg-emerald-50 dark:bg-emerald-950/30",
     border: "border-emerald-200 dark:border-emerald-800",
   },
   evaluate: {
     label: "Evaluate Further",
+    description: "Mixed signals \u2014 some areas align well, others have gaps. Review the factor scores below to decide if you can address the weak areas before bidding.",
     color: "var(--warning)",
     bg: "bg-amber-50 dark:bg-amber-950/30",
     border: "border-amber-200 dark:border-amber-800",
   },
   pass: {
     label: "Recommended to Pass",
+    description: "Significant gaps between your capabilities and what this RFP requires. Consider whether this opportunity is worth the pursuit cost.",
     color: "var(--danger)",
     bg: "bg-red-50 dark:bg-red-950/30",
     border: "border-red-200 dark:border-red-800",
@@ -124,34 +127,45 @@ export function BidEvaluationScreen({
             <>
               {/* Recommendation banner */}
               <div
-                className={`rounded-xl border ${rec.border} ${rec.bg} p-6 flex items-center justify-between`}
+                className={`rounded-xl border ${rec.border} ${rec.bg} p-6`}
               >
-                <div>
-                  <p className="text-sm font-medium text-[var(--foreground-muted)]">
-                    Overall Score
-                  </p>
-                  <p
-                    className="text-3xl font-bold mt-1"
-                    style={{ color: rec.color }}
-                  >
-                    {currentTotal.toFixed(1)}
-                  </p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-[var(--foreground-muted)]">
+                      Overall Score
+                    </p>
+                    <p
+                      className="text-3xl font-bold mt-1"
+                      style={{ color: rec.color }}
+                    >
+                      {currentTotal.toFixed(1)}
+                      <span className="text-base font-normal text-[var(--foreground-muted)]"> / 100</span>
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p
+                      className="text-lg font-bold"
+                      style={{ color: rec.color }}
+                    >
+                      {rec.label}
+                    </p>
+                    <p className="text-xs text-[var(--foreground-muted)] mt-1">
+                      Weighted average of 5 factors below
+                      {bidEvaluation.intelligence?.has_agency_profile && bidEvaluation.intelligence.agency_total_awards && bidEvaluation.intelligence.agency_total_awards > 0 && (
+                        <span className="text-[var(--accent)]">
+                          {" "}+ {bidEvaluation.intelligence.agency_total_awards.toLocaleString()} tracked awards
+                        </span>
+                      )}
+                    </p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p
-                    className="text-lg font-bold"
-                    style={{ color: rec.color }}
-                  >
-                    {rec.label}
-                  </p>
-                  <p className="text-sm text-[var(--foreground-muted)] mt-1">
-                    Based on 5-factor weighted analysis
-                    {bidEvaluation.intelligence?.has_agency_profile && (
-                      <span className="text-[var(--accent)]">
-                        {" "}+ {bidEvaluation.intelligence.agency_total_awards?.toLocaleString()} tracked awards
-                      </span>
-                    )}
-                  </p>
+                <p className="mt-3 text-sm text-[var(--foreground-muted)]">
+                  {rec.description}
+                </p>
+                <div className="mt-2 flex gap-4 text-[10px] text-[var(--foreground-subtle)]">
+                  <span>Above 70 = Bid</span>
+                  <span>40-70 = Evaluate</span>
+                  <span>Below 40 = Pass</span>
                 </div>
               </div>
 
@@ -277,12 +291,17 @@ function IntelligencePanel({ intelligence }: { intelligence: BidIntelligenceCont
 
   return (
     <div className="rounded-xl border border-[var(--accent-muted)] bg-[var(--accent-subtle)] p-5">
-      <div className="flex items-center gap-2 mb-3">
-        <Globe className="h-4 w-4 text-[var(--accent)]" />
-        <span className="text-sm font-semibold text-[var(--foreground)]">
-          Procurement Intelligence
-        </span>
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-2">
+          <Globe className="h-4 w-4 text-[var(--accent)]" />
+          <span className="text-sm font-semibold text-[var(--foreground)]">
+            Procurement Intelligence
+          </span>
+        </div>
       </div>
+      <p className="text-xs text-[var(--foreground-muted)] mb-3">
+        This data was used to inform the AI scoring above and will be injected into proposal generation to tailor competitive positioning, pricing guidance, and win strategy.
+      </p>
       <div className="grid grid-cols-2 gap-3">
         {intelligence.has_agency_profile && (
           <>
@@ -294,7 +313,7 @@ function IntelligencePanel({ intelligence }: { intelligence: BidIntelligenceCont
             </div>
             {intelligence.agency_eval_method && (
               <div className="text-xs text-[var(--foreground-muted)]">
-                Eval: <strong className="text-[var(--foreground)]">{intelligence.agency_eval_method}</strong>
+                Eval Method: <strong className="text-[var(--foreground)]">{intelligence.agency_eval_method}</strong>
               </div>
             )}
             {intelligence.agency_avg_offers != null && (
