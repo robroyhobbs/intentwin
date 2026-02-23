@@ -18,6 +18,42 @@ export const maxDuration = 300;
 const EXTRACTION_SYSTEM_PROMPT = `You are an expert at analyzing business documents and extracting structured information. You are precise, thorough, and honest about confidence levels. You always respond with valid JSON only.`;
 
 /**
+ * Extract JSON from an AI response using multiple strategies.
+ * Handles markdown code blocks, preamble text, and raw JSON.
+ */
+function extractJsonFromResponse(response: string): Record<string, unknown> | null {
+  // Strategy 1: Markdown code block
+  const codeBlockMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (codeBlockMatch) {
+    try {
+      return JSON.parse(codeBlockMatch[1].trim());
+    } catch {
+      // Code block found but not valid JSON — continue
+    }
+  }
+
+  // Strategy 2: Find outermost { ... }
+  const firstBrace = response.indexOf("{");
+  const lastBrace = response.lastIndexOf("}");
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    try {
+      return JSON.parse(response.slice(firstBrace, lastBrace + 1));
+    } catch {
+      // Braces found but not valid JSON — continue
+    }
+  }
+
+  // Strategy 3: Try parsing entire response as-is
+  try {
+    return JSON.parse(response.trim());
+  } catch {
+    // Nothing worked
+  }
+
+  return null;
+}
+
+/**
  * Poll a document until processing completes or timeout (~45s).
  * Returns the settled document data, or null if still processing.
  */
@@ -236,30 +272,28 @@ export async function POST(request: NextRequest) {
       document_ids?.length > 0 ? "file" : content_type,
     );
 
-    // Call Claude for extraction
+    // Call Gemini for extraction — 8192 tokens to prevent truncation on complex RFPs
     const response = await generateText(prompt, {
       systemPrompt: EXTRACTION_SYSTEM_PROMPT,
       temperature: 0.3, // Lower temperature for structured extraction
-      maxTokens: 4096,
+      maxTokens: 8192,
     });
 
-    // Parse JSON response
+    // Parse JSON response using triple-strategy extraction (same as bid-scoring)
     let extracted: ExtractedIntake;
-    try {
-      // Extract JSON from response (handle markdown code blocks)
-      let jsonStr = response;
-      const jsonMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/);
-      if (jsonMatch) {
-        jsonStr = jsonMatch[1];
-      }
-      extracted = JSON.parse(jsonStr.trim());
-    } catch (_parseError) {
-      logger.error("Failed to parse extraction response", { responseTail: response?.slice(-200) });
+    const parsed = extractJsonFromResponse(response);
+    if (!parsed) {
+      logger.error("Failed to parse extraction response after all strategies", {
+        responseLength: response?.length,
+        first200: response?.slice(0, 200),
+        last200: response?.slice(-200),
+      });
       return NextResponse.json(
         { error: "Failed to parse extraction results" },
         { status: 500 },
       );
     }
+    extracted = parsed as unknown as ExtractedIntake;
 
     // Add source tracking
     if (document_ids?.length > 0) {
