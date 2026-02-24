@@ -46,6 +46,7 @@ const navGroups = [
     label: "Intelligence",
     items: [
       { name: "Market Overview", href: "/intelligence", icon: Globe },
+      { name: "Public Records (FOIA)", href: "/intelligence/foia", icon: Library },
       { name: "Agency Explorer", href: "/intelligence/agencies", icon: Building2 },
       { name: "Rate Benchmarks", href: "/intelligence/rates", icon: DollarSign },
       { name: "Award Search", href: "/intelligence/awards", icon: FileText },
