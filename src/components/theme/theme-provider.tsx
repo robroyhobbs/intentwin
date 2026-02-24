@@ -80,15 +80,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return () => mediaQuery.removeEventListener("change", handler);
   }, [theme]);
 
-  // Prevent flash of wrong theme
-  if (!mounted) {
-    return (
-      <div style={{ visibility: "hidden" }}>
-        {children}
-      </div>
-    );
-  }
-
   return (
     <ThemeContext.Provider value={{ theme, setTheme, resolvedTheme }}>
       {children}
