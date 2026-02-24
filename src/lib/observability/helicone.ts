@@ -23,7 +23,7 @@ function getHeliconeKey(): string | undefined {
 }
 
 /** Whether Helicone observability is active */
-export function isHeliconeEnabled(): boolean {
+function isHeliconeEnabled(): boolean {
   return !!getHeliconeKey();
 }
 
@@ -98,7 +98,7 @@ export function mistralHeliconeOptions(): {
 }
 
 /** Mistral extra headers for Helicone (passed per-request) */
-export function mistralHeliconeHeaders(): Record<string, string> {
+function mistralHeliconeHeaders(): Record<string, string> {
   if (!isHeliconeEnabled()) return {};
   return baseHeaders();
 }
@@ -127,7 +127,7 @@ export function voyageHeliconeHeaders(): Record<string, string> {
  * Build Helicone custom property headers for request tagging.
  * These appear in the Helicone dashboard for filtering/grouping.
  */
-export function heliconeProperties(props: {
+function heliconeProperties(props: {
   organizationId?: string;
   proposalId?: string;
   sectionType?: string;

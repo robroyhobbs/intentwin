@@ -1,15 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { ok, badRequest, serverError } from "@/lib/api/response";
 
 export async function POST(request: NextRequest) {
   try {
     const { email } = await request.json();
 
     if (!email || typeof email !== "string") {
-      return NextResponse.json(
-        { error: "Email is required" },
-        { status: 400 },
-      );
+      return badRequest("Email is required");
     }
 
     const normalizedEmail = email.toLowerCase().trim();
@@ -22,14 +20,11 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error || !data) {
-      return NextResponse.json({ allowed: false });
+      return ok({ allowed: false });
     }
 
-    return NextResponse.json({ allowed: true });
+    return ok({ allowed: true });
   } catch {
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return serverError();
   }
 }

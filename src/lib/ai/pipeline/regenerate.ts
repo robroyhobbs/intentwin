@@ -13,8 +13,6 @@ import { logRegenerationMetric } from "@/lib/observability/metrics";
 import { SECTION_CONFIGS } from "./section-configs";
 import { buildPipelineContext, extractCompetitiveObjections, buildSectionSpecificL1Context } from "./context";
 import { retrieveContext } from "./retrieval";
-// Editorial pass import — kept for future re-enablement
-// import { runEditorialPass } from "../editorial-pass";
 
 /**
  * Regenerate a single section of a proposal.

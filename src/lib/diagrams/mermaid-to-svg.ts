@@ -92,24 +92,4 @@ export async function batchMermaidToImages(
   return results;
 }
 
-// Keep backward-compatible exports
-export async function mermaidToSvg(
-  mermaidCode: string,
-): Promise<string | null> {
-  const result = await mermaidToImage(mermaidCode);
-  if (!result) return null;
-  if (result.type === "svg") return result.data;
-  // For images, return null (caller should use mermaidToImage directly)
-  return null;
-}
 
-export async function batchMermaidToSvg(
-  mermaidBlocks: string[],
-): Promise<Map<string, string | null>> {
-  const results = new Map<string, string | null>();
-  for (const code of mermaidBlocks) {
-    const svg = await mermaidToSvg(code);
-    results.set(code, svg);
-  }
-  return results;
-}

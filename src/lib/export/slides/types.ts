@@ -1,11 +1,22 @@
 /**
- * Shared types for the cinematic slide generator
+ * Shared types for all export generators (PDF, HTML, DOCX, PPTX, Slides)
  */
 
 export interface ProposalSection {
   title: string;
   content: string;
   section_type: string;
+  diagram_image?: string | null;
+}
+
+export interface BrandingSettings {
+  logo_url?: string;
+  primary_color: string;
+  secondary_color: string;
+  accent_color: string;
+  font_family: string;
+  header_text?: string;
+  footer_text?: string;
 }
 
 export interface ProposalData {
@@ -14,6 +25,7 @@ export interface ProposalData {
   company_name?: string;
   date: string;
   sections: ProposalSection[];
+  branding?: BrandingSettings;
 }
 
 export interface SlideContent {

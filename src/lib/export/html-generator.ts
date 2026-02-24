@@ -1,21 +1,7 @@
 import { extractMermaidBlocks } from "@/lib/diagrams/extract-mermaid";
 import { batchMermaidToImages } from "@/lib/diagrams/mermaid-to-svg";
 import { escapeHtml } from "@/lib/email/escape-html";
-
-interface ProposalSection {
-  title: string;
-  content: string;
-  section_type: string;
-  diagram_image?: string | null;
-}
-
-interface ProposalData {
-  title: string;
-  client_name: string;
-  company_name?: string;
-  date: string;
-  sections: ProposalSection[];
-}
+import type { ProposalData } from "./slides/types";
 
 function markdownToHtml(md: string): string {
   const lines = md.split("\n");

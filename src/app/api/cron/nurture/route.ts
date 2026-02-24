@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { WaitlistStatus } from "@/lib/constants/statuses";
 import { sendNurtureEmail } from "@/lib/email/send-nurture-email";
 import { logger } from "@/lib/utils/logger";
+import { ok, unauthorized, apiError } from "@/lib/api/response";
 
 // Vercel cron configuration
 export const dynamic = "force-dynamic";
@@ -19,15 +20,12 @@ export async function GET(request: NextRequest) {
   // Verify cron secret
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) {
-    return NextResponse.json(
-      { error: "CRON_SECRET not configured" },
-      { status: 503 },
-    );
+    return apiError({ message: "CRON_SECRET not configured", status: 503 });
   }
   const authHeader = request.headers.get("authorization");
   if (authHeader !== `Bearer ${cronSecret}`) {
     logger.error("NURTURE-CRON: unauthorized request — invalid cron secret");
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return unauthorized();
   }
 
   const supabase = createAdminClient();
@@ -113,7 +111,7 @@ export async function GET(request: NextRequest) {
     `[NURTURE-CRON] Complete: sent=${totalSent}, errors=${totalErrors}`,
   );
 
-  return NextResponse.json({
+  return ok({
     sent: totalSent,
     errors: totalErrors,
   });

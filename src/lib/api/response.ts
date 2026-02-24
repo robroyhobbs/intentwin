@@ -81,20 +81,6 @@ export function conflict(message: string = "Conflict"): NextResponse {
   return apiError({ message, status: 409, code: "CONFLICT" });
 }
 
-/** 413 Payload Too Large */
-export function payloadTooLarge(message: string = "Payload too large"): NextResponse {
-  return apiError({ message, status: 413, code: "PAYLOAD_TOO_LARGE" });
-}
-
-/** 429 Too Many Requests */
-export function tooManyRequests(message: string = "Too many requests", retryAfter?: number): NextResponse {
-  const response = apiError({ message, status: 429, code: "RATE_LIMITED" });
-  if (retryAfter) {
-    response.headers.set("Retry-After", String(retryAfter));
-  }
-  return response;
-}
-
 /** 500 Internal Server Error */
 export function serverError(
   message: string = "Internal server error",
@@ -131,38 +117,6 @@ export function created<T>(data: T): NextResponse {
 /** 204 No Content */
 export function noContent(): NextResponse {
   return new NextResponse(null, { status: 204 });
-}
-
-// ── Error Handler Wrapper ──────────────────────────────────────────
-
-/**
- * Wrap an API route handler with standardized error handling.
- * Catches unhandled errors and returns a 500 response.
- *
- * @example
- * export const GET = withErrorHandler(async (request) => {
- *   const data = await getData();
- *   return ok({ data });
- * });
- */
-export function withErrorHandler(
-  handler: (
-    request: Request,
-    context?: { params: Promise<Record<string, string>> },
-  ) => Promise<Response>,
-) {
-  return async (
-    request: Request,
-    context?: { params: Promise<Record<string, string>> },
-  ): Promise<Response> => {
-    try {
-      return await handler(request, context);
-    } catch (error) {
-      const _message = error instanceof Error ? error.message : "Unknown error";
-      logger.error("[Unhandled API Error]", error);
-      return serverError();
-    }
-  };
 }
 
 // ── Proposal Route Wrapper ─────────────────────────────────────────

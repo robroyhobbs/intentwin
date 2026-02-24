@@ -17,6 +17,7 @@ import { Target, TrendingUp, TrendingDown, CheckCircle2 } from "lucide-react";
 import { DealOutcome } from "@/lib/constants/statuses";
 import { COLORS } from "./chart-tooltips";
 import type { AnalyticsData } from "./types";
+import type { RechartsTooltipProps } from "@/types/charts";
 
 type BidScoreData = NonNullable<AnalyticsData["bidScoreAnalysis"]>;
 
@@ -28,10 +29,11 @@ const FACTOR_LABELS: Record<string, string> = {
   strategic_value: "Strategic",
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const BidScatterTooltip = ({ active, payload }: any) => {
+const BidScatterTooltip = ({ active, payload }: RechartsTooltipProps) => {
   if (!active || !payload || payload.length === 0) return null;
-  const item = payload[0]?.payload;
+  const item = payload[0]?.payload as
+    | { title: string; bidScore: number; recommendation: string; dealValue: number | null; outcome: string }
+    | undefined;
   if (!item) return null;
   return (
     <div

@@ -1,20 +1,7 @@
 import { generateHtml } from "./html-generator";
 import puppeteerCore from "puppeteer-core";
 import { logger } from "@/lib/utils/logger";
-
-interface ProposalSection {
-  title: string;
-  content: string;
-  section_type: string;
-}
-
-interface ProposalData {
-  title: string;
-  client_name: string;
-  company_name?: string;
-  date: string;
-  sections: ProposalSection[];
-}
+import type { ProposalData } from "./slides/types";
 
 /**
  * Find a usable Chromium executable for PDF generation.

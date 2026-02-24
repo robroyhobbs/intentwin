@@ -1,18 +1,5 @@
 // Docxtemplater and PizZip are require()'d dynamically in buildDocxContent()
-
-
-interface ProposalSection {
-  title: string;
-  content: string;
-  section_type: string;
-}
-
-interface ProposalData {
-  title: string;
-  client_name: string;
-  date: string;
-  sections: ProposalSection[];
-}
+import type { ProposalData } from "./slides/types";
 
 export function generateDocx(data: ProposalData): Buffer {
   // Create a minimal DOCX from scratch using docxtemplater

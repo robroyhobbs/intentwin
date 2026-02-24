@@ -1,29 +1,5 @@
 import pptxgen from "pptxgenjs";
-
-interface ProposalSection {
-  title: string;
-  content: string;
-  section_type: string;
-}
-
-interface BrandingSettings {
-  logo_url?: string;
-  primary_color: string;
-  secondary_color: string;
-  accent_color: string;
-  font_family: string;
-  header_text?: string;
-  footer_text?: string;
-}
-
-interface ProposalData {
-  title: string;
-  client_name: string;
-  company_name?: string;
-  date: string;
-  sections: ProposalSection[];
-  branding?: BrandingSettings;
-}
+import type { ProposalData } from "./slides/types";
 
 // Default brand colors
 const DEFAULT_COLORS = {

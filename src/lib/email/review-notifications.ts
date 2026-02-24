@@ -1,9 +1,5 @@
-import { Resend } from "resend";
+import { resend } from "./resend";
 import { logger } from "@/lib/utils/logger";
-
-const resend = process.env.RESEND_API_KEY
-  ? new Resend(process.env.RESEND_API_KEY)
-  : null;
 
 const FROM_EMAIL = "IntentBid <notifications@intentbid.com>";
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://intentbid.com";

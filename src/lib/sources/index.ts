@@ -1,52 +1,13 @@
 /**
- * Sources Library
+ * Sources Library — public API
  *
  * Load and format static source materials from the sources/ directory
  * for injection into proposal generation prompts.
  *
- * Usage:
- * ```typescript
- * import { loadSources, formatSourcesAsL1Context } from '@/lib/sources';
- *
- * const sources = await loadSources();
- * const l1Context = formatSourcesAsL1Context(sources, {
- *   opportunityType: 'cloud_migration',
- *   industry: 'financial_services',
- * });
- * ```
+ * Tests and internal modules import directly from parser.ts, loader.ts,
+ * and formatter.ts. This barrel exports only the symbols used by
+ * application code.
  */
 
-// Parser exports
-export {
-  parseSourceDocument,
-  extractTables,
-  extractBulletPoints,
-  getSection,
-  getSections,
-  type ParsedSourceDocument,
-  type SourceMetadata,
-  type SourceSection,
-} from './parser';
-
-// Loader exports
-export {
-  loadSources,
-  extractMetrics,
-  extractCaseStudy,
-  extractMethodology,
-  filterByContentType,
-  filterVerified,
-  getRelevantSources,
-  type LoadedSources,
-  type LoadedSource,
-  type SourceCategory,
-  type ExtractedMetric,
-  type ExtractedCaseStudy,
-  type ExtractedMethodology,
-} from './loader';
-
-// Formatter exports
-export {
-  formatSourcesAsL1Context,
-  formatSourcesForSection,
-} from './formatter';
+export { loadSources } from "./loader";
+export { formatSourcesAsL1Context } from "./formatter";

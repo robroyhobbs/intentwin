@@ -1,6 +1,7 @@
 "use client";
 
 import { DealOutcome } from "@/lib/constants/statuses";
+import type { RechartsTooltipProps, RechartsTooltipPayloadEntry } from "@/types/charts";
 
 // Theme-matched hex colors
 export const COLORS = {
@@ -42,8 +43,7 @@ export const LOSS_COLORS = [
   "#ff7799",
 ];
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const CustomTooltip = ({ active, payload, label }: any) => {
+export const CustomTooltip = ({ active, payload, label }: RechartsTooltipProps) => {
   if (!active || !payload || payload.length === 0) return null;
   return (
     <div
@@ -66,8 +66,7 @@ export const CustomTooltip = ({ active, payload, label }: any) => {
       </p>
       {payload.map(
         (
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          entry: any,
+          entry: RechartsTooltipPayloadEntry,
           index: number
         ) => (
           <p key={index} style={{ color: entry.color, fontSize: 12, margin: "2px 0" }}>
@@ -80,8 +79,7 @@ export const CustomTooltip = ({ active, payload, label }: any) => {
   );
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const PipelineTooltip = ({ active, payload }: any) => {
+export const PipelineTooltip = ({ active, payload }: RechartsTooltipProps) => {
   if (!active || !payload || payload.length === 0) return null;
   const item = payload[0];
   return (
@@ -94,7 +92,7 @@ export const PipelineTooltip = ({ active, payload }: any) => {
       }}
     >
       <p style={{ color: COLORS.foreground, fontSize: 12, fontWeight: 600 }}>
-        {item.payload.stage}
+        {item.payload.stage as string}
       </p>
       <p style={{ color: item.color || COLORS.accent, fontSize: 12, marginTop: 4 }}>
         Count: {item.value}
@@ -103,8 +101,7 @@ export const PipelineTooltip = ({ active, payload }: any) => {
   );
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const LossTooltip = ({ active, payload }: any) => {
+export const LossTooltip = ({ active, payload }: RechartsTooltipProps) => {
   if (!active || !payload || payload.length === 0) return null;
   const item = payload[0];
   return (
@@ -117,7 +114,7 @@ export const LossTooltip = ({ active, payload }: any) => {
       }}
     >
       <p style={{ color: COLORS.foreground, fontSize: 12, fontWeight: 600 }}>
-        {item.payload.reason}
+        {item.payload.reason as string}
       </p>
       <p style={{ color: COLORS.danger, fontSize: 12, marginTop: 4 }}>
         Count: {item.value}
@@ -126,10 +123,11 @@ export const LossTooltip = ({ active, payload }: any) => {
   );
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const ScatterTooltip = ({ active, payload }: any) => {
+export const ScatterTooltip = ({ active, payload }: RechartsTooltipProps) => {
   if (!active || !payload || payload.length === 0) return null;
-  const item = payload[0]?.payload;
+  const item = payload[0]?.payload as
+    | { title: string; qualityScore: number; dealValue: number | null; outcome: string }
+    | undefined;
   if (!item) return null;
   return (
     <div

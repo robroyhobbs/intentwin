@@ -155,9 +155,8 @@ export async function POST(request: NextRequest) {
       }
 
       case "invoice.paid": {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const invoice = event.data.object as any;
-        const subscriptionId = invoice.subscription as string | undefined;
+        const invoice = event.data.object as Stripe.Invoice & { subscription?: string | { id: string } };
+        const subscriptionId = typeof invoice.subscription === "string" ? invoice.subscription : invoice.subscription?.id;
 
         if (!subscriptionId) {
           logger.debug("No subscription ID found in invoice (one-time payment)");

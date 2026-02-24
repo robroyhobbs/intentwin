@@ -129,7 +129,7 @@ export function shouldGenerateDiagram(sectionType: string): boolean {
 /**
  * Get the diagram label for a section type.
  */
-export function getDiagramLabel(sectionType: string): string | null {
+function getDiagramLabel(sectionType: string): string | null {
   return DIAGRAM_CONFIGS[sectionType]?.label ?? null;
 }
 
