@@ -2,7 +2,7 @@
 
 ## Intent
 
-Protect IntentWin from abuse, control AI costs, and ensure fair resource allocation across organizations. Implement comprehensive rate limiting at API, route, and AI generation levels.
+Protect IntentBid from abuse, control AI costs, and ensure fair resource allocation across organizations. Implement comprehensive rate limiting at API, route, and AI generation levels.
 
 ## Problem Statement
 

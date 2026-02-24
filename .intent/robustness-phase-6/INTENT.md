@@ -2,7 +2,7 @@
 
 ## Intent
 
-Optimize IntentWin for faster proposal generation and better resource utilization. Parallelize independent work, add intelligent caching, and reduce latency.
+Optimize IntentBid for faster proposal generation and better resource utilization. Parallelize independent work, add intelligent caching, and reduce latency.
 
 ## Goals
 

@@ -6,7 +6,7 @@ AI extracts every requirement from client documents and tracks whether your prop
 
 ## Why?
 
-Proposal teams lose deals when they miss requirements buried in 50-page RFPs. Manual requirement tracking in spreadsheets is tedious and error-prone. IntentWin should catch gaps automatically.
+Proposal teams lose deals when they miss requirements buried in 50-page RFPs. Manual requirement tracking in spreadsheets is tedious and error-prone. IntentBid should catch gaps automatically.
 
 ## Core experience
 

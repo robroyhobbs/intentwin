@@ -1,10 +1,10 @@
-# IntentWin Capabilities Landing Page
+# IntentBid Capabilities Landing Page
 
 ## 1. Overview
 
-**Product positioning:** A separate, sales-ready `/capabilities` page that serves as the deep-dive product showcase for C-suite decision makers evaluating IntentWin. Positioned as the "how it actually works" counterpart to the conversion-focused main landing page.
+**Product positioning:** A separate, sales-ready `/capabilities` page that serves as the deep-dive product showcase for C-suite decision makers evaluating IntentBid. Positioned as the "how it actually works" counterpart to the conversion-focused main landing page.
 
-**Core concept:** Visually walk executives through IntentWin's proprietary IDD methodology and multi-model AI architecture, proving this is not "another ChatGPT wrapper" but an engineered proposal system.
+**Core concept:** Visually walk executives through IntentBid's proprietary IDD methodology and multi-model AI architecture, proving this is not "another ChatGPT wrapper" but an engineered proposal system.
 
 **Target user:** VP/Director-level decision makers who care about ROI, risk reduction, competitive advantage, and defensible process.
 
@@ -297,7 +297,7 @@ continues until quality passes."
 
 ```
 Heading: "Stop prompting. Start winning."
-Subtitle: "IntentWin is available for early access."
+Subtitle: "IntentBid is available for early access."
 CTA: [Request Early Access] (large, primary)
 Trust: "No credit card required · Setup in minutes · SOC 2 compliant"
 ```
@@ -314,11 +314,11 @@ Trust: "No credit card required · Setup in minutes · SOC 2 compliant"
 
 ```typescript
 export const metadata: Metadata = {
-  title: "How IntentWin Works | AI Proposal Generation Platform",
+  title: "How IntentBid Works | AI Proposal Generation Platform",
   description:
-    "See how IntentWin's Intent-Driven methodology, multi-model AI, and quality oversight create proposals that win.",
+    "See how IntentBid's Intent-Driven methodology, multi-model AI, and quality oversight create proposals that win.",
   openGraph: {
-    title: "IntentWin Capabilities",
+    title: "IntentBid Capabilities",
     description: "Proposals engineered, not prompted.",
   },
 };

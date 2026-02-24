@@ -2,7 +2,7 @@
 
 ## Overview
 
-Create a sales-ready `/capabilities` page showcasing IntentWin's IDD methodology, multi-model AI architecture, quality oversight, and evidence-based generation. 9 sections, reusing the `.vf-` design system from the existing landing page.
+Create a sales-ready `/capabilities` page showcasing IntentBid's IDD methodology, multi-model AI architecture, quality oversight, and evidence-based generation. 9 sections, reusing the `.vf-` design system from the existing landing page.
 
 ## Prerequisites
 
@@ -98,7 +98,7 @@ kill $DEV_PID 2>/dev/null
 
 ### Description
 
-Build the centerpiece IDD methodology section (deep-dive 6-layer interactive visualization) and the 5-step workflow walkthrough (technical pipeline focus). These differentiate from the landing page by going deeper into how IntentWin actually works.
+Build the centerpiece IDD methodology section (deep-dive 6-layer interactive visualization) and the 5-step workflow walkthrough (technical pipeline focus). These differentiate from the landing page by going deeper into how IntentBid actually works.
 
 **Deliverables:**
 

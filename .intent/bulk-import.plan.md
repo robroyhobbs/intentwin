@@ -2,7 +2,7 @@
 
 ## Overview
 
-Build the multi-file Bulk Import feature for IntentWin's Knowledge Base page. Users drop up to 20 files; the system stores each as L2 content (existing pipeline) then sends parsed text to Gemini for L1 extraction (company context, products, evidence). A review screen lets the user accept/reject extracted items and resolve conflicts before committing to the database.
+Build the multi-file Bulk Import feature for IntentBid's Knowledge Base page. Users drop up to 20 files; the system stores each as L2 content (existing pipeline) then sends parsed text to Gemini for L1 extraction (company context, products, evidence). A review screen lets the user accept/reject extracted items and resolve conflicts before committing to the database.
 
 ## Prerequisites
 

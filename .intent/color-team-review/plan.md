@@ -287,7 +287,7 @@ Please review each section and provide your scores and feedback.
 
 Review now: {baseUrl}/proposals/{proposal.id}?tab=review
 
-— IntentWin
+— IntentBid
 ```
 
 **`sendStageCompleteEmail(proposalOwner, proposal, stage)`:**
@@ -303,7 +303,7 @@ You can now advance to the next review stage.
 
 View results: {baseUrl}/proposals/{proposal.id}?tab=review
 
-— IntentWin
+— IntentBid
 ```
 
 **`sendStageAdvancedEmail(reviewers, proposal, newStage)`:**
@@ -316,7 +316,7 @@ You've been assigned as a reviewer. Please complete your review.
 
 Start reviewing: {baseUrl}/proposals/{proposal.id}?tab=review
 
-— IntentWin
+— IntentBid
 ```
 
 ### Tests (in `src/lib/ai/__tests__/review-notifications.test.ts`)

@@ -1,6 +1,6 @@
 # Enterprise Hardening Intent (Phase 1)
 
-> Anchor: Harden IntentWin for enterprise by guaranteeing tenant isolation via tested RLS policies and eliminating real AI calls from CI to make the test suite deterministic and cost-safe.
+> Anchor: Harden IntentBid for enterprise by guaranteeing tenant isolation via tested RLS policies and eliminating real AI calls from CI to make the test suite deterministic and cost-safe.
 
 ## Status: Reviewed
 

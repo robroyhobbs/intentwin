@@ -1,6 +1,6 @@
 # Interview Decisions: Enterprise Hardening (Phase 1)
 
-> Anchor: Harden IntentWin for enterprise by guaranteeing tenant isolation via tested RLS policies and eliminating real AI calls from CI to make the test suite deterministic and cost-safe.
+> Anchor: Harden IntentBid for enterprise by guaranteeing tenant isolation via tested RLS policies and eliminating real AI calls from CI to make the test suite deterministic and cost-safe.
 
 ## Decisions
 
@@ -12,7 +12,7 @@
 - **Rationale**: Both are prerequisites for enterprise readiness. They touch different parts of the codebase (DB vs test infra) so they can't conflict.
 
 ### 2. Tenant Model
-- **Question**: What access pattern does IntentWin use?
+- **Question**: What access pattern does IntentBid use?
 - **Decision**: Org-scoped via `organization_id`. Users belong to an org. All data (proposals, knowledge base, etc.) is scoped by `organization_id`. RLS checks `auth.uid()` → `profiles` → `organization_id`.
 - **Rationale**: Confirmed by user. This is the standard multi-tenant model.
 

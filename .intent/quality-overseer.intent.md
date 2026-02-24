@@ -7,7 +7,7 @@
 **Solution:** An automated Quality Overseer that reviews every generated section using GPT-4o (different model than Gemini). Scores each section against 4 quality dimensions, auto-regenerates weak sections once, logs findings, and displays a Quality Report panel.
 
 **Priority:** High — build first.
-**Target User:** Proposal author using IntentWin.
+**Target User:** Proposal author using IntentBid.
 **Scope:** Post-generation quality review with single-pass remediation.
 
 ## 2. Architecture

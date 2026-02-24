@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-**Product:** IntentWin — AI-powered proposal generation tool
+**Product:** IntentBid — AI-powered proposal generation tool
 **Feature:** Compliance Matrix (IMF Phase 2 — L0 Requirements Truth)
 **Priority:** High — demo readiness
 **Target User:** Proposal managers, business development teams
@@ -10,7 +10,7 @@
 
 ### Core Concept
 
-When a client sends an RFP, brief, deck, or any source document, IntentWin's AI extracts every requirement/expectation and tracks whether the generated proposal addresses each one. This is the L0 layer of the IMF — "Requirements Truth."
+When a client sends an RFP, brief, deck, or any source document, IntentBid's AI extracts every requirement/expectation and tracks whether the generated proposal addresses each one. This is the L0 layer of the IMF — "Requirements Truth."
 
 ```
 Source Document Upload

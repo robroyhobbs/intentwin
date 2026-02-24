@@ -1,8 +1,8 @@
-# IMF Integration into IntentWin — Intent Specification
+# IMF Integration into IntentBid — Intent Specification
 
 ## 1. Overview
 
-**Product:** IntentWin — AI-powered proposal generation tool
+**Product:** IntentBid — AI-powered proposal generation tool
 **Feature:** IMF (Intent Management Framework) Integration
 **Priority:** High — core differentiator
 **Target User:** Proposal managers, business development teams, consultants
@@ -17,7 +17,7 @@ Proposals are generated through a systematic methodology where:
 - Every paragraph follows a persuasion framework (L2)
 - Every output is verified before human review (L3)
 
-This is what separates IntentWin from "paste context into ChatGPT."
+This is what separates IntentBid from "paste context into ChatGPT."
 
 ### IMF Layer Mapping
 

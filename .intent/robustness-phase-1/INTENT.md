@@ -2,7 +2,7 @@
 
 ## Intent
 
-Establish comprehensive, reliable test coverage for IntentWin to prevent regressions, enable confident refactoring, and ensure production readiness. Move from 15 sparse test files to full E2E, integration, and unit test coverage.
+Establish comprehensive, reliable test coverage for IntentBid to prevent regressions, enable confident refactoring, and ensure production readiness. Move from 15 sparse test files to full E2E, integration, and unit test coverage.
 
 ## Problem Statement
 

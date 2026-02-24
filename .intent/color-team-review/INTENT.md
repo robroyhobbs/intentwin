@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-**Product:** IntentWin — AI-powered proposal generation platform
+**Product:** IntentBid — AI-powered proposal generation platform
 **Feature:** Color Team Review Workflow (Pink/Red/Gold/White)
 **Priority:** High — differentiating feature for government proposal market
 **Target User:** Proposal managers, reviewers, executives, capture managers
@@ -10,7 +10,7 @@
 
 ### Core Concept
 
-Government proposals follow a standard color team review process where different groups review the proposal at successive stages of maturity. Each color represents a review stage with specific focus areas and pass/fail criteria. IntentWin needs to support this workflow natively to be credible for government contractors.
+Government proposals follow a standard color team review process where different groups review the proposal at successive stages of maturity. Each color represents a review stage with specific focus areas and pass/fail criteria. IntentBid needs to support this workflow natively to be credible for government contractors.
 
 ```
 Proposal Generated

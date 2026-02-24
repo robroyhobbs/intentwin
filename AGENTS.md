@@ -1,11 +1,11 @@
-# IntentWin Agent Instructions
+# IntentBid Agent Instructions
 
-> This file is the source of truth for all automated agents working on IntentWin.
+> This file is the source of truth for all automated agents working on IntentBid.
 > It's updated nightly by the compound review process with learnings from each session.
 
 ## Product Overview
 
-IntentWin is an AI-powered proposal generation SaaS using Intent-Driven Development (IDD).
+IntentBid is an AI-powered proposal generation SaaS using Intent-Driven Development (IDD).
 
 **Tech Stack:**
 
@@ -229,7 +229,7 @@ All tables now have `organization_id` columns with RLS policies:
 
 - Project uses Next.js 16 with App Router (not Pages Router)
 - Supabase RLS policies use team_id but need organization_id (FIXED in 00014, 00015)
-- Landing page rebranded to IntentWin, served at root URL
+- Landing page rebranded to IntentBid, served at root URL
 - Stripe integration complete (checkout, webhooks, portal)
 - No tests exist - need Playwright setup
 

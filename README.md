@@ -1,10 +1,10 @@
-# IntentWin
+# IntentBid
 
 AI-powered proposal generation platform that transforms RFP documents into winning, compliance-ready proposals. Built for government contractors and professional services firms.
 
 ## What It Does
 
-IntentWin ingests an RFP or solicitation document, cross-references it against your company's verified knowledge base (past performance, certifications, capabilities), and generates a structured proposal with section-by-section content -- executive summary, technical approach, methodology, staffing, pricing rationale, risk mitigation, and win themes.
+IntentBid ingests an RFP or solicitation document, cross-references it against your company's verified knowledge base (past performance, certifications, capabilities), and generates a structured proposal with section-by-section content -- executive summary, technical approach, methodology, staffing, pricing rationale, risk mitigation, and win themes.
 
 ### Key Capabilities
 
@@ -95,7 +95,7 @@ IntentWin ingests an RFP or solicitation document, cross-references it against y
 
 ## Engineering Quality
 
-IntentWin follows a 7-phase robustness improvement program:
+IntentBid follows a 7-phase robustness improvement program:
 
 ### Testing (710 tests, 0 failures)
 

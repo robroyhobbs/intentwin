@@ -1,4 +1,4 @@
-# IntentWin - Source Materials
+# IntentBid - Source Materials
 
 > L1 Company Truth: The canonical source of verified claims, capabilities, and evidence for proposal generation.
 
@@ -39,9 +39,9 @@ Mark files with verification status:
 - `[UNVERIFIED]` - Needs confirmation before use in proposals
 - `[PARTIAL]` - Some content verified, some needs review
 
-## How IntentWin Uses These Files
+## How IntentBid Uses These Files
 
-These materials serve as the **source of truth** for the proposal generator's L1 context layer. All generated claims must be traceable to content in this directory. When you generate a proposal, IntentWin will:
+These materials serve as the **source of truth** for the proposal generator's L1 context layer. All generated claims must be traceable to content in this directory. When you generate a proposal, IntentBid will:
 
 1. Query relevant documents based on the proposal's industry, service line, and client needs
 2. Extract capabilities, metrics, and proof points

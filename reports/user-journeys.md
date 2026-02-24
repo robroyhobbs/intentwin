@@ -1,4 +1,4 @@
-# IntentWin User Journey Maps
+# IntentBid User Journey Maps
 
 > Generated 2026-02-24. Based on full codebase analysis of 31 pages across 4 sections.
 

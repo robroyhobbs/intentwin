@@ -311,7 +311,7 @@ Tasks:
 ## Future Considerations
 
 ### Teaming & Government Partners
-Government proposals often involve teaming arrangements — prime/sub relationships, joint ventures, and partner capabilities. At some point, IntentWin should support:
+Government proposals often involve teaming arrangements — prime/sub relationships, joint ventures, and partner capabilities. At some point, IntentBid should support:
 - Defining teaming partners (name, role, capabilities, past performance)
 - Incorporating partner strengths into bid evaluation scoring (e.g., a weak capability_alignment score could be mitigated by a teaming partner)
 - Injecting partner context into proposal generation (team section, past performance, org chart)

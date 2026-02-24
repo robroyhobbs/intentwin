@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-**Product:** IntentWin — AI-powered proposal generation tool
+**Product:** IntentBid — AI-powered proposal generation tool
 **Feature:** Company Truth Management (IMF L1 — Evidence & Capabilities Layer)
 **Priority:** High — completes the IMF stack
 **Target User:** Proposal managers, company admins

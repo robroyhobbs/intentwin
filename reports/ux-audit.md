@@ -1,4 +1,4 @@
-# IntentWin Full UI/UX Audit
+# IntentBid Full UI/UX Audit
 
 > Generated 2026-02-24. Covers all 31 pages, 19 sidebar items, 4 sections.
 
@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-IntentWin has strong core functionality -- the proposal creation pipeline, intelligence integration, and export system all work end-to-end. The individual features are well-built. The problem is **cohesion**: the app feels like 4 separate products stitched together. Navigation is overwhelming (19 sidebar items), there are 3 overlapping knowledge management systems, loading/error patterns are inconsistent across sections, and new users have no guided path.
+IntentBid has strong core functionality -- the proposal creation pipeline, intelligence integration, and export system all work end-to-end. The individual features are well-built. The problem is **cohesion**: the app feels like 4 separate products stitched together. Navigation is overwhelming (19 sidebar items), there are 3 overlapping knowledge management systems, loading/error patterns are inconsistent across sections, and new users have no guided path.
 
 **Current UX Score: 6/10**
 
@@ -171,7 +171,7 @@ Settings (2): Branding & Voice, Billing
 |---|-------|----------|-----|
 | 14 | "Skip This Opportunity" label is misleading | Bid evaluation | Rename to "Skip Evaluation" |
 | 15 | "Total Chunks" is developer jargon | Knowledge Base stats | Rename to "Search Index Coverage" |
-| 16 | Brand name says "IntentBid" in some places | Sidebar, onboarding | Audit all references, standardize to "IntentWin" |
+| 16 | ~~Brand name inconsistency~~ (RESOLVED) | All files | Standardized all references to "IntentBid" |
 | 17 | Onboarding differentiators fixed at 3 slots | Onboarding step 3 | Make dynamic (add/remove) |
 | 18 | Onboarding save failure is silent | Onboarding step 5 | Add error toast |
 | 19 | Deploy instructions reference CLI tool | Export page | Replace with in-app instructions or hosting |

@@ -1,4 +1,4 @@
-# IntentWin — Agent Instructions
+# IntentBid — Agent Instructions
 
 ## Code Quality Constraints
 

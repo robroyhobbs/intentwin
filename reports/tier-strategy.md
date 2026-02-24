@@ -1,4 +1,4 @@
-# IntentWin Tier & Pricing Strategy
+# IntentBid Tier & Pricing Strategy
 
 > Generated 2026-02-24. Based on user journey analysis, feature inventory, and UX audit.
 
@@ -229,7 +229,7 @@ The ideal upgrade trigger is when a free user:
 | PandaDoc | $35-65/mo | We have deep procurement intelligence they lack |
 | Manual (Word/Google Docs) | $0 | Our free tier matches this, upgrade path adds AI |
 
-**IntentWin's unique position:** The only proposal tool that combines AI generation with procurement intelligence (opportunity discovery, agency profiles, competitive landscape, rate benchmarks) in a single workflow.
+**IntentBid's unique position:** The only proposal tool that combines AI generation with procurement intelligence (opportunity discovery, agency profiles, competitive landscape, rate benchmarks) in a single workflow.
 
 ---
 
