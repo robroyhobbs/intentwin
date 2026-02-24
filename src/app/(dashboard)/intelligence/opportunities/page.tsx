@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Briefcase, Search, ChevronLeft, ChevronRight, Filter } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -42,26 +42,13 @@ export default function OpportunitySearchPage() {
   const debouncedState = useDebounce(state);
   const debouncedNaics = useDebounce(naicsCode);
 
-  // Reset to page 1 when any debounced filter changes
-  useEffect(() => {
-    setOffset(0);
-  }, [debouncedKeyword, debouncedAgency, debouncedCity, debouncedState, status, debouncedNaics]);
-
-  // Sync URL params on mount
-  useEffect(() => {
-    const q = searchParams.get("q");
-    const ag = searchParams.get("agency");
-    const c = searchParams.get("city");
-    const s = searchParams.get("state");
-    const st = searchParams.get("status");
-    const n = searchParams.get("naics");
-    if (q) setKeyword(q);
-    if (ag) setAgency(ag);
-    if (c) setCity(c);
-    if (s) setState(s);
-    if (st) setStatus(st);
-    if (n) setNaicsCode(n);
-  }, [searchParams]);
+  // Derive a filter key — when it changes, offset resets to 0
+  const filterKey = `${debouncedKeyword}|${debouncedAgency}|${debouncedCity}|${debouncedState}|${status}|${debouncedNaics}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+  if (filterKey !== prevFilterKey) {
+    setPrevFilterKey(filterKey);
+    if (offset !== 0) setOffset(0);
+  }
 
   const params = useMemo(() => {
     const p: Record<string, string> = {

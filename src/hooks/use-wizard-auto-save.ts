@@ -40,32 +40,22 @@ export function useWizardAutoSave<T>(
 ): AutoSaveResult<T> {
   const { storageKey, enabled } = options;
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [hasDraft, setHasDraft] = useState(false);
   const hasDataRef = useRef(false);
-  const initialCheckDone = useRef(false);
 
-  // Check for existing draft on mount (only once)
-  useEffect(() => {
-    if (initialCheckDone.current) return;
-    initialCheckDone.current = true;
-
+  // Lazy initializer: check sessionStorage synchronously on first render
+  const [hasDraft, setHasDraft] = useState(() => {
     try {
-      // Don't show draft banner if there's opportunity-prefill data
+      if (typeof window === "undefined") return false;
       const hasPrefill = sessionStorage.getItem("opportunity-prefill");
-      if (hasPrefill) return;
-
+      if (hasPrefill) return false;
       const saved = sessionStorage.getItem(storageKey);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        // Only show banner if draft has meaningful data
-        if (parsed && parsed.clientName && parsed.clientName.trim()) {
-          setHasDraft(true);
-        }
-      }
+      if (!saved) return false;
+      const parsed = JSON.parse(saved);
+      return !!(parsed && parsed.clientName && parsed.clientName.trim());
     } catch {
-      // Ignore parse errors
+      return false;
     }
-  }, [storageKey]);
+  });
 
   // Debounced save to sessionStorage
   useEffect(() => {
