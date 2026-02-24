@@ -1,5 +1,5 @@
 -- ============================================================
--- BASELINE MIGRATION: IntentWin Schema
+-- BASELINE MIGRATION: IntentBid Schema
 -- ============================================================
 -- Squashed from 45 sequential migrations (00001-00045) into a
 -- single baseline migration for faster provisioning.

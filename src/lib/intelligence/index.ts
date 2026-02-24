@@ -1,7 +1,7 @@
 /**
  * Intelligence Service integration.
  *
- * Public API for consuming procurement intelligence in the IntentWin pipeline.
+ * Public API for consuming procurement intelligence in the IntentBid pipeline.
  */
 
 export { intelligenceClient } from "./client";

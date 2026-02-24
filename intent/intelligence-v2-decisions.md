@@ -38,10 +38,10 @@ Give users a statistical win probability at bid/no-bid decision time based on hi
 ### Files to modify
 - Intelligence service: new `src/api/v1/win-probability.ts` endpoint
 - Intelligence service: new `src/analysis/win-probability.ts` computation
-- IntentWin: `src/lib/intelligence/client.ts` — add `getWinProbability()` method
-- IntentWin: `src/lib/intelligence/types.ts` — add response type
-- IntentWin: `src/app/(dashboard)/proposals/new/_components/bid-evaluation-screen.tsx` — display probability
-- IntentWin: `src/lib/ai/bid-scoring.ts` — incorporate probability into scoring
+- IntentBid: `src/lib/intelligence/client.ts` — add `getWinProbability()` method
+- IntentBid: `src/lib/intelligence/types.ts` — add response type
+- IntentBid: `src/app/(dashboard)/proposals/new/_components/bid-evaluation-screen.tsx` — display probability
+- IntentBid: `src/lib/ai/bid-scoring.ts` — incorporate probability into scoring
 
 ---
 
@@ -58,7 +58,7 @@ Populate `intel_winning_patterns` and `intel_evaluation_criteria` tables with re
 - **Storage**: Use existing `intel_winning_patterns` and `intel_evaluation_criteria` tables (schema already defined)
 - **Initial load target**: Most recent 500 protest decisions
 - **Gemini for extraction**: Use structured output mode to extract evaluation criteria, factor weights, strengths/weaknesses from protest decision text
-- **This is intelligence-service only**: No IntentWin changes in this stream
+- **This is intelligence-service only**: No IntentBid changes in this stream
 
 ### Files to create
 - `src/adapters/gao-protests.ts` — fetcher + parser
@@ -89,13 +89,13 @@ When a user uploads an RFP and we extract agency + NAICS, automatically show the
 ### Files to create
 - Intelligence service: `src/api/v1/competitive-landscape.ts`
 - Intelligence service: `src/analysis/competitive-landscape.ts`
-- IntentWin: new component in extraction review
+- IntentBid: new component in extraction review
 
 ### Files to modify
-- IntentWin: `src/lib/intelligence/client.ts` — add `getCompetitiveLandscape()` method
-- IntentWin: `src/lib/intelligence/types.ts` — add response type
-- IntentWin: `src/components/intake/extraction-review.tsx` — add competitive landscape card
-- IntentWin: bid evaluation screen — add competitor context
+- IntentBid: `src/lib/intelligence/client.ts` — add `getCompetitiveLandscape()` method
+- IntentBid: `src/lib/intelligence/types.ts` — add response type
+- IntentBid: `src/components/intake/extraction-review.tsx` — add competitive landscape card
+- IntentBid: bid evaluation screen — add competitor context
 
 ---
 

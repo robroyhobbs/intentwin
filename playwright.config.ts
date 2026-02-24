@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 /**
- * Playwright configuration for IntentWin E2E tests
+ * Playwright configuration for IntentBid E2E tests
  * @see https://playwright.dev/docs/test-configuration
  *
  * AI Safety: All E2E tests run with dummy AI API keys so that any

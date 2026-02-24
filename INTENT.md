@@ -1,4 +1,4 @@
-# IntentWin - Intent
+# IntentBid - Intent
 
 > AI-native proposal generation that starts with client outcomes and works backward through verified company capabilities.
 

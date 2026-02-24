@@ -1,13 +1,13 @@
-# IntentWin Gap Analysis — Strengths, Weaknesses & Strategic Opportunities
+# IntentBid Gap Analysis — Strengths, Weaknesses & Strategic Opportunities
 
 **Date:** 2026-02-12
-**Based on:** Competitive analysis of 24 platforms, industry trends, business model research, and IntentWin product audit
+**Based on:** Competitive analysis of 24 platforms, industry trends, business model research, and IntentBid product audit
 
 ---
 
 ## Executive Summary
 
-IntentWin is a **methodology-driven AI proposal platform** in a $3.6B market growing at 12%+ CAGR. Its core differentiators — 3-Judge Quality Council, 6-Layer Intent Framework, and dual-layer evidence architecture — are **unique in the market**. No competitor combines multi-model quality consensus with structured persuasion science.
+IntentBid is a **methodology-driven AI proposal platform** in a $3.6B market growing at 12%+ CAGR. Its core differentiators — 3-Judge Quality Council, 6-Layer Intent Framework, and dual-layer evidence architecture — are **unique in the market**. No competitor combines multi-model quality consensus with structured persuasion science.
 
 However, significant gaps exist in integrations, security certifications, collaboration, and go-to-market strategy that must be addressed to compete at scale.
 
@@ -17,13 +17,13 @@ However, significant gaps exist in integrations, security certifications, collab
 
 ### 1.1 Multi-Model Quality Council (No competitor has this)
 
-| What IntentWin Does | Closest Competitor | Gap |
+| What IntentBid Does | Closest Competitor | Gap |
 |---------------------|-------------------|-----|
-| 3-judge council (Gemini + Mistral + Groq) with consensus scoring | Single-model generation everywhere | IntentWin is **2-3 years ahead** on quality assurance |
+| 3-judge council (Gemini + Mistral + Groq) with consensus scoring | Single-model generation everywhere | IntentBid is **2-3 years ahead** on quality assurance |
 | Auto-remediation: sections <8.5 rewritten with specific feedback | None offer automated re-review loops | Unique — competitors ship first-draft quality |
 | 4-dimension scoring (content quality, client fit, evidence, brand voice) | Basic pass/fail or no scoring | Deeper quality insight |
 
-**Verdict:** This is IntentWin's strongest moat. The industry trend toward quality scoring (growing from 15% to 19% adoption) validates this approach. Nobody else is doing multi-judge consensus.
+**Verdict:** This is IntentBid's strongest moat. The industry trend toward quality scoring (growing from 15% to 19% adoption) validates this approach. Nobody else is doing multi-judge consensus.
 
 ### 1.2 6-Layer Intent Framework (Proprietary methodology)
 
@@ -36,11 +36,11 @@ However, significant gaps exist in integrations, security certifications, collab
 | L5: Competitive Positioning | Indirect framing elevating company vs competitors | None |
 | L6: Evidence & Context | Claims backed by verified company capabilities | Arphie has source attribution |
 
-**Verdict:** The persuasion science layer (L3) and competitive positioning (L5) are truly unique. Inventive AI is the only competitor that approaches win theme intelligence, but IntentWin's 6-layer stack is more comprehensive.
+**Verdict:** The persuasion science layer (L3) and competitive positioning (L5) are truly unique. Inventive AI is the only competitor that approaches win theme intelligence, but IntentBid's 6-layer stack is more comprehensive.
 
 ### 1.3 Dual-Layer Evidence Architecture
 
-| IntentWin | Competitors |
+| IntentBid | Competitors |
 |-----------|------------|
 | **L1 (Company Truth):** Verified, locked company data with audit trails | Most tools: unstructured content library |
 | **L2 (Knowledge Base):** RAG-powered document retrieval with Voyage AI embeddings | Responsive/Loopio: keyword-based content library; Arphie: live document connections |
@@ -50,7 +50,7 @@ However, significant gaps exist in integrations, security certifications, collab
 
 ### 1.4 Structured Intent Interview (8-step pre-generation)
 
-IntentWin forces strategy definition BEFORE generation. Users define win themes, outcomes, constraints, and approve intent before AI writes anything. No competitor has an equivalent structured strategy-first workflow.
+IntentBid forces strategy definition BEFORE generation. Users define win themes, outcomes, constraints, and approve intent before AI writes anything. No competitor has an equivalent structured strategy-first workflow.
 
 ### 1.5 Export Format Coverage
 
@@ -66,7 +66,7 @@ IntentWin forces strategy definition BEFORE generation. Users define win themes,
 
 ### 2.1 No CRM Integration (CRITICAL GAP)
 
-| Requirement | IntentWin | Market Standard |
+| Requirement | IntentBid | Market Standard |
 |-------------|-----------|-----------------|
 | Salesforce integration | None | **Table stakes** — Responsive has 40+ integrations; every enterprise tool connects |
 | HubSpot integration | None | Expected by mid-market buyers |
@@ -77,7 +77,7 @@ IntentWin forces strategy definition BEFORE generation. Users define win themes,
 
 ### 2.2 No Security Certifications (CRITICAL GAP)
 
-| Requirement | IntentWin | Market Standard |
+| Requirement | IntentBid | Market Standard |
 |-------------|-----------|-----------------|
 | SOC 2 Type II | None | **73% of enterprise buyers require before signing** |
 | Data handling policy | Not published | Must declare data never trains public AI models |
@@ -88,7 +88,7 @@ IntentWin forces strategy definition BEFORE generation. Users define win themes,
 
 ### 2.3 No Real-Time Collaboration
 
-| Feature | IntentWin | Competitors |
+| Feature | IntentBid | Competitors |
 |---------|-----------|-------------|
 | Multi-user editing | Not available | PandaDoc, Proposify, Loopio all support real-time co-editing |
 | Slack/Teams integration | None | Standard across enterprise tools |
@@ -99,18 +99,18 @@ IntentWin forces strategy definition BEFORE generation. Users define win themes,
 
 ### 2.4 No Content Library / Reusable Answers
 
-| Feature | IntentWin | Competitors |
+| Feature | IntentBid | Competitors |
 |---------|-----------|-------------|
 | Q&A answer library | None — generates fresh each time | Responsive: 3.2M+ pre-written Q&A pairs; Loopio's most-praised feature |
 | Content tagging | None | Standard across enterprise tools |
 | Content freshness monitoring | None | Best practice: auto-flag stale content |
 | Reusable content blocks | None | PandaDoc, Proposify, Better Proposals all offer this |
 
-**Impact:** The industry consensus is that "template preservation > generation." Enterprises have invested years in building content libraries. IntentWin generates everything from scratch each time — powerful but doesn't leverage institutional knowledge the way competitors do.
+**Impact:** The industry consensus is that "template preservation > generation." Enterprises have invested years in building content libraries. IntentBid generates everything from scratch each time — powerful but doesn't leverage institutional knowledge the way competitors do.
 
 ### 2.5 No Bid/No-Bid Decision Support
 
-| Feature | IntentWin | Competitors |
+| Feature | IntentBid | Competitors |
 |---------|-----------|-------------|
 | Opportunity scoring | None | DeepRFP: Bid/No-Bid analysis; QorusDocs: AI bid decisions |
 | Win probability | None | Inventive AI claims 50% higher win rates through buyer alignment analysis |
@@ -125,11 +125,11 @@ IntentWin forces strategy definition BEFORE generation. Users define win themes,
 | No per-user scaling | Enterprise teams of 50+ would pay same as team of 2 |
 | No usage-based component | AI compute costs are real; flat pricing hurts margins at scale |
 
-**Impact:** The market is moving toward hybrid pricing (platform fee + usage). Seat-based pricing dropped from 21% to 15% in 12 months. IntentWin's single tier leaves money on the table from both smaller teams and larger enterprises.
+**Impact:** The market is moving toward hybrid pricing (platform fee + usage). Seat-based pricing dropped from 21% to 15% in 12 months. IntentBid's single tier leaves money on the table from both smaller teams and larger enterprises.
 
 ### 2.7 Invite-Only Access
 
-Limits discoverability, SEO, and viral growth. PandaDoc's product-led growth (every proposal sent = product demo for recipient) drove 56,000+ customers. IntentWin has no viral loop.
+Limits discoverability, SEO, and viral growth. PandaDoc's product-led growth (every proposal sent = product demo for recipient) drove 56,000+ customers. IntentBid has no viral loop.
 
 ---
 
@@ -137,7 +137,7 @@ Limits discoverability, SEO, and viral growth. PandaDoc's product-led growth (ev
 
 ### 3.1 Compliance Matrix / Requirement Tracking UI
 
-IntentWin extracts requirements from RFPs but lacks a **visual compliance matrix** that maps each requirement to a proposal section with status tracking. Thalamus AI auto-generates compliance matrices. This is increasingly important (compliance checking grew from 7% to 12% adoption).
+IntentBid extracts requirements from RFPs but lacks a **visual compliance matrix** that maps each requirement to a proposal section with status tracking. Thalamus AI auto-generates compliance matrices. This is increasingly important (compliance checking grew from 7% to 12% adoption).
 
 ### 3.2 Translation / Multi-Language Support
 
@@ -145,7 +145,7 @@ No multi-language support. Loopio (Advanced+), Responsive, AutoRFP.ai, and Thala
 
 ### 3.3 Analytics Dashboard Depth
 
-IntentWin has basic win/loss tracking. Missing:
+IntentBid has basic win/loss tracking. Missing:
 - **Time-to-completion** metrics
 - **Section-level performance** (which sections score highest/lowest over time)
 - **Team productivity** metrics
@@ -172,7 +172,7 @@ No mobile app or responsive dashboard for review on-the-go. QorusDocs offers iOS
                     Quality / Methodology
                            ^
                            |
-           IntentWin *     |
+           IntentBid *     |
      (Quality Council +    |        * Inventive AI
       Intent Framework)    |     (Win Themes Engine)
                            |
@@ -193,7 +193,7 @@ No mobile app or responsive dashboard for review on-the-go. QorusDocs offers iOS
                            |
 ```
 
-**IntentWin's position:** Highest on quality/methodology axis, but mid-range on enterprise readiness. The path to winning is to maintain the quality advantage while rapidly closing the enterprise readiness gap.
+**IntentBid's position:** Highest on quality/methodology axis, but mid-range on enterprise readiness. The path to winning is to maintain the quality advantage while rapidly closing the enterprise readiness gap.
 
 ---
 
@@ -228,7 +228,7 @@ No mobile app or responsive dashboard for review on-the-go. QorusDocs offers iOS
 
 ### Business Model Recommendation
 
-Based on market research, the optimal model for IntentWin:
+Based on market research, the optimal model for IntentBid:
 
 ```
 Starter:    $499/mo     — 3 users, 5 proposals/mo, basic quality review

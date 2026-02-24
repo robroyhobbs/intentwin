@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-**Product positioning:** Core onboarding feature for IntentWin — the fastest path from "new account" to "ready to generate proposals."
+**Product positioning:** Core onboarding feature for IntentBid — the fastest path from "new account" to "ready to generate proposals."
 
 **Core concept:** Upload up to 20 files at once. AI extracts structured L1 context (company facts, products, evidence) and simultaneously stores the files as L2 reference documents for RAG retrieval. User reviews extracted items before saving.
 

@@ -463,7 +463,7 @@ import * as schemas from "@/lib/schemas/api";
 export const openApiSpec: OpenAPIV3.Document = {
   openapi: "3.0.0",
   info: {
-    title: "IntentWin API",
+    title: "IntentBid API",
     version: "1.0.0",
     description: "AI-powered proposal generation API"
   },

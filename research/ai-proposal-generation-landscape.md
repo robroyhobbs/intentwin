@@ -2,7 +2,7 @@
 
 **Started:** 2026-02-12
 **Last Updated:** 2026-02-12
-**Purpose:** Define strategy and business model baseline for IntentWin
+**Purpose:** Define strategy and business model baseline for IntentBid
 
 ---
 

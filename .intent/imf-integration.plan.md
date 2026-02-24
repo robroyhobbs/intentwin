@@ -2,7 +2,7 @@
 
 ## Overview
 
-Transform IntentWin's generation pipeline from ad-hoc AI prompting to a layered persuasion system. Each of the 10 proposal sections gets a specific persuasion framework (AIDA, PAS, FAB, etc.), win themes woven throughout, competitive positioning via indirect framing, brand voice enforcement, and automated quality checks — all without adding new database tables.
+Transform IntentBid's generation pipeline from ad-hoc AI prompting to a layered persuasion system. Each of the 10 proposal sections gets a specific persuasion framework (AIDA, PAS, FAB, etc.), win themes woven throughout, competitive positioning via indirect framing, brand voice enforcement, and automated quality checks — all without adding new database tables.
 
 ## Prerequisites
 

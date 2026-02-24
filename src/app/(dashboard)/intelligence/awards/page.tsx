@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { FileText, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -28,20 +28,13 @@ export default function AwardSearchPage() {
   const debouncedNaics = useDebounce(naicsCode);
   const debouncedAwardee = useDebounce(awardeeFilter);
 
-  // Reset to page 1 when any debounced filter changes
-  useEffect(() => {
-    setOffset(0);
-  }, [debouncedAgency, debouncedNaics, competitionType, debouncedAwardee]);
-
-  // Sync URL params on mount
-  useEffect(() => {
-    const naics = searchParams.get("naics");
-    const ag = searchParams.get("agency");
-    const aw = searchParams.get("awardee");
-    if (naics) setNaicsCode(naics);
-    if (ag) setAgency(ag);
-    if (aw) setAwardeeFilter(aw);
-  }, [searchParams]);
+  // Derive a filter key — when it changes, offset resets to 0
+  const filterKey = `${debouncedAgency}|${debouncedNaics}|${competitionType}|${debouncedAwardee}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+  if (filterKey !== prevFilterKey) {
+    setPrevFilterKey(filterKey);
+    if (offset !== 0) setOffset(0);
+  }
 
   const params = useMemo(() => {
     const p: Record<string, string> = {

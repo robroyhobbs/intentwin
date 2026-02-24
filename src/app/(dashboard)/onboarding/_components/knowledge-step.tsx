@@ -70,15 +70,10 @@ export function KnowledgeStep({
               Upload past proposals (optional)
             </h4>
             <p className="text-sm text-[var(--foreground-muted)] mt-1">
-              After setup, upload winning proposals and case studies
-              to improve your proposal quality.
+              After setup, you can upload winning proposals and case studies
+              from the Knowledge Base to improve your proposal quality.
+              We&apos;ll remind you on the dashboard.
             </p>
-            <button
-              onClick={() => router.push("/knowledge-base/upload")}
-              className="text-sm text-[var(--accent)] hover:underline mt-2"
-            >
-              Go to Knowledge Base →
-            </button>
           </div>
         </div>
       </div>

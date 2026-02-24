@@ -2,7 +2,7 @@
 
 ## Overview
 
-Build the L0 Requirements Truth layer of the IMF: AI extraction of client requirements from uploaded documents, a visual drag-and-drop compliance kanban board, auto-mapping to proposal sections, and a soft export gate. This makes IntentWin's proposal process auditable and requirement-traceable.
+Build the L0 Requirements Truth layer of the IMF: AI extraction of client requirements from uploaded documents, a visual drag-and-drop compliance kanban board, auto-mapping to proposal sections, and a soft export gate. This makes IntentBid's proposal process auditable and requirement-traceable.
 
 ## Prerequisites
 
