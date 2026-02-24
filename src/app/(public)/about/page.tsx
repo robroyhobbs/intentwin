@@ -18,6 +18,7 @@ const FOUNDERS = [
     role: "Co-founder",
     linkedin: "https://www.linkedin.com/in/mtmckinney/",
     initials: "MM",
+    avatarClass: "about-founder-avatar--mm",
     bio: "Growth and product leader with experience scaling AI and SaaS platforms. Previously led growth at AIGNE (ArcBlock). Seattle University alum based in the Pacific Northwest.",
   },
   {
@@ -25,6 +26,7 @@ const FOUNDERS = [
     role: "Co-founder",
     linkedin: "https://www.linkedin.com/in/voipchuck/",
     initials: "CC",
+    avatarClass: "about-founder-avatar--cc",
     bio: "Strategic technologist with 30+ years in enterprise IT and cybersecurity. Background in executive advisory and technical architecture. Northwestern University alum based in Los Angeles.",
   },
 ];
@@ -58,9 +60,10 @@ export default function AboutPage() {
             <span className="about-gradient">engineered to win.</span>
           </h1>
           <p className="about-subtitle">
-            We started IntentBid because we watched too many great companies lose
-            contracts they should have won &mdash; not because they lacked
-            capability, but because their proposals didn&rsquo;t communicate it.
+            We build proposals like software engineers build apps &mdash;
+            repeatable, user-friendly, and designed with the evaluator in mind.
+            Because the best capability in the world doesn&rsquo;t matter if
+            your proposal doesn&rsquo;t communicate it.
           </p>
         </div>
 
@@ -69,23 +72,27 @@ export default function AboutPage() {
           <div className="about-content">
             <h2 className="about-h2">The problem we solve</h2>
             <p>
-              Professional services firms and government contractors spend weeks
-              writing proposals that read like they were assembled by committee
-              &mdash; because they were. Institutional knowledge lives in
-              people&rsquo;s heads. Win themes get diluted across reviewers.
-              Persuasion frameworks are applied inconsistently, if at all.
+              Most proposals are assembled, not engineered. Institutional
+              knowledge lives in people&rsquo;s heads. Win themes get diluted
+              across reviewers. Persuasion frameworks are applied
+              inconsistently, if at all. The result: proposals that check every
+              compliance box but fail to differentiate.
             </p>
             <p>
-              The result: proposals that check every compliance box but fail to
-              differentiate. Companies with the best capabilities lose to
-              competitors who simply present better.
+              We think proposals should be built the way great software is
+              built &mdash; as repeatable experiences, designed for the end
+              user. In this case, the end user is the evaluator reading your
+              proposal at 10 PM with a scoring rubric and a stack of
+              competitors on their desk.
             </p>
             <p>
-              IntentBid fixes this by applying a structured, 6-layer
-              methodology to every section of every proposal &mdash;
-              automatically. Not generic AI text. A repeatable system that
-              encodes your brand voice, win themes, competitive positioning, and
-              evidence into every paragraph.
+              IntentBid applies a structured, 6-layer methodology to every
+              section of every proposal &mdash; automatically. Not generic AI
+              text. A repeatable system that encodes your brand voice, win
+              themes, competitive positioning, and evidence into every
+              paragraph. The same way a well-architected app delivers a
+              consistent experience to every user, IntentBid delivers a
+              consistent standard of persuasion to every evaluator.
             </p>
           </div>
         </section>
@@ -97,7 +104,8 @@ export default function AboutPage() {
             <p className="about-mission-text">
               Give every company &mdash; from 10-person shops to enterprise
               contractors &mdash; the proposal capability that used to require a
-              dedicated capture team.
+              dedicated capture team. Repeatable. User-friendly. Built with the
+              evaluator in mind, every time.
             </p>
           </div>
         </section>
@@ -118,7 +126,9 @@ export default function AboutPage() {
             <div className="about-founders">
               {FOUNDERS.map((founder) => (
                 <div key={founder.name} className="about-founder-card">
-                  <div className="about-founder-avatar">
+                  <div
+                    className={`about-founder-avatar ${founder.avatarClass}`}
+                  >
                     <span>{founder.initials}</span>
                   </div>
                   <div>
@@ -143,12 +153,20 @@ export default function AboutPage() {
         {/* Built with */}
         <section className="about-section">
           <div className="about-content">
-            <h2 className="about-h2">How we build</h2>
+            <h2 className="about-h2">Proposals as products</h2>
             <p>
-              IntentBid is built on a methodology we call Intent-Driven
-              Development &mdash; the same structured, outcome-first thinking
-              we apply to proposals. Every feature starts with a clear intent:
-              what outcome does this produce for the user? We don&rsquo;t ship
+              We treat every proposal like a product release. It has an
+              audience (evaluators), a user experience (how it reads and
+              scores), and a success metric (win rate). IntentBid applies the
+              same rigor &mdash; structured architecture, repeatable patterns,
+              and relentless focus on the end user &mdash; that the best
+              software teams bring to product development.
+            </p>
+            <p>
+              Under the hood, we build IntentBid using a methodology we call
+              Intent-Driven Development &mdash; the same outcome-first thinking
+              we embed in your proposals. Every feature starts with a clear
+              intent: what does this produce for the user? We don&rsquo;t ship
               features. We ship wins.
             </p>
             <div className="about-stats">
