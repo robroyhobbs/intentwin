@@ -29,21 +29,23 @@ const customBranding: BrandingSettings = {
   logo_url: "https://example.com/logo.png",
 };
 
-function extractXml(buf: Buffer, path: string): string {
+/** Generate DOCX and extract a specific XML part from the zip */
+async function genAndExtract(data: ProposalData, path: string): Promise<string> {
+  const buf = await generateDocx(data);
   const zip = new PizZip(buf);
   return zip.file(path)?.asText() || "";
 }
 
 describe("generateDocx", () => {
   describe("generates valid DOCX", () => {
-    it("returns a Buffer", () => {
-      const buf = generateDocx(makeData());
+    it("returns a Buffer", async () => {
+      const buf = await generateDocx(makeData());
       expect(buf).toBeInstanceOf(Buffer);
       expect(buf.length).toBeGreaterThan(0);
     });
 
-    it("contains required OOXML parts", () => {
-      const buf = generateDocx(makeData());
+    it("contains required OOXML parts", async () => {
+      const buf = await generateDocx(makeData());
       const zip = new PizZip(buf);
       expect(zip.file("[Content_Types].xml")).toBeTruthy();
       expect(zip.file("_rels/.rels")).toBeTruthy();
@@ -57,154 +59,154 @@ describe("generateDocx", () => {
   });
 
   describe("document content", () => {
-    it("includes proposal title", () => {
-      const xml = extractXml(generateDocx(makeData()), "word/document.xml");
+    it("includes proposal title", async () => {
+      const xml = await genAndExtract(makeData(), "word/document.xml");
       expect(xml).toContain("Test Proposal");
     });
 
-    it("includes client name", () => {
-      const xml = extractXml(generateDocx(makeData()), "word/document.xml");
+    it("includes client name", async () => {
+      const xml = await genAndExtract(makeData(), "word/document.xml");
       expect(xml).toContain("Acme Corp");
     });
 
-    it("includes date", () => {
-      const xml = extractXml(generateDocx(makeData()), "word/document.xml");
+    it("includes date", async () => {
+      const xml = await genAndExtract(makeData(), "word/document.xml");
       expect(xml).toContain("Feb 23, 2026");
     });
 
-    it("includes section titles", () => {
-      const xml = extractXml(generateDocx(makeData()), "word/document.xml");
+    it("includes section titles", async () => {
+      const xml = await genAndExtract(makeData(), "word/document.xml");
       expect(xml).toContain("Executive Summary");
       expect(xml).toContain("Technical Approach");
     });
 
-    it("includes section numbers", () => {
-      const xml = extractXml(generateDocx(makeData()), "word/document.xml");
+    it("includes section numbers", async () => {
+      const xml = await genAndExtract(makeData(), "word/document.xml");
       expect(xml).toContain("01");
       expect(xml).toContain("02");
     });
 
-    it("converts markdown bold to OOXML bold", () => {
-      const xml = extractXml(generateDocx(makeData()), "word/document.xml");
+    it("converts markdown bold to OOXML bold", async () => {
+      const xml = await genAndExtract(makeData(), "word/document.xml");
       expect(xml).toContain("<w:b/>");
       expect(xml).toContain("executive");
     });
 
-    it("converts markdown italic to OOXML italic", () => {
-      const xml = extractXml(generateDocx(makeData()), "word/document.xml");
+    it("converts markdown italic to OOXML italic", async () => {
+      const xml = await genAndExtract(makeData(), "word/document.xml");
       expect(xml).toContain("<w:i/>");
       expect(xml).toContain("approach");
     });
 
-    it("converts markdown headings to Heading styles", () => {
-      const xml = extractXml(generateDocx(makeData()), "word/document.xml");
+    it("converts markdown headings to Heading styles", async () => {
+      const xml = await genAndExtract(makeData(), "word/document.xml");
       expect(xml).toContain('w:val="Heading2"');
       expect(xml).toContain("Architecture");
     });
 
-    it("converts bullet lists to ListBullet style", () => {
-      const xml = extractXml(generateDocx(makeData()), "word/document.xml");
+    it("converts bullet lists to ListBullet style", async () => {
+      const xml = await genAndExtract(makeData(), "word/document.xml");
       expect(xml).toContain('w:val="ListBullet"');
       expect(xml).toContain("Microservices");
     });
 
-    it("converts ordered lists to ListNumber style", () => {
-      const xml = extractXml(generateDocx(makeData()), "word/document.xml");
+    it("converts ordered lists to ListNumber style", async () => {
+      const xml = await genAndExtract(makeData(), "word/document.xml");
       expect(xml).toContain('w:val="ListNumber"');
       expect(xml).toContain("Phase one");
     });
   });
 
   describe("default branding", () => {
-    it("uses default colors in styles.xml", () => {
-      const xml = extractXml(generateDocx(makeData()), "word/styles.xml");
+    it("uses default colors in styles.xml", async () => {
+      const xml = await genAndExtract(makeData(), "word/styles.xml");
       expect(xml).toContain("0070AD"); // primary
       expect(xml).toContain("1B365D"); // secondary
       expect(xml).toContain("12ABDB"); // accent
     });
 
-    it("uses Inter font family", () => {
-      const xml = extractXml(generateDocx(makeData()), "word/styles.xml");
+    it("uses Inter font family", async () => {
+      const xml = await genAndExtract(makeData(), "word/styles.xml");
       expect(xml).toContain('w:ascii="Inter"');
     });
 
-    it("uses company name in header", () => {
-      const xml = extractXml(generateDocx(makeData()), "word/header1.xml");
+    it("uses company name in header", async () => {
+      const xml = await genAndExtract(makeData(), "word/header1.xml");
       expect(xml).toContain("TestCo");
     });
 
-    it("uses Confidential in footer", () => {
-      const xml = extractXml(generateDocx(makeData()), "word/footer1.xml");
+    it("uses Confidential in footer", async () => {
+      const xml = await genAndExtract(makeData(), "word/footer1.xml");
       expect(xml).toContain("Confidential");
     });
 
-    it("includes page number fields in footer", () => {
-      const xml = extractXml(generateDocx(makeData()), "word/footer1.xml");
+    it("includes page number fields in footer", async () => {
+      const xml = await genAndExtract(makeData(), "word/footer1.xml");
       expect(xml).toContain("PAGE");
       expect(xml).toContain("NUMPAGES");
     });
   });
 
   describe("custom branding", () => {
-    it("applies custom colors to styles.xml", () => {
-      const xml = extractXml(generateDocx(makeData({ branding: customBranding })), "word/styles.xml");
+    it("applies custom colors to styles.xml", async () => {
+      const xml = await genAndExtract(makeData({ branding: customBranding }), "word/styles.xml");
       expect(xml).toContain("FF0000"); // primary
       expect(xml).toContain("00FF00"); // secondary
       expect(xml).toContain("0000FF"); // accent
     });
 
-    it("applies custom font family", () => {
-      const xml = extractXml(generateDocx(makeData({ branding: customBranding })), "word/styles.xml");
+    it("applies custom font family", async () => {
+      const xml = await genAndExtract(makeData({ branding: customBranding }), "word/styles.xml");
       expect(xml).toContain('w:ascii="Georgia"');
     });
 
-    it("uses header_text in header", () => {
-      const xml = extractXml(generateDocx(makeData({ branding: customBranding })), "word/header1.xml");
+    it("uses header_text in header", async () => {
+      const xml = await genAndExtract(makeData({ branding: customBranding }), "word/header1.xml");
       expect(xml).toContain("ACME Industries");
     });
 
-    it("uses footer_text in footer", () => {
-      const xml = extractXml(generateDocx(makeData({ branding: customBranding })), "word/footer1.xml");
+    it("uses footer_text in footer", async () => {
+      const xml = await genAndExtract(makeData({ branding: customBranding }), "word/footer1.xml");
       expect(xml).toContain("Top Secret");
     });
 
-    it("uses custom accent color in numbering", () => {
-      const xml = extractXml(generateDocx(makeData({ branding: customBranding })), "word/numbering.xml");
+    it("uses custom accent color in numbering", async () => {
+      const xml = await genAndExtract(makeData({ branding: customBranding }), "word/numbering.xml");
       expect(xml).toContain("0000FF");
     });
 
-    it("uses custom colors in section headers", () => {
-      const xml = extractXml(generateDocx(makeData({ branding: customBranding })), "word/document.xml");
+    it("uses custom colors in section headers", async () => {
+      const xml = await genAndExtract(makeData({ branding: customBranding }), "word/document.xml");
       expect(xml).toContain("FF0000"); // primary used for section numbers
     });
   });
 
   describe("partial branding", () => {
-    it("falls back to company_name for header when header_text missing", () => {
+    it("falls back to company_name for header when header_text missing", async () => {
       const partial: BrandingSettings = {
         primary_color: "#AA0000",
         secondary_color: "#1B365D",
         accent_color: "#12ABDB",
         font_family: "Helvetica",
       };
-      const xml = extractXml(generateDocx(makeData({ branding: partial })), "word/header1.xml");
+      const xml = await genAndExtract(makeData({ branding: partial }), "word/header1.xml");
       expect(xml).toContain("TestCo");
     });
 
-    it("falls back to Confidential for footer when footer_text missing", () => {
+    it("falls back to Confidential for footer when footer_text missing", async () => {
       const partial: BrandingSettings = {
         primary_color: "#AA0000",
         secondary_color: "#1B365D",
         accent_color: "#12ABDB",
         font_family: "Helvetica",
       };
-      const xml = extractXml(generateDocx(makeData({ branding: partial })), "word/footer1.xml");
+      const xml = await genAndExtract(makeData({ branding: partial }), "word/footer1.xml");
       expect(xml).toContain("Confidential");
     });
   });
 
   describe("table handling", () => {
-    it("converts markdown tables to OOXML tables", () => {
+    it("converts markdown tables to OOXML tables", async () => {
       const data = makeData({
         sections: [
           {
@@ -214,7 +216,7 @@ describe("generateDocx", () => {
           },
         ],
       });
-      const xml = extractXml(generateDocx(data), "word/document.xml");
+      const xml = await genAndExtract(data, "word/document.xml");
       expect(xml).toContain("<w:tbl>");
       expect(xml).toContain("Widget");
       expect(xml).toContain("$100");
@@ -222,7 +224,7 @@ describe("generateDocx", () => {
   });
 
   describe("XML safety", () => {
-    it("escapes special characters in content", () => {
+    it("escapes special characters in content", async () => {
       const data = makeData({
         sections: [
           {
@@ -232,7 +234,7 @@ describe("generateDocx", () => {
           },
         ],
       });
-      const xml = extractXml(generateDocx(data), "word/document.xml");
+      const xml = await genAndExtract(data, "word/document.xml");
       expect(xml).toContain("&amp;");
       expect(xml).toContain("&lt;strong&gt;");
       expect(xml).not.toContain("<strong>");

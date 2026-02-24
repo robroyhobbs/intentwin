@@ -284,6 +284,13 @@ export async function POST(request: NextRequest) {
     }
     extracted = parsed as unknown as ExtractedIntake;
 
+    // Ensure required sub-objects exist (AI may omit them for non-RFP docs like resumes)
+    if (!extracted.extracted) extracted.extracted = {} as ExtractedIntake["extracted"];
+    if (!extracted.inferred) extracted.inferred = {} as ExtractedIntake["inferred"];
+    if (!extracted.gaps) extracted.gaps = [];
+    if (!extracted.input_type) extracted.input_type = "other";
+    if (!extracted.input_summary) extracted.input_summary = "Document analyzed";
+
     // Add source tracking
     if (document_ids?.length > 0) {
       const adminClient = createAdminClient();

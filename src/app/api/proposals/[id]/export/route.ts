@@ -121,7 +121,7 @@ export const POST = withProposalRoute(
       mimeType = "application/pdf";
       extension = "pdf";
     } else if (formatType === "docx") {
-      fileBuffer = generateDocx(proposalData);
+      fileBuffer = await generateDocx(proposalData);
       mimeType =
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
       extension = "docx";

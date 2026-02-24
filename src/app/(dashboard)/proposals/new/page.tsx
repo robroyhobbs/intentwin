@@ -204,6 +204,10 @@ export default function NewProposalPage() {
     data: ExtractedIntake,
     research: ClientResearch | null,
   ) {
+    // Ensure required sub-objects exist before setting state
+    if (!data.extracted) data.extracted = {} as ExtractedIntake["extracted"];
+    if (!data.inferred) data.inferred = {} as ExtractedIntake["inferred"];
+    if (!data.gaps) data.gaps = [];
     setExtractedData(data);
     setResearchData(research);
     setIntakeMode("review");

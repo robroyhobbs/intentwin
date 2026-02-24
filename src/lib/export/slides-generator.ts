@@ -89,11 +89,21 @@ function getNavigationScript(): string {
  */
 export async function generateSlides(data: ProposalData): Promise<string> {
   const companyName = data.company_name || "IntentBid";
+  const branding = data.branding;
+  const footerText = branding?.footer_text || "Confidential";
   const slides = buildSlides(data, companyName);
   const totalSlides = slides.length;
   const slidesHtml = slides
-    .map((slide, idx) => renderSlide(slide, idx, companyName))
+    .map((slide, idx) => renderSlide(slide, idx, companyName, footerText))
     .join("\n");
+
+  // Build Google Fonts URL — include branding font if custom, plus defaults
+  const fontFamilies = new Set(["Outfit", "Sora"]);
+  if (branding?.font_family) fontFamilies.add(branding.font_family);
+  const fontParams = Array.from(fontFamilies)
+    .map((f) => `family=${encodeURIComponent(f)}:wght@300;400;500;600;700;800;900`)
+    .join("&");
+  const fontsUrl = `https://fonts.googleapis.com/css2?${fontParams}&display=swap`;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -103,9 +113,9 @@ export async function generateSlides(data: ProposalData): Promise<string> {
 <title>${escapeHtml(data.title)} | ${escapeHtml(companyName)}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Sora:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="${fontsUrl}" rel="stylesheet">
 <style>
-${getSlideStyles()}
+${getSlideStyles(branding)}
 </style>
 </head>
 <body>

@@ -420,12 +420,13 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
   };
   const fontFamily = branding?.font_family || "Arial";
   const footerText = branding?.footer_text || "Confidential";
+  const headerText = branding?.header_text || companyName;
 
   pptx.author = companyName;
   pptx.company = companyName;
   pptx.title = data.title;
 
-  // Define master slide with minimal footer
+  // Define master slide with minimal footer — use header_text instead of just companyName
   pptx.defineSlideMaster({
     title: "BRANDED_MASTER",
     background: { color: COLORS.white },
@@ -441,7 +442,7 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
       },
       {
         text: {
-          text: `${companyName} | ${data.title} | ${footerText}`,
+          text: `${headerText} | ${data.title} | ${footerText}`,
           options: {
             x: 0.5,
             y: "93%",
@@ -466,6 +467,21 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
     h: "100%",
     fill: { color: COLORS.primary, transparency: 85 },
   });
+
+  // Add logo to title slide if available
+  if (branding?.logo_url) {
+    try {
+      titleSlide.addImage({
+        path: branding.logo_url,
+        x: 0.8,
+        y: 0.5,
+        w: 2.0,
+        h: 0.6,
+      });
+    } catch {
+      // Logo fetch failed — continue without it
+    }
+  }
 
   titleSlide.addText(data.title, {
     x: 0.8,

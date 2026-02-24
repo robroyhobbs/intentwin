@@ -10,11 +10,13 @@ import type { SlideContent } from "./types";
 
 /**
  * Renders a single slide to HTML based on its type.
+ * footerText overrides the default "Confidential" text in the hero footer.
  */
 export function renderSlide(
   slide: SlideContent,
   index: number,
   companyName: string = "IntentBid",
+  footerText: string = "Confidential",
 ): string {
   switch (slide.type) {
     case "hero":
@@ -37,7 +39,7 @@ export function renderSlide(
             <p class="hero__client">Prepared for <strong>${escapeHtml(slide.subtitle || "")}</strong></p>
           </div>
           <div class="hero__footer">
-            <span>Confidential</span>
+            <span>${escapeHtml(footerText)}</span>
             <span class="hero__footer-dot"></span>
             <span>${new Date().getFullYear()}</span>
           </div>

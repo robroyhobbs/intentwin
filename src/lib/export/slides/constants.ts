@@ -2,6 +2,8 @@
  * Shared constants for the slide generator
  */
 
+import type { BrandingSettings } from "./types";
+
 /** Enhanced brand palette */
 export const COLORS = {
   navy: "#0A1628",
@@ -15,6 +17,35 @@ export const COLORS = {
   grayLight: "#94A3B8",
   grayDark: "#334155",
 };
+
+/** Convert hex to rgba for glow / transparency effects */
+export function hexToRgba(hex: string, alpha: number): string {
+  const clean = hex.replace("#", "");
+  const r = parseInt(clean.substring(0, 2), 16);
+  const g = parseInt(clean.substring(2, 4), 16);
+  const b = parseInt(clean.substring(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+/**
+ * Build a COLORS-compatible palette from optional BrandingSettings.
+ * Falls back to the default COLORS for any missing value.
+ */
+export function buildColors(branding?: BrandingSettings): typeof COLORS {
+  if (!branding) return COLORS;
+  return {
+    navy: COLORS.navy, // background stays fixed
+    navyLight: branding.secondary_color || COLORS.navyLight,
+    blue: branding.primary_color || COLORS.blue,
+    cyan: branding.accent_color || COLORS.cyan,
+    cyanGlow: hexToRgba(branding.accent_color || COLORS.cyan, 0.4),
+    white: COLORS.white,
+    offWhite: COLORS.offWhite,
+    gray: COLORS.gray,
+    grayLight: COLORS.grayLight,
+    grayDark: COLORS.grayDark,
+  };
+}
 
 /** Maps section types to narrative categories */
 export const NARRATIVE_MAP: Record<string, string> = {

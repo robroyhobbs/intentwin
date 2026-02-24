@@ -504,7 +504,7 @@ export function ExtractionReview({
       />
 
       {/* Gaps */}
-      {extracted.gaps.length > 0 && (
+      {extracted.gaps && extracted.gaps.length > 0 && (
         <div className="p-4 rounded-xl bg-[var(--warning-subtle)] border border-[var(--warning-muted)]">
           <div className="flex items-start gap-3">
             <AlertTriangle className="h-5 w-5 text-[var(--warning)] mt-0.5" />

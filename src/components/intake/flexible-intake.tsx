@@ -220,6 +220,16 @@ export function FlexibleIntake({
 
       const { extracted } = await extractResponse.json();
 
+      // Validate extracted structure (AI may return partial data for non-RFP docs)
+      if (!extracted || typeof extracted !== "object") {
+        throw new Error("Extraction returned invalid data");
+      }
+      if (!extracted.extracted) extracted.extracted = {};
+      if (!extracted.inferred) extracted.inferred = {};
+      if (!extracted.gaps) extracted.gaps = [];
+      if (!extracted.input_type) extracted.input_type = "other";
+      if (!extracted.input_summary) extracted.input_summary = "Document analyzed";
+
       // If research enabled, call research API
       let research: ClientResearch | null = null;
       if (researchEnabled && extracted.extracted?.client_name?.value) {

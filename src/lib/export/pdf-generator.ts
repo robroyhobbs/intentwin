@@ -13,8 +13,9 @@ async function findBrowser(): Promise<{
   args: string[];
 }> {
   const { existsSync } = await import("fs");
-  const isVercel =
-    !!process.env.VERCEL || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+  // Detect actual Vercel serverless runtime (AWS Lambda), NOT the VERCEL env var
+  // which is also set locally by `vercel env pull`.
+  const isVercel = !!process.env.AWS_LAMBDA_FUNCTION_NAME;
 
   if (isVercel) {
     try {

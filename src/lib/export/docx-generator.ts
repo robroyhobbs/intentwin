@@ -409,10 +409,34 @@ function buildFooterXml(footerText: string): string {
 }
 
 /**
+ * Fetch a remote image and return its buffer + inferred extension.
+ * Returns null on any failure (non-blocking for logo embedding).
+ */
+async function fetchLogoImage(url: string): Promise<{ buffer: Buffer; ext: string } | null> {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return null;
+    const contentType = res.headers.get("content-type") || "";
+    const ext = contentType.includes("png")
+      ? "png"
+      : contentType.includes("gif")
+        ? "gif"
+        : contentType.includes("svg")
+          ? "svg"
+          : "jpeg"; // default to jpeg for jpg/webp/unknown
+    const arrayBuffer = await res.arrayBuffer();
+    return { buffer: Buffer.from(arrayBuffer), ext };
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Generate a branded DOCX document from proposal data.
  * Builds pure OOXML with PizZip — no external template dependency.
+ * Now async to support logo image fetching.
  */
-export function generateDocx(data: ProposalData): Buffer {
+export async function generateDocx(data: ProposalData): Promise<Buffer> {
   const PizZip = require("pizzip");
 
   const companyName = data.company_name || "IntentBid";
@@ -429,6 +453,12 @@ export function generateDocx(data: ProposalData): Buffer {
   const primary = toOoxmlColor(b.primary_color);
   const secondary = toOoxmlColor(b.secondary_color);
 
+  // Fetch logo image (non-blocking — generates without logo if fetch fails)
+  let logoData: { buffer: Buffer; ext: string } | null = null;
+  if (b.logo_url) {
+    logoData = await fetchLogoImage(b.logo_url);
+  }
+
   // Build section content
   const sectionsXml = data.sections
     .map((section, idx) => {
@@ -443,11 +473,17 @@ export function generateDocx(data: ProposalData): Buffer {
     })
     .join("\n");
 
+  // Build logo drawing XML for title page (if logo was fetched)
+  const logoDrawingXml = logoData
+    ? `<w:p><w:pPr><w:jc w:val="left"/></w:pPr><w:r><w:drawing><wp:inline xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" distT="0" distB="0" distL="0" distR="0"><wp:extent cx="1828800" cy="457200"/><wp:docPr id="1" name="Logo"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="1" name="logo.${logoData.ext}"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="rId5"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="1828800" cy="457200"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`
+    : "";
+
   // Title page + body
   const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
   xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <w:body>
+    ${logoDrawingXml}
     ${para(run(escXml(data.title)), "Title")}
     ${para(run(`Prepared for ${escXml(data.client_name)}`, { color: primary, sz: 28 }), "Subtitle")}
     ${para(run(escXml(data.date), { sz: 22 }))}
@@ -467,13 +503,16 @@ export function generateDocx(data: ProposalData): Buffer {
   // Assemble OOXML zip
   const zip = new PizZip();
 
-  // Content Types
+  // Content Types — include image content type if logo exists
+  const imageContentType = logoData
+    ? `\n  <Default Extension="${logoData.ext}" ContentType="image/${logoData.ext === "svg" ? "svg+xml" : logoData.ext}"/>`
+    : "";
   zip.file(
     "[Content_Types].xml",
     `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
   <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-  <Default Extension="xml" ContentType="application/xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>${imageContentType}
   <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
   <Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>
   <Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/>
@@ -491,7 +530,10 @@ export function generateDocx(data: ProposalData): Buffer {
 </Relationships>`,
   );
 
-  // Word relationships (link to styles, numbering, header, footer)
+  // Word relationships (link to styles, numbering, header, footer, and optionally image)
+  const imageRel = logoData
+    ? `\n  <Relationship Id="rId5" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image1.${logoData.ext}"/>`
+    : "";
   zip.file(
     "word/_rels/document.xml.rels",
     `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -499,7 +541,7 @@ export function generateDocx(data: ProposalData): Buffer {
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
   <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header1.xml"/>
   <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>
-  <Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/>
+  <Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/>${imageRel}
 </Relationships>`,
   );
 
@@ -509,6 +551,11 @@ export function generateDocx(data: ProposalData): Buffer {
   zip.file("word/numbering.xml", buildNumberingXml(b.accent_color));
   zip.file("word/header1.xml", buildHeaderXml(b.header_text, b.primary_color));
   zip.file("word/footer1.xml", buildFooterXml(b.footer_text));
+
+  // Embed logo image in the zip
+  if (logoData) {
+    zip.file(`word/media/image1.${logoData.ext}`, logoData.buffer);
+  }
 
   return zip.generate({ type: "nodebuffer", compression: "DEFLATE" });
 }

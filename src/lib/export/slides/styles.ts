@@ -5,24 +5,30 @@
  * Think McKinsey deck meets Apple keynote - dark, confident, sophisticated
  */
 
-import { COLORS } from "./constants";
+import { COLORS, buildColors } from "./constants";
+import type { BrandingSettings } from "./types";
 
 /**
  * Returns the full CSS stylesheet for the slide presentation.
+ * When branding is provided, colors and fonts are overridden via CSS custom properties.
  */
-export function getSlideStyles(): string {
+export function getSlideStyles(branding?: BrandingSettings): string {
+  const colors = buildColors(branding);
+  const fontDisplay = branding?.font_family || "Outfit";
+  const fontBody = branding?.font_family || "Sora";
+
   return `
 :root {
-  --navy: ${COLORS.navy};
-  --navy-light: ${COLORS.navyLight};
-  --blue: ${COLORS.blue};
-  --cyan: ${COLORS.cyan};
-  --cyan-glow: ${COLORS.cyanGlow};
-  --white: ${COLORS.white};
-  --off-white: ${COLORS.offWhite};
-  --gray: ${COLORS.gray};
-  --gray-light: ${COLORS.grayLight};
-  --gray-dark: ${COLORS.grayDark};
+  --navy: ${colors.navy};
+  --navy-light: ${colors.navyLight};
+  --blue: ${colors.blue};
+  --cyan: ${colors.cyan};
+  --cyan-glow: ${colors.cyanGlow};
+  --white: ${colors.white};
+  --off-white: ${colors.offWhite};
+  --gray: ${colors.gray};
+  --gray-light: ${colors.grayLight};
+  --gray-dark: ${colors.grayDark};
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -30,7 +36,7 @@ export function getSlideStyles(): string {
 html, body {
   width: 100%; height: 100%;
   overflow: hidden;
-  font-family: 'Sora', sans-serif;
+  font-family: '${fontBody}', sans-serif;
   background: var(--navy);
   color: var(--white);
   -webkit-font-smoothing: antialiased;
@@ -161,7 +167,7 @@ html, body {
 }
 
 .hero__title {
-  font-family: 'Outfit', sans-serif;
+  font-family: '${fontDisplay}', sans-serif;
   font-size: clamp(3rem, 7vw, 5.5rem);
   font-weight: 800;
   line-height: 1.05;
@@ -279,7 +285,7 @@ html, body {
 }
 
 .executive__title {
-  font-family: 'Outfit', sans-serif;
+  font-family: '${fontDisplay}', sans-serif;
   font-size: clamp(2rem, 4vw, 3rem);
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -318,7 +324,7 @@ html, body {
 }
 
 .executive__point-marker {
-  font-family: 'Outfit', sans-serif;
+  font-family: '${fontDisplay}', sans-serif;
   font-size: 0.75rem;
   font-weight: 800;
   color: var(--cyan);
@@ -374,7 +380,7 @@ html, body {
 }
 
 .understanding__title {
-  font-family: 'Outfit', sans-serif;
+  font-family: '${fontDisplay}', sans-serif;
   font-size: clamp(2rem, 4vw, 2.75rem);
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -480,7 +486,7 @@ html, body {
 }
 
 .methodology__title {
-  font-family: 'Outfit', sans-serif;
+  font-family: '${fontDisplay}', sans-serif;
   font-size: clamp(1.75rem, 3vw, 2.5rem);
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -524,7 +530,7 @@ html, body {
   justify-content: center;
   background: linear-gradient(135deg, var(--blue), var(--cyan));
   color: var(--white);
-  font-family: 'Outfit', sans-serif;
+  font-family: '${fontDisplay}', sans-serif;
   font-size: 0.9rem;
   font-weight: 700;
   border-radius: 50%;
@@ -595,7 +601,7 @@ html, body {
 }
 
 .team__title {
-  font-family: 'Outfit', sans-serif;
+  font-family: '${fontDisplay}', sans-serif;
   font-size: clamp(1.75rem, 3vw, 2.5rem);
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -696,7 +702,7 @@ html, body {
 .case-study__icon svg { width: 28px; height: 28px; }
 
 .case-study__title {
-  font-family: 'Outfit', sans-serif;
+  font-family: '${fontDisplay}', sans-serif;
   font-size: clamp(1.75rem, 3vw, 2.5rem);
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -729,7 +735,7 @@ html, body {
 
 .case-study__metric-value {
   display: block;
-  font-family: 'Outfit', sans-serif;
+  font-family: '${fontDisplay}', sans-serif;
   font-size: 2rem;
   font-weight: 800;
   color: var(--blue);
@@ -833,7 +839,7 @@ html, body {
 }
 
 .timeline-slide__title {
-  font-family: 'Outfit', sans-serif;
+  font-family: '${fontDisplay}', sans-serif;
   font-size: clamp(1.75rem, 3vw, 2.5rem);
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -888,7 +894,7 @@ html, body {
   justify-content: center;
   background: linear-gradient(135deg, var(--blue), var(--cyan));
   color: var(--white);
-  font-family: 'Outfit', sans-serif;
+  font-family: '${fontDisplay}', sans-serif;
   font-size: 0.9rem;
   font-weight: 700;
   border-radius: 50%;
@@ -971,7 +977,7 @@ html, body {
 }
 
 .investment__title {
-  font-family: 'Outfit', sans-serif;
+  font-family: '${fontDisplay}', sans-serif;
   font-size: clamp(1.75rem, 3vw, 2.5rem);
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -1068,7 +1074,7 @@ html, body {
 }
 
 .risk__title {
-  font-family: 'Outfit', sans-serif;
+  font-family: '${fontDisplay}', sans-serif;
   font-size: clamp(1.75rem, 3vw, 2.5rem);
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -1108,7 +1114,7 @@ html, body {
 }
 
 .risk__card-number {
-  font-family: 'Outfit', sans-serif;
+  font-family: '${fontDisplay}', sans-serif;
   font-size: 0.7rem;
   font-weight: 800;
   color: #7C3AED;
@@ -1207,7 +1213,7 @@ html, body {
 }
 
 .split__title {
-  font-family: 'Outfit', sans-serif;
+  font-family: '${fontDisplay}', sans-serif;
   font-size: clamp(2rem, 4vw, 3rem);
   font-weight: 700;
   line-height: 1.15;
@@ -1253,7 +1259,7 @@ html, body {
 }
 
 .card__number {
-  font-family: 'Outfit', sans-serif;
+  font-family: '${fontDisplay}', sans-serif;
   font-size: 0.75rem;
   font-weight: 800;
   color: var(--cyan);
@@ -1338,7 +1344,7 @@ html, body {
 }
 
 .approach__title {
-  font-family: 'Outfit', sans-serif;
+  font-family: '${fontDisplay}', sans-serif;
   font-size: clamp(1.75rem, 3vw, 2.5rem);
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -1382,7 +1388,7 @@ html, body {
   justify-content: center;
   background: linear-gradient(135deg, var(--blue), var(--cyan));
   color: var(--white);
-  font-family: 'Outfit', sans-serif;
+  font-family: '${fontDisplay}', sans-serif;
   font-size: 1rem;
   font-weight: 700;
   border-radius: 50%;
@@ -1506,7 +1512,7 @@ html, body {
 
 .metric__value {
   display: block;
-  font-family: 'Outfit', sans-serif;
+  font-family: '${fontDisplay}', sans-serif;
   font-size: clamp(3rem, 6vw, 4.5rem);
   font-weight: 900;
   letter-spacing: -0.03em;
@@ -1603,7 +1609,7 @@ html, body {
 }
 
 .diff__title {
-  font-family: 'Outfit', sans-serif;
+  font-family: '${fontDisplay}', sans-serif;
   font-size: clamp(1.75rem, 3vw, 2.5rem);
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -1719,7 +1725,7 @@ html, body {
 }
 
 .closing__title {
-  font-family: 'Outfit', sans-serif;
+  font-family: '${fontDisplay}', sans-serif;
   font-size: clamp(2.5rem, 5vw, 4rem);
   font-weight: 800;
   letter-spacing: -0.03em;
@@ -1761,7 +1767,7 @@ html, body {
 }
 
 .closing__step-num {
-  font-family: 'Outfit', sans-serif;
+  font-family: '${fontDisplay}', sans-serif;
   font-size: 0.7rem;
   font-weight: 800;
   color: var(--cyan);
