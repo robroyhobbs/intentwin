@@ -10,7 +10,7 @@ export async function generateEmbeddings(
   inputType: "document" | "query" = "document"
 ): Promise<number[][]> {
   const model = (process.env.EMBEDDING_MODEL || "voyage-3").trim();
-  const apiKey = process.env.VOYAGE_API_KEY;
+  const apiKey = process.env.VOYAGE_API_KEY?.trim();
 
   if (!apiKey) {
     throw new Error("VOYAGE_API_KEY is not set");

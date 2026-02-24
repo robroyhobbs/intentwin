@@ -5,7 +5,7 @@ let geminiClient: GoogleGenerativeAI | null = null;
 
 function getClient(): GoogleGenerativeAI {
   if (!geminiClient) {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY?.trim();
     if (!apiKey) {
       throw new Error("GEMINI_API_KEY is not set");
     }
@@ -29,7 +29,7 @@ export async function reviewWithGemini(prompt: string): Promise<{
 }> {
   const client = getClient();
   const model = client.getGenerativeModel({
-    model: process.env.GEMINI_MODEL || "gemini-3.1-pro-preview",
+    model: process.env.GEMINI_MODEL?.trim() || "gemini-3.1-pro-preview",
     generationConfig: {
       temperature: 0.3,
       maxOutputTokens: 2048,
