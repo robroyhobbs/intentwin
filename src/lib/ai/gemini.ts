@@ -9,7 +9,7 @@ let client: GoogleGenerativeAI | null = null;
 
 function getClient(): GoogleGenerativeAI {
   if (!client) {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY?.trim();
     if (!apiKey) {
       throw new Error("GEMINI_API_KEY is not set");
     }
@@ -140,7 +140,7 @@ export async function generateText(
 ): Promise<string> {
   const genAI = getClient();
   const primaryModel =
-    options.model || process.env.GEMINI_MODEL || "gemini-3.1-pro-preview";
+    options.model || process.env.GEMINI_MODEL?.trim() || "gemini-3.1-pro-preview";
 
   const modelsToTry = [primaryModel];
   if (primaryModel !== FALLBACK_MODEL) {

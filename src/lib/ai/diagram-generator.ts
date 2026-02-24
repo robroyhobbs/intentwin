@@ -148,7 +148,7 @@ export async function generateDiagram(
   const config = DIAGRAM_CONFIGS[sectionType];
   if (!config) return null;
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) {
     log.warn("GEMINI_API_KEY not configured, skipping diagram generation");
     return null;

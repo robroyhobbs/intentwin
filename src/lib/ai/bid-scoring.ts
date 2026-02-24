@@ -132,7 +132,7 @@ export async function scoreFromRequirements(
     intelligenceClient.getWinProbability({
       agency: agencyName ?? undefined,
       naicsCode: naicsCode ?? undefined,
-      awardAmount: budgetRange ? parseFloat(budgetRange.replace(/[^0-9.]/g, "")) || undefined : undefined,
+      awardAmount: budgetRange ? parseFloat(String(budgetRange).replace(/[^0-9.]/g, "")) || undefined : undefined,
       competitionType: competitionType ?? undefined,
       setAsideType: setAside ?? undefined,
       businessSize: "small",
