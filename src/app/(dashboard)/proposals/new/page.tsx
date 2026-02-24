@@ -274,7 +274,7 @@ export default function NewProposalPage() {
         evaluation_criteria: ext?.decision_criteria?.value,
         compliance_requirements: ext?.compliance_requirements?.value,
         technical_environment: ext?.technical_environment?.value,
-        source_text: extractedData?.source_text,
+        source_text: extractedData?.source_text ? String(extractedData.source_text).slice(0, 4000) : undefined,
       };
 
       const response = await authFetch("/api/intake/bid-evaluation", {

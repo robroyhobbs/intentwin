@@ -292,7 +292,7 @@ export function BidEvaluationScreen({
 }
 
 function WinProbabilityPanel({ winProb }: { winProb: WinProbabilityResponse }) {
-  const pct = Math.round(winProb.probability * 100);
+  const pct = Math.round((winProb.probability || 0) * 100);
   const color =
     pct >= 50
       ? "var(--success)"
@@ -305,10 +305,10 @@ function WinProbabilityPanel({ winProb }: { winProb: WinProbabilityResponse }) {
     medium: { label: "Medium Confidence", bg: "bg-amber-100 dark:bg-amber-900/30", text: "text-amber-700 dark:text-amber-300" },
     low: { label: "Low Confidence", bg: "bg-red-100 dark:bg-red-900/30", text: "text-red-700 dark:text-red-300" },
   };
-  const conf = confidenceConfig[winProb.confidence];
+  const conf = confidenceConfig[winProb.confidence] || { label: "Confidence Unknown", bg: "bg-gray-100 dark:bg-gray-800", text: "text-gray-700 dark:text-gray-300" };
 
-  const helpingFactors = winProb.factors.filter((f) => f.impact > 0);
-  const hurtingFactors = winProb.factors.filter((f) => f.impact < 0);
+  const helpingFactors = (winProb.factors || []).filter((f) => f.impact > 0);
+  const hurtingFactors = (winProb.factors || []).filter((f) => f.impact < 0);
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--background-elevated)] p-5">
@@ -359,9 +359,9 @@ function WinProbabilityPanel({ winProb }: { winProb: WinProbabilityResponse }) {
         </div>
         <div>
           <p className="text-sm text-[var(--foreground)]">
-            Based on <strong>{winProb.matching_awards}</strong> similar historical awards
+            Based on <strong>{winProb.matching_awards || 0}</strong> similar historical awards
           </p>
-          {winProb.comparable_awards.length > 0 && (
+          {(winProb.comparable_awards || []).length > 0 && (
             <p className="text-xs text-[var(--foreground-muted)] mt-1">
               {winProb.comparable_awards.length} comparable awards analyzed
             </p>
@@ -447,9 +447,9 @@ function IntelligencePanel({ intelligence }: { intelligence: BidIntelligenceCont
                 Eval Method: <strong className="text-[var(--foreground)]">{intelligence.agency_eval_method}</strong>
               </div>
             )}
-            {intelligence.agency_avg_offers != null && (
+            {intelligence.agency_avg_offers != null && !isNaN(Number(intelligence.agency_avg_offers)) && (
               <div className="text-xs text-[var(--foreground-muted)]">
-                Avg Competing Offers: <strong className="text-[var(--foreground)]">{intelligence.agency_avg_offers.toFixed(1)}</strong>
+                Avg Competing Offers: <strong className="text-[var(--foreground)]">{Number(intelligence.agency_avg_offers).toFixed(1)}</strong>
               </div>
             )}
             {intelligence.agency_avg_amount != null && (
