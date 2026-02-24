@@ -32,7 +32,6 @@
     "agentation": "^1.3.2",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
-    "docxtemplater": "^3.67.6",
     "groq-sdk": "^0.37.0",
     "inngest": "^3.52.1",
     "js-tiktoken": "^1.0.21",

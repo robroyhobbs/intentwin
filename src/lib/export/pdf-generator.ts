@@ -86,7 +86,8 @@ async function launchBrowser(
 }
 
 export async function generatePdf(data: ProposalData): Promise<Buffer> {
-  const companyName = data.company_name || "IntentBid";
+  const companyName = data.branding?.header_text || data.company_name || "IntentBid";
+  const footerText = data.branding?.footer_text || "Confidential";
 
   // Generate HTML with inline fonts (no external CDN requests in serverless)
   const html = await generateHtml(data, { inlineFonts: true });
@@ -123,7 +124,7 @@ export async function generatePdf(data: ProposalData): Promise<Buffer> {
       displayHeaderFooter: true,
       headerTemplate: `
         <div style="font-size:8px; color:#999; width:100%; text-align:center; padding:5px 0;">
-          ${data.title} | ${companyName} | Confidential
+          ${data.title} | ${companyName} | ${footerText}
         </div>`,
       footerTemplate: `
         <div style="font-size:8px; color:#999; width:100%; text-align:center; padding:5px 0;">

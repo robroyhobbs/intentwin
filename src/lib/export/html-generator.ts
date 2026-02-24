@@ -1,7 +1,32 @@
 import { extractMermaidBlocks } from "@/lib/diagrams/extract-mermaid";
 import { batchMermaidToImages } from "@/lib/diagrams/mermaid-to-svg";
 import { escapeHtml } from "@/lib/email/escape-html";
-import type { ProposalData } from "./slides/types";
+import type { BrandingSettings, ProposalData } from "./slides/types";
+
+/** Darken a hex color by a factor (0 = unchanged, 1 = black) */
+function darkenColor(hex: string, factor: number): string {
+  const h = hex.replace("#", "");
+  const r = Math.round(parseInt(h.substring(0, 2), 16) * (1 - factor));
+  const g = Math.round(parseInt(h.substring(2, 4), 16) * (1 - factor));
+  const b = Math.round(parseInt(h.substring(4, 6), 16) * (1 - factor));
+  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+}
+
+/** System font stack fallback for a given font family */
+function fontStack(family: string): string {
+  return `'${family}', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
+}
+
+/** Default branding values matching the original hardcoded Capgemini theme */
+const DEFAULT_BRANDING: Required<BrandingSettings> = {
+  logo_url: "",
+  primary_color: "#0070AD",
+  secondary_color: "#1B365D",
+  accent_color: "#12ABDB",
+  font_family: "Inter",
+  header_text: "",
+  footer_text: "Confidential",
+};
 
 function markdownToHtml(md: string): string {
   const lines = md.split("\n");
@@ -157,13 +182,24 @@ function slugify(text: string): string {
 
 // escapeHtml imported from @/lib/email/escape-html
 
-const ACCENT_COLORS = ["#0070AD", "#12ABDB", "#1B365D", "#0070AD", "#12ABDB"];
-
 export async function generateHtml(
   data: ProposalData,
   options?: { inlineFonts?: boolean },
 ): Promise<string> {
   const companyName = data.company_name || "IntentBid";
+
+  // Resolve branding with defaults
+  const b: Required<BrandingSettings> = {
+    ...DEFAULT_BRANDING,
+    ...data.branding,
+    header_text: data.branding?.header_text || companyName,
+    footer_text: data.branding?.footer_text || DEFAULT_BRANDING.footer_text,
+    logo_url: data.branding?.logo_url || "",
+  };
+
+  const accentColors = [b.primary_color, b.accent_color, b.secondary_color, b.primary_color, b.accent_color];
+  const heroDark = darkenColor(b.secondary_color, 0.3);
+  const bodyFont = fontStack(b.font_family);
 
   // Collect all mermaid blocks for batch image conversion
   const allMermaidCodes: string[] = [];
@@ -181,7 +217,7 @@ export async function generateHtml(
     .map((section, idx) => {
       const slug = slugify(section.title);
       const blocks = extractMermaidBlocks(section.content);
-      const accentColor = ACCENT_COLORS[idx % ACCENT_COLORS.length];
+      const accentColor = accentColors[idx % accentColors.length];
       const bodyHtml = blocks
         .map((block) => {
           if (block.type === "mermaid") {
@@ -240,7 +276,7 @@ export async function generateHtml(
 <meta property="og:title" content="${escapeHtml(data.title)} | ${escapeHtml(companyName)}">
 <meta property="og:description" content="Proposal prepared for ${escapeHtml(data.client_name)}">
 <meta property="og:type" content="website">
-<meta name="theme-color" content="#0070AD">
+<meta name="theme-color" content="${b.primary_color}">
 ${options?.inlineFonts ? `<style>
   /* System font stack fallback for serverless PDF generation (no external network) */
   @font-face {
@@ -262,9 +298,9 @@ ${options?.inlineFonts ? `<style>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">`}
 <style>
   :root {
-    --cap-blue: #0070AD;
-    --cap-dark: #1B365D;
-    --cap-accent: #12ABDB;
+    --cap-blue: ${b.primary_color};
+    --cap-dark: ${b.secondary_color};
+    --cap-accent: ${b.accent_color};
     --cap-light: #F5F7FA;
     --cap-text: #333333;
     --cap-text-light: #64748B;
@@ -281,7 +317,7 @@ ${options?.inlineFonts ? `<style>
   html { scroll-behavior: smooth; }
 
   body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: ${bodyFont};
     color: var(--cap-text);
     background: var(--cap-light);
     line-height: 1.7;
@@ -290,7 +326,7 @@ ${options?.inlineFonts ? `<style>
 
   /* ===== HERO ===== */
   .hero {
-    background: linear-gradient(135deg, #0F2440 0%, #1B365D 30%, #0070AD 70%, #12ABDB 100%);
+    background: linear-gradient(135deg, ${heroDark} 0%, ${b.secondary_color} 30%, ${b.primary_color} 70%, ${b.accent_color} 100%);
     color: #fff;
     padding: 100px 60px 80px;
     position: relative;
@@ -307,7 +343,7 @@ ${options?.inlineFonts ? `<style>
     width: 500px;
     height: 500px;
     border-radius: 50%;
-    background: rgba(18, 171, 219, 0.08);
+    background: ${b.accent_color}14;
     animation: float 6s ease-in-out infinite;
   }
   .hero::after {
@@ -347,8 +383,8 @@ ${options?.inlineFonts ? `<style>
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #12ABDB;
-    box-shadow: 0 0 8px rgba(18,171,219,0.6);
+    background: ${b.accent_color};
+    box-shadow: 0 0 8px ${b.accent_color}99;
   }
   .hero h1 {
     font-family: 'Playfair Display', Georgia, serif;
@@ -641,7 +677,7 @@ ${options?.inlineFonts ? `<style>
 
   /* ===== FOOTER ===== */
   .footer {
-    background: linear-gradient(135deg, #0F2440 0%, var(--cap-dark) 100%);
+    background: linear-gradient(135deg, ${heroDark} 0%, var(--cap-dark) 100%);
     color: rgba(255,255,255,0.5);
     text-align: center;
     padding: 48px 40px;
@@ -708,16 +744,17 @@ ${options?.inlineFonts ? `<style>
   <div class="shape shape-2"></div>
   <div class="shape shape-3"></div>
   <div class="hero-inner">
+    ${b.logo_url ? `<img src="${escapeHtml(b.logo_url)}" alt="${escapeHtml(b.header_text)}" style="max-height: 48px; margin-bottom: 20px; object-fit: contain;" />` : ""}
     <div class="hero-label">
       <span class="dot"></span>
-      ${escapeHtml(companyName)} Proposal
+      ${escapeHtml(b.header_text)} Proposal
     </div>
     <h1>${escapeHtml(data.title)}</h1>
     <p class="subtitle">Prepared exclusively for ${escapeHtml(data.client_name)}</p>
     <div class="hero-meta">
       <span>${escapeHtml(data.date)}</span>
       <span>|</span>
-      <span>Confidential</span>
+      <span>${escapeHtml(b.footer_text)}</span>
       <span>|</span>
       <span>${data.sections.length} Sections</span>
     </div>
@@ -760,7 +797,7 @@ ${options?.inlineFonts ? `<style>
   <div class="footer-divider"></div>
   <p>${escapeHtml(data.title)}</p>
   <p>Prepared for ${escapeHtml(data.client_name)} &middot; ${escapeHtml(data.date)}</p>
-  <p style="margin-top: 16px; opacity: 0.4;">This document is confidential and intended solely for the intended recipient.</p>
+  <p style="margin-top: 16px; opacity: 0.4;">${escapeHtml(b.footer_text === "Confidential" ? "This document is confidential and intended solely for the intended recipient." : b.footer_text)}</p>
 </footer>
 
 <!-- Scroll animations + Active TOC -->
