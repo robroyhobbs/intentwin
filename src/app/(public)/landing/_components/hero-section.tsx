@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 
 export function HeroSection() {
   return (
@@ -35,7 +34,7 @@ export function HeroSection() {
           <div className="vf-nav-links">
             <a href="#compare">Compare</a>
             <a href="#framework">Framework</a>
-            <a href="#why-intentbid">Why Us</a>
+            <a href="#intelligence">Intelligence</a>
             <a href="#gov">Gov</a>
             <a href="#pricing">Pricing</a>
             <Link href="/about">About</Link>
@@ -60,7 +59,7 @@ export function HeroSection() {
           </h1>
           
           <p className="text-lg md:text-xl text-zinc-400 max-w-2xl mb-10 font-light leading-relaxed">
-            Apply six layers of persuasion intelligence to every RFP, SOW, and capability statement. Stop writing from scratch. Start engineering wins.
+            Structured persuasion intelligence for every RFP, SOW, and capability statement. Market data to find the right deals. AI scoring to qualify them. A proven methodology to win them.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 mb-16">
@@ -80,12 +79,12 @@ export function HeroSection() {
             <span className="hidden sm:block text-zinc-800">|</span>
             <span className="flex items-center gap-2">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="#a78bfa" strokeWidth="1.5"/><path d="M5 8L7 10L11 6" stroke="#a78bfa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              6-layer persuasion engine
+              Market intelligence built in
             </span>
             <span className="hidden sm:block text-zinc-800">|</span>
             <span className="flex items-center gap-2">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2V14M2 8H14" stroke="#a78bfa" strokeWidth="1.5" strokeLinecap="round"/></svg>
-              10x proposal velocity
+              AI bid scoring &amp; qualification
             </span>
           </div>
           
@@ -194,7 +193,7 @@ export function HeroSection() {
             can do — <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">it&apos;s how you present it.</span>
           </p>
           <p className="text-zinc-400 text-xl font-light">
-            Empower your team with institutional knowledge, standardized persuasion frameworks, and competitive positioning instantly available in every draft.
+            Find the right opportunities, qualify them with data, and generate proposals that score like they were written by your best capture team.
           </p>
         </div>
       </section>

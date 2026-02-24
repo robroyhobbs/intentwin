@@ -14,38 +14,11 @@ export function GovSection() {
           <span className="vf-gradient-text">government contractors.</span>
         </h2>
         <p className="vf-gov-sub">
-          Everything in IntentBid Pro, plus specialized capabilities for federal,
-          state, and local government procurement.
+          Everything in IntentBid, plus specialized capabilities for federal,
+          state, and local procurement &mdash; built on live government data.
         </p>
 
         <div className="vf-gov-grid">
-          <div className="vf-gov-card">
-            <div className="vf-gov-card-icon">
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-              </svg>
-            </div>
-            <h3 className="vf-gov-card-title">Auto-Teaming Engine</h3>
-            <p className="vf-gov-card-desc">
-              Automatically identify teaming gaps and suggest subcontractor
-              partners based on required NAICS codes, set-asides, and past
-              performance requirements. Build winning teams before you write a
-              word.
-            </p>
-          </div>
-
           <div className="vf-gov-card">
             <div className="vf-gov-card-icon">
               <svg
@@ -65,9 +38,86 @@ export function GovSection() {
               Classification &amp; Compliance
             </h3>
             <p className="vf-gov-card-desc">
-              Automatic NAICS code mapping, set-aside identification (8(a),
-              HUBZone, WOSB, SDVOSB), and compliance matrix generation. Ensure
-              Section L/M requirements are addressed point-by-point.
+              Automatic NAICS code analysis, set-aside identification (8(a),
+              HUBZone, WOSB, SDVOSB), and compliance matrix generation. Section
+              L/M requirements mapped point-by-point.
+            </p>
+          </div>
+
+          <div className="vf-gov-card">
+            <div className="vf-gov-card-icon">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <line x1="3" y1="9" x2="21" y2="9" />
+                <line x1="9" y1="21" x2="9" y2="9" />
+              </svg>
+            </div>
+            <h3 className="vf-gov-card-title">
+              Agency Evaluation Intelligence
+            </h3>
+            <p className="vf-gov-card-desc">
+              Know how each agency evaluates before you write. Preferred
+              evaluation methods, estimated criteria weights, competition
+              levels, and recent award patterns &mdash; injected directly into
+              your generation prompts.
+            </p>
+          </div>
+
+          <div className="vf-gov-card">
+            <div className="vf-gov-card-icon">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="12" y1="1" x2="12" y2="23" />
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+              </svg>
+            </div>
+            <h3 className="vf-gov-card-title">GSA Rate Benchmarking</h3>
+            <p className="vf-gov-card-desc">
+              Price competitively with GSA CALC+ labor rate data. Median rates,
+              ranges, and cost realism guidance so your pricing passes
+              scrutiny without leaving money on the table.
+            </p>
+          </div>
+
+          <div className="vf-gov-card">
+            <div className="vf-gov-card-icon">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                <line x1="8" y1="21" x2="16" y2="21" />
+                <line x1="12" y1="17" x2="12" y2="21" />
+              </svg>
+            </div>
+            <h3 className="vf-gov-card-title">Past Performance Matching</h3>
+            <p className="vf-gov-card-desc">
+              Centralized evidence library with past performance narratives and
+              project references. The system automatically matches your most
+              relevant work to each opportunity&apos;s evaluation criteria.
             </p>
           </div>
 
@@ -91,65 +141,12 @@ export function GovSection() {
               </svg>
             </div>
             <h3 className="vf-gov-card-title">
-              Contract Vehicle Intelligence
+              FOIA &amp; Public Records
             </h3>
             <p className="vf-gov-card-desc">
-              Align proposals to GSA Schedule, GWACs, BPAs, and IDIQs.
-              Auto-detect vehicle requirements from solicitation documents and
-              tailor responses to specific ordering guides and evaluation
-              criteria.
-            </p>
-          </div>
-
-          <div className="vf-gov-card">
-            <div className="vf-gov-card-icon">
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-                <line x1="8" y1="21" x2="16" y2="21" />
-                <line x1="12" y1="17" x2="12" y2="21" />
-              </svg>
-            </div>
-            <h3 className="vf-gov-card-title">Past Performance Library</h3>
-            <p className="vf-gov-card-desc">
-              Centralized repository of CPARS data, past performance narratives,
-              and project references. Automatically match the most relevant past
-              performance to each new opportunity&apos;s evaluation criteria.
-            </p>
-          </div>
-
-          <div className="vf-gov-card">
-            <div className="vf-gov-card-icon">
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <line x1="2" y1="12" x2="22" y2="12" />
-                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-              </svg>
-            </div>
-            <h3 className="vf-gov-card-title">
-              SAM.gov &amp; GovWin Integration
-            </h3>
-            <p className="vf-gov-card-desc">
-              Pull opportunity details directly from SAM.gov. Cross-reference
-              with your CAGE code, entity registrations, and certifications to
-              ensure eligibility before you invest in a response.
+              Generate state-specific Sunshine Law and FOIA requests with one
+              click. AI-drafted letters cite the correct statute, include fee
+              waiver language, and are ready to send.
             </p>
           </div>
 
@@ -170,12 +167,12 @@ export function GovSection() {
               </svg>
             </div>
             <h3 className="vf-gov-card-title">
-              Capture Management Workflow
+              Color Team Reviews
             </h3>
             <p className="vf-gov-card-desc">
-              Gate reviews, bid/no-bid decision frameworks, color team reviews
-              (Pink, Red, Gold), and Shipley-aligned processes built into every
-              proposal lifecycle.
+              Built-in Pink, Red, Gold, and White team review gates. Structured
+              bid/no-bid decision frameworks and quality checkpoints at every
+              stage of the proposal lifecycle.
             </p>
           </div>
         </div>

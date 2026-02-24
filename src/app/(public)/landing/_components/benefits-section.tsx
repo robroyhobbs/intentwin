@@ -53,9 +53,9 @@ export function BenefitsSection() {
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">engineered.</span>
               </h2>
               <p className="text-xl text-zinc-400 font-light leading-relaxed">
-                Six layers of persuasion intelligence applied to every paragraph,
-                every heading, every proof point. This isn&apos;t text generation.
-                It&apos;s a proven methodology.
+                Persuasion intelligence applied to every paragraph, every
+                heading, every proof point. Brand voice, win themes, competitive
+                positioning, and evidence &mdash; structured into every draft.
               </p>
             </div>
             <div className="md:w-1/2 w-full">

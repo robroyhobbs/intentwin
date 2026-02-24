@@ -9,6 +9,7 @@ import { FrameworkSection } from "./_components/framework-section";
 import { BenefitsSection } from "./_components/benefits-section";
 import { CalculatorSection } from "./_components/calculator-section";
 import { SocialProofSection } from "./_components/social-proof-section";
+import { IntelligenceSection } from "./_components/intelligence-section";
 import { GovSection } from "./_components/gov-section";
 import { CompetitorSection } from "./_components/competitor-section";
 import { PricingFooterSection } from "./_components/pricing-footer-section";
@@ -59,7 +60,7 @@ const oldWay = [
   {
     label: "Scalability",
     old: "Limited by headcount",
-    new: "10x more proposals, same team",
+    new: "Dramatically more output, same team",
   },
 ];
 
@@ -78,6 +79,7 @@ export default function LandingContent() {
           setActiveLayer={setActiveLayer}
         />
         <BenefitsSection />
+        <IntelligenceSection />
         <CalculatorSection />
         <SocialProofSection />
         <CompetitorSection />

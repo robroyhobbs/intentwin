@@ -904,3 +904,86 @@
   color: #a1a1aa;
   margin-bottom: 0;
 }
+
+/* ──────────────────────────────────────────────────────────────
+   Intelligence Section
+   ────────────────────────────────────────────────────────────── */
+.vf-intel {
+  position: relative;
+  padding: 96px 0;
+  background: #09090b;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+.vf-intel-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 900px;
+  height: 900px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(56, 189, 248, 0.08) 0%,
+    rgba(99, 102, 241, 0.04) 40%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+.vf-intel-inner {
+  text-align: center;
+}
+.vf-intel-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+@media (max-width: 768px) {
+  .vf-intel-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.vf-intel-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 28px 24px;
+  text-align: left;
+  transition: border-color 0.3s, background 0.3s;
+}
+.vf-intel-card:hover {
+  border-color: rgba(56, 189, 248, 0.2);
+  background: rgba(56, 189, 248, 0.04);
+}
+.vf-intel-card-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(56, 189, 248, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #38bdf8;
+  margin-bottom: 16px;
+}
+.vf-intel-card-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 8px;
+}
+.vf-intel-card-desc {
+  font-size: 14px;
+  color: #a1a1aa;
+  line-height: 1.6;
+  margin: 0;
+}
+.vf-intel-footnote {
+  margin-top: 40px;
+  font-size: 13px;
+  color: #52525b;
+  font-style: italic;
+}

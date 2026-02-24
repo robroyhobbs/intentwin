@@ -21,14 +21,14 @@ export function PricingFooterSection() {
             <div className="vf-price-grid">
               <ul className="vf-price-list">
                 <li>Unlimited proposal generation</li>
-                <li>All 6 Intent Framework layers</li>
-                <li>Ingest PDF, DOCX, PPTX, TXT, MD, CSV</li>
-                <li>Brand voice calibration</li>
+                <li>Full Intent Framework (6 layers)</li>
+                <li>AI bid scoring &amp; qualification</li>
+                <li>Agency &amp; market intelligence</li>
               </ul>
               <ul className="vf-price-list">
-                <li>Win theme &amp; differentiator engine</li>
+                <li>Opportunity discovery &amp; search</li>
+                <li>Win probability &amp; competitive landscape</li>
                 <li>Outcome tracking &amp; continuous learning</li>
-                <li>Growing organizational knowledge base</li>
                 <li>White-glove onboarding &amp; priority support</li>
               </ul>
             </div>

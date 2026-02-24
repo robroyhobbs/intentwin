@@ -41,7 +41,7 @@ const differentiators = [
   {
     label: "Persuasion",
     them: "Templates and fill-in-the-blank",
-    us: "6-layer framework: AIDA, PAS, FAB, STAR per section",
+    us: "Structured persuasion methodology calibrated per section",
   },
   {
     label: "Learning",
@@ -51,7 +51,7 @@ const differentiators = [
   {
     label: "Speed",
     them: "Days to weeks",
-    us: "Hours. 10x more proposals, same team.",
+    us: "Hours. Same team, dramatically more output.",
   },
   {
     label: "Compliance",
@@ -62,9 +62,9 @@ const differentiators = [
 
 export function CompetitorSection() {
   return (
-    <section id="why-intentbid" className="vf-competitor">
+    <section id="competitors" className="vf-competitor">
       <div className="vf-section-inner">
-        <span className="vf-label">Why IntentBid</span>
+        <span className="vf-label">The Comparison</span>
         <h2 className="vf-section-heading">
           Not another document builder.
         </h2>
