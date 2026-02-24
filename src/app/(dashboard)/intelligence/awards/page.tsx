@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { FileText, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useDebounce } from "@/hooks/use-debounce";
 import { useIntelligence } from "../_components/use-intelligence";
 import { IntelligenceLoading } from "../_components/intelligence-loading";
 import { NotConfigured } from "../_components/not-configured-view";
@@ -22,6 +23,16 @@ export default function AwardSearchPage() {
   const [offset, setOffset] = useState(0);
   const [selectedAward, setSelectedAward] = useState<AwardRecord | null>(null);
 
+  // Debounce text inputs so we don't fire a request on every keystroke
+  const debouncedAgency = useDebounce(agency);
+  const debouncedNaics = useDebounce(naicsCode);
+  const debouncedAwardee = useDebounce(awardeeFilter);
+
+  // Reset to page 1 when any debounced filter changes
+  useEffect(() => {
+    setOffset(0);
+  }, [debouncedAgency, debouncedNaics, competitionType, debouncedAwardee]);
+
   // Sync URL params on mount
   useEffect(() => {
     const naics = searchParams.get("naics");
@@ -37,12 +48,12 @@ export default function AwardSearchPage() {
       limit: String(PAGE_SIZE),
       offset: String(offset),
     };
-    if (agency.trim()) p.agency = agency.trim();
-    if (naicsCode.trim()) p.naics_code = naicsCode.trim();
+    if (debouncedAgency.trim()) p.agency = debouncedAgency.trim();
+    if (debouncedNaics.trim()) p.naics_code = debouncedNaics.trim();
     if (competitionType) p.competition_type = competitionType;
-    if (awardeeFilter.trim()) p.awardee = awardeeFilter.trim();
+    if (debouncedAwardee.trim()) p.awardee = debouncedAwardee.trim();
     return p;
-  }, [agency, naicsCode, competitionType, awardeeFilter, offset]);
+  }, [debouncedAgency, debouncedNaics, competitionType, debouncedAwardee, offset]);
 
   const { data, loading, error, configured } = useIntelligence<AwardsSearchResponse>(
     "/api/v1/awards/search",
@@ -89,7 +100,7 @@ export default function AwardSearchPage() {
               type="text"
               placeholder="e.g., Department of Defense"
               value={agency}
-              onChange={(e) => { setAgency(e.target.value); setOffset(0); }}
+              onChange={(e) => setAgency(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm"
             />
           </div>
@@ -102,7 +113,7 @@ export default function AwardSearchPage() {
             type="text"
             placeholder="e.g., Lockheed Martin"
             value={awardeeFilter}
-            onChange={(e) => { setAwardeeFilter(e.target.value); setOffset(0); }}
+            onChange={(e) => setAwardeeFilter(e.target.value)}
             className="w-full px-4 py-2.5 rounded-xl text-sm"
           />
         </div>
@@ -114,7 +125,7 @@ export default function AwardSearchPage() {
             type="text"
             placeholder="e.g., 541512"
             value={naicsCode}
-            onChange={(e) => { setNaicsCode(e.target.value); setOffset(0); }}
+            onChange={(e) => setNaicsCode(e.target.value)}
             className="w-full px-4 py-2.5 rounded-xl text-sm"
           />
         </div>
@@ -124,7 +135,7 @@ export default function AwardSearchPage() {
           </label>
           <select
             value={competitionType}
-            onChange={(e) => { setCompetitionType(e.target.value); setOffset(0); }}
+            onChange={(e) => setCompetitionType(e.target.value)}
             className="w-full py-2.5 rounded-xl text-sm"
           >
             <option value="">All Types</option>

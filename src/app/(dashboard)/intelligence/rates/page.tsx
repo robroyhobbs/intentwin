@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { DollarSign, Search, Info } from "lucide-react";
+import { useDebounce } from "@/hooks/use-debounce";
 import { useIntelligence } from "../_components/use-intelligence";
 import { IntelligenceLoading } from "../_components/intelligence-loading";
 import { NotConfigured } from "../_components/not-configured-view";
@@ -13,14 +14,17 @@ export default function RateBenchmarksPage() {
   const [businessSize, setBusinessSize] = useState<string>("");
   const [submitted, setSubmitted] = useState(false);
 
+  // Debounce categories so editing after first submit doesn't fire on every keystroke
+  const debouncedCategories = useDebounce(categories);
+
   const params = useMemo(() => {
-    if (!submitted || !categories.trim()) return null;
+    if (!submitted || !debouncedCategories.trim()) return null;
     const p: Record<string, string> = {
-      categories: categories.trim(),
+      categories: debouncedCategories.trim(),
     };
     if (businessSize) p.business_size = businessSize;
     return p;
-  }, [submitted, categories, businessSize]);
+  }, [submitted, debouncedCategories, businessSize]);
 
   const { data, loading, error, configured } = useIntelligence<PricingLookupResponse>(
     "/api/v1/pricing/rates",

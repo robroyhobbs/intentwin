@@ -16,4 +16,7 @@ export type {
   PricingLookupResponse,
   WinProbabilityResponse,
   CompetitiveLandscapeResponse,
+  OpportunityRecord,
+  OpportunitySearchResponse,
+  OpportunityStatsResponse,
 } from "@/lib/intelligence/types";

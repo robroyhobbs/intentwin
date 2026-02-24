@@ -20,6 +20,7 @@ import {
   FileText,
   Hash,
   Info,
+  Briefcase,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
@@ -49,6 +50,7 @@ const navGroups = [
       { name: "Public Records (FOIA)", href: "/intelligence/foia", icon: Library },
       { name: "Agency Explorer", href: "/intelligence/agencies", icon: Building2 },
       { name: "Rate Benchmarks", href: "/intelligence/rates", icon: DollarSign },
+      { name: "Opportunities", href: "/intelligence/opportunities", icon: Briefcase },
       { name: "Award Search", href: "/intelligence/awards", icon: FileText },
       { name: "About Data", href: "/intelligence/about", icon: Info },
     ],

@@ -205,6 +205,47 @@ export interface CompetitiveLandscapeResponse {
   };
 }
 
+// ── Opportunity Search ───────────────────────────────────────────────────────
+
+export interface OpportunitySearchResponse {
+  opportunities: OpportunityRecord[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface OpportunityRecord {
+  id: string;
+  source: string;
+  source_id: string;
+  title: string;
+  description: string | null;
+  agency: string;
+  jurisdiction: string | null;
+  city: string | null;
+  state: string | null;
+  agency_level: "federal" | "state" | "local";
+  naics_code: string | null;
+  native_category_code: string | null;
+  native_category_name: string | null;
+  posted_date: string | null;
+  response_deadline: string | null;
+  estimated_value: number | null;
+  set_aside_type: string | null;
+  contact_name: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  portal_url: string | null;
+  status: "open" | "closed" | "awarded" | "cancelled";
+}
+
+export interface OpportunityStatsResponse {
+  total_opportunities: number;
+  by_status: Record<string, number>;
+  by_source: Record<string, number>;
+  by_state: Record<string, number>;
+}
+
 // ── Composite: Proposal Intelligence Bundle ──────────────────────────────────
 
 export interface ProposalIntelligence {
