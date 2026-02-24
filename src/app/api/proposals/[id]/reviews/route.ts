@@ -1,28 +1,10 @@
-import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
-import { unauthorized, notFound, badRequest, serverError, ok } from "@/lib/api/response";
+import { badRequest, serverError, ok, withProposalRoute } from "@/lib/api/response";
 import { ReviewStatus, AnnotationType } from "@/lib/constants/statuses";
 import { logger } from "@/lib/utils/logger";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const context = await getUserContext(request);
-
-    if (!context) {
-      return unauthorized();
-    }
-
-    // Verify proposal belongs to user's organization
-    const hasAccess = await checkProposalAccess(context, id);
-    if (!hasAccess) {
-      return notFound("Proposal not found");
-    }
-
+export const GET = withProposalRoute(
+  async (_request, { id }, _context) => {
     const adminClient = createAdminClient();
     const { data: reviews, error } = await adminClient
       .from("proposal_reviews")
@@ -32,6 +14,7 @@ export async function GET(
       .order("created_at", { ascending: false });
 
     if (error) {
+      logger.error("Fetch reviews error", error);
       return serverError("Failed to fetch reviews", error);
     }
 
@@ -46,30 +29,11 @@ export async function GET(
     };
 
     return ok({ reviews, summary });
-  } catch (error) {
-    logger.error("Fetch reviews error", error);
-    return serverError("Failed to fetch reviews", error);
-  }
-}
+  },
+);
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const context = await getUserContext(request);
-
-    if (!context) {
-      return unauthorized();
-    }
-
-    // Verify proposal belongs to user's organization
-    const hasAccess = await checkProposalAccess(context, id);
-    if (!hasAccess) {
-      return notFound("Proposal not found");
-    }
-
+export const POST = withProposalRoute(
+  async (request, { id }, context) => {
     const body = await request.json();
     const {
       section_id,
@@ -100,34 +64,16 @@ export async function POST(
       .single();
 
     if (error) {
+      logger.error("Create review error", error);
       return serverError("Failed to create review", error);
     }
 
     return ok({ review });
-  } catch (error) {
-    logger.error("Create review error", error);
-    return serverError("Failed to create review", error);
-  }
-}
+  },
+);
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const context = await getUserContext(request);
-
-    if (!context) {
-      return unauthorized();
-    }
-
-    // Verify proposal belongs to user's organization
-    const hasAccess = await checkProposalAccess(context, id);
-    if (!hasAccess) {
-      return notFound("Proposal not found");
-    }
-
+export const PATCH = withProposalRoute(
+  async (request, { id }, _context) => {
     const body = await request.json();
     const { review_id, status } = body;
 
@@ -145,12 +91,10 @@ export async function PATCH(
       .single();
 
     if (error) {
+      logger.error("Update review error", error);
       return serverError("Failed to update review", error);
     }
 
     return ok({ review });
-  } catch (error) {
-    logger.error("Update review error", error);
-    return serverError("Failed to update review", error);
-  }
-}
+  },
+);

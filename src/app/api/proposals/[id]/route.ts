@@ -1,26 +1,8 @@
-import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getUserContext, verifyProposalAccess, checkProposalAccess } from "@/lib/supabase/auth-api";
-import { unauthorized, notFound, ok, serverError } from "@/lib/api/response";
+import { ok, serverError, withProposalRoute } from "@/lib/api/response";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const context = await getUserContext(request);
-
-    if (!context) {
-      return unauthorized();
-    }
-
-    // Verify user has access to this proposal (organization check)
-    const proposal = await verifyProposalAccess(context, id);
-    if (!proposal) {
-      return notFound("Proposal not found");
-    }
-
+export const GET = withProposalRoute(
+  async (_request, { id }, _context, proposal) => {
     // Fetch sections
     const adminClient = createAdminClient();
     const { data: sections } = await adminClient
@@ -30,29 +12,12 @@ export async function GET(
       .order("section_order", { ascending: true });
 
     return ok({ proposal, sections: sections || [] });
-  } catch (error) {
-    return serverError("Failed to fetch proposal", error);
-  }
-}
+  },
+  { requireFullProposal: true },
+);
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const context = await getUserContext(request);
-
-    if (!context) {
-      return unauthorized();
-    }
-
-    // Lightweight access check — PATCH doesn't need proposal data
-    const hasAccess = await checkProposalAccess(context, id);
-    if (!hasAccess) {
-      return notFound("Proposal not found");
-    }
-
+export const PATCH = withProposalRoute(
+  async (request, { id }, context) => {
     const body = await request.json();
     const { title, intake_data, win_strategy_data, status } = body;
 
@@ -76,29 +41,11 @@ export async function PATCH(
     }
 
     return ok({ proposal });
-  } catch (error) {
-    return serverError("Failed to update proposal", error);
-  }
-}
+  },
+);
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const context = await getUserContext(request);
-
-    if (!context) {
-      return unauthorized();
-    }
-
-    // Lightweight access check — DELETE doesn't need proposal data
-    const hasAccess = await checkProposalAccess(context, id);
-    if (!hasAccess) {
-      return notFound("Proposal not found");
-    }
-
+export const DELETE = withProposalRoute(
+  async (_request, { id }, context) => {
     const adminClient = createAdminClient();
     const { error } = await adminClient
       .from("proposals")
@@ -111,7 +58,5 @@ export async function DELETE(
     }
 
     return ok({ success: true });
-  } catch (error) {
-    return serverError("Failed to delete proposal", error);
-  }
-}
+  },
+);

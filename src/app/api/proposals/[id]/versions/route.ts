@@ -1,30 +1,12 @@
-import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
-import { unauthorized, notFound, serverError, ok, created } from "@/lib/api/response";
+import { serverError, ok, created, withProposalRoute } from "@/lib/api/response";
 
 /**
  * GET /api/proposals/[id]/versions
  * List all versions of a proposal
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const context = await getUserContext(request);
-
-    if (!context) {
-      return unauthorized();
-    }
-
-    // Verify proposal belongs to user's organization
-    const hasAccess = await checkProposalAccess(context, id);
-    if (!hasAccess) {
-      return notFound("Proposal not found");
-    }
-
+export const GET = withProposalRoute(
+  async (_request, { id }, _context) => {
     const supabase = createAdminClient();
 
     // Get all versions with section counts (capped at 100 for safety)
@@ -50,33 +32,15 @@ export async function GET(
     }));
 
     return ok({ versions: versionsWithCount || [] });
-  } catch (error) {
-    return serverError("Failed to list versions", error);
-  }
-}
+  },
+);
 
 /**
  * POST /api/proposals/[id]/versions
  * Create a new version (manual save)
  */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const context = await getUserContext(request);
-
-    if (!context) {
-      return unauthorized();
-    }
-
-    // Verify proposal belongs to user's organization
-    const hasAccess = await checkProposalAccess(context, id);
-    if (!hasAccess) {
-      return notFound("Proposal not found");
-    }
-
+export const POST = withProposalRoute(
+  async (request, { id }, context) => {
     const body = await request.json();
     const { change_summary, label } = body;
 
@@ -103,7 +67,5 @@ export async function POST(
       .single();
 
     return created({ version });
-  } catch (error) {
-    return serverError("Failed to create version", error);
-  }
-}
+  },
+);

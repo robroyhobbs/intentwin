@@ -1,10 +1,7 @@
-import { NextRequest } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import {
-  getUserContext,
-  checkProposalAccess,
   checkDocumentAccess,
 } from "@/lib/supabase/auth-api";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   DOCUMENT_ROLES,
   MAX_DOCUMENTS_PER_PROPOSAL,
@@ -15,30 +12,15 @@ import type {
   AddDocumentResponse,
   ListDocumentsResponse,
 } from "@/types/proposal-documents";
-import { unauthorized, notFound, badRequest, conflict, ok, serverError, created } from "@/lib/api/response";
+import { notFound, badRequest, conflict, ok, serverError, created, withProposalRoute } from "@/lib/api/response";
 import { logger } from "@/lib/utils/logger";
 
 /**
  * GET /api/proposals/[id]/documents
  * List all documents associated with a proposal, including document metadata.
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id: proposalId } = await params;
-    const context = await getUserContext(request);
-
-    if (!context) {
-      return unauthorized();
-    }
-
-    const hasAccess = await checkProposalAccess(context, proposalId);
-    if (!hasAccess) {
-      return notFound("Proposal not found");
-    }
-
+export const GET = withProposalRoute(
+  async (_request, { id: proposalId }, context) => {
     const adminClient = createAdminClient();
 
     const { data: rows, error } = await adminClient
@@ -66,33 +48,16 @@ export async function GET(
     };
 
     return ok(response);
-  } catch (error) {
-    return serverError("Internal server error", error);
-  }
-}
+  },
+);
 
 /**
  * POST /api/proposals/[id]/documents
  * Associate a document with a proposal, assigning it a role.
  * The document must already exist (uploaded via /api/documents/upload).
  */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id: proposalId } = await params;
-    const context = await getUserContext(request);
-
-    if (!context) {
-      return unauthorized();
-    }
-
-    const hasAccess = await checkProposalAccess(context, proposalId);
-    if (!hasAccess) {
-      return notFound("Proposal not found");
-    }
-
+export const POST = withProposalRoute(
+  async (request, { id: proposalId }, context) => {
     let body: AddDocumentRequest;
     try {
       body = await request.json();
@@ -190,7 +155,5 @@ export async function POST(
     };
 
     return created(response);
-  } catch (error) {
-    return serverError("Internal server error", error);
-  }
-}
+  },
+);

@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
-import { unauthorized, notFound, badRequest, serverError, ok, created } from "@/lib/api/response";
+import { badRequest, serverError, ok, created, notFound, withProposalRoute } from "@/lib/api/response";
 import { ComplianceStatus, COMPLIANCE_STATUSES } from "@/lib/constants/statuses";
 
 const VALID_CATEGORIES = ["mandatory", "desirable", "informational"] as const;
@@ -11,23 +10,8 @@ const VALID_REQUIREMENT_TYPES = ["content", "format", "submission", "certificati
  * GET /api/proposals/[id]/requirements
  * List all requirements for a proposal, ordered by category priority then created_at
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const context = await getUserContext(request);
-
-    if (!context) {
-      return unauthorized();
-    }
-
-    const hasAccess = await checkProposalAccess(context, id);
-    if (!hasAccess) {
-      return notFound("Proposal not found");
-    }
-
+export const GET = withProposalRoute(
+  async (_request, { id }, context) => {
     const adminClient = createAdminClient();
     const { data: requirements, error } = await adminClient
       .from("proposal_requirements")
@@ -72,32 +56,15 @@ export async function GET(
     };
 
     return ok({ requirements: sorted, summary });
-  } catch (error) {
-    return serverError("Failed to fetch requirements", error);
-  }
-}
+  },
+);
 
 /**
  * POST /api/proposals/[id]/requirements
  * Create a new requirement (manual add)
  */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const context = await getUserContext(request);
-
-    if (!context) {
-      return unauthorized();
-    }
-
-    const hasAccess = await checkProposalAccess(context, id);
-    if (!hasAccess) {
-      return notFound("Proposal not found");
-    }
-
+export const POST = withProposalRoute(
+  async (request, { id }, context) => {
     const body = await request.json();
     const { requirement_text, source_reference, category, requirement_type, mapped_section_id, notes } = body;
 
@@ -135,32 +102,15 @@ export async function POST(
     }
 
     return created({ requirement });
-  } catch (error) {
-    return serverError("Failed to create requirement", error);
-  }
-}
+  },
+);
 
 /**
  * PATCH /api/proposals/[id]/requirements
  * Batch update requirements (status changes, notes, mapping)
  */
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const context = await getUserContext(request);
-
-    if (!context) {
-      return unauthorized();
-    }
-
-    const hasAccess = await checkProposalAccess(context, id);
-    if (!hasAccess) {
-      return notFound("Proposal not found");
-    }
-
+export const PATCH = withProposalRoute(
+  async (request, { id: _id }, context) => {
     const body = await request.json();
     const { updates } = body;
 
@@ -219,10 +169,8 @@ export async function PATCH(
     }
 
     return ok({ requirements: results });
-  } catch (error) {
-    return serverError("Failed to update requirements", error);
-  }
-}
+  },
+);
 
 /**
  * DELETE /api/proposals/[id]/requirements
@@ -232,12 +180,15 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // DELETE uses request.nextUrl which requires NextRequest — keep manual pattern
+  // but still use the same auth + access flow
   try {
+    const { getUserContext, checkProposalAccess } = await import("@/lib/supabase/auth-api");
     const { id } = await params;
     const context = await getUserContext(request);
 
     if (!context) {
-      return unauthorized();
+      return (await import("@/lib/api/response")).unauthorized();
     }
 
     const hasAccess = await checkProposalAccess(context, id);

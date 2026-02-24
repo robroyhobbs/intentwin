@@ -170,11 +170,15 @@ export function withErrorHandler(
 /** Row shape returned by verifyProposalAccess */
 type ProposalRow = { id: string; organization_id: string; [key: string]: unknown };
 
+/** Resolved route params — always includes `id`, may include nested dynamic segments */
+type RouteParams = { id: string; [key: string]: string };
+
 /**
  * Wrap a proposal sub-route handler with auth + access verification.
  * Extracts proposal ID from params, verifies user context and org access.
  *
- * @param handler - receives (request, proposalId, context) after verification.
+ * @param handler - receives (request, params, context) after verification.
+ *                  `params` contains all resolved route segments (id, sectionId, stageId, etc.).
  *                  `proposal` is only populated when requireFullProposal=true.
  * @param options.requireFullProposal - if true, uses verifyProposalAccess (fetches full row);
  *                                       if false (default), uses checkProposalAccess (lightweight)
@@ -182,7 +186,7 @@ type ProposalRow = { id: string; organization_id: string; [key: string]: unknown
 export function withProposalRoute(
   handler: (
     request: Request,
-    proposalId: string,
+    params: RouteParams,
     context: UserContext,
     proposal?: ProposalRow,
   ) => Promise<Response>,
@@ -190,14 +194,15 @@ export function withProposalRoute(
 ) {
   return async (
     request: Request,
-    { params }: { params: Promise<{ id: string; [key: string]: string }> },
+    { params }: { params: Promise<RouteParams> },
   ): Promise<Response> => {
     try {
       // Lazy import to avoid circular dependency at module scope
       const { getUserContext, verifyProposalAccess, checkProposalAccess } =
         await import("@/lib/supabase/auth-api");
 
-      const { id } = await params;
+      const resolvedParams = await params;
+      const { id } = resolvedParams;
 
       const context = await getUserContext(request as never);
       if (!context) {
@@ -209,7 +214,7 @@ export function withProposalRoute(
         if (!proposal) {
           return notFound("Proposal not found");
         }
-        return await handler(request, id, context, proposal);
+        return await handler(request, resolvedParams, context, proposal);
       }
 
       const hasAccess = await checkProposalAccess(context, id);
@@ -217,7 +222,7 @@ export function withProposalRoute(
         return notFound("Proposal not found");
       }
 
-      return await handler(request, id, context);
+      return await handler(request, resolvedParams, context);
     } catch (error) {
       logger.error("[withProposalRoute] Unhandled error", error);
       return serverError();

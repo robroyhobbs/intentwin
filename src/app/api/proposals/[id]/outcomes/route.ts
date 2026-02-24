@@ -1,32 +1,14 @@
-import { NextRequest } from "next/server";
-import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
 import { generateText } from "@/lib/ai/gemini";
 import { buildOutcomesPrompt } from "@/lib/ai/prompts/outcomes";
 import { getIndustryConfig } from "@/lib/ai/industry-configs";
-import { unauthorized, notFound, badRequest, ok, serverError } from "@/lib/api/response";
+import { badRequest, ok, serverError, withProposalRoute } from "@/lib/api/response";
 import type { WinStrategyData } from "@/types/outcomes";
 
 /** AI outcome generation */
 export const maxDuration = 120;
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  try {
-    const { id } = await params;
-    const context = await getUserContext(request);
-
-    if (!context) {
-      return unauthorized();
-    }
-
-    // Verify proposal belongs to user's organization
-    const hasAccess = await checkProposalAccess(context, id);
-    if (!hasAccess) {
-      return notFound("Proposal not found");
-    }
-
+export const POST = withProposalRoute(
+  async (request, { id: _id }, _context) => {
     const body = await request.json();
     const { intake_data } = body;
 
@@ -74,7 +56,5 @@ export async function POST(
     };
 
     return ok({ win_strategy: winStrategy });
-  } catch (error) {
-    return serverError("Failed to generate outcomes", error);
-  }
-}
+  },
+);

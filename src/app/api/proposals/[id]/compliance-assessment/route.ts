@@ -11,7 +11,7 @@ const STALE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
  * Trigger compliance auto-assessment via Inngest. Returns immediately.
  */
 export const POST = withProposalRoute(
-  async (_request, id, context) => {
+  async (_request, { id }, context) => {
     const supabase = createAdminClient();
     const log = createLogger({ operation: "complianceAssessmentRoute", proposalId: id });
 
@@ -76,7 +76,7 @@ export const POST = withProposalRoute(
  * Returns the current assessment status/metadata.
  */
 export const GET = withProposalRoute(
-  async (_request, id, context) => {
+  async (_request, { id }, context) => {
     const supabase = createAdminClient();
     const { data: proposal } = await supabase
       .from("proposals")

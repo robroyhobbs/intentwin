@@ -1,11 +1,9 @@
-import { NextRequest } from "next/server";
-import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
 import { getReviewModelLabel } from "@/lib/ai/quality-overseer";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createLogger } from "@/lib/utils/logger";
 import { inngest } from "@/inngest/client";
 import { ProposalStatus, QualityReviewStatus, GenerationStatus } from "@/lib/constants/statuses";
-import { unauthorized, notFound, badRequest, conflict, ok, serverError } from "@/lib/api/response";
+import { badRequest, conflict, ok, serverError, withProposalRoute } from "@/lib/api/response";
 
 /** If a review has been "reviewing" for longer than this, treat it as stale/zombie. */
 const STALE_REVIEW_MS = 5 * 60 * 1000; // 5 minutes
@@ -31,23 +29,8 @@ async function resetStaleReview(proposalId: string, existingReview: Record<strin
  * POST /api/proposals/[id]/quality-review
  * Triggers async quality review via Inngest. Returns immediately.
  */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  try {
-    const { id } = await params;
-    const context = await getUserContext(request);
-
-    if (!context) {
-      return unauthorized();
-    }
-
-    const proposal = await verifyProposalAccess(context, id);
-    if (!proposal) {
-      return notFound("Proposal not found");
-    }
-
+export const POST = withProposalRoute(
+  async (request, { id }, _context, proposal) => {
     // Parse and validate body
     let trigger: "manual" | "auto_post_generation" = "manual";
     try {
@@ -67,14 +50,14 @@ export async function POST(
     }
 
     // Block reviews while proposal is still generating
-    if (proposal.status === ProposalStatus.GENERATING) {
+    if (proposal!.status === ProposalStatus.GENERATING) {
       return conflict(
         "Cannot run quality review while the proposal is still generating. Please wait for generation to complete.",
       );
     }
 
     // Check if review is already in progress (prevent concurrent reviews)
-    const qualityReview = proposal.quality_review as {
+    const qualityReview = proposal!.quality_review as {
       status?: string;
       run_at?: string;
     } | null;
@@ -140,34 +123,17 @@ export async function POST(
       proposalId: id,
       message: "Quality review started.",
     });
-  } catch (error) {
-    return serverError("Failed to trigger quality review", error);
-  }
-}
+  },
+  { requireFullProposal: true },
+);
 
 /**
  * GET /api/proposals/[id]/quality-review
  * Returns the current quality_review JSONB from the proposals table.
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  try {
-    const { id } = await params;
-    const context = await getUserContext(request);
-
-    if (!context) {
-      return unauthorized();
-    }
-
-    const proposal = await verifyProposalAccess(context, id);
-    if (!proposal) {
-      return notFound("Proposal not found");
-    }
-
-    return ok(proposal.quality_review || null);
-  } catch (error) {
-    return serverError("Failed to fetch quality review", error);
-  }
-}
+export const GET = withProposalRoute(
+  async (_request, { id: _id }, _context, proposal) => {
+    return ok(proposal!.quality_review || null);
+  },
+  { requireFullProposal: true },
+);

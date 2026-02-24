@@ -2,12 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { badRequest, ok, serverError, withProposalRoute } from "@/lib/api/response";
 
 export const PATCH = withProposalRoute(
-  async (request, id, _context) => {
-    // Extract sectionId from URL: /api/proposals/[id]/sections/[sectionId]
-    const url = new URL(request.url);
-    const segments = url.pathname.split("/");
-    const sectionId = segments[segments.indexOf("sections") + 1];
-
+  async (request, { id, sectionId }, _context) => {
     if (!sectionId) {
       return badRequest("sectionId is required");
     }

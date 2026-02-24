@@ -1,7 +1,5 @@
-import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
-import { unauthorized, notFound, serverError, ok, created, conflict } from "@/lib/api/response";
+import { serverError, ok, created, conflict, withProposalRoute } from "@/lib/api/response";
 import { ReviewStageStatus } from "@/lib/constants/statuses";
 import { logger } from "@/lib/utils/logger";
 
@@ -9,23 +7,8 @@ import { logger } from "@/lib/utils/logger";
  * GET /api/proposals/[id]/review-stages
  * List all review stages for a proposal with reviewer counts and status
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const context = await getUserContext(request);
-
-    if (!context) {
-      return unauthorized();
-    }
-
-    const hasAccess = await checkProposalAccess(context, id);
-    if (!hasAccess) {
-      return notFound("Proposal not found");
-    }
-
+export const GET = withProposalRoute(
+  async (_request, { id }, context) => {
     const adminClient = createAdminClient();
     const { data: stages, error } = await adminClient
       .from("proposal_review_stages")
@@ -72,33 +55,15 @@ export async function GET(
     const currentStage = stagesWithReviewers.find((s) => s.status === ReviewStageStatus.ACTIVE) || null;
 
     return ok({ stages: stagesWithReviewers, currentStage });
-  } catch (error) {
-    logger.error("Fetch review stages error", error);
-    return serverError("Failed to fetch review stages", error);
-  }
-}
+  },
+);
 
 /**
  * POST /api/proposals/[id]/review-stages
  * Initialize all 4 color team review stages for a proposal
  */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const context = await getUserContext(request);
-
-    if (!context) {
-      return unauthorized();
-    }
-
-    const hasAccess = await checkProposalAccess(context, id);
-    if (!hasAccess) {
-      return notFound("Proposal not found");
-    }
-
+export const POST = withProposalRoute(
+  async (_request, { id }, context) => {
     const adminClient = createAdminClient();
 
     // Check if stages already exist
@@ -163,8 +128,5 @@ export async function POST(
     }
 
     return created({ stages: stages || [] });
-  } catch (error) {
-    logger.error("Create review stages error", error);
-    return serverError("Failed to create review stages", error);
-  }
-}
+  },
+);

@@ -1,34 +1,16 @@
-import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
 import { generateText } from "@/lib/ai/gemini";
 import { buildAutoFixPrompt } from "@/lib/ai/prompts/auto-fix";
 import { getQualityFeedbackForSection } from "@/lib/ai/quality-overseer";
 import { ReviewStatus } from "@/lib/constants/statuses";
-import { unauthorized, notFound, badRequest, ok, serverError } from "@/lib/api/response";
+import { badRequest, ok, serverError, withProposalRoute } from "@/lib/api/response";
 import { logger } from "@/lib/utils/logger";
 
 /** AI-powered section rewrite */
 export const maxDuration = 120;
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  try {
-    const { id } = await params;
-    const context = await getUserContext(request);
-
-    if (!context) {
-      return unauthorized();
-    }
-
-    // Verify proposal belongs to user's organization
-    const hasAccess = await checkProposalAccess(context, id);
-    if (!hasAccess) {
-      return notFound("Proposal not found");
-    }
-
+export const POST = withProposalRoute(
+  async (request, { id }, context) => {
     const body = await request.json();
     const { sectionId } = body;
 
@@ -47,7 +29,7 @@ export async function POST(
       .single();
 
     if (sectionError || !section) {
-      return notFound("Section not found");
+      return badRequest("Section not found");
     }
 
     const currentContent =
@@ -141,7 +123,5 @@ export async function POST(
       resolvedCount: reviewIds.length,
       content: revisedContent,
     });
-  } catch (error) {
-    return serverError("Internal server error", error);
-  }
-}
+  },
+);

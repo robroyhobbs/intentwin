@@ -1,30 +1,12 @@
-import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
-import { unauthorized, notFound, serverError, ok } from "@/lib/api/response";
+import { notFound, ok, serverError, withProposalRoute } from "@/lib/api/response";
 
 /**
  * GET /api/proposals/[id]/versions/[versionId]
  * Get a specific version with full section content
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string; versionId: string }> }
-) {
-  try {
-    const { id, versionId } = await params;
-    const context = await getUserContext(request);
-
-    if (!context) {
-      return unauthorized();
-    }
-
-    // Verify proposal belongs to user's organization
-    const hasAccess = await checkProposalAccess(context, id);
-    if (!hasAccess) {
-      return notFound("Proposal not found");
-    }
-
+export const GET = withProposalRoute(
+  async (_request, { id, versionId }) => {
     const supabase = createAdminClient();
 
     // Get the version
@@ -52,33 +34,15 @@ export async function GET(
         sections: sections || [],
       },
     });
-  } catch (error) {
-    return serverError("Failed to get version", error);
-  }
-}
+  },
+);
 
 /**
  * PATCH /api/proposals/[id]/versions/[versionId]
  * Update version metadata (label, change_summary)
  */
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string; versionId: string }> }
-) {
-  try {
-    const { id, versionId } = await params;
-    const context = await getUserContext(request);
-
-    if (!context) {
-      return unauthorized();
-    }
-
-    // Verify proposal belongs to user's organization
-    const hasAccess = await checkProposalAccess(context, id);
-    if (!hasAccess) {
-      return notFound("Proposal not found");
-    }
-
+export const PATCH = withProposalRoute(
+  async (request, { id, versionId }) => {
     const body = await request.json();
     const { label, change_summary } = body;
 
@@ -102,7 +66,5 @@ export async function PATCH(
     }
 
     return ok({ version });
-  } catch (error) {
-    return serverError("Failed to update version", error);
-  }
-}
+  },
+);

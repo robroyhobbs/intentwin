@@ -1,9 +1,7 @@
-import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
 import { sendStageAdvancedEmail } from "@/lib/email/review-notifications";
 import { ReviewStageStatus } from "@/lib/constants/statuses";
-import { unauthorized, notFound, badRequest, ok, serverError } from "@/lib/api/response";
+import { withProposalRoute, notFound, badRequest, ok, serverError } from "@/lib/api/response";
 
 const STAGE_ORDER = ["pink", "red", "gold", "white"] as const;
 
@@ -11,150 +9,131 @@ const STAGE_ORDER = ["pink", "red", "gold", "white"] as const;
  * POST /api/proposals/[id]/review-stages/[stageId]/advance
  * Advance to the next review stage with gate check
  */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string; stageId: string }> },
-) {
+export const POST = withProposalRoute(async (request, { id, stageId }, context, proposal) => {
+  let body: { force?: boolean } = {};
   try {
-    const { id, stageId } = await params;
-    const context = await getUserContext(request);
+    body = await request.json();
+  } catch {
+    // No body is fine, force defaults to false
+  }
 
-    if (!context) {
-      return unauthorized();
-    }
+  const adminClient = createAdminClient();
 
-    const proposal = await verifyProposalAccess(context, id);
-    if (!proposal) {
-      return notFound("Proposal not found");
-    }
+  // Get the current stage
+  const { data: currentStage, error: stageError } = await adminClient
+    .from("proposal_review_stages")
+    .select("id, proposal_id, organization_id, stage, stage_order, status, started_at, completed_at, completed_by, created_at")
+    .eq("id", stageId)
+    .eq("proposal_id", id)
+    .eq("organization_id", context.organizationId)
+    .single();
 
-    let body: { force?: boolean } = {};
-    try {
-      body = await request.json();
-    } catch {
-      // No body is fine, force defaults to false
-    }
+  if (stageError || !currentStage) {
+    return notFound("Review stage not found");
+  }
 
-    const adminClient = createAdminClient();
+  if (currentStage.status !== ReviewStageStatus.ACTIVE) {
+    return badRequest("Can only advance from an active stage");
+  }
 
-    // Get the current stage
-    const { data: currentStage, error: stageError } = await adminClient
-      .from("proposal_review_stages")
-      .select("id, proposal_id, organization_id, stage, stage_order, status, started_at, completed_at, completed_by, created_at")
-      .eq("id", stageId)
-      .eq("proposal_id", id)
-      .eq("organization_id", context.organizationId)
-      .single();
+  // Check if there is a next stage
+  const currentIndex = STAGE_ORDER.indexOf(
+    currentStage.stage as (typeof STAGE_ORDER)[number],
+  );
+  if (currentIndex === STAGE_ORDER.length - 1) {
+    return badRequest("No next stage. White is the final stage.");
+  }
 
-    if (stageError || !currentStage) {
-      return notFound("Review stage not found");
-    }
+  const nextStageName = STAGE_ORDER[currentIndex + 1];
 
-    if (currentStage.status !== ReviewStageStatus.ACTIVE) {
-      return badRequest("Can only advance from an active stage");
-    }
-
-    // Check if there is a next stage
-    const currentIndex = STAGE_ORDER.indexOf(
-      currentStage.stage as (typeof STAGE_ORDER)[number],
+  // Gate check (unless forced)
+  if (!body.force) {
+    const failures = await checkGateCriteria(
+      adminClient,
+      currentStage,
+      id,
+      context.organizationId,
     );
-    if (currentIndex === STAGE_ORDER.length - 1) {
-      return badRequest("No next stage. White is the final stage.");
+
+    if (failures.length > 0) {
+      return ok({
+        canAdvance: false,
+        failures,
+      });
     }
+  }
 
-    const nextStageName = STAGE_ORDER[currentIndex + 1];
+  // Mark current stage as completed
+  const now = new Date().toISOString();
+  const { error: completeError } = await adminClient
+    .from("proposal_review_stages")
+    .update({
+      status: ReviewStageStatus.COMPLETED,
+      completed_at: now,
+      completed_by: context.user.id,
+    })
+    .eq("id", stageId)
+    .eq("organization_id", context.organizationId);
 
-    // Gate check (unless forced)
-    if (!body.force) {
-      const failures = await checkGateCriteria(
-        adminClient,
-        currentStage,
-        id,
-        context.organizationId,
-      );
+  if (completeError) {
+    return serverError("Failed to complete current stage", completeError);
+  }
 
-      if (failures.length > 0) {
-        return ok({
-          canAdvance: false,
-          failures,
-        });
-      }
-    }
+  // Activate next stage
+  const { data: nextStage, error: activateError } = await adminClient
+    .from("proposal_review_stages")
+    .update({
+      status: ReviewStageStatus.ACTIVE,
+      started_at: now,
+    })
+    .eq("proposal_id", id)
+    .eq("stage", nextStageName)
+    .eq("organization_id", context.organizationId)
+    .select("id, proposal_id, organization_id, stage, stage_order, status, started_at, completed_at, completed_by, created_at")
+    .single();
 
-    // Mark current stage as completed
-    const now = new Date().toISOString();
-    const { error: completeError } = await adminClient
-      .from("proposal_review_stages")
-      .update({
-        status: ReviewStageStatus.COMPLETED,
-        completed_at: now,
-        completed_by: context.user.id,
-      })
-      .eq("id", stageId)
+  if (activateError) {
+    return serverError("Failed to activate next stage", activateError);
+  }
+
+  // Send email notifications to next stage reviewers (fire-and-forget)
+  if (nextStage) {
+    const { data: nextReviewers } = await adminClient
+      .from("stage_reviewers")
+      .select("reviewer_id")
+      .eq("stage_id", nextStage.id)
       .eq("organization_id", context.organizationId);
 
-    if (completeError) {
-      return serverError("Failed to complete current stage", completeError);
+    if (nextReviewers && nextReviewers.length > 0) {
+      const reviewerProfiles = await Promise.all(
+        nextReviewers.map(async (r) => {
+          const { data: profile } = await adminClient
+            .from("profiles")
+            .select("full_name, email")
+            .eq("id", r.reviewer_id)
+            .single();
+          return {
+            email: profile?.email || "",
+            name: profile?.full_name || "",
+          };
+        }),
+      );
+
+      sendStageAdvancedEmail({
+        reviewers: reviewerProfiles,
+        proposalTitle: (proposal as { title?: string }).title || "Untitled",
+        proposalId: id,
+        newStage: nextStageName,
+      }).catch(() => {});
     }
-
-    // Activate next stage
-    const { data: nextStage, error: activateError } = await adminClient
-      .from("proposal_review_stages")
-      .update({
-        status: ReviewStageStatus.ACTIVE,
-        started_at: now,
-      })
-      .eq("proposal_id", id)
-      .eq("stage", nextStageName)
-      .eq("organization_id", context.organizationId)
-      .select("id, proposal_id, organization_id, stage, stage_order, status, started_at, completed_at, completed_by, created_at")
-      .single();
-
-    if (activateError) {
-      return serverError("Failed to activate next stage", activateError);
-    }
-
-    // Send email notifications to next stage reviewers (fire-and-forget)
-    if (nextStage) {
-      const { data: nextReviewers } = await adminClient
-        .from("stage_reviewers")
-        .select("reviewer_id")
-        .eq("stage_id", nextStage.id)
-        .eq("organization_id", context.organizationId);
-
-      if (nextReviewers && nextReviewers.length > 0) {
-        const reviewerProfiles = await Promise.all(
-          nextReviewers.map(async (r) => {
-            const { data: profile } = await adminClient
-              .from("profiles")
-              .select("full_name, email")
-              .eq("id", r.reviewer_id)
-              .single();
-            return {
-              email: profile?.email || "",
-              name: profile?.full_name || "",
-            };
-          }),
-        );
-
-        sendStageAdvancedEmail({
-          reviewers: reviewerProfiles,
-          proposalTitle: (proposal as { title?: string }).title || "Untitled",
-          proposalId: id,
-          newStage: nextStageName,
-        }).catch(() => {});
-      }
-    }
-
-    return ok({
-      advanced: true,
-      from: currentStage,
-      to: nextStage,
-    });
-  } catch (error) {
-    return serverError("Internal server error", error);
   }
-}
+
+  return ok({
+    advanced: true,
+    from: currentStage,
+    to: nextStage,
+  });
+}, { requireFullProposal: true });
 
 /**
  * Check gate criteria for the given stage.

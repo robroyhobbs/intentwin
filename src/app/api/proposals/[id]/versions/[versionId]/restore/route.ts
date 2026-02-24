@@ -1,30 +1,12 @@
-import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
-import { unauthorized, notFound, ok, serverError } from "@/lib/api/response";
+import { notFound, ok, serverError, withProposalRoute } from "@/lib/api/response";
 
 /**
  * POST /api/proposals/[id]/versions/[versionId]/restore
  * Restore a proposal to a previous version
  */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string; versionId: string }> }
-) {
-  try {
-    const { id, versionId } = await params;
-    const context = await getUserContext(request);
-
-    if (!context) {
-      return unauthorized();
-    }
-
-    // Verify proposal belongs to user's organization
-    const hasAccess = await checkProposalAccess(context, id);
-    if (!hasAccess) {
-      return notFound("Proposal not found");
-    }
-
+export const POST = withProposalRoute(
+  async (_request, { id, versionId }, context) => {
     const supabase = createAdminClient();
 
     // Verify the version exists and belongs to this proposal
@@ -61,7 +43,5 @@ export async function POST(
       message: `Restored to version ${version.version_number}${version.label ? ` (${version.label})` : ""}`,
       proposal: updatedProposal,
     });
-  } catch (error) {
-    return serverError("Internal server error", error);
-  }
-}
+  },
+);

@@ -1,65 +1,30 @@
-import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getUserContext, verifyProposalAccess } from "@/lib/supabase/auth-api";
-import { unauthorized, notFound, serverError, ok } from "@/lib/api/response";
+import { ok, serverError, withProposalRoute } from "@/lib/api/response";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const context = await getUserContext(request);
-
-    if (!context) {
-      return unauthorized();
-    }
-
-    // Verify proposal belongs to user's organization
-    const proposal = await verifyProposalAccess(context, id);
-    if (!proposal) {
-      return notFound("Proposal not found");
-    }
-
+export const GET = withProposalRoute(
+  async (_request, { id: _id }, _context, proposal) => {
     // Return just the outcome fields
     const outcome = {
-      id: proposal.id,
-      title: proposal.title,
-      deal_outcome: proposal.deal_outcome,
-      deal_outcome_set_at: proposal.deal_outcome_set_at,
-      deal_value: proposal.deal_value,
-      deal_currency: proposal.deal_currency,
-      loss_reason: proposal.loss_reason,
-      loss_reason_category: proposal.loss_reason_category,
-      competitor_won: proposal.competitor_won,
-      outcome_notes: proposal.outcome_notes,
-      promoted_to_case_study: proposal.promoted_to_case_study,
+      id: proposal!.id,
+      title: proposal!.title,
+      deal_outcome: proposal!.deal_outcome,
+      deal_outcome_set_at: proposal!.deal_outcome_set_at,
+      deal_value: proposal!.deal_value,
+      deal_currency: proposal!.deal_currency,
+      loss_reason: proposal!.loss_reason,
+      loss_reason_category: proposal!.loss_reason_category,
+      competitor_won: proposal!.competitor_won,
+      outcome_notes: proposal!.outcome_notes,
+      promoted_to_case_study: proposal!.promoted_to_case_study,
     };
 
     return ok({ outcome });
-  } catch (error) {
-    return serverError("Failed to get outcome", error);
-  }
-}
+  },
+  { requireFullProposal: true },
+);
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const context = await getUserContext(request);
-    if (!context) {
-      return unauthorized();
-    }
-
-    const { id } = await params;
-
-    // Verify proposal belongs to user's organization
-    const existingProposal = await verifyProposalAccess(context, id);
-    if (!existingProposal) {
-      return notFound("Proposal not found");
-    }
-
+export const PATCH = withProposalRoute(
+  async (request, { id }, context, existingProposal) => {
     const body = await request.json();
     const {
       deal_outcome,
@@ -102,7 +67,7 @@ export async function PATCH(
     // Record in history
     await adminClient.from("deal_outcome_history").insert({
       proposal_id: id,
-      previous_outcome: existingProposal.deal_outcome,
+      previous_outcome: existingProposal!.deal_outcome,
       new_outcome: deal_outcome,
       deal_value,
       loss_reason,
@@ -113,7 +78,6 @@ export async function PATCH(
     });
 
     return ok({ proposal });
-  } catch (error) {
-    return serverError("Failed to update outcome", error);
-  }
-}
+  },
+  { requireFullProposal: true },
+);

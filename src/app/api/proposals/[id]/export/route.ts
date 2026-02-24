@@ -1,6 +1,4 @@
-import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getUserContext } from "@/lib/supabase/auth-api";
 import { generateDocx } from "@/lib/export/docx-generator";
 import { generatePptx } from "@/lib/export/pptx-generator";
 import { generateHtml } from "@/lib/export/html-generator";
@@ -11,22 +9,12 @@ import { nanoid } from "nanoid";
 import { format } from "date-fns";
 import { ProposalStatus, GenerationStatus } from "@/lib/constants/statuses";
 import { logger } from "@/lib/utils/logger";
-import { unauthorized, notFound, badRequest, ok, serverError } from "@/lib/api/response";
+import { notFound, badRequest, ok, serverError, withProposalRoute } from "@/lib/api/response";
 
 export const maxDuration = 120; // PDF generation with Chromium can take 30-60s
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  try {
-    const { id } = await params;
-    const context = await getUserContext(request);
-
-    if (!context) {
-      return unauthorized();
-    }
-
+export const POST = withProposalRoute(
+  async (request, { id }, context) => {
     const body = await request.json();
     const formatType = body.format as
       | "docx"
@@ -41,7 +29,7 @@ export async function POST(
 
     const adminClient = createAdminClient();
 
-    // Fetch proposal with organization data for branding (with org verification)
+    // Fetch proposal with organization data for branding
     const { data: proposal } = await adminClient
       .from("proposals")
       .select(
@@ -174,7 +162,5 @@ export async function POST(
       fileName,
       format: formatType,
     });
-  } catch (error) {
-    return serverError("Export failed", error);
-  }
-}
+  },
+);

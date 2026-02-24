@@ -1,6 +1,4 @@
-import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getUserContext, checkProposalAccess } from "@/lib/supabase/auth-api";
 import { generateText } from "@/lib/ai/gemini";
 
 /** AI extraction + DB writes */
@@ -10,7 +8,7 @@ import {
   parseExtractionResponse,
   VALID_SECTION_TYPES,
 } from "@/lib/ai/prompts/extract-requirements";
-import { unauthorized, badRequest, notFound, ok, serverError } from "@/lib/api/response";
+import { badRequest, ok, serverError, withProposalRoute } from "@/lib/api/response";
 
 const EXTRACTION_SYSTEM_PROMPT = `You are an expert at analyzing business documents and extracting requirements. You are precise, thorough, and always respond with valid JSON arrays only.`;
 
@@ -20,23 +18,8 @@ const EXTRACTION_SYSTEM_PROMPT = `You are an expert at analyzing business docume
  * Accepts { document_ids: string[] } in the request body.
  * Re-extraction replaces previously extracted requirements (preserves manual ones).
  */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  try {
-    const { id } = await params;
-    const context = await getUserContext(request);
-
-    if (!context) {
-      return unauthorized();
-    }
-
-    const hasAccess = await checkProposalAccess(context, id);
-    if (!hasAccess) {
-      return notFound("Proposal not found");
-    }
-
+export const POST = withProposalRoute(
+  async (request, { id }, context) => {
     const body = await request.json();
     const { document_ids } = body;
 
@@ -165,7 +148,5 @@ export async function POST(
       count: extracted.length,
       requirements: extracted,
     });
-  } catch (error) {
-    return serverError("Internal server error", error);
-  }
-}
+  },
+);

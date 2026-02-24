@@ -12,7 +12,7 @@ import { ok, withProposalRoute } from "@/lib/api/response";
  * show this alongside the "Generate" button.
  */
 export const GET = withProposalRoute(
-  async (_request, id, context, proposal) => {
+  async (_request, { id }, context, proposal) => {
     const intakeData = (proposal!.intake_data as Record<string, unknown>) || {};
     const serviceLine = intakeData.service_line as string | undefined;
     const industry = intakeData.client_industry as string | undefined;
