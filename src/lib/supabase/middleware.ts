@@ -49,7 +49,9 @@ export async function updateSession(request: NextRequest) {
     pathname === "/terms" ||
     pathname === "/about" ||
     pathname === "/blog" ||
-    pathname.startsWith("/blog/");
+    pathname.startsWith("/blog/") ||
+    pathname === "/sitemap.xml" ||
+    pathname === "/robots.txt";
 
   if (!user && !isAuthPage && !isApiRoute && !isPublicPage) {
     const url = request.nextUrl.clone();
