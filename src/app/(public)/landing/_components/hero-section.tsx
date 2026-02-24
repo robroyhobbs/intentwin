@@ -38,6 +38,8 @@ export function HeroSection() {
             <a href="#why-intentbid">Why Us</a>
             <a href="#gov">Gov</a>
             <a href="#pricing">Pricing</a>
+            <Link href="/about">About</Link>
+            <Link href="/blog">Blog</Link>
             <Link href="/request-access" className="vf-nav-cta">
               Request Access
             </Link>
