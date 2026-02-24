@@ -221,7 +221,12 @@ All tables now have `organization_id` columns with RLS policies:
 
 ## Current Priorities
 
-See `/reports/priorities.md` for the current priority queue.
+1. **FOIA Engine Phase 2 (Inbound Email & Tracking)**
+   - Create an email alias generator so each organization gets a unique inbound address (e.g., `req-123@foia.intentbid.com`).
+   - Enable receiving, tracking, and parsing of inbound communications (using Postmark/SendGrid inbound webhooks + Inngest).
+   - Build a "FOIA Request History" UI view so users can see saved requests and tracked status.
+   - Refine the L1 Source pre-population to include the user's specific name and title in the generated FOIA request.
+2. See `/reports/priorities.md` for the rest of the queue.
 
 ## Compound Engineering
 
