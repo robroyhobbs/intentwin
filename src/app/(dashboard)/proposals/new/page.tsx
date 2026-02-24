@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -11,8 +11,11 @@ import {
   Sparkles,
   FileText,
   Zap,
+  RotateCcw,
+  X,
 } from "lucide-react";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
+import { useWizardAutoSave } from "@/hooks/use-wizard-auto-save";
 import type { WinStrategyData } from "@/types/outcomes";
 import type { OutcomeContract, SuccessMetric } from "@/types/idd";
 import type { ExtractedIntake, ClientResearch } from "@/types/intake";
@@ -81,6 +84,90 @@ export default function NewProposalPage() {
   const [intentApproved, setIntentApproved] = useState(false);
 
   const authFetch = useAuthFetch();
+
+  // --- Draft auto-save ---
+  interface WizardDraftState {
+    phase: number;
+    clientName: string;
+    clientIndustry: string;
+    clientSize: string;
+    solicitationType: string;
+    opportunityType: string;
+    currentStatePains: string[];
+    scopeDescription: string;
+    desiredOutcomes: string[];
+    budgetRange: string;
+    timelineExpectation: string;
+    technicalEnvironment: string;
+    complianceRequirements: string;
+    mustInclude: string[];
+    competitiveIntel: string;
+  }
+
+  const draftState = useMemo<WizardDraftState>(
+    () => ({
+      phase,
+      clientName,
+      clientIndustry,
+      clientSize,
+      solicitationType,
+      opportunityType,
+      currentStatePains,
+      scopeDescription,
+      desiredOutcomes,
+      budgetRange,
+      timelineExpectation,
+      technicalEnvironment,
+      complianceRequirements,
+      mustInclude,
+      competitiveIntel,
+    }),
+    [
+      phase,
+      clientName,
+      clientIndustry,
+      clientSize,
+      solicitationType,
+      opportunityType,
+      currentStatePains,
+      scopeDescription,
+      desiredOutcomes,
+      budgetRange,
+      timelineExpectation,
+      technicalEnvironment,
+      complianceRequirements,
+      mustInclude,
+      competitiveIntel,
+    ],
+  );
+
+  const { hasDraft, restoreDraft, dismissDraft, clearDraft } =
+    useWizardAutoSave<WizardDraftState>(draftState, {
+      storageKey: "proposal-wizard-draft",
+      enabled: intakeMode === "form",
+    });
+
+  const handleRestoreDraft = useCallback(() => {
+    const draft = restoreDraft();
+    if (!draft) return;
+    setPhase(draft.phase);
+    setClientName(draft.clientName);
+    setClientIndustry(draft.clientIndustry);
+    setClientSize(draft.clientSize);
+    setSolicitationType(draft.solicitationType);
+    setOpportunityType(draft.opportunityType);
+    setCurrentStatePains(draft.currentStatePains);
+    setScopeDescription(draft.scopeDescription);
+    setDesiredOutcomes(draft.desiredOutcomes);
+    setBudgetRange(draft.budgetRange);
+    setTimelineExpectation(draft.timelineExpectation);
+    setTechnicalEnvironment(draft.technicalEnvironment);
+    setComplianceRequirements(draft.complianceRequirements);
+    setMustInclude(draft.mustInclude);
+    setCompetitiveIntel(draft.competitiveIntel);
+    setIntakeMode("form");
+    toast.success("Draft restored successfully");
+  }, [restoreDraft]);
 
   // Pre-fill from opportunity feed (sessionStorage)
   useEffect(() => {
@@ -422,6 +509,7 @@ export default function NewProposalPage() {
       }
 
       const { proposal } = await response.json();
+      clearDraft();
       toast.success("Proposal created successfully!");
       router.push(`/proposals/${proposal.id}`);
     } catch (error) {
@@ -452,6 +540,31 @@ export default function NewProposalPage() {
   if (intakeMode === "select") {
     return (
       <div className="h-full flex flex-col">
+        {/* Draft resume banner */}
+        {hasDraft && (
+          <div className="flex-shrink-0 mb-4 flex items-center gap-3 rounded-xl border border-[var(--accent-muted)] bg-[var(--accent-subtle)] px-4 py-3">
+            <RotateCcw className="h-4 w-4 text-[var(--accent)] flex-shrink-0" />
+            <span className="text-sm text-[var(--foreground)]">
+              You have an unsaved draft. Resume where you left off?
+            </span>
+            <div className="ml-auto flex items-center gap-2">
+              <button
+                onClick={handleRestoreDraft}
+                className="btn-primary text-xs px-3 py-1.5"
+              >
+                Resume Draft
+              </button>
+              <button
+                onClick={dismissDraft}
+                className="p-1 rounded-lg hover:bg-[var(--hover)] text-[var(--foreground-muted)]"
+                aria-label="Dismiss draft"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="flex-shrink-0 mb-8">
           <h1 className="text-3xl font-bold text-[var(--foreground)] flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--accent)] to-[var(--accent-hover)] text-white shadow-lg">
@@ -606,6 +719,13 @@ export default function NewProposalPage() {
             {/* Phase 3: Review & Approve */}
             {phase === 2 && (
               <ReviewPhase
+                clientName={clientName}
+                clientIndustry={clientIndustry}
+                solicitationType={solicitationType}
+                opportunityType={opportunityType}
+                scopeDescription={scopeDescription}
+                budgetRange={budgetRange}
+                timelineExpectation={timelineExpectation}
                 currentStatePains={currentStatePains}
                 desiredOutcomes={desiredOutcomes}
                 winStrategy={winStrategy}

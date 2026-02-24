@@ -273,7 +273,7 @@ export function BidEvaluationScreen({
                   className="inline-flex items-center gap-2 rounded-xl border border-[var(--border)] px-6 py-3 text-sm font-medium text-[var(--foreground-muted)] hover:bg-[var(--background-elevated)] transition-all"
                 >
                   <X className="h-4 w-4" />
-                  Skip This Opportunity
+                   Skip Evaluation
                 </button>
                 <button
                   onClick={() => handleBidDecision("proceed")}

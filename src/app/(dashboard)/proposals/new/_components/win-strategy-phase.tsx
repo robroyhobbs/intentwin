@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import {
   Loader2,
   X,
+  Plus,
   Sparkles,
   Lightbulb,
 } from "lucide-react";
@@ -63,34 +65,12 @@ export function WinStrategyPhase({
           </div>
 
           {/* Win Themes */}
-          <section>
-            <h3 className="text-lg font-bold text-[var(--foreground)] mb-4">
-              Win Themes
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {winStrategy.win_themes.map((theme, idx) => (
-                <span
-                  key={idx}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--accent-subtle)] border border-[var(--accent-muted)] text-sm font-medium text-[var(--accent)]"
-                >
-                  {theme}
-                  <button
-                    onClick={() => {
-                      setWinStrategy({
-                        ...winStrategy,
-                        win_themes: winStrategy.win_themes.filter(
-                          (_, i) => i !== idx,
-                        ),
-                      });
-                    }}
-                    className="hover:text-[var(--danger)]"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </span>
-              ))}
-            </div>
-          </section>
+          <WinThemesEditor
+            themes={winStrategy.win_themes}
+            onChange={(themes) =>
+              setWinStrategy({ ...winStrategy, win_themes: themes })
+            }
+          />
 
           {/* Target Outcomes */}
           <section>
@@ -201,5 +181,69 @@ export function WinStrategyPhase({
         </div>
       ) : null}
     </>
+  );
+}
+
+function WinThemesEditor({
+  themes,
+  onChange,
+}: {
+  themes: string[];
+  onChange: (themes: string[]) => void;
+}) {
+  const [newTheme, setNewTheme] = useState("");
+
+  function addTheme() {
+    const trimmed = newTheme.trim();
+    if (!trimmed || themes.includes(trimmed)) return;
+    onChange([...themes, trimmed]);
+    setNewTheme("");
+  }
+
+  return (
+    <section>
+      <h3 className="text-lg font-bold text-[var(--foreground)] mb-4">
+        Win Themes
+      </h3>
+      <div className="flex flex-wrap gap-2 mb-3">
+        {themes.map((theme, idx) => (
+          <span
+            key={idx}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--accent-subtle)] border border-[var(--accent-muted)] text-sm font-medium text-[var(--accent)]"
+          >
+            {theme}
+            <button
+              onClick={() => onChange(themes.filter((_, i) => i !== idx))}
+              className="hover:text-[var(--danger)]"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </span>
+        ))}
+      </div>
+      <div className="flex items-center gap-2">
+        <input
+          type="text"
+          value={newTheme}
+          onChange={(e) => setNewTheme(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              addTheme();
+            }
+          }}
+          placeholder="Add a win theme..."
+          className="flex-1 px-3 py-2 rounded-lg text-sm border border-[var(--border)] bg-[var(--background-secondary)]"
+        />
+        <button
+          onClick={addTheme}
+          disabled={!newTheme.trim()}
+          className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-[var(--accent)] hover:bg-[var(--accent-subtle)] rounded-lg transition-colors disabled:opacity-30"
+        >
+          <Plus className="h-4 w-4" />
+          Add
+        </button>
+      </div>
+    </section>
   );
 }

@@ -5,10 +5,22 @@ import {
   AlertTriangle,
   CheckCircle2,
   Shield,
+  Building2,
+  Briefcase,
+  FileText,
+  Calendar,
+  DollarSign,
 } from "lucide-react";
 import type { WinStrategyData } from "@/types/outcomes";
 
 interface ReviewPhaseProps {
+  clientName: string;
+  clientIndustry: string;
+  solicitationType: string;
+  opportunityType: string;
+  scopeDescription: string;
+  budgetRange: string;
+  timelineExpectation: string;
   currentStatePains: string[];
   desiredOutcomes: string[];
   winStrategy: WinStrategyData | null;
@@ -16,7 +28,35 @@ interface ReviewPhaseProps {
   setIntentApproved: (value: boolean) => void;
 }
 
+const INDUSTRY_LABELS: Record<string, string> = {
+  financial_services: "Financial Services",
+  healthcare: "Healthcare",
+  manufacturing: "Manufacturing",
+  retail: "Retail",
+  energy_utilities: "Energy & Utilities",
+  public_sector: "Public Sector",
+  telecom: "Telecom",
+  technology: "Technology",
+  other: "Other",
+};
+
+const SERVICE_LABELS: Record<string, string> = {
+  cloud_migration: "Cloud Migration",
+  app_modernization: "App Modernization",
+  data_analytics: "Data & Analytics",
+  ai_ml: "AI / Machine Learning",
+  migration_modernization: "Migration + Modernization",
+  other: "Other",
+};
+
 export function ReviewPhase({
+  clientName,
+  clientIndustry,
+  solicitationType,
+  opportunityType,
+  scopeDescription,
+  budgetRange,
+  timelineExpectation,
   currentStatePains,
   desiredOutcomes,
   winStrategy,
@@ -40,7 +80,49 @@ export function ReviewPhase({
         </div>
       </div>
 
-      {/* Summary Grid */}
+      {/* Client & Opportunity Context */}
+      <div className="p-4 rounded-xl border border-[var(--border)]">
+        <h4 className="text-sm font-semibold text-[var(--foreground)] mb-3 flex items-center gap-2">
+          <Building2 className="h-4 w-4" /> Proposal Context
+        </h4>
+        <div className="grid grid-cols-2 gap-x-8 gap-y-2">
+          <SummaryRow label="Client" value={clientName} />
+          {clientIndustry && (
+            <SummaryRow
+              label="Industry"
+              value={INDUSTRY_LABELS[clientIndustry] ?? clientIndustry}
+            />
+          )}
+          <SummaryRow label="Type" value={solicitationType} icon={FileText} />
+          <SummaryRow
+            label="Service"
+            value={SERVICE_LABELS[opportunityType] ?? opportunityType}
+            icon={Briefcase}
+          />
+          {budgetRange && (
+            <SummaryRow label="Budget" value={budgetRange} icon={DollarSign} />
+          )}
+          {timelineExpectation && (
+            <SummaryRow
+              label="Timeline"
+              value={timelineExpectation}
+              icon={Calendar}
+            />
+          )}
+        </div>
+        {scopeDescription && (
+          <div className="mt-3 pt-3 border-t border-[var(--border)]">
+            <p className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide mb-1">
+              Scope
+            </p>
+            <p className="text-sm text-[var(--foreground-muted)]">
+              {scopeDescription}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Pain Points & Outcomes */}
       <div className="grid grid-cols-2 gap-4">
         <div className="p-4 rounded-xl border border-[var(--border)]">
           <h4 className="text-sm font-semibold text-[var(--warning)] mb-2 flex items-center gap-2">
@@ -138,6 +220,26 @@ export function ReviewPhase({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function SummaryRow({
+  label,
+  value,
+  icon: Icon,
+}: {
+  label: string;
+  value: string;
+  icon?: typeof Building2;
+}) {
+  return (
+    <div className="flex items-center justify-between text-sm py-0.5">
+      <span className="text-[var(--foreground-muted)] flex items-center gap-1.5">
+        {Icon && <Icon className="h-3.5 w-3.5" />}
+        {label}
+      </span>
+      <span className="font-medium text-[var(--foreground)]">{value}</span>
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { Step, STEPS } from "./_components/constants";
 import { ProgressIndicator } from "./_components/progress-indicator";
@@ -167,6 +168,7 @@ export default function OnboardingPage() {
       router.push("/proposals/new");
     } catch (error) {
       console.error("Failed to save onboarding data:", error);
+      toast.error("Failed to save your profile. Please try again.");
     }
 
     setLoading(false);
