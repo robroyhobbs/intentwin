@@ -19,6 +19,7 @@ IntentWin ingests an RFP or solicitation document, cross-references it against y
 - **Brand Name Lock** -- Primary brand name is enforced consistently across all generated sections via editorial standards
 - **Audience Calibration** -- AI detects evaluator profile (technical level, role, organization size) from RFP and adjusts tone, depth, and terminology
 - **Auto-Generated Assumptions** -- Standard assumptions and compliance boilerplate injected based on solicitation type
+- **Sunshine Law & FOIA Engine** -- Automated public records request generator tailored to state-specific statutes to acquire incumbent contracts and SLED pricing data.
 - **Industry Intelligence** -- Sector-specific proposal tuning for healthcare, financial services, manufacturing, and public sector
 - **Persuasion Engine** -- AI-driven persuasive writing optimization layered into generated content
 - **Quality Overseer** -- 3-judge LLM council review system with auto-remediation for sections scoring below threshold
