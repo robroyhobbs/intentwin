@@ -1,0 +1,36 @@
+name: Reset Demo Account
+
+on:
+  schedule:
+    # 6:00 AM ET daily (11:00 UTC during EST, 10:00 UTC during EDT)
+    - cron: "0 11 * * *"
+  workflow_dispatch: # Allow manual trigger from GitHub UI
+
+concurrency:
+  group: reset-demo
+  cancel-in-progress: true
+
+jobs:
+  reset:
+    name: Reset Apex Federal Solutions Demo
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run seed script
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: npx tsx scripts/seed-apex-federal-demo.ts
