@@ -82,6 +82,26 @@ export default function NewProposalPage() {
 
   const authFetch = useAuthFetch();
 
+  // Pre-fill from opportunity feed (sessionStorage)
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("opportunity-prefill");
+      if (!raw) return;
+      sessionStorage.removeItem("opportunity-prefill");
+      const prefill = JSON.parse(raw) as Record<string, unknown>;
+      if (prefill.client_name) setClientName(prefill.client_name as string);
+      if (prefill.scope_description)
+        setScopeDescription(prefill.scope_description as string);
+      if (prefill.solicitation_type)
+        setSolicitationType(prefill.solicitation_type as string);
+      if (prefill.timeline_expectation)
+        setTimelineExpectation(prefill.timeline_expectation as string);
+      setIntakeMode("form");
+    } catch {
+      // Ignore parse errors
+    }
+  }, []);
+
   // Helper functions
   function addToArray(setter: React.Dispatch<React.SetStateAction<string[]>>) {
     setter((prev) => [...prev, ""]);
@@ -388,6 +408,7 @@ export default function NewProposalPage() {
           outcome_contract: outcomeContract,
           intent_status: "approved",
           bid_evaluation: bidEvaluation || undefined,
+          client_research: researchData || undefined,
         }),
       });
 

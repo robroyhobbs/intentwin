@@ -81,6 +81,7 @@ export async function POST(request: NextRequest) {
       outcome_contract,
       intent_status,
       bid_evaluation,
+      client_research,
     } = body;
 
     if (!title) {
@@ -116,6 +117,9 @@ export async function POST(request: NextRequest) {
     }
     if (bid_evaluation) {
       proposalData.bid_evaluation = bid_evaluation;
+    }
+    if (client_research) {
+      proposalData.client_research = client_research;
     }
 
     const { data: proposal, error } = await adminClient
