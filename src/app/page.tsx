@@ -5,7 +5,6 @@ import LandingContent from "./(public)/landing/LandingContent";
 import { getJsonLd } from "./(public)/landing/json-ld";
 import "@/styles/public.css";
 
-export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "IntentBid - AI Proposal Intelligence Platform | Win More Deals",
