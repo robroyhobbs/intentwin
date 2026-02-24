@@ -94,6 +94,10 @@ function buildAgencySection(agency: AgencyProfileResponse): string[] {
 }
 
 function buildPricingSection(pricing: PricingLookupResponse): string[] {
+  // Guard: rate_benchmarks may be undefined if the intelligence service
+  // returned a partial/error response that passed the null check.
+  if (!Array.isArray(pricing.rate_benchmarks)) return [];
+
   // Only include if there are benchmarks with actual data
   const validBenchmarks = pricing.rate_benchmarks.filter(
     (r) => r.gsa_median != null,
@@ -113,7 +117,7 @@ function buildPricingSection(pricing: PricingLookupResponse): string[] {
     );
   }
 
-  if (pricing.cost_realism_notes.length > 0) {
+  if (Array.isArray(pricing.cost_realism_notes) && pricing.cost_realism_notes.length > 0) {
     lines.push("\nPricing notes:");
     for (const note of pricing.cost_realism_notes) {
       lines.push(`- ${note}`);
@@ -141,8 +145,9 @@ export function buildWinProbabilityContext(
   lines.push(`Based on ${prob.matching_awards} similar historical awards`);
 
   // Factor breakdown
-  const helpingFactors = prob.factors.filter((f) => f.impact > 0);
-  const hurtingFactors = prob.factors.filter((f) => f.impact < 0);
+  const factors = Array.isArray(prob.factors) ? prob.factors : [];
+  const helpingFactors = factors.filter((f) => f.impact > 0);
+  const hurtingFactors = factors.filter((f) => f.impact < 0);
 
   if (helpingFactors.length > 0) {
     lines.push("\nFactors that help:");
@@ -159,7 +164,7 @@ export function buildWinProbabilityContext(
   }
 
   // Comparable awards summary (without awardee names to avoid LLM referencing competitors)
-  if (prob.comparable_awards.length > 0) {
+  if (Array.isArray(prob.comparable_awards) && prob.comparable_awards.length > 0) {
     lines.push(
       `\n${prob.comparable_awards.length} comparable awards found (avg competition: ${prob.comparable_awards.map((a) => a.competition_type).filter(Boolean).join(", ")})`,
     );
@@ -182,6 +187,7 @@ export function buildPricingSuggestionsContext(
   laborCategories: string[],
 ): string {
   if (!pricing || laborCategories.length === 0) return "";
+  if (!Array.isArray(pricing.rate_benchmarks)) return "";
 
   // Build a case-insensitive lookup map from category name → benchmark
   const benchmarkMap = new Map<string, (typeof pricing.rate_benchmarks)[0]>();
@@ -216,7 +222,7 @@ export function buildPricingSuggestionsContext(
     lines.push(line);
   }
 
-  if (pricing.cost_realism_notes.length > 0) {
+  if (Array.isArray(pricing.cost_realism_notes) && pricing.cost_realism_notes.length > 0) {
     lines.push("");
     lines.push("Pricing notes:");
     for (const note of pricing.cost_realism_notes) {

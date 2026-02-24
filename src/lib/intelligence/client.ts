@@ -254,6 +254,21 @@ class IntelligenceClient {
 
       const data = (await response.json()) as T;
 
+      // Guard: if the service returned an error object (200 OK with {error: "..."}),
+      // treat it as a failure rather than caching a malformed response.
+      if (
+        data &&
+        typeof data === "object" &&
+        "error" in data &&
+        Object.keys(data).length <= 2
+      ) {
+        logger.warn("Intelligence API returned error payload", {
+          path,
+          error: (data as Record<string, unknown>).error,
+        });
+        return null;
+      }
+
       // Cache the successful result
       cache.set(cacheKey, {
         data,
