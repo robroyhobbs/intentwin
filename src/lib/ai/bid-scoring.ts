@@ -120,6 +120,13 @@ export async function scoreFromRequirements(
   const setAside = (rfpRequirements.set_aside as string) ?? null;
   const competitionType = (rfpRequirements.competition_type as string) ?? null;
 
+  logger.info("[bid-scoring] Starting parallel fetch", {
+    agencyName,
+    orgId: organizationId,
+    serviceLine,
+    industry,
+  });
+
   const [l1Context, agencyProfile, pricingRates, winProbability] = await Promise.all([
     fetchL1ContextForScoring(supabase, serviceLine, industry, organizationId),
     agencyName
@@ -138,6 +145,15 @@ export async function scoreFromRequirements(
       businessSize: "small",
     }),
   ]);
+
+  logger.info("[bid-scoring] Parallel fetch complete", {
+    l1CompanyCount: l1Context.companyContext.length,
+    l1ProductCount: l1Context.productContexts.length,
+    l1EvidenceCount: l1Context.evidenceLibrary.length,
+    hasAgencyProfile: !!agencyProfile,
+    hasPricingRates: !!pricingRates,
+    hasWinProbability: !!winProbability,
+  });
 
   const rfpSummary = buildRfpSummary(rfpRequirements);
   const l1Summary = buildL1Summary(l1Context);
@@ -160,10 +176,20 @@ ${intelligenceContext ? `\n### Procurement Intelligence\n${intelligenceContext}`
 ${winProbContext ? `\n### Win Probability Data\n${winProbContext}` : ""}
 Based on the above, score each of the 5 bid evaluation factors (0-100) with rationale.${winProbability ? ` Historical win probability for similar opportunities is ${(winProbability.probability * 100).toFixed(0)}% — factor this into your strategic value assessment.` : ""}`;
 
+  logger.info("[bid-scoring] Calling Gemini", {
+    promptLength: prompt.length,
+    rfpSummaryLength: rfpSummary.length,
+    l1SummaryLength: l1Summary.length,
+  });
+
   const response = await generateText(prompt, {
     systemPrompt: BID_SCORING_SYSTEM_PROMPT,
     temperature: 0.3,
     maxTokens: 4096,
+  });
+
+  logger.info("[bid-scoring] Gemini response received", {
+    responseLength: response.length,
   });
 
   const aiScores = parseScoresFromResponse(response);

@@ -137,7 +137,7 @@ export function ExtractionReview({
   onConfirm,
   onBack,
 }: ExtractionReviewProps) {
-  const [showResearch, setShowResearch] = useState(false);
+  const [showResearch, setShowResearch] = useState(!!research);
   const [agencyIntel, setAgencyIntel] = useState<AgencyProfileResponse | null>(null);
   const [competitiveLandscape, setCompetitiveLandscape] = useState<CompetitiveLandscapeResponse | null>(null);
   const [intelLoading, setIntelLoading] = useState(false);
@@ -158,9 +158,8 @@ export function ExtractionReview({
       const res = await authFetch(`/api/intelligence?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
-        if (data.total_awards_tracked > 0) {
-          setAgencyIntel(data as AgencyProfileResponse);
-        }
+        // Always set the data so the panel can show "no data" instead of flashing then disappearing
+        setAgencyIntel(data as AgencyProfileResponse);
       }
     } catch {
       // Silent fallback — intelligence is optional
@@ -183,9 +182,8 @@ export function ExtractionReview({
       const res = await authFetch(`/api/intelligence?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
-        if (data.total_similar_awards > 0) {
-          setCompetitiveLandscape(data as CompetitiveLandscapeResponse);
-        }
+        // Always set data so panel can show "no data" instead of flashing
+        setCompetitiveLandscape(data as CompetitiveLandscapeResponse);
       }
     } catch {
       // Silent fallback — intelligence is optional
@@ -385,7 +383,7 @@ export function ExtractionReview({
             <p className="text-xs text-[var(--foreground-muted)] animate-pulse">
               Loading agency data...
             </p>
-          ) : agencyIntel ? (
+          ) : agencyIntel && agencyIntel.total_awards_tracked > 0 ? (
             <div className="grid grid-cols-2 gap-3">
               <div className="text-xs text-[var(--foreground-muted)]">
                 <strong className="text-[var(--foreground)]">{agencyIntel.total_awards_tracked.toLocaleString()}</strong> tracked awards
@@ -415,6 +413,10 @@ export function ExtractionReview({
                 </div>
               )}
             </div>
+          ) : agencyIntel ? (
+            <p className="text-xs text-[var(--foreground-muted)]">
+              No procurement history found for {clientName}. Intelligence data will be enriched during proposal generation if available.
+            </p>
           ) : null}
         </div>
       )}

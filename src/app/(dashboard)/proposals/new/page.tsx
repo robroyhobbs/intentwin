@@ -288,14 +288,37 @@ export default function NewProposalPage() {
       });
 
       if (!response.ok) {
-        throw new Error("Scoring failed");
+        // Read the actual error body from the server
+        let serverMessage = `Server returned ${response.status}`;
+        try {
+          const errorBody = await response.json();
+          serverMessage = errorBody.error || errorBody.message || serverMessage;
+        } catch {
+          // Response body wasn't JSON — use status text
+          serverMessage = `${response.status} ${response.statusText}`;
+        }
+        console.error("Bid scoring API error:", {
+          status: response.status,
+          message: serverMessage,
+          rfpFields: Object.keys(rfpRequirements).filter(k => rfpRequirements[k as keyof typeof rfpRequirements] != null),
+        });
+        throw new Error(serverMessage);
       }
 
       const data = await response.json();
       setBidEvaluation(data.evaluation);
     } catch (err) {
-      console.error("Bid scoring error:", err);
-      setBidError("Failed to score opportunity. You can skip or retry.");
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("Bid scoring error:", message);
+      // Show a more helpful error: include the reason if available
+      const isAuth = message.includes("401") || message.toLowerCase().includes("unauthorized");
+      const isRateLimit = message.includes("429") || message.toLowerCase().includes("rate limit");
+      const userMessage = isAuth
+        ? "Session expired. Please refresh the page and try again."
+        : isRateLimit
+          ? "Rate limit reached. Please wait a few minutes and retry."
+          : `Failed to score opportunity: ${message}. You can skip or retry.`;
+      setBidError(userMessage);
     } finally {
       setBidScoring(false);
     }
