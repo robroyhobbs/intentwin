@@ -18,17 +18,32 @@ async function findBrowser(): Promise<{
   args: string[];
 }> {
   // 1. Try @sparticuz/chromium (serverless-compatible Chromium)
+  let chromiumReason = "";
   try {
     const chromium = await import("@sparticuz/chromium");
+    logger.info("pdf-export: @sparticuz/chromium imported", {
+      hasDefault: !!chromium.default,
+      hasExecPath: typeof chromium.default?.executablePath,
+    });
     const execPath = await chromium.default.executablePath();
+    logger.info("pdf-export: executablePath result", { execPath, type: typeof execPath });
     if (execPath) {
-      logger.info("pdf-export: using @sparticuz/chromium", { execPath });
-      return { executablePath: execPath, args: chromium.default.args };
+      // Verify the binary actually exists
+      const { existsSync: fsExists } = await import("fs");
+      const binExists = fsExists(execPath);
+      logger.info("pdf-export: binary exists check", { execPath, binExists });
+      if (binExists) {
+        return { executablePath: execPath, args: chromium.default.args };
+      }
+      chromiumReason = `executablePath resolved to ${execPath} but file does not exist`;
+    } else {
+      chromiumReason = `executablePath() returned falsy: ${String(execPath)}`;
     }
-    logger.warn("pdf-export: @sparticuz/chromium returned falsy executablePath");
   } catch (chromiumError) {
-    const msg = chromiumError instanceof Error ? chromiumError.message : String(chromiumError);
-    logger.info("pdf-export: @sparticuz/chromium unavailable, trying local browsers", { reason: msg });
+    chromiumReason = chromiumError instanceof Error
+      ? `${chromiumError.message} | ${chromiumError.stack?.split("\n").slice(0, 3).join(" ")}`
+      : String(chromiumError);
+    logger.error("pdf-export: @sparticuz/chromium error", { reason: chromiumReason });
   }
 
   // 2. Local development: search for installed browsers
@@ -56,7 +71,7 @@ async function findBrowser(): Promise<{
   }
 
   throw new Error(
-    "No Chromium-based browser found. @sparticuz/chromium failed and no local browser detected.",
+    `PDF browser not found. @sparticuz/chromium: ${chromiumReason}`,
   );
 }
 
