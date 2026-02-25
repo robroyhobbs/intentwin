@@ -15,6 +15,7 @@ import { useWizard } from "./wizard-provider";
 import { WizardSidebar } from "./wizard-sidebar";
 import { WizardBottomBar } from "./wizard-bottom-bar";
 import { WIZARD_STEPS } from "./wizard-types";
+import { StepInput } from "./step-input";
 
 // ────────────────────────────────────────────────────────
 // Step Placeholders (replaced in Phases 1-4)
@@ -95,7 +96,7 @@ export function WizardShell() {
   const renderStep = () => {
     switch (state.currentStep) {
       case 1:
-        return <StepPlaceholder step={1} label="Provide Documents" />;
+        return <StepInput />;
       case 2:
         return <StepPlaceholder step={2} label="Review & Edit" />;
       case 3:
@@ -103,9 +104,17 @@ export function WizardShell() {
       case 4:
         return <StepPlaceholder step={4} label="Generate Sections" />;
       default:
-        return <StepPlaceholder step={1} label="Provide Documents" />;
+        return <StepInput />;
     }
   };
+
+  // Step 1 Next is disabled unless:
+  // - Extraction succeeded (extractedData is set) → auto-advanced by reducer
+  // - Manual entry mode is chosen → intakeMode === "manual"
+  // In both cases the user has already moved past step 1, so the bottom bar
+  // shows "Continue" as disabled on step 1 (FlexibleIntake handles its own submit).
+  const step1NextDisabled =
+    state.currentStep === 1 && state.intakeMode !== "manual";
 
   return (
     <div className="h-full flex flex-col">
@@ -120,7 +129,10 @@ export function WizardShell() {
       </div>
 
       {/* Persistent Bottom Bar */}
-      <WizardBottomBar />
+      <WizardBottomBar
+        nextDisabled={step1NextDisabled}
+        nextLoading={state.isExtracting}
+      />
     </div>
   );
 }
@@ -137,7 +149,7 @@ export function WizardShellFullScreen() {
   const renderStep = () => {
     switch (state.currentStep) {
       case 1:
-        return <StepPlaceholder step={1} label="Provide Documents" />;
+        return <StepInput />;
       case 2:
         return <StepPlaceholder step={2} label="Review & Edit" />;
       case 3:
@@ -145,7 +157,7 @@ export function WizardShellFullScreen() {
       case 4:
         return <StepPlaceholder step={4} label="Generate Sections" />;
       default:
-        return <StepPlaceholder step={1} label="Provide Documents" />;
+        return <StepInput />;
     }
   };
 

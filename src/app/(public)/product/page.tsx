@@ -5,72 +5,97 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Product — IntentBid",
   description:
-    "See how IntentBid turns an RFP into a winning proposal in 8 steps. Upload, extract, score, strategize, generate, and export — with real product screenshots.",
+    "IntentBid replaces the expensive, slow process of writing proposals by hand. Upload an RFP, define your strategy, and generate a complete multi-section proposal in minutes.",
   openGraph: {
-    title: "How IntentBid Builds a Winning Proposal",
+    title: "IntentBid — AI Proposal Engineering",
     description:
-      "From RFP upload to finished proposal. See every step of the IntentBid proposal engine.",
+      "From RFP to finished proposal. No consultants, no templates, no guesswork.",
   },
 };
 
-const STEPS = [
+const VALUE_PROPS = [
   {
-    step: "01",
-    title: "Upload your RFP",
-    desc: "Drop in a PDF, DOCX, or PPTX. IntentBid parses the document and begins extracting structured fields with AI.",
-    image: "/images/product/step1-upload.jpeg",
-    alt: "IntentBid new proposal upload screen showing file drop zone and AI extraction progress",
+    icon: "clock",
+    title: "Hours, not weeks",
+    desc: "A traditional proposal takes 40-80 hours of senior staff time. IntentBid generates a complete, multi-section proposal in minutes — then you refine it.",
   },
   {
-    step: "02",
-    title: "Review extracted data",
-    desc: "The AI identifies client, agency, scope, budget, timeline, NAICS codes, and solicitation type. Review and edit before proceeding.",
-    image: "/images/product/step2-extract.jpeg",
-    alt: "IntentBid review extracted data screen showing auto-filled client, industry, scope, and budget fields",
+    icon: "dollar",
+    title: "Cut proposal costs by 90%",
+    desc: "No proposal consultants at $200/hr. No outsourced writing teams. One platform handles extraction, strategy, generation, and export.",
   },
   {
-    step: "03",
-    title: "Bid / No-Bid scoring",
-    desc: "Every opportunity is scored across five weighted factors: requirement match, past performance, capability alignment, timeline feasibility, and strategic value.",
-    image: "/images/product/step3-bid-scoring.jpeg",
-    alt: "IntentBid bid evaluation screen showing 78.5/100 overall score with five scoring factors",
-  },
-  {
-    step: "04",
-    title: "Define context and outcomes",
-    desc: "Describe client pain points and desired outcomes. These drive the proposal narrative — every section argues toward solving specific problems.",
-    image: "/images/product/step5-define-context.jpeg",
-    alt: "IntentBid define context screen with client information, pain points, and desired outcomes",
-  },
-  {
-    step: "05",
-    title: "Set your win strategy",
-    desc: "Add win themes and prioritize target outcomes. The AI weights emphasis accordingly — high-priority outcomes get more dedicated space.",
-    image: "/images/product/step6-win-strategy.jpeg",
-    alt: "IntentBid win strategy screen showing win themes and prioritized target outcomes",
-  },
-  {
-    step: "06",
-    title: "Confirm intent and generate",
-    desc: "Review the full intent: scope, pain points, outcomes, and win strategy. Approve and hit Create Proposal.",
-    image: "/images/product/step7-confirm-intent.jpeg",
-    alt: "IntentBid intent confirmation screen with pain points, outcomes, win themes, and create proposal button",
-  },
-  {
-    step: "07",
-    title: "Generated proposal — 11 sections",
-    desc: "Cover Letter through Why Us. Each section uses your strategy, evidence library, and persuasion framework. Edit or regenerate any section.",
-    image: "/images/product/step9-generate.jpeg",
-    alt: "IntentBid proposal generation screen showing 11 completed sections with cover letter preview",
-  },
-  {
-    step: "08",
-    title: "Export in any format",
-    desc: "Web Presentation, PowerPoint, Landing Page, Word, or PDF. Choose the format that fits submission requirements.",
-    image: "/images/product/step10-export.jpeg",
-    alt: "IntentBid export screen showing five format options: Web Presentation, PowerPoint, Landing Page, Word, PDF",
+    icon: "target",
+    title: "Built to score, not just fill pages",
+    desc: "Every section is driven by your win strategy, mapped to evaluator criteria, and backed by your evidence library. Proposals that are structured to win.",
   },
 ];
+
+const PHASES = [
+  {
+    phase: "Intake & Qualify",
+    items: [
+      "Upload RFP (PDF, DOCX, PPTX)",
+      "AI extracts scope, budget, timeline, NAICS",
+      "Five-factor bid/no-bid scoring",
+    ],
+    image: "/images/product/step3-bid-scoring.jpeg",
+    alt: "IntentBid bid evaluation showing 78.5/100 score with five factors",
+  },
+  {
+    phase: "Strategy & Intent",
+    items: [
+      "Define client pain points and outcomes",
+      "Set win themes and priority weighting",
+      "Review and approve the full intent",
+    ],
+    image: "/images/product/step6-win-strategy.jpeg",
+    alt: "IntentBid win strategy screen with win themes and prioritized outcomes",
+  },
+  {
+    phase: "Generate & Export",
+    items: [
+      "AI generates 11 proposal sections",
+      "Edit, regenerate, or refine any section",
+      "Export as PPTX, DOCX, PDF, or web slides",
+    ],
+    image: "/images/product/step9-generate.jpeg",
+    alt: "IntentBid proposal generation showing 11 completed sections",
+  },
+];
+
+function IconClock() {
+  return (
+    <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 6v6l4 2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconDollar() {
+  return (
+    <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+      <path d="M12 2v20M17 5H9.5a3.5 3.5 0 100 7h5a3.5 3.5 0 110 7H6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function IconTarget() {
+  return (
+    <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="12" r="6" />
+      <circle cx="12" cy="12" r="2" />
+    </svg>
+  );
+}
+
+const ICONS: Record<string, () => React.JSX.Element> = {
+  clock: IconClock,
+  dollar: IconDollar,
+  target: IconTarget,
+};
 
 export default function ProductPage() {
   return (
@@ -93,86 +118,135 @@ export default function ProductPage() {
       </nav>
 
       <main style={{ paddingTop: 120, paddingBottom: 80 }}>
-        {/* Hero */}
+        {/* Hero — benefit-led */}
         <div className="prod-hero">
           <p className="prod-label">Product</p>
           <h1 className="prod-title">
-            From RFP to finished proposal
+            Stop losing deals to
             <br />
-            <span className="prod-gradient">in eight steps.</span>
+            <span className="prod-gradient">slow proposals.</span>
           </h1>
           <p className="prod-subtitle">
-            Upload a document. Define your strategy. IntentBid generates a
-            complete, multi-section proposal with persuasion intelligence
-            and competitive positioning built in.
+            Most teams pass on winnable contracts because proposals take too
+            long, cost too much, and require expertise they don&rsquo;t
+            have. IntentBid changes that. Upload an RFP, define your win
+            strategy, and get a complete, persuasion-engineered proposal
+            back in minutes.
           </p>
         </div>
 
-        {/* Timeline */}
-        <div className="prod-timeline">
-          {STEPS.map((s, i) => (
-            <div key={s.step} className="prod-tl-item">
-              {/* Connector line */}
-              <div className="prod-tl-rail">
-                <div className="prod-tl-dot" />
-                {i < STEPS.length - 1 && <div className="prod-tl-line" />}
-              </div>
-
-              {/* Content */}
-              <div className="prod-tl-content">
-                <div className="prod-tl-header">
-                  <span className="prod-tl-num">Step {s.step}</span>
-                  <h2 className="prod-tl-title">{s.title}</h2>
-                  <p className="prod-tl-desc">{s.desc}</p>
+        {/* Value pillars */}
+        <section className="prod-value-section">
+          <div className="prod-value-grid">
+            {VALUE_PROPS.map((v) => {
+              const Icon = ICONS[v.icon];
+              return (
+                <div key={v.title} className="prod-value-card">
+                  <div className="prod-value-icon">
+                    <Icon />
+                  </div>
+                  <h3 className="prod-value-title">{v.title}</h3>
+                  <p className="prod-value-desc">{v.desc}</p>
                 </div>
-                <div className="prod-tl-thumb">
+              );
+            })}
+          </div>
+        </section>
+
+        {/* The problem */}
+        <section className="prod-problem">
+          <h2 className="prod-problem-heading">
+            The proposal process is broken
+          </h2>
+          <p className="prod-problem-desc">
+            You find a contract you can win. Then you spend 2-4 weeks
+            writing the response — pulling senior staff off billable work,
+            hiring consultants, or stitching together recycled templates
+            that sound generic. By the time you submit, you&rsquo;ve
+            invested $10-30K in staff time alone.
+            <br />
+            <br />
+            <strong style={{ color: "#e4e4e7" }}>
+              IntentBid replaces that entire process with a structured
+              pipeline:
+            </strong>{" "}
+            your company context, your evidence, your strategy — fed
+            through AI that understands how proposals are evaluated and
+            scored.
+          </p>
+        </section>
+
+        {/* How it works — 3 phases */}
+        <section className="prod-how">
+          <h2 className="prod-how-heading">
+            How it works
+          </h2>
+          <div className="prod-phases">
+            {PHASES.map((p, i) => (
+              <div key={p.phase} className="prod-phase">
+                <div className="prod-phase-header">
+                  <span className="prod-phase-num">0{i + 1}</span>
+                  <h3 className="prod-phase-title">{p.phase}</h3>
+                </div>
+                <ul className="prod-phase-list">
+                  {p.items.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+                <div className="prod-phase-thumb">
                   <Image
-                    src={s.image}
-                    alt={s.alt}
-                    width={480}
-                    height={320}
-                    className="prod-tl-img"
+                    src={p.image}
+                    alt={p.alt}
+                    width={400}
+                    height={267}
+                    className="prod-phase-img"
                   />
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </section>
 
         {/* Evidence + Analytics */}
         <section className="prod-extras">
           <h2 className="prod-extras-heading">
-            The knowledge that powers every proposal
+            Your knowledge, working for you
           </h2>
+          <p className="prod-extras-desc">
+            Proposals are only as strong as the evidence behind them.
+            IntentBid stores your case studies, certifications, and past
+            performance — then automatically matches the most relevant
+            proof points to each section.
+          </p>
           <div className="prod-extras-grid">
             <div className="prod-extra-card">
               <Image
                 src="/images/product/knowledge-evidence.jpeg"
-                alt="IntentBid Evidence Library showing case studies, metrics, and certifications"
-                width={480}
-                height={320}
-                className="prod-tl-img"
+                alt="IntentBid Evidence Library with case studies, metrics, and certifications"
+                width={400}
+                height={267}
+                className="prod-phase-img"
               />
               <h3>Evidence Library</h3>
               <p>
-                Case studies, metrics, testimonials, and certifications
-                &mdash; verified and tagged. The AI matches your most
-                relevant evidence to each section.
+                Case studies, metrics, testimonials, and certifications —
+                tagged and verified. AI matches the strongest evidence
+                to each section automatically.
               </p>
             </div>
             <div className="prod-extra-card">
               <Image
                 src="/images/product/analytics.jpeg"
-                alt="IntentBid Win/Loss Analytics dashboard showing win rate trend and pipeline funnel"
-                width={480}
-                height={320}
-                className="prod-tl-img"
+                alt="IntentBid Win/Loss Analytics dashboard"
+                width={400}
+                height={267}
+                className="prod-phase-img"
               />
               <h3>Win/Loss Analytics</h3>
               <p>
-                Track outcomes across every proposal. Win rate trends,
-                pipeline funnels, and loss reasons. The system learns
-                from your results.
+                Track outcomes across every proposal. Identify what
+                wins, what loses, and why. The system learns from your
+                results and improves over time.
               </p>
             </div>
           </div>
@@ -180,10 +254,10 @@ export default function ProductPage() {
 
         {/* CTA */}
         <section className="prod-cta-section">
-          <h2>Ready to see it in action?</h2>
+          <h2>Ready to win more contracts?</h2>
           <p>
             IntentBid is currently invite-only. Request access and
-            we&rsquo;ll walk you through a live demo.
+            we&rsquo;ll walk you through a live demo with your own RFP.
           </p>
           <Link href="/request-access" className="prod-cta">
             Request Access
