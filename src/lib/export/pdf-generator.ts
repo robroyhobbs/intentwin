@@ -4,46 +4,40 @@ import { logger } from "@/lib/utils/logger";
 import type { ProposalData } from "./slides/types";
 
 /**
+ * Remote URL for the chromium brotli pack (used by @sparticuz/chromium-min).
+ * On first cold start, chromium-min downloads and decompresses from this URL.
+ * Subsequent warm starts reuse the decompressed binary from /tmp.
+ */
+const CHROMIUM_PACK_URL =
+  "https://github.com/Sparticuz/chromium/releases/download/v143.0.4/chromium-v143.0.4-pack.x64.tar";
+
+/**
  * Find a usable Chromium executable for PDF generation.
  *
  * Strategy:
- * 1. Always try @sparticuz/chromium first (works on Vercel, AWS Lambda, etc.)
+ * 1. Use @sparticuz/chromium-min with remote binary download (serverless)
  * 2. Fall back to locally installed browsers (dev machines)
- *
- * Previous approach checked AWS_LAMBDA_FUNCTION_NAME to detect Vercel,
- * but Vercel's runtime no longer sets that env var consistently.
  */
 async function findBrowser(): Promise<{
   executablePath: string;
   args: string[];
 }> {
-  // 1. Try @sparticuz/chromium (serverless-compatible Chromium)
+  // 1. Try @sparticuz/chromium-min (downloads binary on cold start)
   let chromiumReason = "";
   try {
-    const chromium = await import("@sparticuz/chromium");
-    logger.info("pdf-export: @sparticuz/chromium imported", {
-      hasDefault: !!chromium.default,
-      hasExecPath: typeof chromium.default?.executablePath,
-    });
-    const execPath = await chromium.default.executablePath();
-    logger.info("pdf-export: executablePath result", { execPath, type: typeof execPath });
+    const chromium = await import("@sparticuz/chromium-min");
+    logger.info("pdf-export: @sparticuz/chromium-min imported, fetching binary...");
+    const execPath = await chromium.default.executablePath(CHROMIUM_PACK_URL);
+    logger.info("pdf-export: executablePath resolved", { execPath });
     if (execPath) {
-      // Verify the binary actually exists
-      const { existsSync: fsExists } = await import("fs");
-      const binExists = fsExists(execPath);
-      logger.info("pdf-export: binary exists check", { execPath, binExists });
-      if (binExists) {
-        return { executablePath: execPath, args: chromium.default.args };
-      }
-      chromiumReason = `executablePath resolved to ${execPath} but file does not exist`;
-    } else {
-      chromiumReason = `executablePath() returned falsy: ${String(execPath)}`;
+      return { executablePath: execPath, args: chromium.default.args };
     }
+    chromiumReason = `executablePath() returned falsy: ${String(execPath)}`;
   } catch (chromiumError) {
     chromiumReason = chromiumError instanceof Error
-      ? `${chromiumError.message} | ${chromiumError.stack?.split("\n").slice(0, 3).join(" ")}`
+      ? `${chromiumError.message}`
       : String(chromiumError);
-    logger.error("pdf-export: @sparticuz/chromium error", { reason: chromiumReason });
+    logger.error("pdf-export: @sparticuz/chromium-min error", { reason: chromiumReason });
   }
 
   // 2. Local development: search for installed browsers
@@ -71,7 +65,7 @@ async function findBrowser(): Promise<{
   }
 
   throw new Error(
-    `PDF browser not found. @sparticuz/chromium: ${chromiumReason}`,
+    `PDF browser not found. @sparticuz/chromium-min: ${chromiumReason}`,
   );
 }
 

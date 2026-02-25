@@ -20,7 +20,7 @@
     "@dnd-kit/core": "^6.3.1",
     "@google/generative-ai": "^0.24.1",
     "@mistralai/mistralai": "^1.14.0",
-    "@sparticuz/chromium": "^143.0.4",
+    "@sparticuz/chromium-min": "^143.0.4",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.93.1",
     "@tiptap/extension-placeholder": "^3.17.1",
