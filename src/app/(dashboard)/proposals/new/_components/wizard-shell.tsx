@@ -18,6 +18,7 @@ import { WizardBottomBar } from "./wizard-bottom-bar";
 import { WIZARD_STEPS } from "./wizard-types";
 import { StepInput } from "./step-input";
 import { StepReview } from "./step-review";
+import { StepConfigure } from "./step-configure";
 
 // ────────────────────────────────────────────────────────
 // Step Placeholders (replaced in Phases 1-4)
@@ -102,7 +103,7 @@ export function WizardShell() {
       case 2:
         return <StepReview />;
       case 3:
-        return <StepPlaceholder step={3} label="Configure Proposal" />;
+        return <StepConfigure />;
       case 4:
         return <StepPlaceholder step={4} label="Generate Sections" />;
       default:
@@ -124,6 +125,12 @@ export function WizardShell() {
     dispatch({ type: "GO_NEXT" });
   }, [dispatch]);
 
+  // Step 3 Next: only advance if win strategy has been generated.
+  // The "Generate Proposal" button in the bottom bar should be disabled until
+  // the user has generated (and optionally edited) a win strategy and selected sections.
+  const step3NextDisabled =
+    state.currentStep === 3 && (!state.winStrategy || state.selectedSections.length === 0);
+
   // Determine nextDisabled and custom onNext per step
   const getBottomBarProps = () => {
     switch (state.currentStep) {
@@ -135,6 +142,10 @@ export function WizardShell() {
       case 2:
         return {
           onNext: handleStep2Next,
+        };
+      case 3:
+        return {
+          nextDisabled: step3NextDisabled,
         };
       default:
         return {};
@@ -175,7 +186,7 @@ export function WizardShellFullScreen() {
       case 2:
         return <StepReview />;
       case 3:
-        return <StepPlaceholder step={3} label="Configure Proposal" />;
+        return <StepConfigure />;
       case 4:
         return <StepPlaceholder step={4} label="Generate Sections" />;
       default:

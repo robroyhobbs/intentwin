@@ -720,4 +720,408 @@ describe("wizardReducer", () => {
       });
     });
   });
+
+  // ────────────────────────────────────────────────────────
+  // Step 3: Configure & Win Strategy
+  // ────────────────────────────────────────────────────────
+
+  describe("step 3 configure flow", () => {
+    // Helper: state at step 3 with form data populated
+    function stateAtStep3WithData(): WizardState {
+      return dispatchMany(INITIAL_STATE, [
+        {
+          type: "EXTRACTION_SUCCESS",
+          payload: { extracted: mockExtracted, research: null },
+        },
+        { type: "POPULATE_FROM_EXTRACTION" },
+        { type: "GO_NEXT" }, // step 2 → step 3
+      ]);
+    }
+
+    const mockStrategy: import("@/types/outcomes").WinStrategyData = {
+      win_themes: ["Cloud expertise", "Rapid delivery", "Cost optimization"],
+      success_metrics: ["99.9% uptime SLA", "30% cost reduction"],
+      differentiators: ["5x AWS certifications", "200+ cloud migrations"],
+      target_outcomes: [
+        {
+          id: "out-1",
+          outcome: "Reduce infrastructure costs by 30%",
+          category: "cost_savings",
+          priority: "high",
+        },
+        {
+          id: "out-2",
+          outcome: "Zero-downtime migration",
+          category: "performance",
+          priority: "medium",
+        },
+      ],
+      generated_at: "2026-02-24T12:00:00Z",
+    };
+
+    describe("UPDATE_CONFIG", () => {
+      it("updates tone to conversational", () => {
+        const s = dispatch(stateAtStep3WithData(), {
+          type: "UPDATE_CONFIG",
+          payload: { tone: "conversational" },
+        });
+        expect(s.tone).toBe("conversational");
+      });
+
+      it("updates tone to technical", () => {
+        const s = dispatch(stateAtStep3WithData(), {
+          type: "UPDATE_CONFIG",
+          payload: { tone: "technical" },
+        });
+        expect(s.tone).toBe("technical");
+      });
+
+      it("updates selectedTemplate", () => {
+        const s = dispatch(stateAtStep3WithData(), {
+          type: "UPDATE_CONFIG",
+          payload: { selectedTemplate: "enterprise-rfp" },
+        });
+        expect(s.selectedTemplate).toBe("enterprise-rfp");
+      });
+
+      it("updates selectedSections with full section list", () => {
+        const sections = [
+          "executive_summary",
+          "approach",
+          "team",
+          "timeline",
+          "pricing",
+          "compliance",
+        ];
+        const s = dispatch(stateAtStep3WithData(), {
+          type: "UPDATE_CONFIG",
+          payload: { selectedSections: sections },
+        });
+        expect(s.selectedSections).toEqual(sections);
+        expect(s.selectedSections).toHaveLength(6);
+      });
+
+      it("toggles showAdvanced on and off", () => {
+        const s1 = dispatch(stateAtStep3WithData(), {
+          type: "UPDATE_CONFIG",
+          payload: { showAdvanced: true },
+        });
+        expect(s1.showAdvanced).toBe(true);
+
+        const s2 = dispatch(s1, {
+          type: "UPDATE_CONFIG",
+          payload: { showAdvanced: false },
+        });
+        expect(s2.showAdvanced).toBe(false);
+      });
+
+      it("partial update preserves other config fields", () => {
+        const s1 = dispatch(stateAtStep3WithData(), {
+          type: "UPDATE_CONFIG",
+          payload: { tone: "executive", selectedSections: ["a", "b"] },
+        });
+        const s2 = dispatch(s1, {
+          type: "UPDATE_CONFIG",
+          payload: { showAdvanced: true },
+        });
+        expect(s2.tone).toBe("executive");
+        expect(s2.selectedSections).toEqual(["a", "b"]);
+        expect(s2.showAdvanced).toBe(true);
+      });
+
+      it("replaces selectedSections entirely (not merge)", () => {
+        const s1 = dispatch(stateAtStep3WithData(), {
+          type: "UPDATE_CONFIG",
+          payload: { selectedSections: ["a", "b", "c"] },
+        });
+        const s2 = dispatch(s1, {
+          type: "UPDATE_CONFIG",
+          payload: { selectedSections: ["x", "y"] },
+        });
+        expect(s2.selectedSections).toEqual(["x", "y"]);
+      });
+
+      it("empty selectedSections array is valid", () => {
+        const s = dispatch(stateAtStep3WithData(), {
+          type: "UPDATE_CONFIG",
+          payload: { selectedSections: [] },
+        });
+        expect(s.selectedSections).toEqual([]);
+      });
+
+      it("does not affect form fields", () => {
+        const base = stateAtStep3WithData();
+        const s = dispatch(base, {
+          type: "UPDATE_CONFIG",
+          payload: { tone: "executive" },
+        });
+        expect(s.clientName).toBe(base.clientName);
+        expect(s.scopeDescription).toBe(base.scopeDescription);
+      });
+    });
+
+    describe("SET_WIN_STRATEGY", () => {
+      it("stores complete win strategy data", () => {
+        const s = dispatch(stateAtStep3WithData(), {
+          type: "SET_WIN_STRATEGY",
+          winStrategy: mockStrategy,
+        });
+        expect(s.winStrategy).toEqual(mockStrategy);
+        expect(s.winStrategy?.win_themes).toHaveLength(3);
+        expect(s.winStrategy?.target_outcomes).toHaveLength(2);
+        expect(s.winStrategy?.differentiators).toHaveLength(2);
+      });
+
+      it("overwrites existing win strategy", () => {
+        const s1 = dispatch(stateAtStep3WithData(), {
+          type: "SET_WIN_STRATEGY",
+          winStrategy: mockStrategy,
+        });
+        const updatedStrategy = {
+          ...mockStrategy,
+          win_themes: ["Only one theme"],
+          generated_at: "2026-02-24T13:00:00Z",
+        };
+        const s2 = dispatch(s1, {
+          type: "SET_WIN_STRATEGY",
+          winStrategy: updatedStrategy,
+        });
+        expect(s2.winStrategy?.win_themes).toEqual(["Only one theme"]);
+        expect(s2.winStrategy?.generated_at).toBe("2026-02-24T13:00:00Z");
+      });
+
+      it("preserves target outcome priorities", () => {
+        const s = dispatch(stateAtStep3WithData(), {
+          type: "SET_WIN_STRATEGY",
+          winStrategy: mockStrategy,
+        });
+        expect(s.winStrategy?.target_outcomes[0].priority).toBe("high");
+        expect(s.winStrategy?.target_outcomes[1].priority).toBe("medium");
+      });
+
+      it("stores fallback strategy with empty arrays", () => {
+        const fallback = {
+          win_themes: ["Value-driven transformation"],
+          success_metrics: [],
+          differentiators: [],
+          target_outcomes: [],
+          generated_at: "2026-02-24T12:00:00Z",
+        };
+        const s = dispatch(stateAtStep3WithData(), {
+          type: "SET_WIN_STRATEGY",
+          winStrategy: fallback,
+        });
+        expect(s.winStrategy).toEqual(fallback);
+        expect(s.winStrategy?.success_metrics).toEqual([]);
+        expect(s.winStrategy?.target_outcomes).toEqual([]);
+      });
+
+      it("does not affect config or form fields", () => {
+        const base = dispatchMany(stateAtStep3WithData(), [
+          { type: "UPDATE_CONFIG", payload: { tone: "technical", selectedSections: ["a"] } },
+        ]);
+        const s = dispatch(base, {
+          type: "SET_WIN_STRATEGY",
+          winStrategy: mockStrategy,
+        });
+        expect(s.tone).toBe("technical");
+        expect(s.selectedSections).toEqual(["a"]);
+        expect(s.clientName).toBe(base.clientName);
+      });
+    });
+
+    describe("UPDATE_FORM_FIELDS on step 3 (advanced options)", () => {
+      it("updates competitiveIntel from advanced options", () => {
+        const s = dispatch(stateAtStep3WithData(), {
+          type: "UPDATE_FORM_FIELDS",
+          payload: { competitiveIntel: "Incumbent is Deloitte" },
+        });
+        expect(s.competitiveIntel).toBe("Incumbent is Deloitte");
+      });
+
+      it("updates complianceRequirements from advanced options", () => {
+        const s = dispatch(stateAtStep3WithData(), {
+          type: "UPDATE_FORM_FIELDS",
+          payload: { complianceRequirements: "SOC 2, FedRAMP" },
+        });
+        expect(s.complianceRequirements).toBe("SOC 2, FedRAMP");
+      });
+
+      it("updates budgetRange and timelineExpectation together", () => {
+        const s = dispatch(stateAtStep3WithData(), {
+          type: "UPDATE_FORM_FIELDS",
+          payload: { budgetRange: "$500K-$1M", timelineExpectation: "6 months" },
+        });
+        expect(s.budgetRange).toBe("$500K-$1M");
+        expect(s.timelineExpectation).toBe("6 months");
+      });
+
+      it("preserves config when updating form fields", () => {
+        const base = dispatchMany(stateAtStep3WithData(), [
+          { type: "UPDATE_CONFIG", payload: { tone: "executive" } },
+        ]);
+        const s = dispatch(base, {
+          type: "UPDATE_FORM_FIELDS",
+          payload: { competitiveIntel: "Accenture" },
+        });
+        expect(s.tone).toBe("executive");
+        expect(s.competitiveIntel).toBe("Accenture");
+      });
+    });
+
+    describe("step 3 data preservation on GO_BACK", () => {
+      it("preserves config (tone, sections) when going back to step 2", () => {
+        const s = dispatchMany(stateAtStep3WithData(), [
+          { type: "UPDATE_CONFIG", payload: { tone: "technical", selectedSections: ["a", "b", "c"] } },
+          { type: "GO_BACK" },
+        ]);
+        expect(s.currentStep).toBe(2);
+        expect(s.tone).toBe("technical");
+        expect(s.selectedSections).toEqual(["a", "b", "c"]);
+      });
+
+      it("preserves win strategy when going back to step 2", () => {
+        const s = dispatchMany(stateAtStep3WithData(), [
+          { type: "SET_WIN_STRATEGY", winStrategy: mockStrategy },
+          { type: "GO_BACK" },
+        ]);
+        expect(s.currentStep).toBe(2);
+        expect(s.winStrategy).toEqual(mockStrategy);
+      });
+
+      it("preserves advanced option form fields when going back", () => {
+        const s = dispatchMany(stateAtStep3WithData(), [
+          { type: "UPDATE_FORM_FIELDS", payload: { competitiveIntel: "IBM", budgetRange: "$2M" } },
+          { type: "GO_BACK" },
+        ]);
+        expect(s.competitiveIntel).toBe("IBM");
+        expect(s.budgetRange).toBe("$2M");
+      });
+
+      it("preserves showAdvanced state when going back and returning", () => {
+        const s = dispatchMany(stateAtStep3WithData(), [
+          { type: "UPDATE_CONFIG", payload: { showAdvanced: true } },
+          { type: "GO_BACK" },
+          { type: "GO_NEXT" },
+        ]);
+        expect(s.currentStep).toBe(3);
+        expect(s.showAdvanced).toBe(true);
+      });
+
+      it("preserves all step 3 state across multiple back/forward cycles", () => {
+        const s = dispatchMany(stateAtStep3WithData(), [
+          { type: "UPDATE_CONFIG", payload: { tone: "executive", selectedSections: ["x"] } },
+          { type: "SET_WIN_STRATEGY", winStrategy: mockStrategy },
+          { type: "UPDATE_FORM_FIELDS", payload: { competitiveIntel: "KPMG" } },
+          { type: "GO_BACK" }, // step 2
+          { type: "GO_BACK" }, // step 1
+          { type: "GO_NEXT" }, // step 2
+          { type: "GO_NEXT" }, // step 3
+        ]);
+        expect(s.currentStep).toBe(3);
+        expect(s.tone).toBe("executive");
+        expect(s.selectedSections).toEqual(["x"]);
+        expect(s.winStrategy).toEqual(mockStrategy);
+        expect(s.competitiveIntel).toBe("KPMG");
+      });
+    });
+
+    describe("step 3 → step 4 transition", () => {
+      it("GENERATION_START from step 3 advances to step 4 with proposalId", () => {
+        const base = dispatchMany(stateAtStep3WithData(), [
+          { type: "UPDATE_CONFIG", payload: { selectedSections: ["exec_summary", "approach"] } },
+          { type: "SET_WIN_STRATEGY", winStrategy: mockStrategy },
+        ]);
+        const s = dispatch(base, { type: "GENERATION_START", proposalId: "prop-456" });
+        expect(s.currentStep).toBe(4);
+        expect(s.proposalId).toBe("prop-456");
+        expect(s.generationStatus).toBe("generating");
+        expect(s.maxCompletedStep).toBe(3);
+      });
+
+      it("config and strategy survive transition to step 4", () => {
+        const base = dispatchMany(stateAtStep3WithData(), [
+          { type: "UPDATE_CONFIG", payload: { tone: "executive", selectedSections: ["a", "b"] } },
+          { type: "SET_WIN_STRATEGY", winStrategy: mockStrategy },
+          { type: "UPDATE_FORM_FIELDS", payload: { competitiveIntel: "EY" } },
+        ]);
+        const s = dispatch(base, { type: "GENERATION_START", proposalId: "prop-789" });
+        expect(s.tone).toBe("executive");
+        expect(s.selectedSections).toEqual(["a", "b"]);
+        expect(s.winStrategy).toEqual(mockStrategy);
+        expect(s.competitiveIntel).toBe("EY");
+      });
+    });
+
+    describe("step 3 edge cases", () => {
+      it("UPDATE_CONFIG with empty payload doesn't corrupt state", () => {
+        const base = stateAtStep3WithData();
+        const s = dispatch(base, { type: "UPDATE_CONFIG", payload: {} });
+        expect(s.tone).toBe(base.tone);
+        expect(s.selectedSections).toEqual(base.selectedSections);
+      });
+
+      it("SET_WIN_STRATEGY then UPDATE_CONFIG don't interfere", () => {
+        const s = dispatchMany(stateAtStep3WithData(), [
+          { type: "SET_WIN_STRATEGY", winStrategy: mockStrategy },
+          { type: "UPDATE_CONFIG", payload: { tone: "conversational" } },
+        ]);
+        expect(s.winStrategy).toEqual(mockStrategy);
+        expect(s.tone).toBe("conversational");
+      });
+
+      it("multiple SET_WIN_STRATEGY calls only keep the last", () => {
+        const strat1 = { ...mockStrategy, win_themes: ["Theme A"] };
+        const strat2 = { ...mockStrategy, win_themes: ["Theme B"] };
+        const s = dispatchMany(stateAtStep3WithData(), [
+          { type: "SET_WIN_STRATEGY", winStrategy: strat1 },
+          { type: "SET_WIN_STRATEGY", winStrategy: strat2 },
+        ]);
+        expect(s.winStrategy?.win_themes).toEqual(["Theme B"]);
+      });
+
+      it("RESET clears all step 3 configuration", () => {
+        const s = dispatchMany(stateAtStep3WithData(), [
+          { type: "UPDATE_CONFIG", payload: { tone: "executive", selectedSections: ["a"] } },
+          { type: "SET_WIN_STRATEGY", winStrategy: mockStrategy },
+          { type: "UPDATE_FORM_FIELDS", payload: { competitiveIntel: "Deloitte" } },
+          { type: "RESET" },
+        ]);
+        expect(s.tone).toBe("professional");
+        expect(s.selectedSections).toEqual([]);
+        expect(s.winStrategy).toBeNull();
+        expect(s.competitiveIntel).toBe("");
+        expect(s.showAdvanced).toBe(false);
+      });
+
+      it("solicitation type change via UPDATE_FORM_FIELDS doesn't clear config", () => {
+        const s = dispatchMany(stateAtStep3WithData(), [
+          { type: "UPDATE_CONFIG", payload: { tone: "technical", selectedSections: ["a"] } },
+          { type: "UPDATE_FORM_FIELDS", payload: { solicitationType: "RFI" } },
+        ]);
+        expect(s.solicitationType).toBe("RFI");
+        expect(s.tone).toBe("technical");
+        expect(s.selectedSections).toEqual(["a"]);
+      });
+
+      it("RESTORE_DRAFT preserves step 3 config fields", () => {
+        const draft: Partial<WizardState> = {
+          currentStep: 3,
+          maxCompletedStep: 2,
+          tone: "executive",
+          selectedSections: ["exec_summary", "approach", "pricing"],
+          showAdvanced: true,
+          competitiveIntel: "Saved intel",
+          winStrategy: mockStrategy,
+        };
+        const s = dispatch(INITIAL_STATE, { type: "RESTORE_DRAFT", state: draft });
+        expect(s.currentStep).toBe(3);
+        expect(s.tone).toBe("executive");
+        expect(s.selectedSections).toEqual(["exec_summary", "approach", "pricing"]);
+        expect(s.showAdvanced).toBe(true);
+        expect(s.competitiveIntel).toBe("Saved intel");
+        expect(s.winStrategy).toEqual(mockStrategy);
+      });
+    });
+  });
 });
