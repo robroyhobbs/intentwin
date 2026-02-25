@@ -26,6 +26,7 @@ import { ProductsTab } from "./_components/products-tab";
 import { CertificationsTab } from "./_components/certifications-tab";
 import { DeleteConfirmModal } from "./_components/delete-confirm-modal";
 import { TeamMembersTab } from "./_components/team-members-tab";
+import { logger } from "@/lib/utils/logger";
 
 export default function CompanySettingsPage() {
   const [loading, setLoading] = useState(true);
@@ -121,7 +122,7 @@ export default function CompanySettingsPage() {
         }
       }
     } catch (error) {
-      console.error("Error loading data:", error);
+      logger.error("Error loading data", error);
     } finally {
       setLoading(false);
     }
@@ -209,7 +210,7 @@ export default function CompanySettingsPage() {
       setTimeout(() => setSaved(false), 2000);
       await loadData();
     } catch (error) {
-      console.error("Error saving:", error);
+      logger.error("Error saving company settings", error);
       toast.error("Failed to save changes");
     } finally {
       setSaving(false);
@@ -235,7 +236,7 @@ export default function CompanySettingsPage() {
       setNewCertification({ title: "", content: "" });
       await loadData();
     } catch (error) {
-      console.error("Error adding certification:", error);
+      logger.error("Error adding certification", error);
     } finally {
       setSaving(false);
     }
@@ -252,7 +253,7 @@ export default function CompanySettingsPage() {
       await supabase.from("company_context").delete().eq("id", id);
       await loadData();
     } catch (error) {
-      console.error("Error deleting:", error);
+      logger.error("Error deleting item", error);
     }
   }
 
@@ -266,7 +267,7 @@ export default function CompanySettingsPage() {
         setProducts(data.products || []);
       }
     } catch (error) {
-      console.error("Error loading products:", error);
+      logger.error("Error loading products", error);
     }
   }, [authFetch]);
 
@@ -329,7 +330,7 @@ export default function CompanySettingsPage() {
       resetProductForm();
       await loadProducts();
     } catch (error) {
-      console.error("Error saving product:", error);
+      logger.error("Error saving product", error);
       toast.error("Failed to save product");
     } finally {
       setProductSaving(false);
@@ -351,7 +352,7 @@ export default function CompanySettingsPage() {
         await loadProducts();
       }
     } catch (error) {
-      console.error("Error deleting product:", error);
+      logger.error("Error deleting product", error);
     }
   }
 

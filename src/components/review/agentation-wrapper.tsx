@@ -4,6 +4,7 @@ import { useCallback } from "react";
 import { toast } from "sonner";
 import { Agentation } from "agentation";
 import type { ProposalReview } from "@/types/review";
+import { logger } from "@/lib/utils/logger";
 
 interface AgentationWrapperProps {
   proposalId: string;
@@ -62,7 +63,7 @@ export function AgentationWrapper({
           toast.error(err.error || "Failed to save comment");
         }
       } catch (error) {
-        console.error("Failed to save annotation:", error);
+        logger.error("Failed to save annotation", error);
         toast.error("Failed to save comment — check your connection");
       }
     },

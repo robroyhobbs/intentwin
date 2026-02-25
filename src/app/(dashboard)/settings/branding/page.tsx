@@ -15,6 +15,7 @@ import {
   X,
   Eye,
 } from "lucide-react";
+import { logger } from "@/lib/utils/logger";
 
 interface BrandingSettings {
   logo_url?: string;
@@ -91,7 +92,7 @@ export default function BrandingSettingsPage() {
         }
       }
     } catch (error) {
-      console.error("Error loading branding:", error);
+      logger.error("Error loading branding", error);
     } finally {
       setLoading(false);
     }
@@ -122,7 +123,7 @@ export default function BrandingSettingsPage() {
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (error) {
-      console.error("Error saving branding:", error);
+      logger.error("Error saving branding", error);
       toast.error("Failed to save branding settings");
     } finally {
       setSaving(false);
@@ -168,7 +169,7 @@ export default function BrandingSettingsPage() {
 
       setBranding({ ...branding, logo_url: urlData.publicUrl });
     } catch (error) {
-      console.error("Error uploading logo:", error);
+      logger.error("Error uploading logo", error);
       toast.error(
         "Failed to upload logo. Make sure the organization-assets bucket exists in Supabase Storage.",
       );

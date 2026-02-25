@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logger } from "@/lib/utils/logger";
+import { extractJsonFromResponse } from "@/lib/utils/extract-json";
 import { generateText } from "./gemini";
 import { intelligenceClient, buildIntelligenceContext, buildWinProbabilityContext } from "@/lib/intelligence";
 import type { WinProbabilityResponse } from "@/lib/intelligence";
@@ -533,38 +534,6 @@ function buildL1Summary(l1Context: L1Context): string {
  * Extract JSON from an AI response using multiple strategies.
  * Returns null if no valid JSON can be found.
  */
-function extractJsonFromResponse(response: string): Record<string, unknown> | null {
-  // Strategy 1: Markdown code block (greedy to handle nested content)
-  const codeBlockMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (codeBlockMatch) {
-    try {
-      return JSON.parse(codeBlockMatch[1].trim());
-    } catch {
-      // Code block found but content isn't valid JSON — continue to other strategies
-    }
-  }
-
-  // Strategy 2: Find the outermost { ... } in the response
-  const firstBrace = response.indexOf("{");
-  const lastBrace = response.lastIndexOf("}");
-  if (firstBrace !== -1 && lastBrace > firstBrace) {
-    try {
-      return JSON.parse(response.slice(firstBrace, lastBrace + 1));
-    } catch {
-      // Braces found but not valid JSON — continue
-    }
-  }
-
-  // Strategy 3: Try parsing the entire response as-is (raw JSON, no wrapper)
-  try {
-    return JSON.parse(response.trim());
-  } catch {
-    // Nothing worked
-  }
-
-  return null;
-}
-
 function parseScoresFromResponse(
   response: string,
 ): Record<FactorKey, FactorScore> {

@@ -105,19 +105,24 @@ export const POST = withProposalRoute(async (request, { id, stageId }, context, 
       .eq("organization_id", context.organizationId);
 
     if (nextReviewers && nextReviewers.length > 0) {
-      const reviewerProfiles = await Promise.all(
-        nextReviewers.map(async (r) => {
-          const { data: profile } = await adminClient
-            .from("profiles")
-            .select("full_name, email")
-            .eq("id", r.reviewer_id)
-            .single();
-          return {
-            email: profile?.email || "",
-            name: profile?.full_name || "",
-          };
-        }),
+      // Batch fetch all reviewer profiles in a single query (avoids N+1)
+      const reviewerIds = nextReviewers.map((r) => r.reviewer_id);
+      const { data: profiles } = await adminClient
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", reviewerIds);
+
+      const profileMap = new Map(
+        (profiles || []).map((p) => [p.id, p]),
       );
+
+      const reviewerProfiles = reviewerIds.map((rid) => {
+        const profile = profileMap.get(rid);
+        return {
+          email: profile?.email || "",
+          name: profile?.full_name || "",
+        };
+      });
 
       sendStageAdvancedEmail({
         reviewers: reviewerProfiles,

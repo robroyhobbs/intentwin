@@ -13,6 +13,7 @@ import {
   ExternalLink,
   Loader2,
 } from "lucide-react";
+import { logger } from "@/lib/utils/logger";
 
 interface Organization {
   id: string;
@@ -93,7 +94,7 @@ export default function SettingsPage() {
         toast.error(data.error || "Failed to open billing portal");
       }
     } catch (error) {
-      console.error("Portal error:", error);
+      logger.error("Stripe portal error", error);
       toast.error("Failed to open billing portal");
     } finally {
       setPortalLoading(false);

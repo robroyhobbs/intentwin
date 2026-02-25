@@ -9,48 +9,7 @@
  * - Truncated / unparseable responses
  */
 import { describe, it, expect } from "vitest";
-
-// We need to test the internal functions — import the module and test via the public API
-// Since parseScoresFromResponse is not exported, we test via scoreFromRequirements
-// or we extract and test the JSON extraction logic directly.
-// For now, we'll test the extraction pattern directly.
-
-// ── Inline the extraction logic for unit testing ──
-// (Mirrors the implementation in bid-scoring.ts)
-
-function extractJsonFromResponse(
-  response: string,
-): Record<string, unknown> | null {
-  // Strategy 1: Markdown code block
-  const codeBlockMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (codeBlockMatch) {
-    try {
-      return JSON.parse(codeBlockMatch[1].trim());
-    } catch {
-      // continue
-    }
-  }
-
-  // Strategy 2: Outermost braces
-  const firstBrace = response.indexOf("{");
-  const lastBrace = response.lastIndexOf("}");
-  if (firstBrace !== -1 && lastBrace > firstBrace) {
-    try {
-      return JSON.parse(response.slice(firstBrace, lastBrace + 1));
-    } catch {
-      // continue
-    }
-  }
-
-  // Strategy 3: Raw parse
-  try {
-    return JSON.parse(response.trim());
-  } catch {
-    // nothing worked
-  }
-
-  return null;
-}
+import { extractJsonFromResponse } from "@/lib/utils/extract-json";
 
 const VALID_SCORES = {
   requirement_match: { score: 85, rationale: "Strong alignment with IT managed services scope." },

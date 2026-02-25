@@ -20,6 +20,7 @@ import {
   Edit3,
 } from "lucide-react";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
+import { logger } from "@/lib/utils/logger";
 
 interface Version {
   id: string;
@@ -86,7 +87,7 @@ export function VersionHistory({ proposalId, onRestore }: VersionHistoryProps) {
         setVersions(data.versions || []);
       }
     } catch (error) {
-      console.error("Failed to fetch versions:", error);
+      logger.error("Failed to fetch versions", error);
     } finally {
       setLoading(false);
     }

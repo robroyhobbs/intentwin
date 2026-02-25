@@ -15,6 +15,7 @@ import {
   X,
   Sparkles,
 } from "lucide-react";
+import { logger } from "@/lib/utils/logger";
 
 interface ChecklistItem {
   id: string;
@@ -138,7 +139,7 @@ export function GettingStartedChecklist() {
         setDismissed(true);
       }
     } catch (error) {
-      console.error("Error checking progress:", error);
+      logger.error("Error checking progress", error);
     } finally {
       setLoading(false);
     }
@@ -166,7 +167,7 @@ export function GettingStartedChecklist() {
 
       setDismissed(true);
     } catch (error) {
-      console.error("Error dismissing checklist:", error);
+      logger.error("Error dismissing checklist", error);
     }
   }
 

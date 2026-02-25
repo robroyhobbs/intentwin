@@ -3,6 +3,7 @@ import { getUserContext } from "@/lib/supabase/auth-api";
 import { unauthorized, badRequest, ok, serverError } from "@/lib/api/response";
 import { generateText } from "@/lib/ai/gemini";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { logger } from "@/lib/utils/logger";
 
 export const maxDuration = 60;
 
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
       });
     } catch (dbError) {
       // Ignore DB errors if the migration isn't fully active, just return the text
-      console.warn("Could not save FOIA request to DB", dbError);
+      logger.warn("Could not save FOIA request to DB", { error: dbError instanceof Error ? dbError.message : String(dbError) });
     }
 
     return ok({

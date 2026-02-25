@@ -16,6 +16,7 @@ import {
   ArrowLeft,
   Users,
 } from "lucide-react";
+import { logger } from "@/lib/utils/logger";
 
 interface SourceFile {
   fileName: string;
@@ -75,7 +76,7 @@ export default function SourcesPage() {
         });
       }
     } catch (error) {
-      console.error("Failed to load source:", error);
+      logger.error("Failed to load source", error);
     }
   }
 

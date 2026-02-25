@@ -124,11 +124,11 @@ export async function generatePdf(data: ProposalData): Promise<Buffer> {
       },
       displayHeaderFooter: true,
       headerTemplate: `
-        <div style="font-size:8px; color:#999; width:100%; text-align:center; padding:5px 0;">
+        <div style="font-size:8px; color:${data.branding?.primary_color || "#999"}; width:100%; text-align:center; padding:5px 0;">
           ${data.title} | ${companyName} | ${footerText}
         </div>`,
       footerTemplate: `
-        <div style="font-size:8px; color:#999; width:100%; text-align:center; padding:5px 0;">
+        <div style="font-size:8px; color:${data.branding?.primary_color || "#999"}; width:100%; text-align:center; padding:5px 0;">
           Page <span class="pageNumber"></span> of <span class="totalPages"></span>
         </div>`,
       timeout: 60000,

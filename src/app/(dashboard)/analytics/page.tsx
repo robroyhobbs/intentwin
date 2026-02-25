@@ -11,6 +11,7 @@ import { COLORS } from "./_components/chart-tooltips";
 import dynamic from "next/dynamic";
 import { SummaryStats } from "./_components/summary-stats";
 import { RecentOutcomes } from "./_components/recent-outcomes";
+import { logger } from "@/lib/utils/logger";
 
 const WinRateTrend = dynamic(
   () => import("./_components/win-rate-trend").then((m) => m.WinRateTrend),
@@ -46,7 +47,7 @@ export default function AnalyticsPage() {
           setData(result);
         }
       } catch (error) {
-        console.error("Failed to load analytics:", error);
+        logger.error("Failed to load analytics", error);
       } finally {
         setLoading(false);
       }

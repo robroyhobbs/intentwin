@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { logger } from "@/lib/utils/logger";
 
 interface MermaidRendererProps {
   chart: string;
@@ -40,7 +41,7 @@ export function MermaidRenderer({ chart, className }: MermaidRendererProps) {
         }
         return;
       } catch (mermaidErr) {
-        console.warn("Mermaid render failed, trying Gemini:", mermaidErr);
+        logger.warn("Mermaid render failed, trying Gemini", { error: mermaidErr instanceof Error ? mermaidErr.message : String(mermaidErr) });
       }
 
       // Fall back to Gemini image generation
@@ -61,7 +62,7 @@ export function MermaidRenderer({ chart, className }: MermaidRendererProps) {
           }
         }
       } catch (geminiErr) {
-        console.error("Gemini diagram generation failed:", geminiErr);
+        logger.error("Gemini diagram generation failed", geminiErr);
       }
 
       if (!cancelled) {

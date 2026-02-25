@@ -34,22 +34,27 @@ export const GET = withProposalRoute(async (request, { id, stageId }, context) =
     return serverError("Failed to fetch reviewers", error);
   }
 
-  // Enrich with profile names
-  const enrichedReviewers = await Promise.all(
-    (reviewers || []).map(async (reviewer) => {
-      const { data: profile } = await adminClient
+  // Batch fetch all reviewer profiles in a single query (avoids N+1)
+  const reviewerIds = (reviewers || []).map((r) => r.reviewer_id);
+  const { data: profiles } = reviewerIds.length > 0
+    ? await adminClient
         .from("profiles")
-        .select("full_name, email")
-        .eq("id", reviewer.reviewer_id)
-        .single();
+        .select("id, full_name, email")
+        .in("id", reviewerIds)
+    : { data: [] as { id: string; full_name: string | null; email: string | null }[] };
 
-      return {
-        ...reviewer,
-        full_name: profile?.full_name || null,
-        email: profile?.email || null,
-      };
-    }),
+  const profileMap = new Map(
+    (profiles || []).map((p) => [p.id, p]),
   );
+
+  const enrichedReviewers = (reviewers || []).map((reviewer) => {
+    const profile = profileMap.get(reviewer.reviewer_id);
+    return {
+      ...reviewer,
+      full_name: profile?.full_name || null,
+      email: profile?.email || null,
+    };
+  });
 
   return ok({ reviewers: enrichedReviewers });
 }, { requireFullProposal: true });

@@ -17,6 +17,7 @@ import type { ProposalReview, ReviewSummary } from "@/types/review";
 import { exportAnnotationsAsMarkdown } from "@/lib/review/export-annotations";
 import { extractPlaceholders } from "@/components/preflight/review-mode-sidebar";
 import type { PreflightResult } from "@/lib/ai/pipeline/preflight";
+import { logger } from "@/lib/utils/logger";
 
 import type { Proposal, Section } from "./_components/types";
 import { ProposalTopBar } from "./_components/proposal-top-bar";
@@ -121,7 +122,7 @@ export default function ProposalPage() {
         initialSectionSet.current = true;
       }
     } catch (error) {
-      console.error("Fetch error:", error);
+      logger.error("Failed to fetch proposal", error);
       toast.error("Failed to load proposal");
     } finally {
       setLoading(false);

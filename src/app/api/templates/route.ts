@@ -1,6 +1,7 @@
-import { type NextRequest, NextResponse } from "next/server";
+import { type NextRequest } from "next/server";
 import { getUserContext } from "@/lib/supabase/auth-api";
 import { getSectionsForSolicitationType } from "@/lib/ai/pipeline/section-configs";
+import { unauthorized, badRequest, ok } from "@/lib/api/response";
 
 /**
  * GET /api/templates?solicitation_type=RFP
@@ -42,16 +43,15 @@ const VALID_SOLICITATION_TYPES = new Set(["RFP", "RFI", "RFQ", "SOW", "Proactive
 export async function GET(request: NextRequest) {
   const context = await getUserContext(request);
   if (!context) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return unauthorized();
   }
 
   const { searchParams } = new URL(request.url);
   const solicitationType = searchParams.get("solicitation_type") || "RFP";
 
   if (!VALID_SOLICITATION_TYPES.has(solicitationType)) {
-    return NextResponse.json(
-      { error: `Invalid solicitation_type: ${solicitationType}. Valid values: ${[...VALID_SOLICITATION_TYPES].join(", ")}` },
-      { status: 400 },
+    return badRequest(
+      `Invalid solicitation_type: ${solicitationType}. Valid values: ${[...VALID_SOLICITATION_TYPES].join(", ")}`,
     );
   }
 
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
     defaultEnabled: !DEFAULT_DISABLED_SECTIONS.has(config.type),
   }));
 
-  return NextResponse.json({
+  return ok({
     solicitation_type: solicitationType,
     label: TEMPLATE_LABELS[solicitationType] || `${solicitationType} Template`,
     sections,

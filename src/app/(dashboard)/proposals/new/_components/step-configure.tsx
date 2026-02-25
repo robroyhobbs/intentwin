@@ -26,6 +26,7 @@ import type { WinStrategyData } from "@/types/outcomes";
 import { OUTCOME_CATEGORIES } from "@/types/outcomes";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
 import { useWizard } from "./wizard-provider";
+import { logger } from "@/lib/utils/logger";
 
 // ────────────────────────────────────────────────────────
 // Types
@@ -318,7 +319,7 @@ export function StepConfigure() {
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to load templates";
       setTemplateError(message);
-      console.error("Template fetch error:", message);
+      logger.error("Template fetch error", undefined, { message });
     } finally {
       setTemplateLoading(false);
     }

@@ -20,6 +20,7 @@ import type {
   ClientResearch,
 } from "@/types/intake";
 import { ProcessingStatus } from "@/lib/constants/statuses";
+import { logger } from "@/lib/utils/logger";
 
 interface FlexibleIntakeProps {
   onExtracted: (data: ExtractedIntake, research: ClientResearch | null) => void;
@@ -85,10 +86,7 @@ export function FlexibleIntake({
             return { success: true };
           }
           if (data.processing_status === ProcessingStatus.FAILED) {
-            console.error(
-              `Document processing failed: ${fileName}`,
-              data.processing_error,
-            );
+            logger.error("Document processing failed", undefined, { fileName, processingError: data.processing_error });
             return {
               success: false,
               error: data.processing_error || undefined,
@@ -96,7 +94,7 @@ export function FlexibleIntake({
           }
         }
       } catch (e) {
-        console.error("Error polling document status:", e);
+        logger.error("Error polling document status", e);
       }
       // Progressive backoff: 1s for first 30s, then 2s after
       const elapsed = Date.now() - startedAt;

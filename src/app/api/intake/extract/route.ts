@@ -11,48 +11,13 @@ import type { DocumentForExtraction } from "@/lib/ai/prompts/extract-intake";
 import type { ExtractedIntake } from "@/types/intake";
 import type { DocumentRole } from "@/types/proposal-documents";
 import { logger } from "@/lib/utils/logger";
+import { extractJsonFromResponse } from "@/lib/utils/extract-json";
 import { unauthorized, badRequest, notFound, ok, serverError } from "@/lib/api/response";
 
 /** Allow up to 5 minutes for document processing wait + AI extraction */
 export const maxDuration = 300;
 
 const EXTRACTION_SYSTEM_PROMPT = `You are an expert at analyzing business documents and extracting structured information. You are precise, thorough, and honest about confidence levels. You always respond with valid JSON only.`;
-
-/**
- * Extract JSON from an AI response using multiple strategies.
- * Handles markdown code blocks, preamble text, and raw JSON.
- */
-function extractJsonFromResponse(response: string): Record<string, unknown> | null {
-  // Strategy 1: Markdown code block
-  const codeBlockMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (codeBlockMatch) {
-    try {
-      return JSON.parse(codeBlockMatch[1].trim());
-    } catch {
-      // Code block found but not valid JSON — continue
-    }
-  }
-
-  // Strategy 2: Find outermost { ... }
-  const firstBrace = response.indexOf("{");
-  const lastBrace = response.lastIndexOf("}");
-  if (firstBrace !== -1 && lastBrace > firstBrace) {
-    try {
-      return JSON.parse(response.slice(firstBrace, lastBrace + 1));
-    } catch {
-      // Braces found but not valid JSON — continue
-    }
-  }
-
-  // Strategy 3: Try parsing entire response as-is
-  try {
-    return JSON.parse(response.trim());
-  } catch {
-    // Nothing worked
-  }
-
-  return null;
-}
 
 /**
  * Poll a document until processing completes or timeout (~45s).

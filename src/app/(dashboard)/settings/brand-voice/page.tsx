@@ -12,6 +12,7 @@ import {
   Trash2,
   AlertCircle,
 } from "lucide-react";
+import { logger } from "@/lib/utils/logger";
 
 interface BrandVoiceSettings {
   tone: string;
@@ -86,7 +87,7 @@ export default function BrandVoiceSettingsPage() {
         }
       }
     } catch (error) {
-      console.error("Error loading brand voice settings:", error);
+      logger.error("Error loading brand voice settings", error);
     } finally {
       setLoading(false);
     }
@@ -122,7 +123,7 @@ export default function BrandVoiceSettingsPage() {
       setTimeout(() => setSaved(false), 2000);
       await loadData();
     } catch (error) {
-      console.error("Error saving brand voice:", error);
+      logger.error("Error saving brand voice", error);
       toast.error("Failed to save brand voice settings");
     } finally {
       setSaving(false);
