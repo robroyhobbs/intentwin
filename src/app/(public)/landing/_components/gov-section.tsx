@@ -62,13 +62,12 @@ export function GovSection() {
               </svg>
             </div>
             <h3 className="vf-gov-card-title">
-              Agency Evaluation Intelligence
+              Evaluation Requirements Mapping
             </h3>
             <p className="vf-gov-card-desc">
-              Know how each agency evaluates before you write. Preferred
-              evaluation methods, estimated criteria weights, competition
-              levels, and recent award patterns &mdash; injected directly into
-              your generation prompts.
+              Map every Section L/M requirement to your capabilities. Compliance
+              checklists, required certifications, and evaluation criteria mapped
+              point-by-point for RFP response planning.
             </p>
           </div>
 
@@ -88,11 +87,11 @@ export function GovSection() {
                 <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
               </svg>
             </div>
-            <h3 className="vf-gov-card-title">GSA Rate Benchmarking</h3>
+            <h3 className="vf-gov-card-title">Cost Realism Compliance</h3>
             <p className="vf-gov-card-desc">
-              Price competitively with GSA CALC+ labor rate data. Median rates,
-              ranges, and cost realism guidance so your pricing passes
-              scrutiny without leaving money on the table.
+              Price for cost realism compliance with GSA CALC+ data. Validate your
+              rates against approved government benchmarks to pass pricing
+              scrutiny and avoid TINA triggers.
             </p>
           </div>
 

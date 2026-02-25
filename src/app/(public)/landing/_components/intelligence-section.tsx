@@ -90,13 +90,11 @@ export function IntelligenceSection() {
                 <line x1="9" y1="21" x2="9" y2="9" />
               </svg>
             </div>
-            <h3 className="vf-intel-card-title">
-              Agency &amp; Market Intelligence
-            </h3>
+            <h3 className="vf-intel-card-title">Agency Win Patterns</h3>
             <p className="vf-intel-card-desc">
-              Every agency has patterns. See their preferred evaluation methods,
-              typical criteria weights, competition levels, and recent award
-              history. Know how they score before you write.
+              See who wins with each agency and why. Historical win rates by
+              NAICS, incumbent patterns, and seasonal award trends&mdash;so you
+              know which agencies favor your profile.
             </p>
           </div>
 
@@ -170,11 +168,11 @@ export function IntelligenceSection() {
                 <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
               </svg>
             </div>
-            <h3 className="vf-intel-card-title">Rate Benchmarks</h3>
+            <h3 className="vf-intel-card-title">Market Rate Intelligence</h3>
             <p className="vf-intel-card-desc">
-              GSA CALC+ labor rate data indexed by category. See median rates,
-              ranges, and data point counts so you price competitively without
-              triggering cost realism concerns.
+              Understand competitive pricing in your market. See rate
+              distributions by labor category, geographic variance, and where
+              your pricing sits against recent winners.
             </p>
           </div>
         </div>
