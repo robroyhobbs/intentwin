@@ -1,46 +1,162 @@
 import { generateHtml } from "./html-generator";
-import puppeteerCore from "puppeteer-core";
 import { logger } from "@/lib/utils/logger";
 import type { ProposalData } from "./slides/types";
 
 /**
- * Remote URL for the chromium brotli pack (used by @sparticuz/chromium-min).
- * On first cold start, chromium-min downloads and decompresses from this URL.
- * Subsequent warm starts reuse the decompressed binary from /tmp.
- */
-const CHROMIUM_PACK_URL =
-  "https://github.com/Sparticuz/chromium/releases/download/v143.0.4/chromium-v143.0.4-pack.x64.tar";
-
-/**
- * Find a usable Chromium executable for PDF generation.
+ * Generate a PDF from proposal data.
  *
  * Strategy:
- * 1. Use @sparticuz/chromium-min with remote binary download (serverless)
- * 2. Fall back to locally installed browsers (dev machines)
+ * 1. If GOTENBERG_URL is set, send HTML to Gotenberg (external container
+ *    running Chromium — no binary management needed).
+ * 2. Fall back to local browser rendering for development (puppeteer-core
+ *    with locally installed Chrome/Chromium).
+ *
+ * Gotenberg API: POST /forms/chromium/convert/html
+ *   - Multipart form: index.html (required), header.html, footer.html
+ *   - Returns PDF binary directly
+ *   - Docs: https://gotenberg.dev/docs/convert-with-chromium/convert-html-to-pdf
  */
-async function findBrowser(): Promise<{
-  executablePath: string;
-  args: string[];
-}> {
-  // 1. Try @sparticuz/chromium-min (downloads binary on cold start)
-  let chromiumReason = "";
-  try {
-    const chromium = await import("@sparticuz/chromium-min");
-    logger.info("pdf-export: @sparticuz/chromium-min imported, fetching binary...");
-    const execPath = await chromium.default.executablePath(CHROMIUM_PACK_URL);
-    logger.info("pdf-export: executablePath resolved", { execPath });
-    if (execPath) {
-      return { executablePath: execPath, args: chromium.default.args };
-    }
-    chromiumReason = `executablePath() returned falsy: ${String(execPath)}`;
-  } catch (chromiumError) {
-    chromiumReason = chromiumError instanceof Error
-      ? `${chromiumError.message}`
-      : String(chromiumError);
-    logger.error("pdf-export: @sparticuz/chromium-min error", { reason: chromiumReason });
+
+const GOTENBERG_TIMEOUT_MS = 60000;
+const LOCAL_BROWSER_TIMEOUT_MS = 30000;
+
+export async function generatePdf(data: ProposalData): Promise<Buffer> {
+  const gotenbergUrl = process.env.GOTENBERG_URL?.trim();
+
+  if (gotenbergUrl) {
+    return generatePdfWithGotenberg(data, gotenbergUrl);
   }
 
-  // 2. Local development: search for installed browsers
+  logger.info("pdf-export: GOTENBERG_URL not set, falling back to local browser");
+  return generatePdfWithLocalBrowser(data);
+}
+
+// ============================================================
+// Gotenberg (Production)
+// ============================================================
+
+async function generatePdfWithGotenberg(
+  data: ProposalData,
+  baseUrl: string,
+): Promise<Buffer> {
+  const companyName = data.branding?.header_text || data.company_name || "IntentBid";
+  const footerText = data.branding?.footer_text || "Confidential";
+  const primaryColor = data.branding?.primary_color || "#999";
+
+  // Generate the main HTML with inline fonts (no CDN requests)
+  const html = await generateHtml(data, { inlineFonts: true });
+
+  // Build header HTML (complete document required by Gotenberg)
+  const headerHtml = `<!DOCTYPE html>
+<html><head><style>
+  body { font-size: 8px; color: ${primaryColor}; margin: 0 15mm; -webkit-print-color-adjust: exact; }
+  .header { width: 100%; text-align: center; padding: 5px 0; }
+</style></head><body>
+  <div class="header">${escapeHtml(data.title)} | ${escapeHtml(companyName)} | ${escapeHtml(footerText)}</div>
+</body></html>`;
+
+  // Build footer HTML
+  const footerHtml = `<!DOCTYPE html>
+<html><head><style>
+  body { font-size: 8px; color: ${primaryColor}; margin: 0 15mm; -webkit-print-color-adjust: exact; }
+  .footer { width: 100%; text-align: center; padding: 5px 0; }
+</style></head><body>
+  <div class="footer">Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>
+</body></html>`;
+
+  // Build multipart form data
+  const formData = new FormData();
+
+  // index.html (required)
+  formData.append(
+    "files",
+    new Blob([html], { type: "text/html" }),
+    "index.html",
+  );
+
+  // header.html
+  formData.append(
+    "files",
+    new Blob([headerHtml], { type: "text/html" }),
+    "header.html",
+  );
+
+  // footer.html
+  formData.append(
+    "files",
+    new Blob([footerHtml], { type: "text/html" }),
+    "footer.html",
+  );
+
+  // PDF settings — match previous Puppeteer config
+  formData.append("paperWidth", "8.27"); // A4 width in inches
+  formData.append("paperHeight", "11.7"); // A4 height in inches
+  formData.append("marginTop", "0.79"); // 20mm in inches
+  formData.append("marginBottom", "0.79"); // 20mm in inches
+  formData.append("marginLeft", "0.59"); // 15mm in inches
+  formData.append("marginRight", "0.59"); // 15mm in inches
+  formData.append("printBackground", "true");
+  formData.append("emulatedMediaType", "screen"); // Preserve background colors/images
+  formData.append("waitDelay", "1s"); // Match the 1s pause from Puppeteer version
+
+  const url = `${baseUrl.replace(/\/$/, "")}/forms/chromium/convert/html`;
+
+  logger.info("pdf-export: sending to Gotenberg", { url });
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), GOTENBERG_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      body: formData,
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "Unknown error");
+      throw new Error(
+        `Gotenberg error ${response.status}: ${errorText.slice(0, 500)}`,
+      );
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const pdfBuffer = Buffer.from(arrayBuffer);
+
+    logger.info("pdf-export: PDF generated via Gotenberg", {
+      size: pdfBuffer.length,
+    });
+
+    return pdfBuffer;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+// ============================================================
+// Local Browser Fallback (Development)
+// ============================================================
+
+async function generatePdfWithLocalBrowser(
+  data: ProposalData,
+): Promise<Buffer> {
+  const companyName = data.branding?.header_text || data.company_name || "IntentBid";
+  const footerText = data.branding?.footer_text || "Confidential";
+
+  const html = await generateHtml(data, { inlineFonts: true });
+
+  // Dynamic import — only loads puppeteer-core when actually needed (dev only)
+  let puppeteerCore;
+  try {
+    puppeteerCore = await import("puppeteer-core");
+  } catch {
+    throw new Error(
+      "PDF export requires either GOTENBERG_URL (production) or puppeteer-core (development). " +
+      "Install puppeteer-core as a dev dependency: npm install -D puppeteer-core",
+    );
+  }
+
+  // Find a local browser
   const { existsSync } = await import("fs");
   const candidates = [
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -54,31 +170,25 @@ async function findBrowser(): Promise<{
     "/usr/bin/chromium",
   ];
 
+  let executablePath: string | null = null;
   for (const candidate of candidates) {
     if (existsSync(candidate)) {
-      logger.info("pdf-export: using local browser", { executablePath: candidate });
-      return {
-        executablePath: candidate,
-        args: ["--no-sandbox", "--disable-setuid-sandbox"],
-      };
+      executablePath = candidate;
+      break;
     }
   }
 
-  throw new Error(
-    `PDF browser not found. @sparticuz/chromium-min: ${chromiumReason}`,
-  );
-}
+  if (!executablePath) {
+    throw new Error(
+      "No local browser found for PDF generation. Set GOTENBERG_URL for production, " +
+      "or install Chrome/Chromium for local development.",
+    );
+  }
 
-/**
- * Launch browser with a timeout to prevent zombie processes.
- */
-async function launchBrowser(
-  executablePath: string,
-  args: string[],
-  timeoutMs = 30000,
-): Promise<ReturnType<typeof puppeteerCore.launch>> {
-  const launchPromise = puppeteerCore.launch({
-    args,
+  logger.info("pdf-export: using local browser", { executablePath });
+
+  const launchPromise = puppeteerCore.default.launch({
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
     defaultViewport: { width: 1280, height: 720 },
     executablePath,
     headless: true,
@@ -86,50 +196,27 @@ async function launchBrowser(
 
   const timeoutPromise = new Promise<never>((_, reject) => {
     setTimeout(
-      () => reject(new Error(`Browser launch timed out after ${timeoutMs}ms`)),
-      timeoutMs,
+      () => reject(new Error(`Browser launch timed out after ${LOCAL_BROWSER_TIMEOUT_MS}ms`)),
+      LOCAL_BROWSER_TIMEOUT_MS,
     );
   });
 
-  return Promise.race([launchPromise, timeoutPromise]);
-}
-
-export async function generatePdf(data: ProposalData): Promise<Buffer> {
-  const companyName = data.branding?.header_text || data.company_name || "IntentBid";
-  const footerText = data.branding?.footer_text || "Confidential";
-
-  // Generate HTML with inline fonts (no external CDN requests in serverless)
-  const html = await generateHtml(data, { inlineFonts: true });
-
-  const { executablePath, args } = await findBrowser();
-
-  logger.debug("pdf-export: launching browser...");
-  const browser = await launchBrowser(executablePath, args);
-  logger.debug("pdf-export: browser launched successfully");
+  const browser = await Promise.race([launchPromise, timeoutPromise]);
 
   try {
     const page = await browser.newPage();
 
-    // Use domcontentloaded instead of networkidle0 to avoid hanging
-    // on external resource requests (fonts, images) in serverless
     await page.setContent(html, {
       waitUntil: "domcontentloaded",
       timeout: 30000,
     });
 
-    // Brief wait for any inline styles/fonts to apply
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    logger.debug("pdf-export: generating PDF...");
     const pdfBuffer = await page.pdf({
       format: "A4",
       printBackground: true,
-      margin: {
-        top: "20mm",
-        bottom: "20mm",
-        left: "15mm",
-        right: "15mm",
-      },
+      margin: { top: "20mm", bottom: "20mm", left: "15mm", right: "15mm" },
       displayHeaderFooter: true,
       headerTemplate: `
         <div style="font-size:8px; color:${data.branding?.primary_color || "#999"}; width:100%; text-align:center; padding:5px 0;">
@@ -142,11 +229,25 @@ export async function generatePdf(data: ProposalData): Promise<Buffer> {
       timeout: 60000,
     });
 
-    logger.info("pdf-export: PDF generated successfully", { size: pdfBuffer.length });
+    logger.info("pdf-export: PDF generated via local browser", { size: pdfBuffer.length });
     return Buffer.from(pdfBuffer);
   } finally {
     await browser.close().catch((err: unknown) => {
-      logger.warn("pdf-export: browser close error", { error: err instanceof Error ? err.message : String(err) });
+      logger.warn("pdf-export: browser close error", {
+        error: err instanceof Error ? err.message : String(err),
+      });
     });
   }
+}
+
+// ============================================================
+// Utilities
+// ============================================================
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }

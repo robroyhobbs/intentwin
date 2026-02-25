@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["puppeteer-core", "@sparticuz/chromium-min", "js-tiktoken"],
+  serverExternalPackages: ["js-tiktoken"],
 
   // Security headers
   async headers() {
