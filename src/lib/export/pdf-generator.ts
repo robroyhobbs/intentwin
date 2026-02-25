@@ -5,42 +5,34 @@ import type { ProposalData } from "./slides/types";
 
 /**
  * Find a usable Chromium executable for PDF generation.
- * In production (Vercel), uses @sparticuz/chromium.
- * Locally, searches for installed browsers.
+ *
+ * Strategy:
+ * 1. Always try @sparticuz/chromium first (works on Vercel, AWS Lambda, etc.)
+ * 2. Fall back to locally installed browsers (dev machines)
+ *
+ * Previous approach checked AWS_LAMBDA_FUNCTION_NAME to detect Vercel,
+ * but Vercel's runtime no longer sets that env var consistently.
  */
 async function findBrowser(): Promise<{
   executablePath: string;
   args: string[];
 }> {
-  const { existsSync } = await import("fs");
-  // Detect actual Vercel serverless runtime (AWS Lambda), NOT the VERCEL env var
-  // which is also set locally by `vercel env pull`.
-  const isVercel = !!process.env.AWS_LAMBDA_FUNCTION_NAME;
-
-  if (isVercel) {
-    try {
-      const chromium = await import("@sparticuz/chromium");
-      logger.info("pdf-export: @sparticuz/chromium imported successfully");
-      const execPath = await chromium.default.executablePath();
-      logger.info("pdf-export: executablePath resolved", { execPath });
-      if (execPath) {
-        return { executablePath: execPath, args: chromium.default.args };
-      }
-      logger.warn("pdf-export: executablePath was falsy, falling through to local search");
-    } catch (chromiumError) {
-      const msg = chromiumError instanceof Error ? chromiumError.message : String(chromiumError);
-      logger.error("pdf-export: @sparticuz/chromium failed", {
-        error: msg,
-        stack: chromiumError instanceof Error ? chromiumError.stack?.slice(0, 500) : undefined,
-      });
-      // Re-throw with a clear message instead of silently falling through on Vercel
-      throw new Error(`PDF export requires @sparticuz/chromium on Vercel but it failed: ${msg}`);
+  // 1. Try @sparticuz/chromium (serverless-compatible Chromium)
+  try {
+    const chromium = await import("@sparticuz/chromium");
+    const execPath = await chromium.default.executablePath();
+    if (execPath) {
+      logger.info("pdf-export: using @sparticuz/chromium", { execPath });
+      return { executablePath: execPath, args: chromium.default.args };
     }
-  } else {
-    logger.debug("pdf-export: not on Vercel, skipping @sparticuz/chromium");
+    logger.warn("pdf-export: @sparticuz/chromium returned falsy executablePath");
+  } catch (chromiumError) {
+    const msg = chromiumError instanceof Error ? chromiumError.message : String(chromiumError);
+    logger.info("pdf-export: @sparticuz/chromium unavailable, trying local browsers", { reason: msg });
   }
 
-  // Local development: search for installed browsers
+  // 2. Local development: search for installed browsers
+  const { existsSync } = await import("fs");
   const candidates = [
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
     "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
@@ -55,6 +47,7 @@ async function findBrowser(): Promise<{
 
   for (const candidate of candidates) {
     if (existsSync(candidate)) {
+      logger.info("pdf-export: using local browser", { executablePath: candidate });
       return {
         executablePath: candidate,
         args: ["--no-sandbox", "--disable-setuid-sandbox"],
@@ -63,7 +56,7 @@ async function findBrowser(): Promise<{
   }
 
   throw new Error(
-    "No Chromium-based browser found. Install Chrome, Edge, or Chromium for PDF export.",
+    "No Chromium-based browser found. @sparticuz/chromium failed and no local browser detected.",
   );
 }
 
