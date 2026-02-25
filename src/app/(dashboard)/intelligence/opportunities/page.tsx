@@ -117,6 +117,20 @@ export default function OpportunitySearchPage() {
         </div>
       </div>
 
+      {error && (
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-8 text-center">
+          <Briefcase className="h-10 w-10 text-[var(--foreground-subtle)] mx-auto mb-3" />
+          <h3 className="text-sm font-semibold text-[var(--foreground)] mb-1">
+            Opportunity Search Coming Soon
+          </h3>
+          <p className="text-xs text-[var(--foreground-muted)] max-w-md mx-auto">
+            Live opportunity search across government procurement portals is under development.
+            In the meantime, use the <span className="font-medium text-[var(--accent)]">Awards</span> and <span className="font-medium text-[var(--accent)]">Agencies</span> tabs to research past performance data.
+          </p>
+        </div>
+      )}
+
+      {!error && <>
       {/* Filters */}
       <div className="flex flex-wrap items-end gap-4">
         <div className="flex-1 min-w-[200px]">
@@ -200,10 +214,6 @@ export default function OpportunitySearchPage() {
           />
         </div>
       </div>
-
-      {error && (
-        <p className="text-sm text-[var(--danger)]">{error}</p>
-      )}
 
       {/* Results count + pagination */}
       <div className="flex items-center justify-between">
@@ -293,6 +303,7 @@ export default function OpportunitySearchPage() {
           }}
         />
       )}
+      </>}
     </div>
   );
 }
