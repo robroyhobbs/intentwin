@@ -71,7 +71,7 @@ IntentBid ingests an RFP or solicitation document, cross-references it against y
 |  Performance indexes on all hot query paths                  |
 +--------------------------------------------------------------+
 |                     Export Layer                              |
-|  Puppeteer/Chrome (PDF) | docx (DOCX) | pptxgenjs (PPTX)   |
+|  Puppeteer/chromium-min (PDF) | docx (DOCX) | pptxgenjs (PPTX)|
 |  Google Slides API | HTML + Mermaid                          |
 +--------------------------------------------------------------+
 ```
@@ -88,16 +88,16 @@ IntentBid ingests an RFP or solicitation document, cross-references it against y
 | Auth | Supabase Auth with SSR cookies + RLS policies |
 | Email | Resend (transactional) |
 | Editor | TipTap (rich text editing) |
-| Export | Puppeteer (PDF), docx (DOCX), pptxgenjs (PPTX), Google Slides API |
-| Testing | Vitest (710 tests) + Playwright (E2E) |
+| Export | Puppeteer + chromium-min (PDF), docx (DOCX), pptxgenjs (PPTX), Google Slides API |
+| Testing | Vitest (1,531 tests) + Playwright (E2E) |
 | CI/CD | GitHub Actions (lint, typecheck, test, coverage, build) |
-| Deployment | Vercel (with `@sparticuz/chromium` for serverless PDF) |
+| Deployment | Vercel (with `@sparticuz/chromium-min` for serverless PDF) |
 
 ## Engineering Quality
 
 IntentBid follows a 7-phase robustness improvement program:
 
-### Testing (710 tests, 0 failures)
+### Testing (1,531 tests, 0 failures)
 
 - **Unit tests** -- Core AI pipeline, prompt builders, export generators, quality checks, bid scoring, preflight gate, review mode, audience calibration, assumptions, boilerplate sections, team members
 - **Integration tests** -- API routes, auth flows, multi-tenancy isolation, RLS policies, pipeline integration, bulk import, compliance
@@ -147,7 +147,7 @@ src/
 |   |   +-- settings/          # Company context, products, brand voice, branding
 |   |   +-- analytics/         # Win/loss analytics with recharts
 |   |   +-- onboarding/        # New org setup wizard
-|   +-- (public)/              # Landing page
+|   +-- (public)/              # Landing, product, intelligence, government, pricing, about, blog
 |   +-- api/                   # 60 API route files
 |       +-- proposals/         # CRUD, generation, versioning, export, quality review
 |       +-- intake/            # RFP parsing, requirement extraction, bid evaluation
