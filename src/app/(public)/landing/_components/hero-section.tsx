@@ -34,10 +34,6 @@ export function HeroSection() {
           <div className="vf-nav-links">
             <Link href="/product">Product</Link>
             <Link href="/intelligence-overview">Intelligence</Link>
-            <a href="#compare">Compare</a>
-            <a href="#framework">Framework</a>
-            <a href="#gov">Gov</a>
-            <a href="#pricing">Pricing</a>
             <Link href="/about">About</Link>
             <Link href="/blog">Blog</Link>
             <Link href="/login" className="vf-nav-signin">
