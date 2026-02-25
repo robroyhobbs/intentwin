@@ -14,39 +14,50 @@ export const metadata: Metadata = {
 
 const POSTS = [
   {
+    slug: "bid-no-bid-decision-framework",
+    title:
+      "The Bid/No-Bid Decision Framework: Stop Chasing Every RFP",
+    date: "February 24, 2026",
+    readTime: "8 min read",
+    excerpt:
+      "The average government proposal costs $20K-$75K to produce. A practical 5-factor scoring framework for bid/no-bid decisions so you stop wasting resources on opportunities you won't win.",
+    tag: "Strategy",
+  },
+  {
     slug: "why-we-built-intentbid",
     title: "Why We Built IntentBid",
     date: "February 20, 2026",
-    readTime: "5 min read",
+    readTime: "7 min read",
     excerpt:
-      "The proposal process is broken. Great companies lose contracts they should win because their proposals don't communicate their capability. We built IntentBid to fix that.",
+      "We built IntentBid because great companies lose contracts they should win. The proposal process is broken — we're fixing it with intent-driven generation, bid scoring, and real intelligence.",
     tag: "Company",
   },
   {
     slug: "smb-government-contracts",
-    title: "How Small and Mid-Market Firms Can Compete for Government Contracts",
+    title:
+      "How Small and Mid-Market Firms Can Compete for Government Contracts",
     date: "February 18, 2026",
-    readTime: "6 min read",
+    readTime: "8 min read",
     excerpt:
-      "You don't need a 50-person capture team to win federal contracts. Here's how AI-powered proposal intelligence levels the playing field for SMBs.",
+      "The government awarded $178B to small businesses in FY2024. A practical guide with real set-aside programs, contract vehicles, and strategies for SMBs breaking into federal.",
     tag: "Strategy",
   },
   {
     slug: "problem-with-proposal-templates",
     title: "The Problem with Proposal Templates",
     date: "February 14, 2026",
-    readTime: "4 min read",
+    readTime: "6 min read",
     excerpt:
-      "Templates promise efficiency but deliver mediocrity. Why the most popular approach to proposal writing is costing you wins.",
+      "Templates promise efficiency but deliver mediocrity. See a real side-by-side comparison of template-based vs. intent-driven proposal content.",
     tag: "Insights",
   },
   {
     slug: "intent-driven-proposals",
     title: "Intent-Driven Proposals: Strategy Before Writing",
     date: "February 10, 2026",
-    readTime: "5 min read",
+    readTime: "8 min read",
     excerpt:
-      "Most proposal tools start with a blank page. IntentBid starts with intent — a structured definition of what needs to be true for the evaluator to say yes.",
+      "Most proposal tools start with a blank page. IntentBid starts with intent. See a worked example of how strategy-first proposals outperform template-first ones.",
     tag: "Product",
   },
 ];
