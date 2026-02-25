@@ -453,4 +453,271 @@ describe("wizardReducer", () => {
       expect(s).toBe(INITIAL_STATE);
     });
   });
+
+  // ────────────────────────────────────────────────────────
+  // Step 2: Review & Edit
+  // ────────────────────────────────────────────────────────
+
+  describe("step 2 review flow", () => {
+    // Helper: state at step 2 with extraction data
+    function stateAtStep2WithData(): WizardState {
+      return dispatch(INITIAL_STATE, {
+        type: "EXTRACTION_SUCCESS",
+        payload: { extracted: mockExtracted, research: null },
+      });
+    }
+
+    describe("UPDATE_EDITED_FIELDS", () => {
+      it("stores edited field values in editedFields map", () => {
+        const s = dispatch(stateAtStep2WithData(), {
+          type: "UPDATE_EDITED_FIELDS",
+          payload: { client_name: "Edited Corp" },
+        });
+        expect(s.editedFields.client_name).toBe("Edited Corp");
+      });
+
+      it("merges multiple edits without losing previous ones", () => {
+        const s = dispatchMany(stateAtStep2WithData(), [
+          { type: "UPDATE_EDITED_FIELDS", payload: { client_name: "Corp A" } },
+          { type: "UPDATE_EDITED_FIELDS", payload: { budget_range: "$1M-$5M" } },
+        ]);
+        expect(s.editedFields.client_name).toBe("Corp A");
+        expect(s.editedFields.budget_range).toBe("$1M-$5M");
+      });
+
+      it("overwrites previously edited field with new value", () => {
+        const s = dispatchMany(stateAtStep2WithData(), [
+          { type: "UPDATE_EDITED_FIELDS", payload: { client_name: "First" } },
+          { type: "UPDATE_EDITED_FIELDS", payload: { client_name: "Second" } },
+        ]);
+        expect(s.editedFields.client_name).toBe("Second");
+      });
+
+      it("handles array field edits (requirements)", () => {
+        const s = dispatch(stateAtStep2WithData(), {
+          type: "UPDATE_EDITED_FIELDS",
+          payload: { key_requirements: ["Req 1", "Req 2", "Req 3"] },
+        });
+        expect(s.editedFields.key_requirements).toEqual(["Req 1", "Req 2", "Req 3"]);
+      });
+
+      it("does not corrupt other state fields", () => {
+        const base = stateAtStep2WithData();
+        const s = dispatch(base, {
+          type: "UPDATE_EDITED_FIELDS",
+          payload: { client_name: "Changed" },
+        });
+        // Other state should be unchanged
+        expect(s.currentStep).toBe(base.currentStep);
+        expect(s.extractedData).toBe(base.extractedData);
+        expect(s.researchData).toBe(base.researchData);
+      });
+    });
+
+    describe("POPULATE_FROM_EXTRACTION with edits", () => {
+      it("prefers edited fields over extracted values", () => {
+        const s = dispatchMany(stateAtStep2WithData(), [
+          { type: "UPDATE_EDITED_FIELDS", payload: { client_name: "Edited Corp" } },
+          { type: "POPULATE_FROM_EXTRACTION" },
+        ]);
+        expect(s.clientName).toBe("Edited Corp");
+      });
+
+      it("falls back to extracted values when no edits exist", () => {
+        const s = dispatch(stateAtStep2WithData(), { type: "POPULATE_FROM_EXTRACTION" });
+        expect(s.clientName).toBe("Acme Corp");
+        expect(s.clientIndustry).toBe("Technology");
+        expect(s.scopeDescription).toBe("Migrate 50 workloads to AWS");
+      });
+
+      it("uses inferred values when extracted value is missing", () => {
+        const s = dispatch(stateAtStep2WithData(), { type: "POPULATE_FROM_EXTRACTION" });
+        expect(s.clientSize).toBe("Enterprise"); // from inferred
+        expect(s.opportunityType).toBe("cloud_migration"); // from inferred
+      });
+
+      it("prefers edited over inferred", () => {
+        const s = dispatchMany(stateAtStep2WithData(), [
+          { type: "UPDATE_EDITED_FIELDS", payload: { client_size: "Midmarket" } },
+          { type: "POPULATE_FROM_EXTRACTION" },
+        ]);
+        expect(s.clientSize).toBe("Midmarket");
+      });
+
+      it("handles array fields from extraction", () => {
+        const s = dispatch(stateAtStep2WithData(), { type: "POPULATE_FROM_EXTRACTION" });
+        expect(s.currentStatePains).toEqual(["Legacy systems", "High cost"]);
+        expect(s.desiredOutcomes).toEqual(["Reduced TCO", "Faster deployments"]);
+      });
+
+      it("handles edited array fields overriding extracted", () => {
+        const s = dispatchMany(stateAtStep2WithData(), [
+          { type: "UPDATE_EDITED_FIELDS", payload: { current_state_pains: ["Custom pain"] } },
+          { type: "POPULATE_FROM_EXTRACTION" },
+        ]);
+        expect(s.currentStatePains).toEqual(["Custom pain"]);
+      });
+
+      it("does nothing when extractedData is null", () => {
+        const s = dispatch(INITIAL_STATE, { type: "POPULATE_FROM_EXTRACTION" });
+        expect(s.clientName).toBe(""); // unchanged
+      });
+    });
+
+    describe("BID_EVALUATION_UPDATE", () => {
+      it("stores bid evaluation from API", () => {
+        const mockEvaluation = {
+          ai_scores: {
+            requirement_match: { score: 85, rationale: "Strong match" },
+            past_performance: { score: 70, rationale: "Some history" },
+            capability_alignment: { score: 90, rationale: "Well aligned" },
+            timeline_feasibility: { score: 60, rationale: "Tight" },
+            strategic_value: { score: 75, rationale: "Good fit" },
+          },
+          weighted_total: 78.5,
+          recommendation: "bid" as const,
+          scored_at: "2026-02-24T00:00:00Z",
+        };
+        const s = dispatch(stateAtStep2WithData(), {
+          type: "BID_EVALUATION_UPDATE",
+          payload: { bidEvaluation: mockEvaluation, bidPhase: "review" },
+        });
+        expect(s.bidEvaluation).toEqual(mockEvaluation);
+        expect(s.bidPhase).toBe("review");
+      });
+
+      it("updates bid phase to decided", () => {
+        const s = dispatch(stateAtStep2WithData(), {
+          type: "BID_EVALUATION_UPDATE",
+          payload: { bidPhase: "decided" },
+        });
+        expect(s.bidPhase).toBe("decided");
+      });
+
+      it("preserves bid evaluation when updating only phase", () => {
+        const mockEvaluation = {
+          ai_scores: {
+            requirement_match: { score: 85, rationale: "Strong" },
+            past_performance: { score: 70, rationale: "Ok" },
+            capability_alignment: { score: 90, rationale: "Good" },
+            timeline_feasibility: { score: 60, rationale: "Tight" },
+            strategic_value: { score: 75, rationale: "Fit" },
+          },
+          weighted_total: 78.5,
+          recommendation: "bid" as const,
+          scored_at: "2026-02-24T00:00:00Z",
+        };
+        const withEval = dispatch(stateAtStep2WithData(), {
+          type: "BID_EVALUATION_UPDATE",
+          payload: { bidEvaluation: mockEvaluation, bidPhase: "review" },
+        });
+        const s = dispatch(withEval, {
+          type: "BID_EVALUATION_UPDATE",
+          payload: { bidPhase: "decided" },
+        });
+        // bidEvaluation should still be there (BID_EVALUATION_UPDATE does spread)
+        expect(s.bidEvaluation).toEqual(mockEvaluation);
+        expect(s.bidPhase).toBe("decided");
+      });
+    });
+
+    describe("step 2 data preservation on GO_BACK", () => {
+      it("preserves editedFields when going back from step 2 to step 1", () => {
+        const s = dispatchMany(stateAtStep2WithData(), [
+          { type: "UPDATE_EDITED_FIELDS", payload: { client_name: "Edited" } },
+          { type: "GO_BACK" },
+        ]);
+        expect(s.currentStep).toBe(1);
+        expect(s.editedFields.client_name).toBe("Edited");
+      });
+
+      it("preserves bidEvaluation when going back from step 2", () => {
+        const mockEvaluation = {
+          ai_scores: {
+            requirement_match: { score: 85, rationale: "Strong" },
+            past_performance: { score: 70, rationale: "Ok" },
+            capability_alignment: { score: 90, rationale: "Good" },
+            timeline_feasibility: { score: 60, rationale: "Tight" },
+            strategic_value: { score: 75, rationale: "Fit" },
+          },
+          weighted_total: 78.5,
+          recommendation: "bid" as const,
+          scored_at: "2026-02-24T00:00:00Z",
+        };
+        const s = dispatchMany(stateAtStep2WithData(), [
+          { type: "BID_EVALUATION_UPDATE", payload: { bidEvaluation: mockEvaluation } },
+          { type: "GO_BACK" },
+        ]);
+        expect(s.currentStep).toBe(1);
+        expect(s.bidEvaluation).toEqual(mockEvaluation);
+      });
+
+      it("preserves extractedData when navigating back and forth", () => {
+        const s = dispatchMany(stateAtStep2WithData(), [
+          { type: "GO_BACK" },  // step 1
+          { type: "GO_NEXT" },  // step 2
+        ]);
+        expect(s.currentStep).toBe(2);
+        expect(s.extractedData).toEqual(mockExtracted);
+      });
+    });
+
+    describe("step 2 edge cases", () => {
+      it("empty editedFields object doesn't corrupt state", () => {
+        const base = stateAtStep2WithData();
+        const s = dispatch(base, {
+          type: "UPDATE_EDITED_FIELDS",
+          payload: {},
+        });
+        expect(s.editedFields).toEqual({});
+      });
+
+      it("POPULATE_FROM_EXTRACTION with empty extracted sub-objects doesn't crash", () => {
+        const emptyExtracted: ExtractedIntake = {
+          input_type: "other",
+          input_summary: "Empty doc",
+          extracted: {},
+          inferred: {},
+          gaps: [],
+        };
+        const s = dispatchMany(INITIAL_STATE, [
+          { type: "EXTRACTION_SUCCESS", payload: { extracted: emptyExtracted, research: null } },
+          { type: "POPULATE_FROM_EXTRACTION" },
+        ]);
+        // Should use defaults, not crash
+        expect(s.clientName).toBe("");
+        expect(s.currentStatePains).toEqual([]);
+      });
+
+      it("POPULATE_FROM_EXTRACTION preserves existing form values when extraction has no data", () => {
+        // Pre-fill some form fields, then extract an empty document
+        const withFormData = dispatch(INITIAL_STATE, {
+          type: "UPDATE_FORM_FIELDS",
+          payload: { clientName: "Pre-filled Corp" },
+        });
+        const emptyExtracted: ExtractedIntake = {
+          input_type: "other",
+          input_summary: "Empty",
+          extracted: {},
+          inferred: {},
+          gaps: [],
+        };
+        const s = dispatchMany(withFormData, [
+          { type: "EXTRACTION_SUCCESS", payload: { extracted: emptyExtracted, research: null } },
+          { type: "POPULATE_FROM_EXTRACTION" },
+        ]);
+        // Pre-filled value should survive since extraction has nothing
+        expect(s.clientName).toBe("Pre-filled Corp");
+      });
+
+      it("removing array items produces correct results after POPULATE_FROM_EXTRACTION", () => {
+        // Simulate user removing one pain point during review
+        const s = dispatchMany(stateAtStep2WithData(), [
+          { type: "UPDATE_EDITED_FIELDS", payload: { current_state_pains: ["Only this one"] } },
+          { type: "POPULATE_FROM_EXTRACTION" },
+        ]);
+        expect(s.currentStatePains).toEqual(["Only this one"]);
+      });
+    });
+  });
 });

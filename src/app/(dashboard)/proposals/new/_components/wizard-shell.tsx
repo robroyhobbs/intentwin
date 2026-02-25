@@ -11,11 +11,13 @@
  * A future phase will move this route outside the dashboard layout for full-screen wizard control.
  */
 
+import { useCallback } from "react";
 import { useWizard } from "./wizard-provider";
 import { WizardSidebar } from "./wizard-sidebar";
 import { WizardBottomBar } from "./wizard-bottom-bar";
 import { WIZARD_STEPS } from "./wizard-types";
 import { StepInput } from "./step-input";
+import { StepReview } from "./step-review";
 
 // ────────────────────────────────────────────────────────
 // Step Placeholders (replaced in Phases 1-4)
@@ -91,14 +93,14 @@ function WizardStepBar() {
 // ────────────────────────────────────────────────────────
 
 export function WizardShell() {
-  const { state } = useWizard();
+  const { state, dispatch } = useWizard();
 
   const renderStep = () => {
     switch (state.currentStep) {
       case 1:
         return <StepInput />;
       case 2:
-        return <StepPlaceholder step={2} label="Review & Edit" />;
+        return <StepReview />;
       case 3:
         return <StepPlaceholder step={3} label="Configure Proposal" />;
       case 4:
@@ -116,6 +118,29 @@ export function WizardShell() {
   const step1NextDisabled =
     state.currentStep === 1 && state.intakeMode !== "manual";
 
+  // Step 2 Next: populate form fields from extraction + edits before advancing
+  const handleStep2Next = useCallback(() => {
+    dispatch({ type: "POPULATE_FROM_EXTRACTION" });
+    dispatch({ type: "GO_NEXT" });
+  }, [dispatch]);
+
+  // Determine nextDisabled and custom onNext per step
+  const getBottomBarProps = () => {
+    switch (state.currentStep) {
+      case 1:
+        return {
+          nextDisabled: step1NextDisabled,
+          nextLoading: state.isExtracting,
+        };
+      case 2:
+        return {
+          onNext: handleStep2Next,
+        };
+      default:
+        return {};
+    }
+  };
+
   return (
     <div className="h-full flex flex-col">
       {/* Inline step progress bar */}
@@ -129,10 +154,7 @@ export function WizardShell() {
       </div>
 
       {/* Persistent Bottom Bar */}
-      <WizardBottomBar
-        nextDisabled={step1NextDisabled}
-        nextLoading={state.isExtracting}
-      />
+      <WizardBottomBar {...getBottomBarProps()} />
     </div>
   );
 }
@@ -151,7 +173,7 @@ export function WizardShellFullScreen() {
       case 1:
         return <StepInput />;
       case 2:
-        return <StepPlaceholder step={2} label="Review & Edit" />;
+        return <StepReview />;
       case 3:
         return <StepPlaceholder step={3} label="Configure Proposal" />;
       case 4:
