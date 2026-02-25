@@ -1124,4 +1124,290 @@ describe("wizardReducer", () => {
       });
     });
   });
+
+  // ────────────────────────────────────────────────────────
+  // Step 4: Generate & Progress
+  // ────────────────────────────────────────────────────────
+
+  describe("step 4 generation flow", () => {
+    const mockStrategy: import("@/types/outcomes").WinStrategyData = {
+      win_themes: ["Cloud expertise", "Rapid delivery"],
+      success_metrics: [],
+      differentiators: [],
+      target_outcomes: [],
+      generated_at: "2026-02-24T12:00:00Z",
+    };
+
+    // Helper: state fully configured at step 3, ready to generate
+    function stateReadyToGenerate(): WizardState {
+      return dispatchMany(INITIAL_STATE, [
+        { type: "UPDATE_FORM_FIELDS", payload: { clientName: "Acme Corp", solicitationType: "RFP" } },
+        { type: "GO_NEXT" }, // step 2
+        { type: "GO_NEXT" }, // step 3
+        { type: "UPDATE_CONFIG", payload: { tone: "executive", selectedSections: ["exec_summary", "approach", "pricing"] } },
+        { type: "SET_WIN_STRATEGY", winStrategy: mockStrategy },
+      ]);
+    }
+
+    const mockSections = [
+      { type: "exec_summary", title: "Executive Summary", status: "completed" as const },
+      { type: "approach", title: "Approach", status: "generating" as const },
+      { type: "pricing", title: "Pricing", status: "pending" as const },
+    ];
+
+    describe("GENERATION_START", () => {
+      it("sets proposalId, status to generating, advances to step 4", () => {
+        const s = dispatch(stateReadyToGenerate(), {
+          type: "GENERATION_START",
+          proposalId: "gen-100",
+        });
+        expect(s.proposalId).toBe("gen-100");
+        expect(s.generationStatus).toBe("generating");
+        expect(s.currentStep).toBe(4);
+        expect(s.maxCompletedStep).toBe(3);
+      });
+
+      it("preserves all wizard data from prior steps", () => {
+        const s = dispatch(stateReadyToGenerate(), {
+          type: "GENERATION_START",
+          proposalId: "gen-101",
+        });
+        expect(s.clientName).toBe("Acme Corp");
+        expect(s.tone).toBe("executive");
+        expect(s.selectedSections).toEqual(["exec_summary", "approach", "pricing"]);
+        expect(s.winStrategy).toEqual(mockStrategy);
+      });
+
+      it("double GENERATION_START overwrites proposalId (idempotent)", () => {
+        const s = dispatchMany(stateReadyToGenerate(), [
+          { type: "GENERATION_START", proposalId: "first-id" },
+          { type: "GENERATION_START", proposalId: "second-id" },
+        ]);
+        expect(s.proposalId).toBe("second-id");
+        expect(s.currentStep).toBe(4);
+      });
+    });
+
+    describe("SECTION_STATUS_UPDATE", () => {
+      it("updates section progress list", () => {
+        const s = dispatchMany(stateReadyToGenerate(), [
+          { type: "GENERATION_START", proposalId: "gen-200" },
+          { type: "SECTION_STATUS_UPDATE", sections: mockSections },
+        ]);
+        expect(s.sectionProgress).toEqual(mockSections);
+        expect(s.sectionProgress).toHaveLength(3);
+      });
+
+      it("replaces previous section progress on each update", () => {
+        const s1 = dispatchMany(stateReadyToGenerate(), [
+          { type: "GENERATION_START", proposalId: "gen-201" },
+          { type: "SECTION_STATUS_UPDATE", sections: mockSections },
+        ]);
+        const updatedSections = [
+          { type: "exec_summary", title: "Executive Summary", status: "completed" as const },
+          { type: "approach", title: "Approach", status: "completed" as const },
+          { type: "pricing", title: "Pricing", status: "generating" as const },
+        ];
+        const s2 = dispatch(s1, { type: "SECTION_STATUS_UPDATE", sections: updatedSections });
+        expect(s2.sectionProgress[1].status).toBe("completed"); // approach now completed
+        expect(s2.sectionProgress[2].status).toBe("generating"); // pricing now generating
+      });
+
+      it("does not affect other wizard state fields", () => {
+        const base = dispatch(stateReadyToGenerate(), {
+          type: "GENERATION_START",
+          proposalId: "gen-202",
+        });
+        const s = dispatch(base, { type: "SECTION_STATUS_UPDATE", sections: mockSections });
+        expect(s.proposalId).toBe("gen-202");
+        expect(s.generationStatus).toBe("generating");
+        expect(s.tone).toBe("executive");
+      });
+
+      it("handles empty section list", () => {
+        const s = dispatchMany(stateReadyToGenerate(), [
+          { type: "GENERATION_START", proposalId: "gen-203" },
+          { type: "SECTION_STATUS_UPDATE", sections: [] },
+        ]);
+        expect(s.sectionProgress).toEqual([]);
+      });
+    });
+
+    describe("GENERATION_COMPLETE", () => {
+      it("sets status to complete", () => {
+        const s = dispatchMany(stateReadyToGenerate(), [
+          { type: "GENERATION_START", proposalId: "gen-300" },
+          { type: "SECTION_STATUS_UPDATE", sections: mockSections },
+          { type: "GENERATION_COMPLETE" },
+        ]);
+        expect(s.generationStatus).toBe("complete");
+      });
+
+      it("preserves proposalId and section progress", () => {
+        const allCompleted = mockSections.map((s) => ({ ...s, status: "completed" as const }));
+        const s = dispatchMany(stateReadyToGenerate(), [
+          { type: "GENERATION_START", proposalId: "gen-301" },
+          { type: "SECTION_STATUS_UPDATE", sections: allCompleted },
+          { type: "GENERATION_COMPLETE" },
+        ]);
+        expect(s.proposalId).toBe("gen-301");
+        expect(s.sectionProgress).toEqual(allCompleted);
+      });
+
+      it("stays on step 4 after completion", () => {
+        const s = dispatchMany(stateReadyToGenerate(), [
+          { type: "GENERATION_START", proposalId: "gen-302" },
+          { type: "GENERATION_COMPLETE" },
+        ]);
+        expect(s.currentStep).toBe(4);
+      });
+    });
+
+    describe("GENERATION_FAIL", () => {
+      it("sets status to failed", () => {
+        const s = dispatchMany(stateReadyToGenerate(), [
+          { type: "GENERATION_START", proposalId: "gen-400" },
+          { type: "GENERATION_FAIL" },
+        ]);
+        expect(s.generationStatus).toBe("failed");
+      });
+
+      it("preserves proposalId on failure", () => {
+        const s = dispatchMany(stateReadyToGenerate(), [
+          { type: "GENERATION_START", proposalId: "gen-401" },
+          { type: "GENERATION_FAIL" },
+        ]);
+        expect(s.proposalId).toBe("gen-401");
+      });
+
+      it("preserves partial section progress on failure", () => {
+        const partialProgress = [
+          { type: "exec_summary", title: "Executive Summary", status: "completed" as const },
+          { type: "approach", title: "Approach", status: "failed" as const },
+          { type: "pricing", title: "Pricing", status: "pending" as const },
+        ];
+        const s = dispatchMany(stateReadyToGenerate(), [
+          { type: "GENERATION_START", proposalId: "gen-402" },
+          { type: "SECTION_STATUS_UPDATE", sections: partialProgress },
+          { type: "GENERATION_FAIL" },
+        ]);
+        expect(s.sectionProgress).toEqual(partialProgress);
+      });
+    });
+
+    describe("full generation lifecycle", () => {
+      it("complete flow: start → progress updates → complete", () => {
+        const s = dispatchMany(stateReadyToGenerate(), [
+          { type: "GENERATION_START", proposalId: "lifecycle-1" },
+          // First poll: sections created, all pending
+          {
+            type: "SECTION_STATUS_UPDATE",
+            sections: [
+              { type: "exec_summary", title: "Executive Summary", status: "pending" as const },
+              { type: "approach", title: "Approach", status: "pending" as const },
+            ],
+          },
+          // Second poll: first section generating
+          {
+            type: "SECTION_STATUS_UPDATE",
+            sections: [
+              { type: "exec_summary", title: "Executive Summary", status: "generating" as const },
+              { type: "approach", title: "Approach", status: "pending" as const },
+            ],
+          },
+          // Third poll: first complete, second generating
+          {
+            type: "SECTION_STATUS_UPDATE",
+            sections: [
+              { type: "exec_summary", title: "Executive Summary", status: "completed" as const },
+              { type: "approach", title: "Approach", status: "generating" as const },
+            ],
+          },
+          // Fourth poll: all complete
+          {
+            type: "SECTION_STATUS_UPDATE",
+            sections: [
+              { type: "exec_summary", title: "Executive Summary", status: "completed" as const },
+              { type: "approach", title: "Approach", status: "completed" as const },
+            ],
+          },
+          { type: "GENERATION_COMPLETE" },
+        ]);
+        expect(s.generationStatus).toBe("complete");
+        expect(s.sectionProgress.every((sp) => sp.status === "completed")).toBe(true);
+        expect(s.proposalId).toBe("lifecycle-1");
+      });
+
+      it("partial failure flow: some complete, some failed", () => {
+        const s = dispatchMany(stateReadyToGenerate(), [
+          { type: "GENERATION_START", proposalId: "lifecycle-2" },
+          {
+            type: "SECTION_STATUS_UPDATE",
+            sections: [
+              { type: "exec_summary", title: "Executive Summary", status: "completed" as const },
+              { type: "approach", title: "Approach", status: "failed" as const },
+              { type: "pricing", title: "Pricing", status: "completed" as const },
+            ],
+          },
+          { type: "GENERATION_COMPLETE" },
+        ]);
+        expect(s.generationStatus).toBe("complete");
+        const completed = s.sectionProgress.filter((sp) => sp.status === "completed");
+        const failed = s.sectionProgress.filter((sp) => sp.status === "failed");
+        expect(completed).toHaveLength(2);
+        expect(failed).toHaveLength(1);
+      });
+
+      it("RESET after generation clears everything including proposalId", () => {
+        const s = dispatchMany(stateReadyToGenerate(), [
+          { type: "GENERATION_START", proposalId: "lifecycle-3" },
+          { type: "SECTION_STATUS_UPDATE", sections: mockSections },
+          { type: "GENERATION_COMPLETE" },
+          { type: "RESET" },
+        ]);
+        expect(s.proposalId).toBeNull();
+        expect(s.generationStatus).toBe("idle");
+        expect(s.sectionProgress).toEqual([]);
+        expect(s.currentStep).toBe(1);
+      });
+
+      it("RESTORE_DRAFT resets generation state for safety", () => {
+        const draft: Partial<WizardState> = {
+          currentStep: 4,
+          maxCompletedStep: 3,
+          proposalId: "restored-prop",
+          generationStatus: "generating",
+          sectionProgress: mockSections,
+        };
+        const s = dispatch(INITIAL_STATE, { type: "RESTORE_DRAFT", state: draft });
+        // RESTORE_DRAFT resets transient fields
+        expect(s.generationStatus).toBe("idle");
+        expect(s.sectionProgress).toEqual([]);
+        // But preserves step and proposalId
+        expect(s.currentStep).toBe(4);
+        expect(s.proposalId).toBe("restored-prop");
+      });
+    });
+
+    describe("step 4 navigation constraints", () => {
+      it("GO_NEXT on step 4 does nothing (step 4 is the last)", () => {
+        const s = dispatchMany(stateReadyToGenerate(), [
+          { type: "GENERATION_START", proposalId: "nav-1" },
+          { type: "GO_NEXT" },
+        ]);
+        expect(s.currentStep).toBe(4);
+      });
+
+      it("GO_BACK from step 4 returns to step 3 (reducer allows it)", () => {
+        const s = dispatchMany(stateReadyToGenerate(), [
+          { type: "GENERATION_START", proposalId: "nav-2" },
+          { type: "GO_BACK" },
+        ]);
+        // The reducer allows GO_BACK from step 4, but the UI hides the back button
+        expect(s.currentStep).toBe(3);
+        // proposalId and generation status should be preserved
+        expect(s.proposalId).toBe("nav-2");
+      });
+    });
+  });
 });
