@@ -140,7 +140,16 @@ export default function ExportPage() {
     [authFetch, id],
   );
 
+  // Track whether user explicitly dismissed the compliance gate this session
+  const [gateBypassedThisSession, setGateBypassedThisSession] = useState(false);
+
   async function handleExport(format: ExportFormat) {
+    // If user already chose "Export Anyway" this session, skip the gate
+    if (gateBypassedThisSession) {
+      doExport(format);
+      return;
+    }
+
     // Check for unaddressed requirements (fail-open: if check fails, proceed with export)
     try {
       const res = await authFetch(`/api/proposals/${id}/requirements`);
@@ -397,6 +406,7 @@ export default function ExportPage() {
             const format = pendingFormat;
             setGateRequirements(null);
             setPendingFormat(null);
+            setGateBypassedThisSession(true);
             doExport(format);
           }}
           onCancel={() => {
