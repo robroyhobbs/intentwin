@@ -11,7 +11,7 @@
  *   generates strategy via API, user reviews before advancing to Step 4
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   Loader2,
   Sparkles,
@@ -278,18 +278,23 @@ export function StepConfigure() {
   const [strategyError, setStrategyError] = useState<string | null>(null);
   const [showStrategy, setShowStrategy] = useState(!!state.winStrategy);
 
-  // Selected sections (set from template defaults, then user toggles)
-  const [selectedSections, setSelectedSections] = useState<Set<string>>(
-    new Set(state.selectedSections),
+  // Derive selected sections Set from wizard state (single source of truth)
+  const selectedSections = useMemo(
+    () => new Set(state.selectedSections),
+    [state.selectedSections],
   );
 
   // Determine solicitation type for template fetch
   const solicitationType = state.solicitationType || "RFP";
 
-  // ── Fetch templates on mount and when solicitation type changes ──
-  const fetchTemplates = useCallback(async (solType: string) => {
+  // Track which solicitation type we've already fetched to prevent double-fetch
+  const fetchedTypeRef = useRef<string | null>(null);
+
+  // ── Fetch templates ──
+  const fetchTemplates = useCallback(async (solType: string, resetSections: boolean) => {
     setTemplateLoading(true);
     setTemplateError(null);
+    fetchedTypeRef.current = solType;
     try {
       const response = await authFetch(`/api/templates?solicitation_type=${encodeURIComponent(solType)}`);
       if (!response.ok) {
@@ -298,31 +303,34 @@ export function StepConfigure() {
       const data: TemplateResponse = await response.json();
       setTemplateData(data);
 
-      // Initialize selected sections from defaults (only if user hasn't already configured)
-      if (selectedSections.size === 0) {
-        const defaultEnabled = new Set(
-          data.sections.filter((s) => s.defaultEnabled || s.required).map((s) => s.type),
-        );
-        setSelectedSections(defaultEnabled);
+      // Initialize selected sections from defaults if:
+      // - User hasn't configured sections yet (first mount), OR
+      // - User changed solicitation type (resetSections = true)
+      if (resetSections || state.selectedSections.length === 0) {
+        const defaultEnabled = data.sections
+          .filter((s) => s.defaultEnabled || s.required)
+          .map((s) => s.type);
         dispatch({
           type: "UPDATE_CONFIG",
-          payload: { selectedSections: [...defaultEnabled] },
+          payload: { selectedSections: defaultEnabled },
         });
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to load templates";
       setTemplateError(message);
-      // Fallback: use a minimal default
       console.error("Template fetch error:", message);
     } finally {
       setTemplateLoading(false);
     }
-  }, [authFetch, dispatch, selectedSections.size]);
+  }, [authFetch, dispatch, state.selectedSections.length]);
 
+  // Fetch on mount only (not on every solicitationType change — that's handled by handleSolicitationTypeChange)
   useEffect(() => {
-    fetchTemplates(solicitationType);
+    if (fetchedTypeRef.current !== solicitationType) {
+      fetchTemplates(solicitationType, false);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [solicitationType]);
+  }, []);
 
   // ── Section toggle ──
   const handleSectionToggle = (type: string) => {
@@ -330,19 +338,15 @@ export function StepConfigure() {
     const section = templateData?.sections.find((s) => s.type === type);
     if (section?.required) return;
 
-    setSelectedSections((prev) => {
-      const next = new Set(prev);
-      if (next.has(type)) {
-        next.delete(type);
-      } else {
-        next.add(type);
-      }
-      // Sync to wizard state
-      dispatch({
-        type: "UPDATE_CONFIG",
-        payload: { selectedSections: [...next] },
-      });
-      return next;
+    const next = new Set(selectedSections);
+    if (next.has(type)) {
+      next.delete(type);
+    } else {
+      next.add(type);
+    }
+    dispatch({
+      type: "UPDATE_CONFIG",
+      payload: { selectedSections: [...next] },
     });
   };
 
@@ -351,12 +355,10 @@ export function StepConfigure() {
     dispatch({ type: "UPDATE_CONFIG", payload: { tone } });
   };
 
-  // ── Solicitation type change (re-fetches template) ──
+  // ── Solicitation type change (re-fetches template with section reset) ──
   const handleSolicitationTypeChange = (newType: string) => {
     dispatch({ type: "UPDATE_FORM_FIELDS", payload: { solicitationType: newType } });
-    // Reset section selections so new defaults apply
-    setSelectedSections(new Set());
-    fetchTemplates(newType);
+    fetchTemplates(newType, true);
   };
 
   // ── Win strategy generation ──
@@ -495,7 +497,7 @@ export function StepConfigure() {
         ) : templateError ? (
           <div className="p-4 rounded-lg border border-[var(--danger-muted)] bg-[var(--danger-subtle)] text-sm text-[var(--foreground)]">
             {templateError}
-            <button onClick={() => fetchTemplates(solicitationType)} className="ml-2 text-[var(--accent)] hover:underline">
+            <button onClick={() => fetchTemplates(solicitationType, false)} className="ml-2 text-[var(--accent)] hover:underline">
               Retry
             </button>
           </div>

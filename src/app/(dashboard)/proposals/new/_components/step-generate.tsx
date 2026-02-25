@@ -132,12 +132,19 @@ export function StepGenerate() {
   const startTimeRef = useRef(Date.now());
   const generationStartedRef = useRef(false);
   const progressShownAtRef = useRef<number | null>(null);
+  const viewDelayTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const mountedRef = useRef(true);
 
-  // Cleanup polling on unmount
+  // Cleanup polling and timers on unmount
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
+      mountedRef.current = false;
       if (pollTimerRef.current) {
         clearTimeout(pollTimerRef.current);
+      }
+      if (viewDelayTimerRef.current) {
+        clearTimeout(viewDelayTimerRef.current);
       }
     };
   }, []);
@@ -235,7 +242,22 @@ export function StepGenerate() {
   }, [authFetch]);
 
   // ── Step 3: Poll for progress ──
+  // Use a ref to break the circular dependency between pollProgress and schedulePoll
+  const pollProgressRef = useRef<((id: string) => Promise<void>) | undefined>(undefined);
+
+  const schedulePoll = useCallback((id: string) => {
+    if (!mountedRef.current) return;
+    const interval = Math.min(
+      POLL_MIN_INTERVAL * Math.pow(POLL_BACKOFF_FACTOR, pollCountRef.current),
+      POLL_MAX_INTERVAL,
+    );
+    pollCountRef.current++;
+    pollTimerRef.current = setTimeout(() => pollProgressRef.current?.(id), interval);
+  }, []);
+
   const pollProgress = useCallback(async (id: string) => {
+    if (!mountedRef.current) return;
+
     // Check timeout
     if (Date.now() - startTimeRef.current > POLL_TIMEOUT) {
       setPhase("timeout");
@@ -245,6 +267,8 @@ export function StepGenerate() {
 
     try {
       const response = await authFetch(`/api/proposals/${id}`);
+      if (!mountedRef.current) return;
+
       if (!response.ok) {
         // Retry on poll failure (network issues)
         schedulePoll(id);
@@ -252,6 +276,8 @@ export function StepGenerate() {
       }
 
       const data = await response.json();
+      if (!mountedRef.current) return;
+
       const apiSections: ApiSection[] = data.sections || [];
       const proposalStatus: string = data.proposal?.status || "";
 
@@ -296,19 +322,12 @@ export function StepGenerate() {
       schedulePoll(id);
     } catch {
       // Network error — retry
-      schedulePoll(id);
+      if (mountedRef.current) schedulePoll(id);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authFetch, dispatch]);
+  }, [authFetch, dispatch, schedulePoll]);
 
-  const schedulePoll = useCallback((id: string) => {
-    const interval = Math.min(
-      POLL_MIN_INTERVAL * Math.pow(POLL_BACKOFF_FACTOR, pollCountRef.current),
-      POLL_MAX_INTERVAL,
-    );
-    pollCountRef.current++;
-    pollTimerRef.current = setTimeout(() => pollProgress(id), interval);
-  }, [pollProgress]);
+  // Keep the ref in sync with the latest pollProgress
+  pollProgressRef.current = pollProgress;
 
   // ── Orchestrate: create → trigger → poll ──
   const startGeneration = useCallback(async () => {
@@ -362,13 +381,29 @@ export function StepGenerate() {
   }, [proposalId, phase, pollProgress]);
 
   // ── Retry handler ──
-  const handleRetry = () => {
-    generationStartedRef.current = false;
+  // If we already have a proposalId, only re-trigger generation (don't create a duplicate).
+  // If creation itself failed (no proposalId), restart from scratch.
+  const handleRetry = useCallback(async () => {
     setError(null);
     setSections([]);
     if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
-    startGeneration();
-  };
+    startTimeRef.current = Date.now();
+    pollCountRef.current = 0;
+    progressShownAtRef.current = null;
+
+    if (proposalId) {
+      // Proposal exists — just re-trigger generation and poll
+      const triggered = await triggerGeneration(proposalId);
+      if (triggered) {
+        setPhase("generating");
+        pollProgress(proposalId);
+      }
+    } else {
+      // No proposal yet — full restart
+      generationStartedRef.current = false;
+      startGeneration();
+    }
+  }, [proposalId, triggerGeneration, pollProgress, startGeneration]);
 
   // ── Navigate to proposal ──
   const handleViewProposal = () => {
@@ -380,8 +415,10 @@ export function StepGenerate() {
       : MIN_PROGRESS_DISPLAY_MS;
 
     if (showDuration < MIN_PROGRESS_DISPLAY_MS) {
-      setTimeout(() => {
-        router.push(`/proposals/${proposalId}`);
+      viewDelayTimerRef.current = setTimeout(() => {
+        if (mountedRef.current) {
+          router.push(`/proposals/${proposalId}`);
+        }
       }, MIN_PROGRESS_DISPLAY_MS - showDuration);
     } else {
       router.push(`/proposals/${proposalId}`);
