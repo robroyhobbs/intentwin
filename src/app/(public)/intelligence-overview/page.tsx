@@ -13,30 +13,41 @@ export const metadata: Metadata = {
   },
 };
 
+const STATS = [
+  { value: "9,500+", label: "Federal awards tracked" },
+  { value: "1,000+", label: "Labor rates indexed" },
+  { value: "36", label: "Agency profiles" },
+  { value: "50", label: "State FOIA statutes" },
+];
+
 const CAPABILITIES = [
   {
-    title: "Market Intelligence Dashboard",
-    desc: "9,500+ federal awards tracked. 1,000+ labor rates indexed. 36 agency profiles built. See awards over time, competition type breakdowns, set-aside distribution, top agencies, and top NAICS codes \u2014 all from live USAspending.gov data.",
+    title: "Market Intelligence",
+    desc: "Awards over time, competition type breakdowns, set-aside distribution, top agencies, and NAICS analysis — all from live USAspending.gov data.",
     image: "/images/product/intel-market.jpeg",
     alt: "IntentBid Market Intelligence dashboard showing award stats, trend chart, competition and set-aside pie charts",
+    accent: "#38bdf8",
   },
   {
-    title: "Federal Award Search",
-    desc: "Search 9,400+ federal contract awards by agency, awardee, and NAICS code. Open any award to see the full detail: dollar amount, competition type, number of offers, set-aside, period of performance, and a direct link to USAspending.gov.",
+    title: "Award Search",
+    desc: "Search federal contract awards by agency, awardee, and NAICS code. Full detail on every award: dollar amount, competition, set-aside, and period of performance.",
     image: "/images/product/intel-awards.jpeg",
     alt: "IntentBid Award Search showing results list and detail panel with $24.9M BARDA contract details",
+    accent: "#818cf8",
   },
   {
-    title: "GSA Rate Benchmarks",
-    desc: "Look up GSA CALC+ labor rates by category and business size. See median rates, ranges, and data point counts. Common pricing model breakdown included. Cost realism notes flag when your rates may trigger scrutiny.",
+    title: "Rate Benchmarks",
+    desc: "GSA CALC+ labor rates by category and business size. Median rates, ranges, data point counts, and cost realism flags when your rates may trigger scrutiny.",
     image: "/images/product/intel-rates.jpeg",
     alt: "IntentBid Rate Benchmarks showing project manager rate at $66.96 median with common pricing model breakdown",
+    accent: "#a78bfa",
   },
   {
-    title: "FOIA & Public Records Engine",
-    desc: "Select a state, enter an agency, describe what you want. IntentBid generates a legally compliant Sunshine Law or FOIA request citing the correct statute, with fee waiver language and statutory deadlines. Ready to copy and send.",
+    title: "FOIA & Public Records",
+    desc: "Select a state, enter an agency, describe what you need. IntentBid generates a legally compliant request citing the correct statute, with fee waiver language.",
     image: "/images/product/intel-foia.jpeg",
     alt: "IntentBid Public Records engine with state selection, agency input, target documents, and generate request button",
+    accent: "#f472b6",
   },
 ];
 
@@ -61,39 +72,55 @@ export default function IntelligenceOverviewPage() {
       </nav>
 
       <main style={{ paddingTop: 120, paddingBottom: 80 }}>
+        {/* Hero */}
         <div className="intel-hero">
           <p className="intel-label">IntentBid Intelligence</p>
           <h1 className="intel-title">
-            Market intelligence that
+            Know the market
             <br />
-            <span className="intel-gradient">informs every bid.</span>
+            <span className="intel-gradient">before you bid.</span>
           </h1>
           <p className="intel-subtitle">
-            Before you write a word, know which deals to chase, what the
-            competition looks like, and how to price competitively. Powered by
-            live federal procurement data from USAspending.gov and GSA CALC+.
+            Live federal procurement data from USAspending.gov and GSA
+            CALC+. Find the right deals, understand the competition, and
+            price competitively — before you write a word.
           </p>
         </div>
 
-        {/* Capability sections */}
-        <div className="intel-capabilities">
+        {/* Stats bar */}
+        <div className="intel-stats">
+          {STATS.map((s) => (
+            <div key={s.label} className="intel-stat">
+              <span className="intel-stat-value">{s.value}</span>
+              <span className="intel-stat-label">{s.label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Capability cards — stacked full-width feature sections */}
+        <div className="intel-features">
           {CAPABILITIES.map((cap, i) => (
-            <section
-              key={cap.title}
-              className={`intel-cap ${i % 2 === 1 ? "intel-cap--reverse" : ""}`}
-            >
-              <div className="intel-cap-text">
-                <h2 className="intel-cap-title">{cap.title}</h2>
-                <p className="intel-cap-desc">{cap.desc}</p>
-              </div>
-              <div className="intel-cap-img">
-                <Image
-                  src={cap.image}
-                  alt={cap.alt}
-                  width={720}
-                  height={480}
-                  className="prod-screenshot"
-                />
+            <section key={cap.title} className="intel-feature">
+              <div
+                className="intel-feature-accent"
+                style={{ background: cap.accent }}
+              />
+              <div
+                className={`intel-feature-inner ${i % 2 === 1 ? "intel-feature-inner--reverse" : ""}`}
+              >
+                <div className="intel-feature-text">
+                  <h2 className="intel-feature-title">{cap.title}</h2>
+                  <p className="intel-feature-desc">{cap.desc}</p>
+                </div>
+                <div className="intel-feature-img">
+                  <Image
+                    src={cap.image}
+                    alt={cap.alt}
+                    width={480}
+                    height={320}
+                    className="intel-feature-screenshot"
+                  />
+                </div>
               </div>
             </section>
           ))}
@@ -107,9 +134,8 @@ export default function IntelligenceOverviewPage() {
           <p className="intel-flow-desc">
             When you generate a proposal, IntentBid automatically fetches
             agency evaluation criteria, competitive landscape data, and rate
-            benchmarks for the opportunity. This intelligence is injected
-            directly into the AI generation prompts &mdash; so your proposals
-            are informed by real market data, not guesswork.
+            benchmarks. This intelligence is injected directly into the AI
+            generation prompts.
           </p>
           <div className="intel-flow-points">
             <div className="intel-flow-point">
@@ -117,9 +143,9 @@ export default function IntelligenceOverviewPage() {
               <div>
                 <strong>Agency-aware generation</strong>
                 <p>
-                  The AI knows how each agency evaluates and weights its
-                  criteria. Your proposal emphasizes what matters most to the
-                  specific evaluator.
+                  The AI knows how each agency evaluates proposals and
+                  weights its criteria. Your proposal emphasizes what
+                  matters to the specific evaluator.
                 </p>
               </div>
             </div>
@@ -128,9 +154,9 @@ export default function IntelligenceOverviewPage() {
               <div>
                 <strong>Competitive positioning</strong>
                 <p>
-                  Top competitors, win counts, and market segment data are
-                  available during generation. The AI differentiates against
-                  real competitors, not assumptions.
+                  Top competitors, win counts, and market segment data
+                  inform generation. The AI differentiates against real
+                  competitors, not assumptions.
                 </p>
               </div>
             </div>
@@ -141,7 +167,7 @@ export default function IntelligenceOverviewPage() {
                 <p>
                   GSA rate benchmarks for matched labor categories are
                   included in cost section prompts. Price competitively
-                  without triggering cost realism concerns.
+                  without triggering scrutiny.
                 </p>
               </div>
             </div>
