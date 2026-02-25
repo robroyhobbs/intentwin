@@ -141,10 +141,11 @@ export default function GovernmentPage() {
             </span>
           </h1>
           <p className="prod-subtitle">
-            Everything in IntentBid, plus specialized capabilities for
-            federal, state, and local procurement — compliance mapping,
-            cost realism validation, FOIA automation, and structured
-            review gates built on live government data.
+            Your best capture managers shouldn&rsquo;t spend 80% of their
+            time on compliance formatting. IntentBid handles the heavy
+            lift &mdash; compliance mapping, cost realism checks, FOIA
+            automation, and structured review gates &mdash; so your team
+            focuses on winning strategy.
           </p>
         </div>
 
@@ -184,6 +185,56 @@ export default function GovernmentPage() {
           </div>
         </section>
 
+        {/* Security & Compliance */}
+        <section className="gov-security-section">
+          <h2 className="gov-cap-heading">
+            Security &amp; Compliance
+          </h2>
+          <p className="gov-security-intro">
+            We take data protection seriously. IntentBid is built on
+            enterprise-grade infrastructure with security controls
+            designed for organizations handling sensitive proposal data.
+          </p>
+          <div className="gov-security-grid">
+            <div className="gov-security-card">
+              <h3>Infrastructure</h3>
+              <ul>
+                <li>Hosted on Vercel (SOC 2 Type II certified)</li>
+                <li>Database on Supabase (SOC 2 Type II, encrypted at rest and in transit)</li>
+                <li>US-based data centers</li>
+                <li>TLS 1.3 encryption for all connections</li>
+              </ul>
+            </div>
+            <div className="gov-security-card">
+              <h3>Data Handling</h3>
+              <ul>
+                <li>Multi-tenant isolation with row-level security (RLS)</li>
+                <li>Organization-scoped data — no cross-tenant access</li>
+                <li>AI processing via Google Gemini enterprise terms</li>
+                <li>No customer data used for model training</li>
+              </ul>
+            </div>
+            <div className="gov-security-card">
+              <h3>Access Controls</h3>
+              <ul>
+                <li>Role-based access within organizations</li>
+                <li>Authenticated API routes with session verification</li>
+                <li>Rate limiting on all endpoints</li>
+                <li>Audit logging for proposal operations</li>
+              </ul>
+            </div>
+            <div className="gov-security-card">
+              <h3>Compliance Roadmap</h3>
+              <ul>
+                <li>SOC 2 Type II — in progress</li>
+                <li>FedRAMP authorization — planned</li>
+                <li>ITAR-compatible data handling — planned</li>
+                <li>Contact <a href="mailto:gov@intentbid.com" style={{ color: "#a78bfa" }}>gov@intentbid.com</a> for our security questionnaire</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
         {/* CTA */}
         <section className="prod-cta-section">
           <h2>Built for how government buys</h2>
@@ -193,16 +244,19 @@ export default function GovernmentPage() {
           </p>
           <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
             <Link href="/request-access" className="prod-cta">
-              Request Access
+              Schedule a Gov Demo
             </Link>
             <a
               href="mailto:gov@intentbid.com"
               className="prod-cta"
               style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)" }}
             >
-              Contact Gov Sales
+              Email Gov Sales
             </a>
           </div>
+          <p className="prod-cta-micro">
+            We respond to government inquiries within one business day.
+          </p>
         </section>
       </main>
 

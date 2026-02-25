@@ -42,15 +42,15 @@ export default function AboutPage() {
         <div className="about-hero">
           <p className="about-label">About IntentBid</p>
           <h1 className="about-title">
-            Proposal intelligence,
+            We build the tool we
             <br />
-            <span className="about-gradient">engineered to win.</span>
+            <span className="about-gradient">wished existed.</span>
           </h1>
           <p className="about-subtitle">
-            We build proposals like software engineers build apps &mdash;
-            repeatable, user-friendly, and designed with the evaluator in mind.
-            Because the best capability in the world doesn&rsquo;t matter if
-            your proposal doesn&rsquo;t communicate it.
+            Every proposal we watched go out the door could have been better.
+            So we built IntentBid &mdash; proposals engineered like software,
+            repeatable by design, and optimized for how evaluators actually
+            score.
           </p>
         </div>
 
@@ -212,8 +212,11 @@ export default function AboutPage() {
               get you set up.
             </p>
             <Link href="/request-access" className="about-cta">
-              Request Access
+              Join the Early Access Program
             </Link>
+            <p className="prod-cta-micro">
+              Limited spots available. We respond within 24 hours.
+            </p>
           </div>
         </section>
       </main>

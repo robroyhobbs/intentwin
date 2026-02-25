@@ -113,11 +113,10 @@ export default function ProductPage() {
             <span className="prod-gradient">slow proposals.</span>
           </h1>
           <p className="prod-subtitle">
-            Most teams pass on winnable contracts because proposals take too
-            long, cost too much, and require expertise they don&rsquo;t
-            have. IntentBid changes that. Upload an RFP, define your win
+            You&rsquo;re passing on winnable contracts because proposals take
+            too long and cost too much. Upload an RFP, define your win
             strategy, and get a complete, persuasion-engineered proposal
-            back in minutes.
+            in minutes &mdash; not weeks.
           </p>
         </div>
 
@@ -246,8 +245,11 @@ export default function ProductPage() {
             we&rsquo;ll walk you through a live demo with your own RFP.
           </p>
           <Link href="/request-access" className="prod-cta">
-            Request Access
+            See It With Your RFP
           </Link>
+          <p className="prod-cta-micro">
+            We review every request personally. Expect a response within 24 hours.
+          </p>
         </section>
       </main>
 

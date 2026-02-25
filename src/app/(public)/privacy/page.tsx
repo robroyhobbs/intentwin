@@ -1,4 +1,16 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy — IntentBid",
+  description:
+    "How IntentBid collects, uses, stores, and protects your information. Read our privacy policy covering data handling, third-party services, and your rights.",
+  openGraph: {
+    title: "Privacy Policy — IntentBid",
+    description:
+      "IntentBid privacy policy — data handling, third-party services, your rights, and how we protect your information.",
+  },
+};
 
 export default function PrivacyPage() {
   return (

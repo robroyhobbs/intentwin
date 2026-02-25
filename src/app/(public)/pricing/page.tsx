@@ -105,12 +105,49 @@ export default function PricingPage() {
               </p>
             </div>
             <Link href="/request-access" className="pricing-card-cta">
-              Request Access
+              Get Started
             </Link>
             <p className="pricing-invite-note">
-              Invite-only. Limited availability.
+              Invite-only &mdash; we&rsquo;ll respond within 24 hours.
             </p>
           </div>
+        </section>
+
+        {/* ROI justification */}
+        <section className="pricing-roi">
+          <h2 className="pricing-roi-heading">
+            The math behind the price
+          </h2>
+          <p className="pricing-roi-intro">
+            A single proposal typically costs $20,000&ndash;$75,000 in labor
+            when you factor in capture manager time, SME hours, review
+            cycles, and opportunity cost. Here&rsquo;s how IntentBid changes
+            the equation:
+          </p>
+          <div className="pricing-roi-grid">
+            <div className="pricing-roi-card">
+              <span className="pricing-roi-label">Without IntentBid</span>
+              <span className="pricing-roi-num">80&ndash;120 hrs</span>
+              <span className="pricing-roi-desc">
+                Per proposal: research, writing, compliance checks, review
+                cycles, formatting, and export
+              </span>
+            </div>
+            <div className="pricing-roi-card pricing-roi-card--highlight">
+              <span className="pricing-roi-label">With IntentBid</span>
+              <span className="pricing-roi-num">15&ndash;30 hrs</span>
+              <span className="pricing-roi-desc">
+                AI handles first drafts, compliance mapping, and formatting.
+                Your team focuses on strategy and review.
+              </span>
+            </div>
+          </div>
+          <p className="pricing-roi-bottom">
+            At a blended rate of $150/hr, saving 60+ hours per proposal means
+            IntentBid pays for itself with{" "}
+            <strong>a single proposal each month</strong>. Most teams
+            submit 4&ndash;8.
+          </p>
         </section>
 
         {/* What's included */}
@@ -170,8 +207,11 @@ export default function PricingPage() {
             with your own RFP.
           </p>
           <Link href="/request-access" className="prod-cta">
-            Request Access
+            Start Winning More
           </Link>
+          <p className="prod-cta-micro">
+            We review every request personally. Expect a response within 24 hours.
+          </p>
         </section>
       </main>
 

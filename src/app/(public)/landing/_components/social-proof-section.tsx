@@ -4,32 +4,32 @@ export function SocialProofSection() {
   return (
     <section className="vf-proof">
       <div className="vf-section-inner">
-        <span className="vf-label">Trusted by Teams That Win</span>
+        <span className="vf-label">Built for Real Results</span>
         <div className="vf-proof-stats">
           <div className="vf-proof-stat">
-            <span className="vf-proof-num">10x</span>
+            <span className="vf-proof-num">11</span>
             <span className="vf-proof-desc">
-              More proposals
+              Proposal sections
               <br />
-              submitted per month
+              generated per RFP
             </span>
           </div>
           <div className="vf-proof-divider" />
           <div className="vf-proof-stat">
-            <span className="vf-proof-num">2x</span>
+            <span className="vf-proof-num">6</span>
             <span className="vf-proof-desc">
-              Higher win rate
+              Layers of intent
               <br />
-              vs. industry average
+              in every section
             </span>
           </div>
           <div className="vf-proof-divider" />
           <div className="vf-proof-stat">
-            <span className="vf-proof-num">85%</span>
+            <span className="vf-proof-num">9,500+</span>
             <span className="vf-proof-desc">
-              Reduction in
+              Federal awards
               <br />
-              proposal creation time
+              in intelligence database
             </span>
           </div>
           <div className="vf-proof-divider" />
@@ -46,38 +46,38 @@ export function SocialProofSection() {
         <div className="vf-proof-quotes">
           <div className="vf-proof-quote">
             <p className="vf-proof-text">
-              &ldquo;We went from 3 proposals a month to 30. Our pipeline
-              tripled in the first quarter. The Intent Framework doesn&apos;t
-              just generate text — it structures arguments the way evaluators
-              think.&rdquo;
+              IntentBid is in early access with select government contractors
+              and professional services firms. We&rsquo;re building alongside
+              our first customers — every feature ships because a real team
+              needed it, not because a roadmap said so.
             </p>
             <div className="vf-proof-author">
-              <div className="vf-proof-avatar">VP</div>
+              <div className="vf-proof-avatar" style={{ background: "linear-gradient(135deg, #7c3aed, #6366f1)", fontSize: 12, fontWeight: 600 }}>EA</div>
               <div>
                 <span className="vf-proof-name">
-                  VP of Business Development
+                  Early Access Program
                 </span>
                 <span className="vf-proof-role">
-                  Federal Consulting Firm, 200+ employees
+                  Now accepting qualified teams &mdash; limited spots available
                 </span>
               </div>
             </div>
           </div>
           <div className="vf-proof-quote">
             <p className="vf-proof-text">
-              &ldquo;What I love is the human-in-the-loop approach. Our SMEs
-              still own every section, but now they start from an 80% draft
-              instead of a blank page. We ship better proposals in a fraction of
-              the time.&rdquo;
+              Our founders have 30+ years of combined experience in IT,
+              cybersecurity, and business development. We built IntentBid
+              because we lived the pain of manual proposals &mdash; and knew
+              AI could do better than templates and cut-and-paste.
             </p>
             <div className="vf-proof-author">
-              <div className="vf-proof-avatar">BD</div>
+              <div className="vf-proof-avatar" style={{ background: "linear-gradient(135deg, #7c3aed, #6366f1)", fontSize: 12, fontWeight: 600 }}>IB</div>
               <div>
                 <span className="vf-proof-name">
-                  Director of Capture Management
+                  Founded in Seattle, 2026
                 </span>
                 <span className="vf-proof-role">
-                  Mid-Market Defense Contractor
+                  Built by proposal practitioners, not just engineers
                 </span>
               </div>
             </div>

@@ -211,8 +211,11 @@ export default function IntelligenceOverviewPage() {
             data from your target agencies.
           </p>
           <Link href="/request-access" className="prod-cta">
-            Request Access
+            Get Intelligence Access
           </Link>
+          <p className="prod-cta-micro">
+            We&rsquo;ll respond within 24 hours with a personalized demo link.
+          </p>
         </section>
       </main>
 

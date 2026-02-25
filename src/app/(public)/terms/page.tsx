@@ -1,4 +1,16 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Terms of Service — IntentBid",
+  description:
+    "IntentBid terms of service covering account terms, payment, intellectual property, AI-generated content, acceptable use, and liability.",
+  openGraph: {
+    title: "Terms of Service — IntentBid",
+    description:
+      "IntentBid terms of service — account terms, payment, intellectual property, AI content disclaimers, and acceptable use policy.",
+  },
+};
 
 export default function TermsPage() {
   return (
