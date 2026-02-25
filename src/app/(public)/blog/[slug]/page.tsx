@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { PublicNav } from "../../_components/public-nav";
 
 /* ------------------------------------------------------------------ */
 /*  Blog content — static articles                                     */
@@ -895,21 +896,7 @@ export default async function BlogPostPage(props: {
 
   return (
     <div className="vf-page">
-      {/* Nav */}
-      <nav className="vf-nav">
-        <div className="vf-nav-inner">
-          <Link href="/" className="vf-logo">
-            IntentBid
-          </Link>
-          <div className="vf-nav-links">
-            <Link href="/blog">&larr; All Posts</Link>
-            <Link href="/about">About</Link>
-            <Link href="/request-access" className="vf-nav-cta">
-              Request Access
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <PublicNav />
 
       <main style={{ paddingTop: 120, paddingBottom: 80 }}>
         <article className="blog-article">

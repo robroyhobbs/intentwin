@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { PublicNav } from "../_components/public-nav";
 
 export const metadata: Metadata = {
   title: "About IntentBid",
@@ -34,21 +35,7 @@ const FOUNDERS = [
 export default function AboutPage() {
   return (
     <div className="vf-page">
-      {/* Nav */}
-      <nav className="vf-nav">
-        <div className="vf-nav-inner">
-          <Link href="/" className="vf-logo">
-            IntentBid
-          </Link>
-          <div className="vf-nav-links">
-            <Link href="/">Home</Link>
-            <Link href="/blog">Blog</Link>
-            <Link href="/request-access" className="vf-nav-cta">
-              Request Access
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <PublicNav />
 
       {/* Hero */}
       <main style={{ paddingTop: 120, paddingBottom: 80 }}>

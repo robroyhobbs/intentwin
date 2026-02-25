@@ -40,6 +40,9 @@ export function HeroSection() {
             <a href="#pricing">Pricing</a>
             <Link href="/about">About</Link>
             <Link href="/blog">Blog</Link>
+            <Link href="/login" className="vf-nav-signin">
+              Sign In
+            </Link>
             <Link href="/request-access" className="vf-nav-cta">
               Request Access
             </Link>

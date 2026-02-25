@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { PublicNav } from "../_components/public-nav";
 
 export const metadata: Metadata = {
   title: "Blog | IntentBid",
@@ -65,21 +66,7 @@ const POSTS = [
 export default function BlogPage() {
   return (
     <div className="vf-page">
-      {/* Nav */}
-      <nav className="vf-nav">
-        <div className="vf-nav-inner">
-          <Link href="/" className="vf-logo">
-            IntentBid
-          </Link>
-          <div className="vf-nav-links">
-            <Link href="/">Home</Link>
-            <Link href="/about">About</Link>
-            <Link href="/request-access" className="vf-nav-cta">
-              Request Access
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <PublicNav />
 
       <main style={{ paddingTop: 120, paddingBottom: 80 }}>
         <div className="blog-hero">
