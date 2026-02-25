@@ -22,6 +22,24 @@ const STATUS_OPTIONS = [
   { value: "cancelled", label: "Cancelled" },
 ];
 
+const SOURCE_OPTIONS = [
+  { value: "", label: "All Sources" },
+  { value: "sam_gov", label: "SAM.gov (Federal)" },
+  { value: "socrata", label: "Local Portals" },
+];
+
+const SET_ASIDE_OPTIONS = [
+  { value: "", label: "All Set-Asides" },
+  { value: "SBA", label: "Small Business" },
+  { value: "8A", label: "8(a)" },
+  { value: "8AN", label: "8(a) Sole Source" },
+  { value: "SDVOSBC", label: "SDVOSB" },
+  { value: "SDVOSBS", label: "SDVOSB Sole Source" },
+  { value: "HZC", label: "HUBZone" },
+  { value: "WOSB", label: "WOSB" },
+  { value: "EDWOSB", label: "EDWOSB" },
+];
+
 export default function OpportunitySearchPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -32,6 +50,8 @@ export default function OpportunitySearchPage() {
   const [state, setState] = useState(searchParams.get("state") ?? "");
   const [status, setStatus] = useState(searchParams.get("status") ?? "");
   const [naicsCode, setNaicsCode] = useState(searchParams.get("naics") ?? "");
+  const [source, setSource] = useState(searchParams.get("source") ?? "");
+  const [setAsideType, setSetAsideType] = useState(searchParams.get("set_aside") ?? "");
   const [offset, setOffset] = useState(0);
   const [selectedOpportunity, setSelectedOpportunity] = useState<OpportunityRecord | null>(null);
 
@@ -43,7 +63,7 @@ export default function OpportunitySearchPage() {
   const debouncedNaics = useDebounce(naicsCode);
 
   // Derive a filter key — when it changes, offset resets to 0
-  const filterKey = `${debouncedKeyword}|${debouncedAgency}|${debouncedCity}|${debouncedState}|${status}|${debouncedNaics}`;
+  const filterKey = `${debouncedKeyword}|${debouncedAgency}|${debouncedCity}|${debouncedState}|${status}|${debouncedNaics}|${source}|${setAsideType}`;
   const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
   if (filterKey !== prevFilterKey) {
     setPrevFilterKey(filterKey);
@@ -61,8 +81,10 @@ export default function OpportunitySearchPage() {
     if (debouncedState.trim()) p.state = debouncedState.trim();
     if (status) p.status = status;
     if (debouncedNaics.trim()) p.naics_code = debouncedNaics.trim();
+    if (source) p.source = source;
+    if (setAsideType) p.set_aside_type = setAsideType;
     return p;
-  }, [debouncedKeyword, debouncedAgency, debouncedCity, debouncedState, status, debouncedNaics, offset]);
+  }, [debouncedKeyword, debouncedAgency, debouncedCity, debouncedState, status, debouncedNaics, source, setAsideType, offset]);
 
   const { data, loading, error, configured } = useIntelligence<OpportunitySearchResponse>(
     "/api/v1/opportunities/search",
@@ -112,7 +134,7 @@ export default function OpportunitySearchPage() {
             Opportunity Search
           </h1>
           <p className="mt-0.5 text-sm text-[var(--foreground-muted)]">
-            Browse open solicitations from city procurement portals
+            Browse federal and local solicitations from SAM.gov and city portals
           </p>
         </div>
       </div>
@@ -185,6 +207,22 @@ export default function OpportunitySearchPage() {
             className="w-full px-4 py-2.5 rounded-xl text-sm"
           />
         </div>
+        <div className="w-40">
+          <label className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide block mb-1.5">
+            Source
+          </label>
+          <select
+            value={source}
+            onChange={(e) => setSource(e.target.value)}
+            className="w-full py-2.5 rounded-xl text-sm"
+          >
+            {SOURCE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="w-36">
           <label className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide block mb-1.5">
             Status
@@ -195,6 +233,22 @@ export default function OpportunitySearchPage() {
             className="w-full py-2.5 rounded-xl text-sm"
           >
             {STATUS_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="w-40">
+          <label className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide block mb-1.5">
+            Set-Aside
+          </label>
+          <select
+            value={setAsideType}
+            onChange={(e) => setSetAsideType(e.target.value)}
+            className="w-full py-2.5 rounded-xl text-sm"
+          >
+            {SET_ASIDE_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}
               </option>
