@@ -5,40 +5,36 @@ import Link from "next/link";
 export function PricingFooterSection() {
   return (
     <>
-      {/* Pricing */}
+      {/* Pricing Teaser */}
       <section id="pricing" className="vf-pricing">
-        <div className="vf-section-inner">
-          <div className="vf-price-card">
-            <span className="vf-label" style={{ textAlign: "center" }}>
-              Pricing
-            </span>
-            <h2 className="vf-price-amount">
-              $999<span className="vf-price-period">/month</span>
-            </h2>
-            <p className="vf-price-tagline">
-              Everything included. No tiers. No upsells.
-            </p>
-            <div className="vf-price-grid">
-              <ul className="vf-price-list">
-                <li>Unlimited proposal generation</li>
-                <li>Full Intent Framework (6 layers)</li>
-                <li>AI bid scoring &amp; qualification</li>
-                <li>Agency &amp; market intelligence</li>
-              </ul>
-              <ul className="vf-price-list">
-                <li>Opportunity discovery &amp; search</li>
-                <li>Win probability &amp; competitive landscape</li>
-                <li>Outcome tracking &amp; continuous learning</li>
-                <li>White-glove onboarding &amp; priority support</li>
-              </ul>
-            </div>
+        <div className="vf-section-inner" style={{ textAlign: "center" }}>
+          <span className="vf-label" style={{ textAlign: "center" }}>
+            Pricing
+          </span>
+          <h2
+            className="vf-gradient-text"
+            style={{ fontSize: "clamp(28px, 4vw, 40px)", fontWeight: 800, marginBottom: 16 }}
+          >
+            $999/month — everything included.
+          </h2>
+          <p style={{ color: "#a1a1aa", fontSize: 17, maxWidth: 540, margin: "0 auto 28px", lineHeight: 1.7 }}>
+            One plan. Unlimited proposals. Full intelligence suite.
+            No tiers, no upsells, no per-proposal fees.
+          </p>
+          <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
+            <Link
+              href="/pricing"
+              className="vf-btn-primary"
+            >
+              See Full Pricing
+            </Link>
             <Link
               href="/request-access"
-              className="vf-btn-primary vf-btn-full"
+              className="vf-btn-primary"
+              style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)" }}
             >
               Request Access
             </Link>
-            <p className="vf-price-note">Invite-only. Limited availability.</p>
           </div>
         </div>
       </section>

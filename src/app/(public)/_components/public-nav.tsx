@@ -75,6 +75,8 @@ export function PublicNav() {
         <div className="vf-nav-links">
           <Link href="/product">Product</Link>
           <Link href="/intelligence-overview">Intelligence</Link>
+          <Link href="/government">Government</Link>
+          <Link href="/pricing">Pricing</Link>
           <Link href="/about">About</Link>
           <Link href="/blog">Blog</Link>
           <Link href="/login" className="vf-nav-signin">

@@ -1,14 +1,16 @@
 "use client";
 
 /**
- * WizardShell — Layout component combining sidebar stepper + content area + bottom bar.
+ * WizardShell — Layout component combining inline step bar + content area + bottom bar.
  *
- * Renders the active step content based on currentStep from wizard state.
- * Each step is a lazy placeholder for now — actual step components will be built in later phases.
+ * Renders the active step content based on currentStep from wizard state:
+ *   Step 1: StepInput — document upload/paste/describe
+ *   Step 2: StepReview — review & edit extracted data
+ *   Step 3: StepConfigure — template, tone, sections, win strategy
+ *   Step 4: StepGenerate — proposal creation, generation progress, redirect
  *
- * Note: Currently renders within the dashboard layout (sidebar + header provided by parent).
- * The WizardSidebar is rendered as a step indicator panel at the top of the content area.
- * A future phase will move this route outside the dashboard layout for full-screen wizard control.
+ * Renders within the dashboard layout (sidebar + header provided by parent).
+ * A future phase may move this route outside the dashboard layout for full-screen wizard control.
  */
 
 import { useCallback } from "react";
@@ -19,20 +21,7 @@ import { WIZARD_STEPS } from "./wizard-types";
 import { StepInput } from "./step-input";
 import { StepReview } from "./step-review";
 import { StepConfigure } from "./step-configure";
-
-// ────────────────────────────────────────────────────────
-// Step Placeholders (replaced in Phases 1-4)
-// ────────────────────────────────────────────────────────
-
-function StepPlaceholder({ step, label }: { step: number; label: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
-      <div className="text-6xl font-bold text-[var(--foreground-subtle)] mb-4">{step}</div>
-      <h2 className="text-xl font-semibold text-[var(--foreground)] mb-2">{label}</h2>
-      <p className="text-sm text-[var(--foreground-muted)]">This step will be built in Phase {step}.</p>
-    </div>
-  );
-}
+import { StepGenerate } from "./step-generate";
 
 // ────────────────────────────────────────────────────────
 // Inline Step Progress Bar (renders within dashboard layout)
@@ -105,7 +94,7 @@ export function WizardShell() {
       case 3:
         return <StepConfigure />;
       case 4:
-        return <StepPlaceholder step={4} label="Generate Sections" />;
+        return <StepGenerate />;
       default:
         return <StepInput />;
     }
@@ -188,7 +177,7 @@ export function WizardShellFullScreen() {
       case 3:
         return <StepConfigure />;
       case 4:
-        return <StepPlaceholder step={4} label="Generate Sections" />;
+        return <StepGenerate />;
       default:
         return <StepInput />;
     }

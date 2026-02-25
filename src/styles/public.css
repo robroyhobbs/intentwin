@@ -1509,3 +1509,260 @@
   line-height: 1.6;
   margin: 0;
 }
+
+/* ──────────────────────────────────────────────────────────────
+   Pricing Page
+   ────────────────────────────────────────────────────────────── */
+.pricing-hero {
+  max-width: 720px;
+  margin: 0 auto 64px;
+  text-align: center;
+  padding: 0 24px;
+}
+.pricing-card-section {
+  max-width: 480px;
+  margin: 0 auto 80px;
+  padding: 0 24px;
+}
+.pricing-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 40px 32px;
+  text-align: center;
+}
+.pricing-card-header {
+  margin-bottom: 28px;
+}
+.pricing-plan-name {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #a78bfa;
+  display: block;
+  margin-bottom: 12px;
+}
+.pricing-amount {
+  font-size: 56px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.pricing-period {
+  font-size: 20px;
+  font-weight: 500;
+  color: #71717a;
+}
+.pricing-tagline {
+  font-size: 15px;
+  color: #a1a1aa;
+  margin: 0;
+}
+.pricing-card-cta {
+  display: block;
+  padding: 14px 32px;
+  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  color: #fff;
+  font-weight: 600;
+  font-size: 16px;
+  border-radius: 12px;
+  text-decoration: none;
+  text-align: center;
+  transition: opacity 0.2s;
+  margin-bottom: 12px;
+}
+.pricing-card-cta:hover {
+  opacity: 0.9;
+}
+.pricing-invite-note {
+  font-size: 13px;
+  color: #71717a;
+  margin: 0;
+}
+
+/* Included features */
+.pricing-included {
+  max-width: 960px;
+  margin: 0 auto 80px;
+  padding: 0 24px;
+}
+.pricing-included-heading {
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+  margin-bottom: 40px;
+}
+.pricing-included-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+}
+@media (max-width: 768px) {
+  .pricing-included-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.pricing-included-group {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 28px 24px;
+}
+.pricing-group-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 16px;
+}
+.pricing-group-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.pricing-group-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: #a1a1aa;
+  line-height: 1.5;
+  padding: 6px 0;
+}
+.pricing-check {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* FAQ */
+.pricing-faq {
+  max-width: 680px;
+  margin: 0 auto 0;
+  padding: 0 24px;
+}
+.pricing-faq-heading {
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+  margin-bottom: 32px;
+}
+.pricing-faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.pricing-faq-item {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 20px 24px;
+}
+.pricing-faq-item h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 8px;
+}
+.pricing-faq-item p {
+  font-size: 14px;
+  color: #a1a1aa;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Government Page
+   ────────────────────────────────────────────────────────────── */
+.gov-pain-section {
+  max-width: 960px;
+  margin: 0 auto 80px;
+  padding: 0 24px;
+}
+.gov-pain-heading {
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+  margin-bottom: 32px;
+}
+.gov-pain-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+@media (max-width: 768px) {
+  .gov-pain-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.gov-pain-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 28px 24px;
+}
+.gov-pain-problem {
+  font-size: 15px;
+  font-weight: 600;
+  color: #f472b6;
+  line-height: 1.4;
+  margin: 0 0 12px;
+}
+.gov-pain-solution {
+  font-size: 14px;
+  color: #a1a1aa;
+  line-height: 1.65;
+  margin: 0;
+}
+.gov-cap-section {
+  max-width: 960px;
+  margin: 0 auto 0;
+  padding: 0 24px;
+}
+.gov-cap-heading {
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+  margin-bottom: 40px;
+}
+.gov-cap-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+@media (max-width: 768px) {
+  .gov-cap-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.gov-cap-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 28px 24px;
+  transition: border-color 0.3s ease;
+}
+.gov-cap-card:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+.gov-cap-icon {
+  color: #38bdf8;
+  margin-bottom: 16px;
+}
+.gov-cap-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 8px;
+}
+.gov-cap-desc {
+  font-size: 14px;
+  color: #a1a1aa;
+  line-height: 1.65;
+  margin: 0;
+}
