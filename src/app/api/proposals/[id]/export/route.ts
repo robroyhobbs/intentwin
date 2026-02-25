@@ -106,30 +106,44 @@ export const POST = withProposalRoute(
     let mimeType: string;
     let extension: string;
 
-    if (formatType === "slides") {
-      const html = await generateSlides(proposalData);
-      fileBuffer = Buffer.from(html, "utf-8");
-      mimeType = "text/html";
-      extension = "html";
-    } else if (formatType === "html") {
-      const html = await generateHtml(proposalData);
-      fileBuffer = Buffer.from(html, "utf-8");
-      mimeType = "text/html";
-      extension = "html";
-    } else if (formatType === "pdf") {
-      fileBuffer = await generatePdf(proposalData);
-      mimeType = "application/pdf";
-      extension = "pdf";
-    } else if (formatType === "docx") {
-      fileBuffer = await generateDocx(proposalData);
-      mimeType =
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-      extension = "docx";
-    } else {
-      fileBuffer = await generatePptx(proposalData);
-      mimeType =
-        "application/vnd.openxmlformats-officedocument.presentationml.presentation";
-      extension = "pptx";
+    try {
+      if (formatType === "slides") {
+        const html = await generateSlides(proposalData);
+        fileBuffer = Buffer.from(html, "utf-8");
+        mimeType = "text/html";
+        extension = "html";
+      } else if (formatType === "html") {
+        const html = await generateHtml(proposalData);
+        fileBuffer = Buffer.from(html, "utf-8");
+        mimeType = "text/html";
+        extension = "html";
+      } else if (formatType === "pdf") {
+        fileBuffer = await generatePdf(proposalData);
+        mimeType = "application/pdf";
+        extension = "pdf";
+      } else if (formatType === "docx") {
+        fileBuffer = await generateDocx(proposalData);
+        mimeType =
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        extension = "docx";
+      } else {
+        fileBuffer = await generatePptx(proposalData);
+        mimeType =
+          "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+        extension = "pptx";
+      }
+    } catch (genError) {
+      const errorMsg = genError instanceof Error ? genError.message : String(genError);
+      logger.error(`Export generation failed (${formatType})`, {
+        error: errorMsg,
+        stack: genError instanceof Error ? genError.stack?.slice(0, 500) : undefined,
+        proposalId: id,
+        format: formatType,
+      });
+      return serverError(
+        `Failed to generate ${formatType.toUpperCase()} export: ${errorMsg.slice(0, 200)}`,
+        genError,
+      );
     }
 
     // Upload to Supabase Storage (org-scoped path)

@@ -3,9 +3,10 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   serverExternalPackages: ["puppeteer-core", "@sparticuz/chromium", "js-tiktoken"],
 
-  // Ensure @sparticuz/chromium binary files are included in the serverless function
+  // Ensure @sparticuz/chromium binary files are included in the serverless function.
+  // App Router uses the filesystem path as key — must match both route patterns.
   outputFileTracingIncludes: {
-    "/api/proposals/\\[id\\]/export": [
+    "/api/proposals/[id]/export": [
       "./node_modules/@sparticuz/chromium/bin/**",
     ],
   },

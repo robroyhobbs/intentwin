@@ -20,15 +20,21 @@ async function findBrowser(): Promise<{
   if (isVercel) {
     try {
       const chromium = await import("@sparticuz/chromium");
-      logger.debug("pdf-export: @sparticuz/chromium imported successfully");
+      logger.info("pdf-export: @sparticuz/chromium imported successfully");
       const execPath = await chromium.default.executablePath();
-      logger.debug("pdf-export: executablePath resolved", { execPath });
+      logger.info("pdf-export: executablePath resolved", { execPath });
       if (execPath) {
         return { executablePath: execPath, args: chromium.default.args };
       }
-      logger.warn("pdf-export: executablePath was falsy, falling through");
+      logger.warn("pdf-export: executablePath was falsy, falling through to local search");
     } catch (chromiumError) {
-      logger.error("pdf-export: @sparticuz/chromium failed", chromiumError);
+      const msg = chromiumError instanceof Error ? chromiumError.message : String(chromiumError);
+      logger.error("pdf-export: @sparticuz/chromium failed", {
+        error: msg,
+        stack: chromiumError instanceof Error ? chromiumError.stack?.slice(0, 500) : undefined,
+      });
+      // Re-throw with a clear message instead of silently falling through on Vercel
+      throw new Error(`PDF export requires @sparticuz/chromium on Vercel but it failed: ${msg}`);
     }
   } else {
     logger.debug("pdf-export: not on Vercel, skipping @sparticuz/chromium");
