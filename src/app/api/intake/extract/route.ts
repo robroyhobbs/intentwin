@@ -16,34 +16,10 @@ import { checkFeature } from "@/lib/features/check-feature";
 import { unauthorized, badRequest, notFound, ok, serverError } from "@/lib/api/response";
 import { apiError } from "@/lib/api/response";
 
-/** Allow up to 5 minutes for document processing wait + AI extraction */
+/** Allow up to 5 minutes for AI extraction */
 export const maxDuration = 300;
 
 const EXTRACTION_SYSTEM_PROMPT = `You are an expert at analyzing business documents and extracting structured information. You are precise, thorough, and honest about confidence levels. You always respond with valid JSON only.`;
-
-/**
- * Poll a document until processing completes or timeout (~45s).
- * Returns the settled document data, or null if still processing.
- */
-async function waitForDocumentProcessing(
-  adminClient: ReturnType<typeof createAdminClient>,
-  docId: string,
-): Promise<{ processing_status: string; parsed_text_preview?: string; file_name?: string } | null> {
-  const delays = [2000, 3000, 5000, 5000, 10000, 10000, 10000];
-  for (const delay of delays) {
-    await new Promise((resolve) => setTimeout(resolve, delay));
-    const { data: docRetry } = await adminClient
-      .from("documents")
-      .select("processing_status, parsed_text_preview, file_name")
-      .eq("id", docId)
-      .single();
-
-    if (docRetry?.processing_status === "completed" || docRetry?.processing_status === "failed") {
-      return docRetry;
-    }
-  }
-  return null; // Still processing after timeout
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -107,39 +83,14 @@ export async function POST(request: NextRequest) {
           return notFound(`Document ${docId} not found or access denied`);
         }
 
-        // First check document processing status
+        // Fetch document status — client polls until completed before calling extract,
+        // so this should almost always be "completed" already. No server-side wait loop.
         const { data: doc } = await adminClient
           .from("documents")
           .select("processing_status, parsed_text_preview, file_name")
           .eq("id", docId)
           .eq("organization_id", context.organizationId)
           .single();
-
-        if (
-          doc?.processing_status === "pending" ||
-          doc?.processing_status === "processing"
-        ) {
-          const settledDoc = await waitForDocumentProcessing(adminClient, docId);
-          if (!settledDoc) {
-            // Still processing after ~45s — use preview if available
-            if (doc?.parsed_text_preview) {
-              const previewContent = doc.parsed_text_preview;
-              if (hasRoles) {
-                documentsForExtraction.push({
-                  id: docId,
-                  name: `${doc.file_name} (partial)`,
-                  role: roleMap[docId] || "supplemental",
-                  content: previewContent,
-                });
-              } else {
-                combinedContent += `\n\n--- Document: ${doc.file_name} (partial) ---\n${previewContent}`;
-              }
-            }
-            continue;
-          }
-          // Override doc reference for the remaining logic
-          Object.assign(doc, settledDoc);
-        }
 
         if (doc?.processing_status === "failed") {
           // Processing failed - try to use preview text if available
@@ -241,12 +192,34 @@ export async function POST(request: NextRequest) {
       document_ids?.length > 0 ? "file" : content_type,
     );
 
-    // Call Gemini for extraction — 12288 tokens to accommodate rfp_analysis on complex RFPs
-    const response = await generateText(prompt, {
-      systemPrompt: EXTRACTION_SYSTEM_PROMPT,
-      temperature: 0.3, // Lower temperature for structured extraction
-      maxTokens: 12288,
-    });
+    // ── Parallel AI calls ──────────────────────────────────────────────────
+    // Extraction and assumptions are independent — run them concurrently.
+    // Assumptions prompt is built from a rough flat intake derived from the
+    // raw content (not the parsed result) so it can start immediately.
+    const roughFlatIntake: Record<string, unknown> = { raw_content: combinedContent.slice(0, 3000) };
+
+    const assumptionsPromptEarly = buildAssumptionsPrompt(
+      roughFlatIntake,
+      "Analyze the provided RFP content",
+    );
+
+    const [response, assumptionsResponseRaw] = await Promise.all([
+      generateText(prompt, {
+        systemPrompt: EXTRACTION_SYSTEM_PROMPT,
+        temperature: 0.3,
+        maxTokens: 12288,
+      }),
+      generateText(assumptionsPromptEarly, {
+        systemPrompt: "You are an expert proposal analyst. Respond with valid JSON only — a JSON array of assumption objects.",
+        temperature: 0.4,
+        maxTokens: 4096,
+      }).catch((err) => {
+        logger.warn("Assumptions generation failed during extraction", {
+          error: err instanceof Error ? err.message : String(err),
+        });
+        return null;
+      }),
+    ]);
 
     // Parse JSON response using triple-strategy extraction (same as bid-scoring)
     let extracted: ExtractedIntake;
@@ -297,53 +270,21 @@ export async function POST(request: NextRequest) {
       extracted.source_text = content.substring(0, 1000); // First 1000 chars as preview
     }
 
-    // Generate assumptions in parallel (non-blocking — if it fails, we still return extraction)
+    // Parse assumptions from the parallel call
     let assumptions: Assumption[] = [];
-    try {
-      // Build a flat intake object from extracted fields for the assumptions prompt
-      const flatIntake: Record<string, unknown> = {};
-      if (extracted.extracted) {
-        for (const [key, val] of Object.entries(extracted.extracted)) {
-          if (val && typeof val === "object" && "value" in val) {
-            flatIntake[key] = (val as { value: unknown }).value;
-          }
+    if (assumptionsResponseRaw) {
+      try {
+        const assumptionsMatch = assumptionsResponseRaw.match(/```(?:json)?\s*([\s\S]*?)```/);
+        const assumptionsJson = assumptionsMatch ? assumptionsMatch[1] : assumptionsResponseRaw;
+        const parsedAssumptions = JSON.parse(assumptionsJson.trim());
+        if (Array.isArray(parsedAssumptions)) {
+          assumptions = parsedAssumptions;
         }
+      } catch (assumptionsError) {
+        logger.warn("Failed to parse assumptions response", {
+          error: assumptionsError instanceof Error ? assumptionsError.message : String(assumptionsError),
+        });
       }
-      // Also pull from inferred fields as fallback
-      if (extracted.inferred) {
-        for (const [key, val] of Object.entries(extracted.inferred)) {
-          if (!flatIntake[key] && val && typeof val === "object" && "value" in val) {
-            flatIntake[key] = (val as { value: unknown }).value;
-          }
-        }
-      }
-
-      const assumptionsPrompt = buildAssumptionsPrompt(
-        flatIntake,
-        extracted.input_summary || "",
-      );
-
-      const assumptionsResponse = await generateText(assumptionsPrompt, {
-        systemPrompt: "You are an expert proposal analyst. Respond with valid JSON only — a JSON array of assumption objects.",
-        temperature: 0.4,
-        maxTokens: 4096,
-      });
-
-      // Parse assumptions JSON
-      let assumptionsJson = assumptionsResponse;
-      const assumptionsMatch = assumptionsResponse.match(/```(?:json)?\s*([\s\S]*?)```/);
-      if (assumptionsMatch) {
-        assumptionsJson = assumptionsMatch[1];
-      }
-      const parsed = JSON.parse(assumptionsJson.trim());
-      if (Array.isArray(parsed)) {
-        assumptions = parsed;
-      }
-    } catch (assumptionsError) {
-      // Non-fatal — log and continue without assumptions
-      logger.warn("Assumptions generation failed during extraction", {
-        error: assumptionsError instanceof Error ? assumptionsError.message : String(assumptionsError),
-      });
     }
 
     return ok({ extracted, assumptions });
