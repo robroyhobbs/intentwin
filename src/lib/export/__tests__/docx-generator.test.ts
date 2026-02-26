@@ -235,6 +235,111 @@ describe("generateDocx", () => {
       const xml = await genAndExtract(makeData(), "word/document.xml");
       expect(xml).toContain("Update Field");
     });
+
+    it("uses H1-only TOC range (1-1) not 1-3", async () => {
+      const xml = await genAndExtract(makeData(), "word/document.xml");
+      expect(xml).toContain('"1-1"');
+      expect(xml).not.toContain('"1-3"');
+    });
+  });
+
+  describe("extended inline markdown", () => {
+    it("converts __bold__ to OOXML bold", async () => {
+      const data = makeData({
+        sections: [{ title: "S", content: "__double underscore bold__", section_type: "approach" }],
+      });
+      const xml = await genAndExtract(data, "word/document.xml");
+      expect(xml).toContain("<w:b/>");
+      expect(xml).toContain("double underscore bold");
+    });
+
+    it("converts _italic_ to OOXML italic", async () => {
+      const data = makeData({
+        sections: [{ title: "S", content: "_underscore italic_", section_type: "approach" }],
+      });
+      const xml = await genAndExtract(data, "word/document.xml");
+      expect(xml).toContain("<w:i/>");
+      expect(xml).toContain("underscore italic");
+    });
+
+    it("strips URL from [link text](url) and renders only link text", async () => {
+      const data = makeData({
+        sections: [{ title: "S", content: "Visit [our website](https://example.com) now.", section_type: "approach" }],
+      });
+      const xml = await genAndExtract(data, "word/document.xml");
+      expect(xml).toContain("our website");
+      expect(xml).not.toContain("https://example.com");
+    });
+  });
+
+  describe("deep headings (#### and below)", () => {
+    it("maps #### to Heading3 style", async () => {
+      const data = makeData({
+        sections: [{ title: "S", content: "#### Sub-sub heading", section_type: "approach" }],
+      });
+      const xml = await genAndExtract(data, "word/document.xml");
+      expect(xml).toContain('w:val="Heading3"');
+      expect(xml).toContain("Sub-sub heading");
+    });
+
+    it("maps ##### to Heading3 style", async () => {
+      const data = makeData({
+        sections: [{ title: "S", content: "##### Level 5", section_type: "approach" }],
+      });
+      const xml = await genAndExtract(data, "word/document.xml");
+      expect(xml).toContain('w:val="Heading3"');
+      expect(xml).toContain("Level 5");
+    });
+  });
+
+  describe("fenced code blocks", () => {
+    it("renders code block lines with monospace font", async () => {
+      const data = makeData({
+        sections: [
+          {
+            title: "Code",
+            content: "Some intro.\n```\nconst x = 1;\n```\nSome outro.",
+            section_type: "approach",
+          },
+        ],
+      });
+      const xml = await genAndExtract(data, "word/document.xml");
+      expect(xml).toContain("const x = 1;");
+      expect(xml).toContain("Courier New");
+    });
+
+    it("does not render backtick delimiters in output", async () => {
+      const data = makeData({
+        sections: [
+          {
+            title: "Code",
+            content: "```\necho hello\n```",
+            section_type: "approach",
+          },
+        ],
+      });
+      const xml = await genAndExtract(data, "word/document.xml");
+      expect(xml).not.toContain("```");
+      expect(xml).toContain("echo hello");
+    });
+  });
+
+  describe("table cell inline markdown", () => {
+    it("renders bold in data row table cells", async () => {
+      const data = makeData({
+        sections: [
+          {
+            title: "Pricing",
+            content: "| Feature | Status |\n|---------|--------|\n| **Core** | Included |",
+            section_type: "pricing",
+          },
+        ],
+      });
+      const xml = await genAndExtract(data, "word/document.xml");
+      // Bold run from **Core** in the data row
+      expect(xml).toContain("<w:b/>");
+      expect(xml).toContain("Core");
+    });
   });
 
   describe("blockquote handling", () => {

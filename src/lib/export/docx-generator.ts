@@ -46,23 +46,38 @@ function para(content: string, style?: string, props?: string): string {
 }
 
 /**
- * Convert inline markdown formatting (**bold**, *italic*, `code`) to OOXML runs.
+ * Convert inline markdown formatting (**bold**, __bold__, *italic*, _italic_,
+ * `code`, [link text](url)) to OOXML runs.
  * Returns concatenated <w:r> elements.
  */
 function inlineToRuns(text: string): string {
   const parts: string[] = [];
-  // Process bold, italic, and code spans
-  const regex = /\*\*(.+?)\*\*|\*(.+?)\*|`(.+?)`|([^*`]+)/g;
+  // Process bold (**x** or __x__), italic (*x* or _x_), inline code, links, plain text.
+  // Order matters: bold variants must be checked before italic variants.
+  const regex = /\*\*(.+?)\*\*|__(.+?)__|`(.+?)`|\*(.+?)\*|_(.+?)_|\[([^\]]+)\]\([^)]*\)|([^*_`[\]]+)/g;
   let match;
   while ((match = regex.exec(text)) !== null) {
     if (match[1]) {
+      // **bold**
       parts.push(run(match[1], { bold: true }));
     } else if (match[2]) {
-      parts.push(run(match[2], { italic: true }));
+      // __bold__
+      parts.push(run(match[2], { bold: true }));
     } else if (match[3]) {
+      // `inline code`
       parts.push(run(match[3], { sz: 18 }));
     } else if (match[4]) {
-      parts.push(run(match[4]));
+      // *italic*
+      parts.push(run(match[4], { italic: true }));
+    } else if (match[5]) {
+      // _italic_
+      parts.push(run(match[5], { italic: true }));
+    } else if (match[6]) {
+      // [link text](url) — render link text only, strip URL
+      parts.push(run(match[6]));
+    } else if (match[7]) {
+      // plain text
+      parts.push(run(match[7]));
     }
   }
   return parts.join("");
@@ -77,6 +92,7 @@ function markdownToOoxml(md: string, primaryColor: string): string {
   const paragraphs: string[] = [];
   let inTable = false;
   let tableRows: string[][] = [];
+  let inCodeBlock = false;
 
   function flushTable() {
     if (!inTable || tableRows.length === 0) return;
@@ -86,8 +102,11 @@ function markdownToOoxml(md: string, primaryColor: string): string {
         const shading = rowIdx === 0
           ? `<w:shd w:val="clear" w:color="auto" w:fill="${primaryColor}"/>`
           : "";
-        const rProps = rowIdx === 0 ? { bold: true, color: "FFFFFF" } : {};
-        return `<w:tc><w:tcPr><w:tcW w:w="0" w:type="auto"/>${shading}</w:tcPr>${para(run(cell.trim(), rProps))}</w:tc>`;
+        // Header row: white bold plain text; data rows: inline markdown rendering
+        const cellContent = rowIdx === 0
+          ? run(cell.trim(), { bold: true, color: "FFFFFF" })
+          : inlineToRuns(cell.trim());
+        return `<w:tc><w:tcPr><w:tcW w:w="0" w:type="auto"/>${shading}</w:tcPr>${para(cellContent)}</w:tc>`;
       }).join("");
       return `<w:tr>${tcs}</w:tr>`;
     });
@@ -108,6 +127,23 @@ function markdownToOoxml(md: string, primaryColor: string): string {
   for (const line of lines) {
     const trimmed = line.trim();
 
+    // Fenced code block toggle — ``` starts/ends a code block
+    if (trimmed.startsWith("```")) {
+      inCodeBlock = !inCodeBlock;
+      continue; // skip the delimiter line itself
+    }
+
+    // Lines inside a fenced code block — render with monospace shading
+    if (inCodeBlock) {
+      paragraphs.push(
+        `<w:p><w:pPr><w:shd w:val="clear" w:color="auto" w:fill="F4F4F4"/>` +
+        `<w:spacing w:after="0"/></w:pPr>` +
+        `<w:r><w:rPr><w:rFonts w:ascii="Courier New" w:hAnsi="Courier New"/><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr>` +
+        `<w:t xml:space="preserve">${escXml(line)}</w:t></w:r></w:p>`,
+      );
+      continue;
+    }
+
     // Table rows
     if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
       // Skip separator rows
@@ -126,7 +162,19 @@ function markdownToOoxml(md: string, primaryColor: string): string {
       continue;
     }
 
-    // Headings
+    // Headings — #### / ##### / ###### map to Heading3 (no deeper style defined)
+    if (trimmed.startsWith("###### ")) {
+      paragraphs.push(para(inlineToRuns(trimmed.slice(7)), "Heading3"));
+      continue;
+    }
+    if (trimmed.startsWith("##### ")) {
+      paragraphs.push(para(inlineToRuns(trimmed.slice(6)), "Heading3"));
+      continue;
+    }
+    if (trimmed.startsWith("#### ")) {
+      paragraphs.push(para(inlineToRuns(trimmed.slice(5)), "Heading3"));
+      continue;
+    }
     if (trimmed.startsWith("### ")) {
       paragraphs.push(para(inlineToRuns(trimmed.slice(4)), "Heading3"));
       continue;
@@ -533,7 +581,7 @@ export async function generateDocx(data: ProposalData): Promise<Buffer> {
         <w:fldChar w:fldCharType="begin"/>
       </w:r>
       <w:r>
-        <w:instrText xml:space="preserve"> TOC \\o "1-3" \\h \\z \\u </w:instrText>
+        <w:instrText xml:space="preserve"> TOC \\o "1-1" \\h \\z \\u </w:instrText>
       </w:r>
       <w:r>
         <w:fldChar w:fldCharType="separate"/>
