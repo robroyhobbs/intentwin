@@ -70,5 +70,5 @@ ${winStrategy ? `\nMap methodology phases to target outcomes and success metrics
 
 Use ${companyName}'s actual methodology names and frameworks from the Company Context — do not invent generic methodology names.
 
-${buildEditorialStandards(intakeData.solicitation_type as string | undefined, intakeData.audience_profile, intakeData._brand_name as string | undefined)}`;
+${buildEditorialStandards(intakeData.solicitation_type as string | undefined, intakeData.audience_profile, intakeData._brand_name as string | undefined, undefined, intakeData.tone as string | undefined)}`;
 }

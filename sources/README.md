@@ -1,6 +1,11 @@
-# IntentBid - Source Materials
+# IntentBid - Local Source Materials (Development Only)
 
-> L1 Company Truth: The canonical source of verified claims, capabilities, and evidence for proposal generation.
+> **Note:** These files are only loaded in `NODE_ENV=development`. In production,
+> all L1 context (company truth, products, evidence) lives in Supabase and is managed
+> via Settings → Company Knowledge in the dashboard.
+>
+> Add local markdown files here only for development/testing purposes.
+> Do NOT commit real company data here — use the database instead.
 
 ## Directory Structure
 

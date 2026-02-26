@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { logger } from "@/lib/utils/logger";
 
 interface MermaidRendererProps {
@@ -8,78 +8,58 @@ interface MermaidRendererProps {
   className?: string;
 }
 
+/**
+ * Renders a Mermaid diagram in the browser.
+ *
+ * Strategy:
+ * 1. Primary: mermaid.ink SVG CDN — zero bundle cost, no WASM, no 68MB package.
+ *    Encodes the diagram code as base64 and fetches a rendered SVG via <img>.
+ * 2. Fallback: Gemini image generation via /api/diagrams/generate.
+ * 3. Last resort: show raw code in a styled block.
+ *
+ * The old approach (bundling the `mermaid` npm package) added 68MB to node_modules
+ * and loaded WASM on the client. mermaid.ink handles the same rendering server-side.
+ */
 export function MermaidRenderer({ chart, className }: MermaidRendererProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [error, setError] = useState(false);
-  const [_rendered, setRendered] = useState(false);
+  // Build the mermaid.ink URL (base64-encoded diagram definition)
+  const encoded =
+    typeof window !== "undefined"
+      ? btoa(unescape(encodeURIComponent(chart)))
+      : Buffer.from(chart, "utf-8").toString("base64");
+  const inkUrl = `https://mermaid.ink/img/${encoded}`;
+
+  const [useFallback, setUseFallback] = useState(false);
   const [geminiImage, setGeminiImage] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
+  const handleInkError = async () => {
+    logger.warn("mermaid.ink failed, trying Gemini diagram generation");
+    setUseFallback(true);
 
-    async function render() {
-      if (!containerRef.current) return;
+    try {
+      const res = await fetch("/api/diagrams/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mermaidCode: chart }),
+      });
 
-      // Try Mermaid first
-      try {
-        const mermaid = (await import("mermaid")).default;
-        mermaid.initialize({
-          startOnLoad: false,
-          theme: "default",
-          securityLevel: "loose",
-          fontFamily: "Inter, system-ui, sans-serif",
-        });
-
-        const id = `mermaid-${Math.random().toString(36).slice(2, 9)}`;
-        const { svg } = await mermaid.render(id, chart);
-
-        if (!cancelled && containerRef.current) {
-          containerRef.current.innerHTML = svg;
-          setRendered(true);
-          setLoading(false);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.image) {
+          setGeminiImage(data.image);
+          return;
         }
-        return;
-      } catch (mermaidErr) {
-        logger.warn("Mermaid render failed, trying Gemini", { error: mermaidErr instanceof Error ? mermaidErr.message : String(mermaidErr) });
       }
-
-      // Fall back to Gemini image generation
-      try {
-        const res = await fetch("/api/diagrams/generate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ mermaidCode: chart }),
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          if (!cancelled && data.image) {
-            setGeminiImage(data.image);
-            setRendered(true);
-            setLoading(false);
-            return;
-          }
-        }
-      } catch (geminiErr) {
-        logger.error("Gemini diagram generation failed", geminiErr);
-      }
-
-      if (!cancelled) {
-        setError(true);
-        setLoading(false);
-      }
+    } catch (err) {
+      logger.error("Gemini diagram generation also failed", err);
     }
 
-    render();
-    return () => {
-      cancelled = true;
-    };
-  }, [chart]);
+    setFailed(true);
+  };
 
-  if (error) {
+  if (failed) {
     return (
-      <div className={`rounded-lg border border-[var(--warning-subtle)] bg-[var(--warning-subtle)] p-4 ${className || ""}`}>
+      <div className={`rounded-lg border border-[var(--warning-subtle)] bg-[var(--warning-subtle)] p-4 ${className ?? ""}`}>
         <p className="mb-2 text-xs font-medium text-[var(--warning)]">Diagram (raw)</p>
         <pre className="overflow-x-auto text-xs text-[var(--foreground)] font-mono whitespace-pre-wrap">
           {chart}
@@ -90,27 +70,39 @@ export function MermaidRenderer({ chart, className }: MermaidRendererProps) {
 
   if (geminiImage) {
     return (
-      <div className={`my-4 ${className || ""}`}>
+      <div className={`my-4 ${className ?? ""}`}>
         <div className="flex justify-center overflow-x-auto rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-4">
-          {/* eslint-disable-next-line @next/next/no-img-element -- data URI from AI generation, not a static asset */}
+          {/* eslint-disable-next-line @next/next/no-img-element -- data URI from AI generation */}
           <img src={geminiImage} alt="Generated diagram" className="max-w-full h-auto" />
         </div>
       </div>
     );
   }
 
-  return (
-    <div className={`my-4 ${className || ""}`}>
-      {loading && (
+  if (useFallback) {
+    // Waiting for Gemini response — show spinner
+    return (
+      <div className={`my-4 ${className ?? ""}`}>
         <div className="flex items-center gap-2 text-xs text-[var(--foreground-subtle)] py-2">
           <div className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--border)] border-t-[var(--accent)]" />
           Rendering diagram...
         </div>
-      )}
-      <div
-        ref={containerRef}
-        className="flex justify-center overflow-x-auto rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-4"
-      />
+      </div>
+    );
+  }
+
+  // Primary: mermaid.ink via <img> — no JS, no WASM, no bundle cost
+  return (
+    <div className={`my-4 ${className ?? ""}`}>
+      <div className="flex justify-center overflow-x-auto rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-4">
+        {/* eslint-disable-next-line @next/next/no-img-element -- external CDN for diagram rendering */}
+        <img
+          src={inkUrl}
+          alt="Mermaid diagram"
+          className="max-w-full h-auto"
+          onError={handleInkError}
+        />
+      </div>
     </div>
   );
 }

@@ -26,25 +26,6 @@ export function createMockVoyageClient() {
 }
 
 /**
- * Mock OpenAI client
- *
- * Matches the OpenAI SDK interface used in openai-client.ts:
- *   client.chat.completions.create({ model, messages, temperature, max_tokens, response_format })
- */
-export function createMockOpenAIClient() {
-  return {
-    chat: {
-      completions: {
-        create: vi.fn(),
-      },
-    },
-    embeddings: {
-      create: vi.fn(),
-    },
-  };
-}
-
-/**
  * Mock Groq client
  *
  * Matches the Groq SDK interface used in groq-client.ts:

@@ -128,17 +128,22 @@ export interface AudienceProfile {
   size?: string;         // "small_municipality" | "mid_market" | "enterprise"
 }
 
+/** Valid tone selections from the wizard */
+export type ProposalTone = "professional" | "conversational" | "technical" | "executive";
+
 /**
  * Builds the complete editorial standards block to append to any section prompt.
  * Optional audience profile modulates vocabulary and technical depth.
  * Optional brand name enforces consistent naming throughout.
  * Optional priorDifferentiators triggers the repetition limiter.
+ * Optional tone modulates the overall writing style.
  */
 export function buildEditorialStandards(
   solicitationType: string = "RFP",
   audienceProfile?: AudienceProfile | null | unknown,
   primaryBrandName?: string,
   priorDifferentiators?: string[],
+  tone?: ProposalTone | string,
 ): string {
   const audience = audienceProfile as AudienceProfile | null | undefined;
   let typeRules = "";
@@ -170,6 +175,32 @@ The evaluators are highly technical (${audience.evaluator || "engineering team"}
 - Demonstrate deep domain expertise through technical specificity.`;
   }
   // "moderate" or unknown tech_level — no audience modifier (default balanced tone)
+
+  // Tone modulation — user-selected writing style from wizard Step 3
+  let toneRules = "";
+  if (tone === "conversational") {
+    toneRules = `\n\n## WRITING TONE: CONVERSATIONAL
+- Write as if explaining to a smart colleague over coffee — warm, direct, approachable.
+- Use contractions naturally (we'll, you'll, it's). Shorter sentences.
+- Replace formal constructions with direct ones: "We recommend" instead of "It is recommended that."
+- You can use first person freely. Address the client directly as "you" and "your."
+- Still maintain credibility — conversational does NOT mean casual or sloppy.`;
+  } else if (tone === "technical") {
+    toneRules = `\n\n## WRITING TONE: TECHNICAL
+- Write for engineers and technical evaluators. Precision over polish.
+- Include architecture details, protocol names, version numbers, and implementation specifics.
+- Use technical vocabulary without simplification — assume the reader is an expert.
+- Prioritize diagrams, specifications, and metrics over narrative.
+- Minimize marketing language. Let technical depth speak for itself.`;
+  } else if (tone === "executive") {
+    toneRules = `\n\n## WRITING TONE: EXECUTIVE
+- Write for C-suite and senior decision-makers. Lead with outcomes and business impact.
+- Every paragraph should connect to ROI, risk reduction, or strategic advantage.
+- Use confident, authoritative language. Short, decisive sentences.
+- Minimize technical details — reference them by outcome ("reduces processing time by 40%") not mechanism.
+- Frame everything through the lens of business value, competitive position, and strategic goals.`;
+  }
+  // "professional" is the default — no additional tone modifier needed
 
   // Brand name lock — enforce consistent naming
   let brandLock = "";
@@ -210,5 +241,5 @@ Example:
 After the </thought_process> tag, write the final presentation-ready Markdown.
 `;
 
-  return `${FORMATTING_RULES}\n${ANTI_FLUFF_RULES}${typeRules}${audienceRules}${brandLock}${repetitionLimiter}\n${chainOfThought}`;
+  return `${FORMATTING_RULES}\n${ANTI_FLUFF_RULES}${typeRules}${toneRules}${audienceRules}${brandLock}${repetitionLimiter}\n${chainOfThought}`;
 }

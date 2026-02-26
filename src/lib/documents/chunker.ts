@@ -1,4 +1,3 @@
-import { encodingForModel } from "js-tiktoken";
 import type { ParsedSection } from "./parser";
 
 export interface Chunk {
@@ -15,17 +14,18 @@ const CHUNK_OVERLAP = 50;
 const MIN_CHUNK_SIZE = 100;
 const MAX_CHUNK_SIZE = 1024;
 
-let encoder: ReturnType<typeof encodingForModel> | null = null;
-
-function getEncoder() {
-  if (!encoder) {
-    encoder = encodingForModel("gpt-4o");
-  }
-  return encoder;
-}
-
+/**
+ * Estimate token count from character count.
+ *
+ * IntentBid uses Voyage AI for embeddings (not GPT-4o), so exact GPT tokenization
+ * is not required. The standard approximation of ~4 chars/token is accurate
+ * enough for chunk boundary decisions.
+ *
+ * Replaced js-tiktoken (21MB WASM binary) — the savings in bundle size and cold
+ * start time far outweigh the minor imprecision at chunk boundaries.
+ */
 function countTokens(text: string): number {
-  return getEncoder().encode(text).length;
+  return Math.ceil(text.length / 4);
 }
 
 /**

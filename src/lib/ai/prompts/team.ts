@@ -101,5 +101,5 @@ ${winStrategy ? `\nMap team capabilities directly to the win themes and target o
 
 Reference ${companyName}'s actual certifications and partnership levels from the Company Context — do not invent credentials. For named personnel, use ONLY registered team members. If no team members are registered, use the [TEAM MEMBER NEEDED: ...] placeholder format.
 
-${buildEditorialStandards(intakeData.solicitation_type as string | undefined, intakeData.audience_profile, intakeData._brand_name as string | undefined)}`;
+${buildEditorialStandards(intakeData.solicitation_type as string | undefined, intakeData.audience_profile, intakeData._brand_name as string | undefined, undefined, intakeData.tone as string | undefined)}`;
 }

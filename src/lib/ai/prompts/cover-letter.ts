@@ -81,5 +81,5 @@ These merge fields are intentional placeholders. They are NOT errors. Do not inv
 - Government-appropriate formality for ${solicitationType} responses
 - Active voice throughout
 
-${buildEditorialStandards(intakeData.solicitation_type as string | undefined, intakeData.audience_profile, intakeData._brand_name as string | undefined)}`;
+${buildEditorialStandards(intakeData.solicitation_type as string | undefined, intakeData.audience_profile, intakeData._brand_name as string | undefined, undefined, intakeData.tone as string | undefined)}`;
 }

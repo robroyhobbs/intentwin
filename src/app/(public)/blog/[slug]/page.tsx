@@ -194,22 +194,21 @@ const POSTS: Record<string, BlogPost> = {
         </p>
 
         <h2>The three recommendation tiers</h2>
-        <ul>
-          <li>
-            <strong>Above 70: Bid.</strong> Strong alignment across factors.
-            Invest full proposal resources including color team reviews.
-          </li>
-          <li>
-            <strong>40-70: Evaluate.</strong> Mixed signals. Consider whether a
-            teaming arrangement or subcontractor could fill gaps. May be worth
-            pursuing if strategic value is high.
-          </li>
-          <li>
-            <strong>Below 40: Pass.</strong> Significant gaps in multiple
-            factors. Your resources are better deployed elsewhere. Track the
-            award to learn who won and why.
-          </li>
-        </ul>
+
+        {/* Tier bands visual */}
+        <div style={{ margin: "1.5rem 0", borderRadius: "10px", overflow: "hidden", border: "1px solid var(--border)" }}>
+          {[
+            { range: "70–100", label: "Bid", action: "Invest full proposal resources. Color team reviews. Dedicated capture manager.", color: "#22c55e", bg: "rgba(34,197,94,0.07)" },
+            { range: "40–69", label: "Evaluate", action: "Run the numbers on teaming. Consider whether a sub can fill capability gaps. Only pursue if strategic value is high.", color: "#f59e0b", bg: "rgba(245,158,11,0.07)" },
+            { range: "0–39", label: "Pass", action: "Redirect resources. Track the award to learn who won and why — it's free competitive intelligence.", color: "#ef4444", bg: "rgba(239,68,68,0.07)" },
+          ].map(({ range, label, action, color, bg }) => (
+            <div key={label} style={{ display: "grid", gridTemplateColumns: "80px 90px 1fr", alignItems: "center", gap: "1rem", padding: "1rem 1.25rem", background: bg, borderBottom: "1px solid var(--border)" }}>
+              <div style={{ fontSize: "0.8rem", color: "var(--foreground-muted)", fontVariantNumeric: "tabular-nums" }}>{range}</div>
+              <div style={{ fontWeight: 700, color, fontSize: "0.95rem" }}>{label}</div>
+              <div style={{ fontSize: "0.875rem", color: "var(--foreground-muted)", lineHeight: 1.5 }}>{action}</div>
+            </div>
+          ))}
+        </div>
 
         <h2>Common mistakes in bid/no-bid decisions</h2>
         <p>

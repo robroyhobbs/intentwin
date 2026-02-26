@@ -3,21 +3,8 @@
  *
  * Tests the chunkSections function that splits parsed sections into
  * token-bounded chunks with overlap.
- * Mocks js-tiktoken to avoid needing the full tokenizer.
+ * No mocks needed — chunker uses a char-based token estimator (no WASM dependency).
  */
-
-// ── Module Mocks ───────────────────────────────────────────────────────────
-
-// Approximate token counting: split on whitespace, each word = 1 token
-vi.mock("js-tiktoken", () => ({
-  encodingForModel: vi.fn(() => ({
-    encode: (text: string) => {
-      // Simple tokenizer mock: each word = one token
-      const words = text.split(/\s+/).filter((w) => w.length > 0);
-      return words; // length = word count
-    },
-  })),
-}));
 
 import { chunkSections, type Chunk } from "@/lib/documents/chunker";
 import type { ParsedSection } from "@/lib/documents/parser";
@@ -191,10 +178,9 @@ describe("chunkSections — Large Section Splitting", () => {
 
     const chunks = chunkSections(sections);
 
-    // With our mock tokenizer (1 word = 1 token), TARGET_CHUNK_SIZE is 512
-    // Chunks might slightly exceed TARGET but not by a huge margin
+    // With the char-based estimator (~4 chars/token), TARGET_CHUNK_SIZE is 512.
+    // Chunks might slightly exceed TARGET at word boundaries but not by a large margin.
     chunks.forEach((chunk) => {
-      // Allow some tolerance (chunk might be slightly over target due to word boundaries)
       expect(chunk.tokenCount).toBeLessThanOrEqual(1100);
     });
   });

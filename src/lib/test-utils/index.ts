@@ -26,7 +26,6 @@ export {
 export {
   createMockGeminiClient,
   createMockVoyageClient,
-  createMockOpenAIClient,
   createMockGroqClient,
   createMockMistralClient,
   createMockAIPipeline,

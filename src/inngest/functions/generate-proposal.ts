@@ -123,9 +123,19 @@ export const generateProposalFn = inngest.createFunction(
 
       // Determine which sections to generate (task-mirrored or fixed)
       const solicitationType = (ctx.intakeData.solicitation_type as string) || "RFP";
-      const applicableSections = buildSectionList(rfpTaskStructure, solicitationType);
+      const allSections = buildSectionList(rfpTaskStructure, solicitationType);
+
+      // Filter to only the sections the user selected in the wizard (Step 3).
+      // If selected_sections is missing/empty (e.g., legacy proposals), generate all.
+      const userSelectedSections = ctx.intakeData.selected_sections as string[] | undefined;
+      const applicableSections = userSelectedSections?.length
+        ? allSections.filter(s => userSelectedSections.includes(s.type))
+        : allSections;
+
       stepLog.info("Section list built", {
         sectionCount: applicableSections.length,
+        totalAvailable: allSections.length,
+        userSelectedCount: userSelectedSections?.length ?? "all (no selection)",
         solicitationType,
         hasTaskStructure: !!rfpTaskStructure,
         sectionTypes: applicableSections.map(s => s.type),

@@ -132,24 +132,29 @@ export async function buildPipelineContext(
     ctxLog.info("L1 context loaded", l1Counts);
   }
 
-  // Load static sources from sources/ directory
+  // Load static sources from sources/ directory — development/demo only.
+  // In production every org has its own L1 context in Supabase; the static
+  // sources/ directory contains placeholder/demo content (Capgemini examples)
+  // that must not bleed into real customer proposals.
   let staticSourcesContext = "";
-  try {
-    const staticSources = await loadSources();
-    staticSourcesContext = formatSourcesAsL1Context(staticSources, {
-      opportunityType: serviceLine,
-      industry: industry,
-    });
-    ctxLog.debug("Loaded static sources", {
-      totalFiles: staticSources.all.length,
-      methodologies: staticSources.methodologies.length,
-      caseStudies: staticSources.caseStudies.length,
-    });
-  } catch (sourceError) {
-    // Non-critical - static sources are supplementary
-    ctxLog.warn("Failed to load static sources, continuing with database context only", {
-      error: sourceError instanceof Error ? sourceError.message : String(sourceError),
-    });
+  if (process.env.NODE_ENV !== "production") {
+    try {
+      const staticSources = await loadSources();
+      staticSourcesContext = formatSourcesAsL1Context(staticSources, {
+        opportunityType: serviceLine,
+        industry: industry,
+      });
+      ctxLog.debug("Loaded static sources (dev only)", {
+        totalFiles: staticSources.all.length,
+        methodologies: staticSources.methodologies.length,
+        caseStudies: staticSources.caseStudies.length,
+      });
+    } catch (sourceError) {
+      // Non-critical — static sources are supplementary demo content
+      ctxLog.warn("Failed to load static sources", {
+        error: sourceError instanceof Error ? sourceError.message : String(sourceError),
+      });
+    }
   }
 
   // Build context strings for prompts

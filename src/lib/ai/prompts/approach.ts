@@ -65,5 +65,5 @@ ${winStrategy ? `\nTie each phase explicitly to a target outcome from the win st
 
 IMPORTANT: Reference specific ${companyName} products, methodologies, and capabilities from the Company Context. Do not describe generic industry approaches — describe ${companyName}'s specific approach.
 
-${buildEditorialStandards(intakeData.solicitation_type as string | undefined, intakeData.audience_profile, intakeData._brand_name as string | undefined)}`;
+${buildEditorialStandards(intakeData.solicitation_type as string | undefined, intakeData.audience_profile, intakeData._brand_name as string | undefined, undefined, intakeData.tone as string | undefined)}`;
 }

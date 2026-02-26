@@ -63,12 +63,13 @@ export function buildTaskResponsePrompt(input: TaskResponsePromptInput): string 
   // Build win strategy section if available
   const winStrategyBlock = buildWinStrategySection(winStrategy);
 
-  // Editorial standards with repetition limiter
+  // Editorial standards with repetition limiter and user-selected tone
   const editorialStandards = buildEditorialStandards(
     solicitationType,
     audienceProfile,
     primaryBrandName,
     differentiators,
+    intakeData.tone as string | undefined,
   );
 
   return `Write the response for **Task ${taskNumber}: ${taskTitle}** in a ${companyName} proposal.

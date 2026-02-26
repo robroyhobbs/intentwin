@@ -55,5 +55,5 @@ ${winStrategy ? `\nMap each pain point to a specific target outcome from the win
 
 When mentioning ${companyName}'s experience, cite verified evidence from the Company Context above. Do NOT make generic industry observations — everything must tie back to THIS client's specific situation.
 
-${buildEditorialStandards(intakeData.solicitation_type as string | undefined, intakeData.audience_profile, intakeData._brand_name as string | undefined)}`;
+${buildEditorialStandards(intakeData.solicitation_type as string | undefined, intakeData.audience_profile, intakeData._brand_name as string | undefined, undefined, intakeData.tone as string | undefined)}`;
 }
