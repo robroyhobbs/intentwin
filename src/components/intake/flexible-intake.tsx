@@ -20,6 +20,12 @@ import type {
   ExtractedIntake,
   ClientResearch,
 } from "@/types/intake";
+import {
+  DOCUMENT_ROLES,
+  DOCUMENT_ROLE_LABELS,
+  DOCUMENT_ROLE_DESCRIPTIONS,
+  type DocumentRole,
+} from "@/types/proposal-documents";
 import { ProcessingStatus } from "@/lib/constants/statuses";
 import { logger } from "@/lib/utils/logger";
 
@@ -48,6 +54,11 @@ export function FlexibleIntake({
   const [uploadProgress, setUploadProgress] = useState<Record<string, string>>(
     {},
   );
+  // documentRoles maps file.name → { docId, role }
+  // Auto-assigns primary_rfp to the first successfully uploaded file, supplemental to the rest.
+  const [documentRoles, setDocumentRoles] = useState<
+    Record<string, { docId: string; role: DocumentRole }>
+  >({});
   const [error, setError] = useState<string | null>(null);
 
   const handleFileDrop = useCallback(
@@ -151,7 +162,18 @@ export function FlexibleIntake({
         }
 
         const data = await response.json();
-        setUploadedDocIds((prev) => [...prev, data.documentId]);
+        setUploadedDocIds((prev) => {
+          // First successfully uploaded file gets primary_rfp; subsequent get supplemental
+          const isFirst = prev.length === 0;
+          setDocumentRoles((roles) => ({
+            ...roles,
+            [file.name]: {
+              docId: data.documentId,
+              role: isFirst ? "primary_rfp" : "supplemental",
+            },
+          }));
+          return [...prev, data.documentId];
+        });
         setUploadProgress((prev) => ({ ...prev, [file.name]: "processing" }));
 
         // Poll for processing completion
@@ -200,6 +222,14 @@ export function FlexibleIntake({
         contentType = "pasted";
       }
 
+      // Build document_roles map when multiple files uploaded (enables role-aware extraction)
+      const roleMap: Record<string, DocumentRole> | undefined =
+        uploadedDocIds.length > 1
+          ? Object.fromEntries(
+              Object.values(documentRoles).map(({ docId, role }) => [docId, role]),
+            )
+          : undefined;
+
       // Call extraction API
       const extractResponse = await fetch("/api/intake/extract", {
         method: "POST",
@@ -207,6 +237,7 @@ export function FlexibleIntake({
         body: JSON.stringify({
           content,
           document_ids: uploadedDocIds.length > 0 ? uploadedDocIds : undefined,
+          document_roles: roleMap,
           content_type: contentType,
         }),
       });
@@ -464,50 +495,95 @@ export function FlexibleIntake({
 
           {files.length > 0 && (
             <div className="space-y-2">
-              {files.map((file, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-3 rounded-lg bg-[var(--background-tertiary)]"
-                >
-                  <div className="flex items-center gap-3">
-                    <File className="h-5 w-5 text-[var(--foreground-muted)]" />
-                    <span className="text-sm font-medium">{file.name}</span>
-                    <span className="text-xs text-[var(--foreground-muted)]">
-                      {(file.size / 1024 / 1024).toFixed(1)} MB
-                    </span>
+              {files.map((file, index) => {
+                const fileRole = documentRoles[file.name];
+                const isDone = uploadProgress[file.name] === "done";
+                const showRoleSelector = files.length > 1 && isDone && fileRole;
+
+                return (
+                  <div
+                    key={index}
+                    className="rounded-lg bg-[var(--background-tertiary)] overflow-hidden"
+                  >
+                    <div className="flex items-center justify-between p-3">
+                      <div className="flex items-center gap-3">
+                        <File className="h-5 w-5 text-[var(--foreground-muted)] shrink-0" />
+                        <span className="text-sm font-medium truncate max-w-[200px]">{file.name}</span>
+                        <span className="text-xs text-[var(--foreground-muted)]">
+                          {(file.size / 1024 / 1024).toFixed(1)} MB
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {uploadProgress[file.name] === "uploading" && (
+                          <span className="flex items-center gap-1 text-xs text-[var(--foreground-muted)]">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Uploading...
+                          </span>
+                        )}
+                        {uploadProgress[file.name] === "processing" && (
+                          <span className="flex items-center gap-1 text-xs text-[var(--warning)]">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Processing...
+                          </span>
+                        )}
+                        {isDone && (
+                          <span className="text-xs text-[var(--success)]">
+                            Ready
+                          </span>
+                        )}
+                        {uploadProgress[file.name] === "error" && (
+                          <span className="text-xs text-[var(--danger)]">
+                            Failed
+                          </span>
+                        )}
+                        <button
+                          onClick={() => removeFile(index)}
+                          className="p-1 hover:bg-[var(--background-secondary)] rounded"
+                        >
+                          <X className="h-4 w-4 text-[var(--foreground-muted)]" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Role selector — shown per-file when multiple files uploaded */}
+                    {showRoleSelector && (
+                      <div className="px-3 pb-3 pt-0">
+                        <select
+                          value={fileRole.role}
+                          onChange={(e) =>
+                            setDocumentRoles((prev) => ({
+                              ...prev,
+                              [file.name]: {
+                                ...prev[file.name],
+                                role: e.target.value as DocumentRole,
+                              },
+                            }))
+                          }
+                          className="w-full text-xs px-2 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none"
+                          title={
+                            fileRole.role in DOCUMENT_ROLE_DESCRIPTIONS
+                              ? DOCUMENT_ROLE_DESCRIPTIONS[fileRole.role]
+                              : undefined
+                          }
+                        >
+                          {DOCUMENT_ROLES.map((r) => (
+                            <option key={r} value={r}>
+                              {DOCUMENT_ROLE_LABELS[r]}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    {uploadProgress[file.name] === "uploading" && (
-                      <span className="flex items-center gap-1 text-xs text-[var(--foreground-muted)]">
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                        Uploading...
-                      </span>
-                    )}
-                    {uploadProgress[file.name] === "processing" && (
-                      <span className="flex items-center gap-1 text-xs text-[var(--warning)]">
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                        Processing...
-                      </span>
-                    )}
-                    {uploadProgress[file.name] === "done" && (
-                      <span className="text-xs text-[var(--success)]">
-                        Ready
-                      </span>
-                    )}
-                    {uploadProgress[file.name] === "error" && (
-                      <span className="text-xs text-[var(--danger)]">
-                        Failed
-                      </span>
-                    )}
-                    <button
-                      onClick={() => removeFile(index)}
-                      className="p-1 hover:bg-[var(--background-secondary)] rounded"
-                    >
-                      <X className="h-4 w-4 text-[var(--foreground-muted)]" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
+
+              {/* Role legend — shown when multiple ready files have roles assigned */}
+              {files.length > 1 && anyFileSucceeded && (
+                <p className="text-xs text-[var(--foreground-muted)] pt-1">
+                  Label each document so the AI knows how to prioritize them during extraction. Amendments override the Primary RFP; Q&amp;A Addenda are authoritative for any questions they address.
+                </p>
+              )}
             </div>
           )}
         </div>

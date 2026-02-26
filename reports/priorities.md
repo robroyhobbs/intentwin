@@ -213,6 +213,7 @@ Tasks:
 - RFP upload and auto-parsing
 - Approval workflows
 - Slack/email notifications
+- **URL intake: link discovery** — when fetching a URL, scan the HTML for links to PDFs/DOCXs on the same domain, show them as "found attachments," let the user pick which to also fetch/upload before extraction. Complements the document role labeling UI.
 
 ### Integrations
 - Salesforce CRM
