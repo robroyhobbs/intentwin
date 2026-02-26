@@ -27,6 +27,17 @@ export async function generatePdf(data: ProposalData): Promise<Buffer> {
     return generatePdfWithGotenberg(data, gotenbergUrl);
   }
 
+  // Fail fast on serverless environments — no local browser available
+  const isServerless = Boolean(
+    process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME,
+  );
+  if (isServerless) {
+    throw new Error(
+      "PDF export requires GOTENBERG_URL in production. " +
+      "Deploy Gotenberg to Cloud Run: ./scripts/deploy-gotenberg.sh",
+    );
+  }
+
   logger.info("pdf-export: GOTENBERG_URL not set, falling back to local browser");
   return generatePdfWithLocalBrowser(data);
 }
@@ -43,8 +54,9 @@ async function generatePdfWithGotenberg(
   const footerText = data.branding?.footer_text || "Confidential";
   const primaryColor = data.branding?.primary_color || "#999";
 
-  // Generate the main HTML with inline fonts (no CDN requests)
-  const html = await generateHtml(data, { inlineFonts: true });
+  // Generate the main HTML with inline fonts (no CDN requests) and PDF-specific overrides
+  // (forces all sections visible, hides TOC sidebar, removes scroll animations)
+  const html = await generateHtml(data, { inlineFonts: true, forPdf: true });
 
   // Build header HTML (complete document required by Gotenberg)
   const headerHtml = `<!DOCTYPE html>
@@ -143,7 +155,7 @@ async function generatePdfWithLocalBrowser(
   const companyName = data.branding?.header_text || data.company_name || "IntentBid";
   const footerText = data.branding?.footer_text || "Confidential";
 
-  const html = await generateHtml(data, { inlineFonts: true });
+  const html = await generateHtml(data, { inlineFonts: true, forPdf: true });
 
   // Dynamic import — only loads puppeteer-core when actually needed (dev only)
   let puppeteerCore;

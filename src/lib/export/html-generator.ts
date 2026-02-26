@@ -184,7 +184,7 @@ function slugify(text: string): string {
 
 export async function generateHtml(
   data: ProposalData,
-  options?: { inlineFonts?: boolean },
+  options?: { inlineFonts?: boolean; forPdf?: boolean },
 ): Promise<string> {
   const companyName = data.company_name || "IntentBid";
 
@@ -735,6 +735,25 @@ ${options?.inlineFonts ? `<style>
     .shape { display: none; }
   }
 </style>
+${options?.forPdf ? `<style>
+  /* PDF-specific overrides: force all content visible, remove scroll animations,
+     hide interactive-only elements, and optimize layout for paged rendering */
+  .proposal-section {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .toc { display: none !important; }
+  .stats-bar { display: none !important; }
+  .layout { max-width: 100%; padding: 0 40px; }
+  .main { padding-bottom: 0; }
+  body { background: #fff; }
+  .hero { padding: 60px 40px 50px; min-height: auto; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .hero h1 { font-size: 2.4rem; }
+  .hero::before, .hero::after, .shape { display: none !important; }
+  .section-inner { box-shadow: none; border: 1px solid #E2E8F0; break-inside: avoid; }
+  .footer { break-before: auto; }
+</style>` : ""}
 </head>
 <body>
 
