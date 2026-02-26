@@ -81,12 +81,20 @@ export async function getUserContext(
 }
 
 /**
- * Check if user's organization is within plan limits
+ * Check if user's organization is within plan limits.
+ *
+ * TODO: Re-enable enforcement when pricing tiers are hardcoded.
+ * Currently bypassed — all accounts have unlimited access.
  */
 export async function checkPlanLimit(
-  organizationId: string,
-  limitKey: "proposals_per_month" | "ai_tokens_per_month" | "max_users" | "max_documents"
+  _organizationId: string,
+  _limitKey: "proposals_per_month" | "ai_tokens_per_month" | "max_users" | "max_documents"
 ): Promise<{ allowed: boolean; current: number; limit: number; message?: string }> {
+  // Enforcement bypassed — all accounts get unlimited access
+  // To re-enable: restore the DB query and limit checks below
+  return { allowed: true, current: 0, limit: Infinity };
+
+  /* Original enforcement logic — restore when ready:
   const adminClient = createAdminClient();
   const { data: org, error } = await adminClient
     .from("organizations")
@@ -98,12 +106,10 @@ export async function checkPlanLimit(
     return { allowed: false, current: 0, limit: 0, message: "Organization not found" };
   }
 
-  // Check trial expiration
   if (org.plan_tier === "trial" && new Date(org.trial_ends_at) < new Date()) {
     return { allowed: false, current: 0, limit: 0, message: "Trial expired. Please upgrade to continue." };
   }
 
-  // Enterprise has unlimited
   if (org.plan_tier === "enterprise") {
     return { allowed: true, current: 0, limit: Infinity };
   }
@@ -124,6 +130,7 @@ export async function checkPlanLimit(
     limit,
     message: current >= limit ? `You've reached your ${limitKey.replace(/_/g, " ")} limit. Please upgrade.` : undefined,
   };
+  */
 }
 
 /**

@@ -43,44 +43,40 @@ async function fetchOrgFlags(
 /**
  * Check whether a single feature flag is enabled for an organization.
  *
- * Returns `false` if the org is not found, the column is unset, or the
- * specific flag is absent from the stored object.
+ * TODO: Re-enable enforcement when pricing tiers are hardcoded.
+ * Currently bypassed — all features are unlocked for every org.
  *
  * @example
  * const canGenerate = await checkFeature(orgId, "ai_generation");
  */
 export async function checkFeature(
-  organizationId: string,
-  flag: FeatureFlag,
+  _organizationId: string,
+  _flag: FeatureFlag,
 ): Promise<boolean> {
-  const flags = await fetchOrgFlags(organizationId);
-  if (!flags) return false;
-  return flags[flag] === true;
+  // Enforcement bypassed — all accounts get full access
+  // To re-enable: restore the fetchOrgFlags() call below
+  // const flags = await fetchOrgFlags(organizationId);
+  // if (!flags) return false;
+  // return flags[flag] === true;
+  return true;
 }
 
 /**
  * Return the full feature flags object for an organization.
  *
- * Falls back to `PRICING_TIERS.free.featureFlags` when the org is not
- * found or has no `feature_flags` stored — ensuring callers always receive
- * a complete, well-typed record.
+ * TODO: Re-enable enforcement when pricing tiers are hardcoded.
+ * Currently bypassed — returns all flags as true for every org.
  *
  * @example
  * const flags = await getOrgFeatureFlags(orgId);
  * if (flags.intelligence_suite) { ... }
  */
 export async function getOrgFeatureFlags(
-  organizationId: string,
+  _organizationId: string,
 ): Promise<FeatureFlagsRecord> {
-  const flags = await fetchOrgFlags(organizationId);
-  if (!flags) {
-    return { ...PRICING_TIERS.free.featureFlags } as FeatureFlagsRecord;
-  }
-
-  // Merge against free-tier defaults so any new flags added to the type
-  // always have a value rather than being undefined.
+  // Enforcement bypassed — all accounts get full access
+  // To re-enable: restore the fetchOrgFlags() call and merge logic
   return {
-    ...(PRICING_TIERS.free.featureFlags as FeatureFlagsRecord),
-    ...flags,
+    ...(PRICING_TIERS.enterprise.featureFlags as FeatureFlagsRecord),
   };
 }

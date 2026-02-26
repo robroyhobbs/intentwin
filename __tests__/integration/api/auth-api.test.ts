@@ -114,89 +114,20 @@ describe("getUserContext", () => {
   });
 });
 
+// TODO: Re-enable these tests when plan limit enforcement is restored.
+// checkPlanLimit is currently bypassed — always returns { allowed: true, limit: Infinity }.
 describe("checkPlanLimit", () => {
-  it("allows usage when under limit", async () => {
-    mockAdminClient.single = vi.fn().mockResolvedValue({
-      data: {
-        plan_tier: "starter",
-        plan_limits: { proposals_per_month: 20 },
-        usage_current_period: { proposals_created: 5 },
-        trial_ends_at: null,
-      },
-      error: null,
-    });
-
+  it("always allows access (enforcement bypassed)", async () => {
     const result = await checkPlanLimit("org-1", "proposals_per_month");
-
-    expect(result.allowed).toBe(true);
-    expect(result.current).toBe(5);
-    expect(result.limit).toBe(20);
-  });
-
-  it("blocks usage when at limit", async () => {
-    mockAdminClient.single = vi.fn().mockResolvedValue({
-      data: {
-        plan_tier: "starter",
-        plan_limits: { proposals_per_month: 20 },
-        usage_current_period: { proposals_created: 20 },
-        trial_ends_at: null,
-      },
-      error: null,
-    });
-
-    const result = await checkPlanLimit("org-1", "proposals_per_month");
-
-    expect(result.allowed).toBe(false);
-    expect(result.message).toContain("limit");
-  });
-
-  it("allows unlimited for enterprise tier", async () => {
-    mockAdminClient.single = vi.fn().mockResolvedValue({
-      data: {
-        plan_tier: "enterprise",
-        plan_limits: {},
-        usage_current_period: {},
-        trial_ends_at: null,
-      },
-      error: null,
-    });
-
-    const result = await checkPlanLimit("org-1", "proposals_per_month");
-
     expect(result.allowed).toBe(true);
     expect(result.limit).toBe(Infinity);
   });
 
-  it("blocks expired trials", async () => {
-    const pastDate = new Date("2025-01-01").toISOString();
-
-    mockAdminClient.single = vi.fn().mockResolvedValue({
-      data: {
-        plan_tier: "trial",
-        plan_limits: { proposals_per_month: 5 },
-        usage_current_period: { proposals_created: 0 },
-        trial_ends_at: pastDate,
-      },
-      error: null,
-    });
-
-    const result = await checkPlanLimit("org-1", "proposals_per_month");
-
-    expect(result.allowed).toBe(false);
-    expect(result.message).toContain("Trial expired");
-  });
-
-  it("returns not allowed when organization not found", async () => {
-    mockAdminClient.single = vi.fn().mockResolvedValue({
-      data: null,
-      error: { message: "Not found" },
-    });
-
-    const result = await checkPlanLimit("nonexistent", "proposals_per_month");
-
-    expect(result.allowed).toBe(false);
-    expect(result.message).toContain("Organization not found");
-  });
+  it.skip("allows usage when under limit", () => {});
+  it.skip("blocks usage when at limit", () => {});
+  it.skip("allows unlimited for enterprise tier", () => {});
+  it.skip("blocks expired trials", () => {});
+  it.skip("returns not allowed when organization not found", () => {});
 });
 
 describe("verifyProposalAccess", () => {

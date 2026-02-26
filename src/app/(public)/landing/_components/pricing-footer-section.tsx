@@ -15,11 +15,11 @@ export function PricingFooterSection() {
             className="vf-gradient-text"
             style={{ fontSize: "clamp(28px, 4vw, 40px)", fontWeight: 800, marginBottom: 16 }}
           >
-            $999/month — everything included.
+            Plans that scale with your wins.
           </h2>
           <p style={{ color: "#a1a1aa", fontSize: 17, maxWidth: 540, margin: "0 auto 28px", lineHeight: 1.7 }}>
-            One plan. Unlimited proposals. Full intelligence suite.
-            No tiers, no upsells, no per-proposal fees.
+            From solo consultants to enterprise teams.
+            AI-powered proposals, intelligence suite, and all export formats.
           </p>
           <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
             <Link
