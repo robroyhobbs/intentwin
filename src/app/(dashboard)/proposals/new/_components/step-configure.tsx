@@ -55,11 +55,31 @@ interface TemplateResponse {
   sections: SectionTemplate[];
 }
 
-const TONE_OPTIONS: { value: WizardTone; label: string; description: string }[] = [
-  { value: "professional", label: "Professional", description: "Formal, business-appropriate tone" },
-  { value: "conversational", label: "Conversational", description: "Approachable, friendly while professional" },
-  { value: "technical", label: "Technical", description: "Detailed, precise, specification-focused" },
-  { value: "executive", label: "Executive", description: "High-level, strategic, outcome-focused" },
+const TONE_OPTIONS: { value: WizardTone; label: string; description: string; when: string }[] = [
+  {
+    value: "professional",
+    label: "Professional",
+    description: "Formal, business-appropriate tone",
+    when: "Best for most government and enterprise RFPs. Use when the evaluator is a procurement officer or contracting official.",
+  },
+  {
+    value: "conversational",
+    label: "Conversational",
+    description: "Approachable, friendly while professional",
+    when: "Best for commercial clients, startups, or small business RFPs where the evaluator is also the decision-maker.",
+  },
+  {
+    value: "technical",
+    label: "Technical",
+    description: "Detailed, precise, specification-focused",
+    when: "Best when evaluators are engineers or architects. Use for IT infrastructure, cybersecurity, or engineering RFPs with a technical review panel.",
+  },
+  {
+    value: "executive",
+    label: "Executive",
+    description: "High-level, strategic, outcome-focused",
+    when: "Best for C-suite or board-level audiences. Use when the proposal will be read by a CIO, CEO, or executive steering committee who cares about ROI and outcomes, not implementation details.",
+  },
 ];
 
 type WizardTone = "professional" | "conversational" | "technical" | "executive";
@@ -570,6 +590,9 @@ export function StepConfigure() {
                 {option.label}
               </p>
               <p className="text-xs text-[var(--foreground-muted)] mt-0.5">{option.description}</p>
+              {state.tone === option.value && (
+                <p className="text-xs text-[var(--accent)] mt-1.5 leading-relaxed">{option.when}</p>
+              )}
             </button>
           ))}
         </div>

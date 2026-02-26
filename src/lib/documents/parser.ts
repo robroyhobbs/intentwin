@@ -2,6 +2,7 @@ import { parseDocx } from "./parsers/docx";
 import { parsePdf } from "./parsers/pdf";
 import { parsePptx } from "./parsers/pptx";
 import { parseTxt, parseMd } from "./parsers/text";
+import { parseXlsx } from "./parsers/xlsx";
 
 export interface ParsedSection {
   heading: string | null;
@@ -38,6 +39,9 @@ export async function parseDocument(
       return parseTxt(buffer);
     case "md":
       return parseMd(buffer);
+    case "xlsx":
+    case "xls":
+      return parseXlsx(buffer);
     default:
       throw new Error(`Unsupported file type: ${fileType}`);
   }

@@ -57,7 +57,7 @@ export default function UploadPage() {
         const f = acceptedFiles[0];
         setFile(f);
         if (!title) {
-          setTitle(f.name.replace(/\.(docx|pdf|pptx|txt|md)$/i, ""));
+          setTitle(f.name.replace(/\.(docx|pdf|pptx|xlsx|xls|txt|md)$/i, ""));
         }
       }
     },
@@ -74,6 +74,8 @@ export default function UploadPage() {
         [".pptx"],
       "text/plain": [".txt"],
       "text/markdown": [".md"],
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
+      "application/vnd.ms-excel": [".xls"],
     },
     maxFiles: 1,
     maxSize: 50 * 1024 * 1024,
@@ -174,7 +176,7 @@ export default function UploadPage() {
                   : "Drag and drop a file, or click to browse"}
               </p>
               <p className="mt-1 text-xs text-[var(--foreground-subtle)]">
-                DOCX, PDF, PPTX, TXT, or MD (max 50MB)
+                DOCX, PDF, PPTX, XLSX, TXT, or MD (max 50MB)
               </p>
             </>
           )}

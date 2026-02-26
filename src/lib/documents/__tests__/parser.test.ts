@@ -12,6 +12,7 @@ const mockParsePdf = vi.fn();
 const mockParsePptx = vi.fn();
 const mockParseTxt = vi.fn();
 const mockParseMd = vi.fn();
+const mockParseXlsx = vi.fn();
 
 vi.mock("@/lib/documents/parsers/docx", () => ({
   parseDocx: (...args: unknown[]) => mockParseDocx(...args),
@@ -30,6 +31,10 @@ vi.mock("@/lib/documents/parsers/text", () => ({
   parseMd: (...args: unknown[]) => mockParseMd(...args),
 }));
 
+vi.mock("@/lib/documents/parsers/xlsx", () => ({
+  parseXlsx: (...args: unknown[]) => mockParseXlsx(...args),
+}));
+
 import { parseDocument } from "@/lib/documents/parser";
 
 // ── Setup ──────────────────────────────────────────────────────────────────
@@ -44,6 +49,7 @@ beforeEach(() => {
   mockParsePptx.mockResolvedValue(dummySections);
   mockParseTxt.mockResolvedValue(dummySections);
   mockParseMd.mockResolvedValue(dummySections);
+  mockParseXlsx.mockResolvedValue(dummySections);
 });
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -88,6 +94,20 @@ describe("parseDocument — Routing", () => {
     expect(mockParseMd).toHaveBeenCalledWith(dummyBuffer);
     expect(mockParseDocx).not.toHaveBeenCalled();
   });
+
+  it("routes xlsx to parseXlsx", async () => {
+    await parseDocument(dummyBuffer, "xlsx");
+
+    expect(mockParseXlsx).toHaveBeenCalledWith(dummyBuffer);
+    expect(mockParseDocx).not.toHaveBeenCalled();
+  });
+
+  it("routes xls to parseXlsx", async () => {
+    await parseDocument(dummyBuffer, "xls");
+
+    expect(mockParseXlsx).toHaveBeenCalledWith(dummyBuffer);
+    expect(mockParseDocx).not.toHaveBeenCalled();
+  });
 });
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -120,7 +140,7 @@ describe("parseDocument — Return Values", () => {
 
 describe("parseDocument — Bad Path", () => {
   it("throws Error for unsupported file type", async () => {
-    await expect(parseDocument(dummyBuffer, "xlsx")).rejects.toThrow("Unsupported file type: xlsx");
+    await expect(parseDocument(dummyBuffer, "csv")).rejects.toThrow("Unsupported file type: csv");
   });
 
   it("throws Error for empty file type string", async () => {

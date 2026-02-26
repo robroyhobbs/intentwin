@@ -13,6 +13,7 @@ import {
   File,
   CheckCircle2,
   Circle,
+  Link2,
 } from "lucide-react";
 import type {
   IntakeMode,
@@ -36,6 +37,9 @@ export function FlexibleIntake({
   const [uploadedDocIds, setUploadedDocIds] = useState<string[]>([]);
   const [pastedContent, setPastedContent] = useState("");
   const [verbalDescription, setVerbalDescription] = useState("");
+  const [urlInput, setUrlInput] = useState("");
+  const [urlFetching, setUrlFetching] = useState(false);
+  const [urlFetched, setUrlFetched] = useState(false);
   const [researchEnabled, setResearchEnabled] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStep, setProcessingStep] = useState<
@@ -114,12 +118,14 @@ export function FlexibleIntake({
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       "application/vnd.openxmlformats-officedocument.presentationml.presentation",
       "text/plain",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.ms-excel",
     ];
 
     const validFiles = newFiles.filter((f) => validTypes.includes(f.type));
     if (validFiles.length !== newFiles.length) {
       setError(
-        "Some files were skipped. Supported formats: PDF, DOCX, PPTX, TXT",
+        "Some files were skipped. Supported formats: PDF, DOCX, PPTX, XLSX, TXT",
       );
     }
 
@@ -189,6 +195,9 @@ export function FlexibleIntake({
       } else if (mode === "describe") {
         content = verbalDescription;
         contentType = "verbal";
+      } else if (mode === "url") {
+        content = pastedContent; // already fetched and stored in pastedContent
+        contentType = "pasted";
       }
 
       // Call extraction API
@@ -276,7 +285,8 @@ export function FlexibleIntake({
       allFilesReady &&
       anyFileSucceeded) ||
     (mode === "paste" && pastedContent.trim().length > 50) ||
-    (mode === "describe" && verbalDescription.trim().length > 20);
+    (mode === "describe" && verbalDescription.trim().length > 20) ||
+    (mode === "url" && urlFetched && pastedContent.trim().length > 50);
 
   if (!mode) {
     return (
@@ -338,6 +348,23 @@ export function FlexibleIntake({
               </p>
               <p className="text-sm text-[var(--foreground-muted)]">
                 Tell us about the opportunity
+              </p>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setMode("url")}
+            className="group flex flex-col items-center gap-4 p-8 rounded-2xl border-2 border-dashed border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--accent-subtle)] transition-all"
+          >
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--background-tertiary)] group-hover:bg-[var(--accent-subtle)] transition-colors">
+              <Link2 className="h-8 w-8 text-[var(--foreground-muted)] group-hover:text-[var(--accent)]" />
+            </div>
+            <div className="text-center">
+              <p className="font-semibold text-[var(--foreground)]">
+                Import from URL
+              </p>
+              <p className="text-sm text-[var(--foreground-muted)]">
+                SAM.gov, agency portal, or any link
               </p>
             </div>
           </button>
@@ -422,14 +449,14 @@ export function FlexibleIntake({
                 Drop files here or click to browse
               </p>
               <p className="text-sm text-[var(--foreground-muted)] mt-1">
-                PDF, DOCX, PPTX, or TXT up to 50MB
+                PDF, DOCX, PPTX, XLSX, or TXT up to 50MB
               </p>
             </div>
             <input
               id="file-input"
               type="file"
               multiple
-              accept=".pdf,.docx,.pptx,.txt"
+              accept=".pdf,.docx,.pptx,.xlsx,.xls,.txt"
               onChange={handleFileSelect}
               className="hidden"
             />
@@ -516,6 +543,78 @@ export function FlexibleIntake({
             rows={8}
             className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-[var(--input-bg)] text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:border-[var(--accent)] focus:outline-none resize-none"
           />
+        </div>
+      )}
+
+      {mode === "url" && (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-[var(--foreground-muted)]">
+              Paste the solicitation URL
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="url"
+                value={urlInput}
+                onChange={(e) => { setUrlInput(e.target.value); setUrlFetched(false); }}
+                placeholder="https://sam.gov/opp/... or any public solicitation page"
+                className="flex-1 px-4 py-2 rounded-xl border border-[var(--border)] bg-[var(--input-bg)] text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:border-[var(--accent)] focus:outline-none text-sm"
+              />
+              <button
+                onClick={async () => {
+                  if (!urlInput.trim()) return;
+                  setUrlFetching(true);
+                  setError(null);
+                  try {
+                    const res = await fetch("/api/intake/fetch-url", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ url: urlInput.trim() }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) {
+                      setError(data.error || "Failed to fetch URL");
+                      return;
+                    }
+                    setPastedContent(data.content);
+                    setUrlFetched(true);
+                    if (data.truncated) {
+                      setError("Page was very large — content was trimmed to the first 100,000 characters.");
+                    }
+                  } catch {
+                    setError("Failed to fetch URL. Check the link and try again.");
+                  } finally {
+                    setUrlFetching(false);
+                  }
+                }}
+                disabled={urlFetching || !urlInput.trim()}
+                className="btn-primary px-4 py-2 text-sm flex items-center gap-2 disabled:opacity-50"
+              >
+                {urlFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
+                {urlFetching ? "Fetching..." : "Fetch"}
+              </button>
+            </div>
+            <p className="text-xs text-[var(--foreground-muted)]">
+              Works with public SAM.gov pages, agency portals, and any publicly accessible solicitation page. For login-protected or PDF-only pages, download the file and use Upload instead.
+            </p>
+          </div>
+
+          {urlFetched && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium text-[var(--foreground-muted)]">
+                  Extracted content — review and edit if needed
+                </label>
+                <span className="text-xs text-[var(--foreground-muted)]">{pastedContent.length.toLocaleString()} chars</span>
+              </div>
+              <textarea
+                value={pastedContent}
+                onChange={(e) => setPastedContent(e.target.value)}
+                rows={10}
+                className="w-full px-4 py-3 rounded-xl border border-[var(--accent-muted)] bg-[var(--input-bg)] text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none resize-none text-sm"
+              />
+            </div>
+          )}
         </div>
       )}
 

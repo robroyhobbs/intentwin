@@ -257,6 +257,23 @@ export default function CompanySettingsPage() {
     }
   }
 
+  async function handleEditCertification(id: string, title: string, content: string) {
+    setSaving(true);
+    try {
+      const key = title.toLowerCase().replace(/[^a-z0-9]/g, "_");
+      await supabase
+        .from("company_context")
+        .update({ title, content, key })
+        .eq("id", id);
+      await loadData();
+    } catch (error) {
+      logger.error("Error editing certification", error);
+      toast.error("Failed to save changes");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   // ── Products handlers ──────────────────────────────────────────────────
 
   const loadProducts = useCallback(async () => {
@@ -526,6 +543,7 @@ export default function CompanySettingsPage() {
           newCertification={newCertification}
           setNewCertification={setNewCertification}
           handleAddCertification={handleAddCertification}
+          handleEditCertification={handleEditCertification}
           handleDeleteContext={handleDeleteContext}
           deleteConfirm={deleteConfirm}
           setDeleteConfirm={setDeleteConfirm}

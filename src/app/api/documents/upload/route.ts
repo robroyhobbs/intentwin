@@ -17,6 +17,8 @@ const ALLOWED_TYPES: Record<string, string> = {
     "pptx",
   "text/plain": "txt",
   "text/markdown": "md",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+  "application/vnd.ms-excel": "xls",
 };
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB

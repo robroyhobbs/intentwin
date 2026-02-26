@@ -164,7 +164,7 @@ export interface ClientResearch {
   researched_at: string;
 }
 
-export type IntakeMode = "upload" | "paste" | "describe" | "manual";
+export type IntakeMode = "upload" | "paste" | "describe" | "manual" | "url";
 
 export interface IntakeState {
   mode: IntakeMode | null;
