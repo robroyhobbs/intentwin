@@ -583,6 +583,67 @@ export function StepReview() {
     fieldRefs.current = refs;
   }, []);
 
+  // Auto-trigger bid evaluation on mount if we have extracted data and no evaluation yet
+  // NOTE: Must be above the early return to satisfy React rules-of-hooks
+  const autoScoreTriggered = useRef(false);
+  useEffect(() => {
+    if (autoScoreTriggered.current) return;
+    if (!state.extractedData || state.bidEvaluation || bidScoring || bidError) return;
+    autoScoreTriggered.current = true;
+
+    const doScore = async () => {
+      setBidScoring(true);
+      setBidError(null);
+      const data = state.extractedData!;
+      const ext = data.extracted as Record<string, ExtractedField<string | string[]> | undefined>;
+      try {
+        const rfpRequirements = {
+          title: data.input_summary,
+          agency: ext?.client_name?.value,
+          deadline: ext?.timeline?.value,
+          budget_range: ext?.budget_range?.value,
+          scope: ext?.scope_description?.value,
+          requirements: ext?.key_requirements?.value,
+          evaluation_criteria: ext?.decision_criteria?.value,
+          compliance_requirements: ext?.compliance_requirements?.value,
+          technical_environment: ext?.technical_environment?.value,
+          source_text: data.source_text ? String(data.source_text).slice(0, 4000) : undefined,
+        };
+        const response = await authFetch("/api/intake/bid-evaluation", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            rfp_requirements: rfpRequirements,
+            service_line: ext?.opportunity_type?.value || "other",
+            industry: ext?.client_industry?.value,
+          }),
+        });
+        if (!response.ok) {
+          let serverMessage = `Server returned ${response.status}`;
+          try {
+            const errorBody = await response.json();
+            serverMessage = errorBody.error || errorBody.message || serverMessage;
+          } catch {
+            serverMessage = `${response.status} ${response.statusText}`;
+          }
+          throw new Error(serverMessage);
+        }
+        const result = await response.json();
+        dispatch({
+          type: "BID_EVALUATION_UPDATE",
+          payload: { bidEvaluation: result.evaluation, bidPhase: "review" },
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        setBidError(message);
+      } finally {
+        setBidScoring(false);
+      }
+    };
+    doScore();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // No extracted data — show fallback
   if (!state.extractedData) {
     return (
@@ -734,14 +795,6 @@ export function StepReview() {
       setBidScoring(false);
     }
   };
-
-  // Auto-trigger bid evaluation on mount if we have extracted data and no evaluation yet
-  useEffect(() => {
-    if (extracted && !state.bidEvaluation && !bidScoring && !bidError) {
-      triggerBidScoring();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const handleBidOverrideChange = (key: FactorKey, value: number | undefined) => {
     if (value === undefined) {

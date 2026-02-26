@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Update organization with subscription info
-        const tierConfig = PRICING_TIERS[tier] || PRICING_TIERS.invite;
+        const tierConfig = PRICING_TIERS[tier] || PRICING_TIERS.enterprise;
 
         await adminClient
           .from("organizations")
@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
             stripe_subscription_id: session.subscription as string,
             plan_tier: tier,
             plan_limits: tierConfig.limits,
+            feature_flags: tierConfig.featureFlags,
             billing_cycle_start: new Date().toISOString(),
             billing_cycle_end: new Date(
               Date.now() + 30 * 24 * 60 * 60 * 1000
@@ -76,9 +77,9 @@ export async function POST(request: NextRequest) {
         // Get tier from subscription metadata or price metadata
         const tier = (subscription.metadata?.tier ||
           subscription.items.data[0]?.price.metadata?.tier ||
-          "invite") as PricingTier;
+          "enterprise") as PricingTier;
 
-        const tierConfig = PRICING_TIERS[tier] || PRICING_TIERS.invite;
+        const tierConfig = PRICING_TIERS[tier] || PRICING_TIERS.enterprise;
 
         // Get billing cycle from subscription items (API 2025+)
         const subscriptionItem = subscription.items.data[0];
@@ -90,6 +91,7 @@ export async function POST(request: NextRequest) {
           .update({
             plan_tier: tier,
             plan_limits: tierConfig.limits,
+            feature_flags: tierConfig.featureFlags,
             billing_cycle_start: new Date(periodStart * 1000).toISOString(),
             billing_cycle_end: new Date(periodEnd * 1000).toISOString(),
           })
@@ -108,21 +110,14 @@ export async function POST(request: NextRequest) {
           break;
         }
 
-        // Downgrade to trial (or free tier)
+        // Downgrade to free tier on cancellation
         await adminClient
           .from("organizations")
           .update({
             stripe_subscription_id: null,
-            plan_tier: "trial",
-            plan_limits: {
-              proposals_per_month: 3,
-              ai_tokens_per_month: 50000,
-              max_users: 1,
-              max_documents: 10,
-            },
-            trial_ends_at: new Date(
-              Date.now() + 7 * 24 * 60 * 60 * 1000
-            ).toISOString(), // 7 day grace period
+            plan_tier: "free",
+            plan_limits: PRICING_TIERS.free.limits,
+            feature_flags: PRICING_TIERS.free.featureFlags,
           })
           .eq("id", organizationId);
 

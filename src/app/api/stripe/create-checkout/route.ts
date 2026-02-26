@@ -5,6 +5,7 @@ import {
   stripe,
   getOrCreateStripeCustomer,
   PRICING_TIERS,
+  getStripePriceId,
   type PricingTier,
 } from "@/lib/stripe/client";
 import { unauthorized, forbidden, badRequest, notFound, ok, serverError } from "@/lib/api/response";
@@ -30,6 +31,11 @@ export async function POST(request: NextRequest) {
 
     if (!tier || !PRICING_TIERS[tier]) {
       return badRequest("Invalid pricing tier");
+    }
+
+    // Free tier has no Stripe checkout
+    if (PRICING_TIERS[tier].monthlyPrice === 0) {
+      return badRequest("Free tier does not require checkout");
     }
 
     const adminClient = createAdminClient();
@@ -61,37 +67,16 @@ export async function POST(request: NextRequest) {
         .eq("id", org.id);
     }
 
-    // Get the price from environment or create dynamically
-    // In production, you'd have pre-created prices in Stripe
-    const priceAmount =
-      interval === "annual"
-        ? PRICING_TIERS[tier].annualPrice
-        : PRICING_TIERS[tier].monthlyPrice;
-
-    if (!priceAmount) {
-      return badRequest("Invalid price for selected tier");
+    // Resolve Stripe price ID from environment variables
+    const priceId = getStripePriceId(tier, interval);
+    if (!priceId) {
+      return serverError(
+        `Stripe price ID not configured for tier "${tier}" (${interval}). ` +
+        `Set ${PRICING_TIERS[tier].stripePriceIdEnvVar} in environment variables.`,
+      );
     }
 
-    // Create a price on the fly (in production, use pre-created prices)
-    const price = await stripe.prices.create({
-      unit_amount: priceAmount * 100, // Stripe uses cents
-      currency: "usd",
-      recurring: {
-        interval: interval === "annual" ? "year" : "month",
-      },
-      product_data: {
-        name: `IntentBid ${PRICING_TIERS[tier].name}`,
-        metadata: {
-          tier,
-        },
-      },
-      metadata: {
-        tier,
-        interval,
-      },
-    });
-
-    // Create checkout session
+    // Create checkout session using pre-created Stripe price
     const origin =
       request.headers.get("origin") ||
       process.env.NEXT_PUBLIC_APP_URL ||
@@ -101,7 +86,7 @@ export async function POST(request: NextRequest) {
       mode: "subscription",
       line_items: [
         {
-          price: price.id,
+          price: priceId,
           quantity: 1,
         },
       ],

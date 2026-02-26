@@ -5,7 +5,8 @@ import {
   saveBidDecision,
   type FactorKey,
 } from "@/lib/ai/bid-scoring";
-import { unauthorized, notFound, badRequest, ok, serverError } from "@/lib/api/response";
+import { checkFeature } from "@/lib/features/check-feature";
+import { unauthorized, notFound, badRequest, ok, serverError, forbidden } from "@/lib/api/response";
 
 /** AI scoring call + L1 context fetch */
 export const maxDuration = 120;
@@ -25,6 +26,12 @@ export async function POST(
 
     if (!context) {
       return unauthorized();
+    }
+
+    // Feature gate: bid_evaluation requires Pro+
+    const canEvaluate = await checkFeature(context.organizationId, "bid_evaluation");
+    if (!canEvaluate) {
+      return forbidden("AI bid evaluation requires a Pro plan or above. Upgrade at /pricing.");
     }
 
     const proposal = await verifyProposalAccess(context, id);

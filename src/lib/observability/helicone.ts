@@ -97,12 +97,6 @@ export function mistralHeliconeOptions(): {
   };
 }
 
-/** Mistral extra headers for Helicone (passed per-request) */
-function mistralHeliconeHeaders(): Record<string, string> {
-  if (!isHeliconeEnabled()) return {};
-  return baseHeaders();
-}
-
 // ── Voyage AI (raw fetch) ──
 
 /** Voyage API URL — proxied through Helicone when enabled */
@@ -121,31 +115,3 @@ export function voyageHeliconeHeaders(): Record<string, string> {
   };
 }
 
-// ── Custom Properties ──
-
-/**
- * Build Helicone custom property headers for request tagging.
- * These appear in the Helicone dashboard for filtering/grouping.
- */
-function heliconeProperties(props: {
-  organizationId?: string;
-  proposalId?: string;
-  sectionType?: string;
-  operation?: string;
-}): Record<string, string> {
-  if (!isHeliconeEnabled()) return {};
-  const headers: Record<string, string> = {};
-  if (props.organizationId) {
-    headers["Helicone-Property-OrganizationId"] = props.organizationId;
-  }
-  if (props.proposalId) {
-    headers["Helicone-Property-ProposalId"] = props.proposalId;
-  }
-  if (props.sectionType) {
-    headers["Helicone-Property-SectionType"] = props.sectionType;
-  }
-  if (props.operation) {
-    headers["Helicone-Property-Operation"] = props.operation;
-  }
-  return headers;
-}

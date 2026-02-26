@@ -12,7 +12,9 @@ import type { ExtractedIntake } from "@/types/intake";
 import type { DocumentRole } from "@/types/proposal-documents";
 import { logger } from "@/lib/utils/logger";
 import { extractJsonFromResponse } from "@/lib/utils/extract-json";
+import { checkFeature } from "@/lib/features/check-feature";
 import { unauthorized, badRequest, notFound, ok, serverError } from "@/lib/api/response";
+import { apiError } from "@/lib/api/response";
 
 /** Allow up to 5 minutes for document processing wait + AI extraction */
 export const maxDuration = 300;
@@ -48,6 +50,16 @@ export async function POST(request: NextRequest) {
     const context = await getUserContext(request);
     if (!context) {
       return unauthorized();
+    }
+
+    // Feature gate: document_extraction requires Starter+
+    const canExtract = await checkFeature(context.organizationId, "document_extraction");
+    if (!canExtract) {
+      return apiError({
+        message: "Document extraction requires a Starter plan or above. Upgrade at /pricing.",
+        status: 403,
+        code: "FEATURE_GATED",
+      });
     }
 
     let body;

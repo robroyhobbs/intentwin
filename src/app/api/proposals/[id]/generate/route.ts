@@ -5,10 +5,19 @@ import { fetchL1Context } from "@/lib/ai/pipeline/context";
 import { runPreflightCheck, type PreflightResult } from "@/lib/ai/pipeline/preflight";
 import type { BidEvaluation } from "@/lib/ai/bid-scoring";
 import { logger } from "@/lib/utils/logger";
-import { conflict, ok, serverError, withProposalRoute } from "@/lib/api/response";
+import { checkFeature } from "@/lib/features/check-feature";
+import { checkPlanLimit } from "@/lib/supabase/auth-api";
+import { conflict, ok, serverError, forbidden, withProposalRoute } from "@/lib/api/response";
+import { apiError } from "@/lib/api/response";
 
 export const POST = withProposalRoute(
   async (_request, { id }, context, proposal) => {
+    // ── Feature gate: ai_generation requires Starter+ ────────────────────
+    const canGenerate = await checkFeature(context.organizationId, "ai_generation");
+    if (!canGenerate) {
+      return forbidden("AI proposal generation requires a Starter plan or above. Upgrade at /pricing.");
+    }
+
     // ── Pre-flight readiness check (fail-open) ───────────────────────────
     // Runs before generation to surface data gaps. Never blocks generation.
     let preflight: PreflightResult | null = null;
@@ -55,6 +64,16 @@ export const POST = withProposalRoute(
 
     if (!claimed) {
       return conflict("Proposal is already being generated");
+    }
+
+    // ── Token limit check ────────────────────────────────────────────────
+    const tokenCheck = await checkPlanLimit(context.organizationId, "ai_tokens_per_month");
+    if (!tokenCheck.allowed) {
+      return apiError({
+        message: tokenCheck.message || "AI token limit reached. Upgrade your plan to continue.",
+        status: 429,
+        code: "TOKEN_LIMIT_REACHED",
+      });
     }
 
     // Send event to Inngest for durable background execution.

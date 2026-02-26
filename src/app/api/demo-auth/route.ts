@@ -1,7 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError, unauthorized } from "@/lib/api/response";
+import { createHmac } from "crypto";
 
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD;
+
+/** Sign demo auth token with HMAC-SHA256 so the cookie value can't be forged */
+function signDemoToken(): string {
+  const secret = process.env.DEMO_PASSWORD || "fallback";
+  const timestamp = Math.floor(Date.now() / 1000);
+  const payload = `demo:${timestamp}`;
+  const signature = createHmac("sha256", secret)
+    .update(payload)
+    .digest("hex")
+    .slice(0, 32);
+  return `${payload}:${signature}`;
+}
 
 export async function POST(request: NextRequest) {
   if (!DEMO_PASSWORD) {
@@ -11,10 +24,9 @@ export async function POST(request: NextRequest) {
   const { password } = await request.json();
 
   if (password === DEMO_PASSWORD) {
-    // Cookie-setting response — can't use ok() since we need to modify response headers
     const response = NextResponse.json({ success: true });
 
-    response.cookies.set("demo_auth", "authenticated", {
+    response.cookies.set("demo_auth", signDemoToken(), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",

@@ -14,6 +14,8 @@ import {
   Loader2,
 } from "lucide-react";
 import { logger } from "@/lib/utils/logger";
+import Link from "next/link";
+import { PRICING_TIERS, type PricingTier } from "@/lib/stripe/client";
 
 interface Organization {
   id: string;
@@ -34,17 +36,26 @@ interface Organization {
   stripe_subscription_id: string | null;
 }
 
-const PLAN_FEATURES: string[] = [
-  "Unlimited proposals",
-  "Intent Framework (6-layer persuasion engine)",
-  "RFP Intelligence (auto-extract)",
-  "Unlimited knowledge base documents",
-  "All export formats (DOCX, PDF, PPTX)",
-  "Win Analytics & outcome tracking",
-  "White-glove onboarding",
-  "Dedicated support",
-  "Quarterly strategy reviews",
-];
+/** Get the tier config, falling back to free if the tier is unknown */
+function getTierConfig(planTier: string) {
+  const tier = (planTier in PRICING_TIERS ? planTier : "free") as PricingTier;
+  return { tier, config: PRICING_TIERS[tier] };
+}
+
+/** Human-readable plan name */
+function getPlanDisplayName(planTier: string): string {
+  if (planTier === "trial") return "Free Trial";
+  if (planTier === "invite") return "Enterprise (Legacy)";
+  const { config } = getTierConfig(planTier);
+  return config.name;
+}
+
+/** Monthly price string */
+function getPlanPrice(planTier: string): string {
+  if (planTier === "trial" || planTier === "invite") return "$999/month";
+  const { config } = getTierConfig(planTier);
+  return config.monthlyPrice === 0 ? "Free" : `$${config.monthlyPrice}/month`;
+}
 
 export default function SettingsPage() {
   const [org, setOrg] = useState<Organization | null>(null);
@@ -261,21 +272,32 @@ export default function SettingsPage() {
 
       {/* Plan Features */}
       <div className="card p-6 mb-8">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent-subtle)]">
-            <Check className="h-5 w-5 text-[var(--accent)]" />
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent-subtle)]">
+              <Check className="h-5 w-5 text-[var(--accent)]" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-[var(--foreground)]">
+                Your Plan Includes
+              </h2>
+              <p className="text-sm text-[var(--foreground-muted)]">
+                {getPlanPrice(org?.plan_tier || "free")} — {getPlanDisplayName(org?.plan_tier || "free")}
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-lg font-semibold text-[var(--foreground)]">
-              Your Plan Includes
-            </h2>
-            <p className="text-sm text-[var(--foreground-muted)]">
-              $999/month — everything, no limits
-            </p>
-          </div>
+          {/* Upgrade CTA for non-enterprise users */}
+          {org?.plan_tier && !["enterprise", "invite"].includes(org.plan_tier) && (
+            <Link href="/pricing" className="btn-primary text-sm">
+              Upgrade Plan
+            </Link>
+          )}
         </div>
         <ul className="grid md:grid-cols-2 gap-2">
-          {PLAN_FEATURES.map((feature) => (
+          {(org?.plan_tier
+            ? getTierConfig(org.plan_tier).config.features
+            : PRICING_TIERS.free.features
+          ).map((feature) => (
             <li
               key={feature}
               className="flex items-center gap-2 text-sm text-[var(--foreground-muted)]"

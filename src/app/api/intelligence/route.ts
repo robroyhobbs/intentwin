@@ -12,6 +12,7 @@
 
 import { NextRequest } from "next/server";
 import { getUserContext } from "@/lib/supabase/auth-api";
+import { checkFeature } from "@/lib/features/check-feature";
 import { unauthorized, badRequest, ok, serverError, apiError } from "@/lib/api/response";
 
 const INTELLIGENCE_API_URL = process.env.INTELLIGENCE_API_URL?.trim() || null;
@@ -27,6 +28,16 @@ export async function GET(request: NextRequest) {
   const context = await getUserContext(request);
   if (!context) {
     return unauthorized();
+  }
+
+  // Feature gate: intelligence_suite requires Pro+
+  const canUseIntelligence = await checkFeature(context.organizationId, "intelligence_suite");
+  if (!canUseIntelligence) {
+    return apiError({
+      message: "The intelligence suite requires a Pro plan or above. Upgrade at /pricing.",
+      status: 403,
+      code: "FEATURE_GATED",
+    });
   }
 
   if (!isConfigured()) {
