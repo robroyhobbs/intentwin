@@ -15,6 +15,15 @@ export const metadata: Metadata = {
 
 const POSTS = [
   {
+    slug: "blue-collar-rfp-professionalism",
+    title: "You're Losing on Perception, Not Price: The Blue-Collar RFP Problem",
+    date: "February 26, 2026",
+    readTime: "7 min read",
+    excerpt:
+      "Landscapers, janitors, and snow removal contractors lose local government contracts every year — not because of price, but because a three-page Word doc loses to a 12-page professional proposal every time. Here's what that gap actually costs you.",
+    tag: "Strategy",
+  },
+  {
     slug: "bid-no-bid-decision-framework",
     title:
       "The Bid/No-Bid Decision Framework: Stop Chasing Every RFP",
