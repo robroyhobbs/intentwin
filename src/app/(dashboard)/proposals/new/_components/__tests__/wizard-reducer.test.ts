@@ -1392,6 +1392,49 @@ describe("wizardReducer", () => {
       });
     });
 
+    describe("quick-start path (step 2 → step 5)", () => {
+      it("SET_STEP to 5 from step 2 skips to generate and sets maxCompletedStep to 4", () => {
+        const s = dispatchMany(INITIAL_STATE, [
+          { type: "EXTRACTION_SUCCESS", payload: { extracted: mockExtracted, research: null } },
+          { type: "POPULATE_FROM_EXTRACTION" },
+          { type: "SET_STEP", step: 5 },
+        ]);
+        expect(s.currentStep).toBe(5);
+        expect(s.maxCompletedStep).toBe(4);
+      });
+
+      it("POPULATE_FROM_EXTRACTION before SET_STEP 5 fills form fields from extraction", () => {
+        const s = dispatchMany(INITIAL_STATE, [
+          { type: "EXTRACTION_SUCCESS", payload: { extracted: mockExtracted, research: null } },
+          { type: "POPULATE_FROM_EXTRACTION" },
+          { type: "SET_STEP", step: 5 },
+        ]);
+        expect(s.clientName).toBe("Acme Corp");
+        expect(s.clientIndustry).toBe("Technology");
+        expect(s.scopeDescription).toBe("Migrate 50 workloads to AWS");
+        expect(s.solicitationType).toBe("RFP");
+      });
+
+      it("selectedSections stays empty on quick-start so generate falls back to all sections", () => {
+        const s = dispatchMany(INITIAL_STATE, [
+          { type: "EXTRACTION_SUCCESS", payload: { extracted: mockExtracted, research: null } },
+          { type: "POPULATE_FROM_EXTRACTION" },
+          { type: "SET_STEP", step: 5 },
+        ]);
+        expect(s.selectedSections).toEqual([]);
+      });
+
+      it("quick-start from step 2 preserves extraction data and research", () => {
+        const s = dispatchMany(INITIAL_STATE, [
+          { type: "EXTRACTION_SUCCESS", payload: { extracted: mockExtracted, research: null } },
+          { type: "POPULATE_FROM_EXTRACTION" },
+          { type: "SET_STEP", step: 5 },
+        ]);
+        expect(s.extractedData).not.toBeNull();
+        expect(s.researchData).toBeNull();
+      });
+    });
+
     describe("step 5 navigation constraints", () => {
       it("GO_NEXT on step 5 does nothing (step 5 is the last)", () => {
         const s = dispatchMany(stateReadyToGenerate(), [

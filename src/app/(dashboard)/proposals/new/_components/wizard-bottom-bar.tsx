@@ -23,6 +23,8 @@ interface WizardBottomBarProps {
   onBack?: () => void;
   /** Whether to show a loading spinner on the Next button */
   nextLoading?: boolean;
+  /** Optional quick-start handler — shows a secondary "Quick Start" button between Back and Next */
+  onQuickStart?: () => void;
 }
 
 const STEP_CONFIG: Record<number, { backLabel: string | null; nextLabel: string; nextVariant: "default" | "primary" }> = {
@@ -33,7 +35,7 @@ const STEP_CONFIG: Record<number, { backLabel: string | null; nextLabel: string;
   5: { backLabel: null, nextLabel: "", nextVariant: "default" }, // hidden on step 5
 };
 
-export function WizardBottomBar({ nextDisabled, onNext, onBack, nextLoading }: WizardBottomBarProps) {
+export function WizardBottomBar({ nextDisabled, onNext, onBack, nextLoading, onQuickStart }: WizardBottomBarProps) {
   const { state, dispatch } = useWizard();
 
   // Hide on step 5 (generation)
@@ -76,6 +78,19 @@ export function WizardBottomBar({ nextDisabled, onNext, onBack, nextLoading }: W
             <div /> /* Spacer */
           )}
         </div>
+
+        {/* Quick Start Button (optional — shown between Back and Next) */}
+        {onQuickStart && (
+          <button
+            onClick={onQuickStart}
+            className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-[var(--accent)] border border-[var(--accent)] hover:bg-[var(--accent-subtle)] transition-all"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            Quick Start
+          </button>
+        )}
 
         {/* Next Button */}
         <div>

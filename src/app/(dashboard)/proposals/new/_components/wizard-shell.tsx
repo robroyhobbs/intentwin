@@ -118,6 +118,14 @@ export function WizardShell() {
     dispatch({ type: "GO_NEXT" });
   }, [dispatch]);
 
+  // Step 2 Quick Start: skip review, bid decision, and configure — go straight to generate
+  // Populates form fields from extraction data with defaults, then jumps to step 5.
+  const handleQuickStart = useCallback(() => {
+    dispatch({ type: "POPULATE_FROM_EXTRACTION" });
+    // maxCompletedStep must reach 4 so step 5 is reachable
+    dispatch({ type: "SET_STEP", step: 5 });
+  }, [dispatch]);
+
   // Step 3 (Bid Decision): no special disabled logic — the step itself handles
   // confirmation internally via handleDecision(). The bottom bar Continue button
   // lets the user advance once they've decided or want to skip.
@@ -140,6 +148,8 @@ export function WizardShell() {
       case 2:
         return {
           onNext: handleStep2Next,
+          // Show Quick Start only when there's extraction data to work with
+          onQuickStart: state.extractedData ? handleQuickStart : undefined,
         };
       case 3:
         // Bid decision step — no special bottom bar logic
