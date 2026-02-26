@@ -15,7 +15,7 @@ function dispatchMany(state: WizardState, actions: WizardAction[]): WizardState 
   return actions.reduce(wizardReducer, state);
 }
 
-function stateAt(step: 1 | 2 | 3 | 4): WizardState {
+function stateAt(step: 1 | 2 | 3 | 4 | 5): WizardState {
   let s = INITIAL_STATE;
   for (let i = 1; i < step; i++) {
     s = dispatch(s, { type: "GO_NEXT" });
@@ -71,20 +71,21 @@ describe("wizardReducer", () => {
       expect(s.maxCompletedStep).toBe(1);
     });
 
-    it("advances sequentially through all 4 steps", () => {
+    it("advances sequentially through all 5 steps", () => {
       const s = dispatchMany(INITIAL_STATE, [
         { type: "GO_NEXT" },
         { type: "GO_NEXT" },
         { type: "GO_NEXT" },
+        { type: "GO_NEXT" },
       ]);
-      expect(s.currentStep).toBe(4);
-      expect(s.maxCompletedStep).toBe(3);
+      expect(s.currentStep).toBe(5);
+      expect(s.maxCompletedStep).toBe(4);
     });
 
-    it("does nothing on step 4", () => {
-      const s4 = stateAt(4);
-      const s = dispatch(s4, { type: "GO_NEXT" });
-      expect(s.currentStep).toBe(4);
+    it("does nothing on step 5", () => {
+      const s5 = stateAt(5);
+      const s = dispatch(s5, { type: "GO_NEXT" });
+      expect(s.currentStep).toBe(5);
     });
   });
 
@@ -114,9 +115,9 @@ describe("wizardReducer", () => {
       expect(s.currentStep).toBe(3);
     });
 
-    it("clamps step > 4 to 4", () => {
+    it("clamps step > 5 to 5", () => {
       const s = dispatch(INITIAL_STATE, { type: "SET_STEP", step: 99 as never });
-      expect(s.currentStep).toBe(4);
+      expect(s.currentStep).toBe(5);
     });
 
     it("clamps step < 1 to 1", () => {
@@ -296,11 +297,11 @@ describe("wizardReducer", () => {
   });
 
   describe("generation", () => {
-    it("GENERATION_START sets proposalId and advances to step 4", () => {
-      const s = dispatch(stateAt(3), { type: "GENERATION_START", proposalId: "abc-123" });
+    it("GENERATION_START sets proposalId and advances to step 5", () => {
+      const s = dispatch(stateAt(4), { type: "GENERATION_START", proposalId: "abc-123" });
       expect(s.proposalId).toBe("abc-123");
       expect(s.generationStatus).toBe("generating");
-      expect(s.currentStep).toBe(4);
+      expect(s.currentStep).toBe(5);
     });
 
     it("SECTION_STATUS_UPDATE updates section progress", () => {
@@ -382,9 +383,9 @@ describe("wizardReducer", () => {
       ];
       const s = dispatchMany(INITIAL_STATE, actions);
       expect(s.currentStep).toBeGreaterThanOrEqual(1);
-      expect(s.currentStep).toBeLessThanOrEqual(4);
+      expect(s.currentStep).toBeLessThanOrEqual(5);
       expect(s.maxCompletedStep).toBeGreaterThanOrEqual(0);
-      expect(s.maxCompletedStep).toBeLessThanOrEqual(3);
+      expect(s.maxCompletedStep).toBeLessThanOrEqual(4);
     });
 
     it("RESTORE_DRAFT merges without corrupting state", () => {
@@ -722,19 +723,20 @@ describe("wizardReducer", () => {
   });
 
   // ────────────────────────────────────────────────────────
-  // Step 3: Configure & Win Strategy
+  // Step 4: Configure & Win Strategy (was step 3 in 4-step wizard)
   // ────────────────────────────────────────────────────────
 
-  describe("step 3 configure flow", () => {
-    // Helper: state at step 3 with form data populated
-    function stateAtStep3WithData(): WizardState {
+  describe("step 4 configure flow", () => {
+    // Helper: state at step 4 with form data populated
+    function stateAtStep4WithData(): WizardState {
       return dispatchMany(INITIAL_STATE, [
         {
           type: "EXTRACTION_SUCCESS",
           payload: { extracted: mockExtracted, research: null },
         },
         { type: "POPULATE_FROM_EXTRACTION" },
-        { type: "GO_NEXT" }, // step 2 → step 3
+        { type: "GO_NEXT" }, // step 2 → step 3 (bid decision)
+        { type: "GO_NEXT" }, // step 3 → step 4 (configure)
       ]);
     }
 
@@ -761,7 +763,7 @@ describe("wizardReducer", () => {
 
     describe("UPDATE_CONFIG", () => {
       it("updates tone to conversational", () => {
-        const s = dispatch(stateAtStep3WithData(), {
+        const s = dispatch(stateAtStep4WithData(), {
           type: "UPDATE_CONFIG",
           payload: { tone: "conversational" },
         });
@@ -769,7 +771,7 @@ describe("wizardReducer", () => {
       });
 
       it("updates tone to technical", () => {
-        const s = dispatch(stateAtStep3WithData(), {
+        const s = dispatch(stateAtStep4WithData(), {
           type: "UPDATE_CONFIG",
           payload: { tone: "technical" },
         });
@@ -777,7 +779,7 @@ describe("wizardReducer", () => {
       });
 
       it("updates selectedTemplate", () => {
-        const s = dispatch(stateAtStep3WithData(), {
+        const s = dispatch(stateAtStep4WithData(), {
           type: "UPDATE_CONFIG",
           payload: { selectedTemplate: "enterprise-rfp" },
         });
@@ -793,7 +795,7 @@ describe("wizardReducer", () => {
           "pricing",
           "compliance",
         ];
-        const s = dispatch(stateAtStep3WithData(), {
+        const s = dispatch(stateAtStep4WithData(), {
           type: "UPDATE_CONFIG",
           payload: { selectedSections: sections },
         });
@@ -802,7 +804,7 @@ describe("wizardReducer", () => {
       });
 
       it("toggles showAdvanced on and off", () => {
-        const s1 = dispatch(stateAtStep3WithData(), {
+        const s1 = dispatch(stateAtStep4WithData(), {
           type: "UPDATE_CONFIG",
           payload: { showAdvanced: true },
         });
@@ -816,7 +818,7 @@ describe("wizardReducer", () => {
       });
 
       it("partial update preserves other config fields", () => {
-        const s1 = dispatch(stateAtStep3WithData(), {
+        const s1 = dispatch(stateAtStep4WithData(), {
           type: "UPDATE_CONFIG",
           payload: { tone: "executive", selectedSections: ["a", "b"] },
         });
@@ -830,7 +832,7 @@ describe("wizardReducer", () => {
       });
 
       it("replaces selectedSections entirely (not merge)", () => {
-        const s1 = dispatch(stateAtStep3WithData(), {
+        const s1 = dispatch(stateAtStep4WithData(), {
           type: "UPDATE_CONFIG",
           payload: { selectedSections: ["a", "b", "c"] },
         });
@@ -842,7 +844,7 @@ describe("wizardReducer", () => {
       });
 
       it("empty selectedSections array is valid", () => {
-        const s = dispatch(stateAtStep3WithData(), {
+        const s = dispatch(stateAtStep4WithData(), {
           type: "UPDATE_CONFIG",
           payload: { selectedSections: [] },
         });
@@ -850,7 +852,7 @@ describe("wizardReducer", () => {
       });
 
       it("does not affect form fields", () => {
-        const base = stateAtStep3WithData();
+        const base = stateAtStep4WithData();
         const s = dispatch(base, {
           type: "UPDATE_CONFIG",
           payload: { tone: "executive" },
@@ -862,7 +864,7 @@ describe("wizardReducer", () => {
 
     describe("SET_WIN_STRATEGY", () => {
       it("stores complete win strategy data", () => {
-        const s = dispatch(stateAtStep3WithData(), {
+        const s = dispatch(stateAtStep4WithData(), {
           type: "SET_WIN_STRATEGY",
           winStrategy: mockStrategy,
         });
@@ -873,7 +875,7 @@ describe("wizardReducer", () => {
       });
 
       it("overwrites existing win strategy", () => {
-        const s1 = dispatch(stateAtStep3WithData(), {
+        const s1 = dispatch(stateAtStep4WithData(), {
           type: "SET_WIN_STRATEGY",
           winStrategy: mockStrategy,
         });
@@ -891,7 +893,7 @@ describe("wizardReducer", () => {
       });
 
       it("preserves target outcome priorities", () => {
-        const s = dispatch(stateAtStep3WithData(), {
+        const s = dispatch(stateAtStep4WithData(), {
           type: "SET_WIN_STRATEGY",
           winStrategy: mockStrategy,
         });
@@ -907,7 +909,7 @@ describe("wizardReducer", () => {
           target_outcomes: [],
           generated_at: "2026-02-24T12:00:00Z",
         };
-        const s = dispatch(stateAtStep3WithData(), {
+        const s = dispatch(stateAtStep4WithData(), {
           type: "SET_WIN_STRATEGY",
           winStrategy: fallback,
         });
@@ -917,7 +919,7 @@ describe("wizardReducer", () => {
       });
 
       it("does not affect config or form fields", () => {
-        const base = dispatchMany(stateAtStep3WithData(), [
+        const base = dispatchMany(stateAtStep4WithData(), [
           { type: "UPDATE_CONFIG", payload: { tone: "technical", selectedSections: ["a"] } },
         ]);
         const s = dispatch(base, {
@@ -930,9 +932,9 @@ describe("wizardReducer", () => {
       });
     });
 
-    describe("UPDATE_FORM_FIELDS on step 3 (advanced options)", () => {
+    describe("UPDATE_FORM_FIELDS on step 4 (advanced options)", () => {
       it("updates competitiveIntel from advanced options", () => {
-        const s = dispatch(stateAtStep3WithData(), {
+        const s = dispatch(stateAtStep4WithData(), {
           type: "UPDATE_FORM_FIELDS",
           payload: { competitiveIntel: "Incumbent is Deloitte" },
         });
@@ -940,7 +942,7 @@ describe("wizardReducer", () => {
       });
 
       it("updates complianceRequirements from advanced options", () => {
-        const s = dispatch(stateAtStep3WithData(), {
+        const s = dispatch(stateAtStep4WithData(), {
           type: "UPDATE_FORM_FIELDS",
           payload: { complianceRequirements: "SOC 2, FedRAMP" },
         });
@@ -948,7 +950,7 @@ describe("wizardReducer", () => {
       });
 
       it("updates budgetRange and timelineExpectation together", () => {
-        const s = dispatch(stateAtStep3WithData(), {
+        const s = dispatch(stateAtStep4WithData(), {
           type: "UPDATE_FORM_FIELDS",
           payload: { budgetRange: "$500K-$1M", timelineExpectation: "6 months" },
         });
@@ -957,7 +959,7 @@ describe("wizardReducer", () => {
       });
 
       it("preserves config when updating form fields", () => {
-        const base = dispatchMany(stateAtStep3WithData(), [
+        const base = dispatchMany(stateAtStep4WithData(), [
           { type: "UPDATE_CONFIG", payload: { tone: "executive" } },
         ]);
         const s = dispatch(base, {
@@ -969,28 +971,28 @@ describe("wizardReducer", () => {
       });
     });
 
-    describe("step 3 data preservation on GO_BACK", () => {
-      it("preserves config (tone, sections) when going back to step 2", () => {
-        const s = dispatchMany(stateAtStep3WithData(), [
+    describe("step 4 data preservation on GO_BACK", () => {
+      it("preserves config (tone, sections) when going back to step 3", () => {
+        const s = dispatchMany(stateAtStep4WithData(), [
           { type: "UPDATE_CONFIG", payload: { tone: "technical", selectedSections: ["a", "b", "c"] } },
           { type: "GO_BACK" },
         ]);
-        expect(s.currentStep).toBe(2);
+        expect(s.currentStep).toBe(3);
         expect(s.tone).toBe("technical");
         expect(s.selectedSections).toEqual(["a", "b", "c"]);
       });
 
-      it("preserves win strategy when going back to step 2", () => {
-        const s = dispatchMany(stateAtStep3WithData(), [
+      it("preserves win strategy when going back to step 3", () => {
+        const s = dispatchMany(stateAtStep4WithData(), [
           { type: "SET_WIN_STRATEGY", winStrategy: mockStrategy },
           { type: "GO_BACK" },
         ]);
-        expect(s.currentStep).toBe(2);
+        expect(s.currentStep).toBe(3);
         expect(s.winStrategy).toEqual(mockStrategy);
       });
 
       it("preserves advanced option form fields when going back", () => {
-        const s = dispatchMany(stateAtStep3WithData(), [
+        const s = dispatchMany(stateAtStep4WithData(), [
           { type: "UPDATE_FORM_FIELDS", payload: { competitiveIntel: "IBM", budgetRange: "$2M" } },
           { type: "GO_BACK" },
         ]);
@@ -999,26 +1001,26 @@ describe("wizardReducer", () => {
       });
 
       it("preserves showAdvanced state when going back and returning", () => {
-        const s = dispatchMany(stateAtStep3WithData(), [
+        const s = dispatchMany(stateAtStep4WithData(), [
           { type: "UPDATE_CONFIG", payload: { showAdvanced: true } },
           { type: "GO_BACK" },
           { type: "GO_NEXT" },
         ]);
-        expect(s.currentStep).toBe(3);
+        expect(s.currentStep).toBe(4);
         expect(s.showAdvanced).toBe(true);
       });
 
-      it("preserves all step 3 state across multiple back/forward cycles", () => {
-        const s = dispatchMany(stateAtStep3WithData(), [
+      it("preserves all step 4 state across multiple back/forward cycles", () => {
+        const s = dispatchMany(stateAtStep4WithData(), [
           { type: "UPDATE_CONFIG", payload: { tone: "executive", selectedSections: ["x"] } },
           { type: "SET_WIN_STRATEGY", winStrategy: mockStrategy },
           { type: "UPDATE_FORM_FIELDS", payload: { competitiveIntel: "KPMG" } },
+          { type: "GO_BACK" }, // step 3
           { type: "GO_BACK" }, // step 2
-          { type: "GO_BACK" }, // step 1
-          { type: "GO_NEXT" }, // step 2
           { type: "GO_NEXT" }, // step 3
+          { type: "GO_NEXT" }, // step 4
         ]);
-        expect(s.currentStep).toBe(3);
+        expect(s.currentStep).toBe(4);
         expect(s.tone).toBe("executive");
         expect(s.selectedSections).toEqual(["x"]);
         expect(s.winStrategy).toEqual(mockStrategy);
@@ -1026,21 +1028,21 @@ describe("wizardReducer", () => {
       });
     });
 
-    describe("step 3 → step 4 transition", () => {
-      it("GENERATION_START from step 3 advances to step 4 with proposalId", () => {
-        const base = dispatchMany(stateAtStep3WithData(), [
+    describe("step 4 → step 5 transition", () => {
+      it("GENERATION_START from step 4 advances to step 5 with proposalId", () => {
+        const base = dispatchMany(stateAtStep4WithData(), [
           { type: "UPDATE_CONFIG", payload: { selectedSections: ["exec_summary", "approach"] } },
           { type: "SET_WIN_STRATEGY", winStrategy: mockStrategy },
         ]);
         const s = dispatch(base, { type: "GENERATION_START", proposalId: "prop-456" });
-        expect(s.currentStep).toBe(4);
+        expect(s.currentStep).toBe(5);
         expect(s.proposalId).toBe("prop-456");
         expect(s.generationStatus).toBe("generating");
-        expect(s.maxCompletedStep).toBe(3);
+        expect(s.maxCompletedStep).toBe(4);
       });
 
-      it("config and strategy survive transition to step 4", () => {
-        const base = dispatchMany(stateAtStep3WithData(), [
+      it("config and strategy survive transition to step 5", () => {
+        const base = dispatchMany(stateAtStep4WithData(), [
           { type: "UPDATE_CONFIG", payload: { tone: "executive", selectedSections: ["a", "b"] } },
           { type: "SET_WIN_STRATEGY", winStrategy: mockStrategy },
           { type: "UPDATE_FORM_FIELDS", payload: { competitiveIntel: "EY" } },
@@ -1053,16 +1055,16 @@ describe("wizardReducer", () => {
       });
     });
 
-    describe("step 3 edge cases", () => {
+    describe("step 4 edge cases", () => {
       it("UPDATE_CONFIG with empty payload doesn't corrupt state", () => {
-        const base = stateAtStep3WithData();
+        const base = stateAtStep4WithData();
         const s = dispatch(base, { type: "UPDATE_CONFIG", payload: {} });
         expect(s.tone).toBe(base.tone);
         expect(s.selectedSections).toEqual(base.selectedSections);
       });
 
       it("SET_WIN_STRATEGY then UPDATE_CONFIG don't interfere", () => {
-        const s = dispatchMany(stateAtStep3WithData(), [
+        const s = dispatchMany(stateAtStep4WithData(), [
           { type: "SET_WIN_STRATEGY", winStrategy: mockStrategy },
           { type: "UPDATE_CONFIG", payload: { tone: "conversational" } },
         ]);
@@ -1073,15 +1075,15 @@ describe("wizardReducer", () => {
       it("multiple SET_WIN_STRATEGY calls only keep the last", () => {
         const strat1 = { ...mockStrategy, win_themes: ["Theme A"] };
         const strat2 = { ...mockStrategy, win_themes: ["Theme B"] };
-        const s = dispatchMany(stateAtStep3WithData(), [
+        const s = dispatchMany(stateAtStep4WithData(), [
           { type: "SET_WIN_STRATEGY", winStrategy: strat1 },
           { type: "SET_WIN_STRATEGY", winStrategy: strat2 },
         ]);
         expect(s.winStrategy?.win_themes).toEqual(["Theme B"]);
       });
 
-      it("RESET clears all step 3 configuration", () => {
-        const s = dispatchMany(stateAtStep3WithData(), [
+      it("RESET clears all step 4 configuration", () => {
+        const s = dispatchMany(stateAtStep4WithData(), [
           { type: "UPDATE_CONFIG", payload: { tone: "executive", selectedSections: ["a"] } },
           { type: "SET_WIN_STRATEGY", winStrategy: mockStrategy },
           { type: "UPDATE_FORM_FIELDS", payload: { competitiveIntel: "Deloitte" } },
@@ -1095,7 +1097,7 @@ describe("wizardReducer", () => {
       });
 
       it("solicitation type change via UPDATE_FORM_FIELDS doesn't clear config", () => {
-        const s = dispatchMany(stateAtStep3WithData(), [
+        const s = dispatchMany(stateAtStep4WithData(), [
           { type: "UPDATE_CONFIG", payload: { tone: "technical", selectedSections: ["a"] } },
           { type: "UPDATE_FORM_FIELDS", payload: { solicitationType: "RFI" } },
         ]);
@@ -1104,10 +1106,10 @@ describe("wizardReducer", () => {
         expect(s.selectedSections).toEqual(["a"]);
       });
 
-      it("RESTORE_DRAFT preserves step 3 config fields", () => {
+      it("RESTORE_DRAFT preserves step 4 config fields", () => {
         const draft: Partial<WizardState> = {
-          currentStep: 3,
-          maxCompletedStep: 2,
+          currentStep: 4,
+          maxCompletedStep: 3,
           tone: "executive",
           selectedSections: ["exec_summary", "approach", "pricing"],
           showAdvanced: true,
@@ -1115,7 +1117,7 @@ describe("wizardReducer", () => {
           winStrategy: mockStrategy,
         };
         const s = dispatch(INITIAL_STATE, { type: "RESTORE_DRAFT", state: draft });
-        expect(s.currentStep).toBe(3);
+        expect(s.currentStep).toBe(4);
         expect(s.tone).toBe("executive");
         expect(s.selectedSections).toEqual(["exec_summary", "approach", "pricing"]);
         expect(s.showAdvanced).toBe(true);
@@ -1126,10 +1128,10 @@ describe("wizardReducer", () => {
   });
 
   // ────────────────────────────────────────────────────────
-  // Step 4: Generate & Progress
+  // Step 5: Generate & Progress (was step 4 in 4-step wizard)
   // ────────────────────────────────────────────────────────
 
-  describe("step 4 generation flow", () => {
+  describe("step 5 generation flow", () => {
     const mockStrategy: import("@/types/outcomes").WinStrategyData = {
       win_themes: ["Cloud expertise", "Rapid delivery"],
       success_metrics: [],
@@ -1138,12 +1140,13 @@ describe("wizardReducer", () => {
       generated_at: "2026-02-24T12:00:00Z",
     };
 
-    // Helper: state fully configured at step 3, ready to generate
+    // Helper: state fully configured at step 4 (configure), ready to generate
     function stateReadyToGenerate(): WizardState {
       return dispatchMany(INITIAL_STATE, [
         { type: "UPDATE_FORM_FIELDS", payload: { clientName: "Acme Corp", solicitationType: "RFP" } },
-        { type: "GO_NEXT" }, // step 2
-        { type: "GO_NEXT" }, // step 3
+        { type: "GO_NEXT" }, // step 2 (review)
+        { type: "GO_NEXT" }, // step 3 (bid decision)
+        { type: "GO_NEXT" }, // step 4 (configure)
         { type: "UPDATE_CONFIG", payload: { tone: "executive", selectedSections: ["exec_summary", "approach", "pricing"] } },
         { type: "SET_WIN_STRATEGY", winStrategy: mockStrategy },
       ]);
@@ -1156,15 +1159,15 @@ describe("wizardReducer", () => {
     ];
 
     describe("GENERATION_START", () => {
-      it("sets proposalId, status to generating, advances to step 4", () => {
+      it("sets proposalId, status to generating, advances to step 5", () => {
         const s = dispatch(stateReadyToGenerate(), {
           type: "GENERATION_START",
           proposalId: "gen-100",
         });
         expect(s.proposalId).toBe("gen-100");
         expect(s.generationStatus).toBe("generating");
-        expect(s.currentStep).toBe(4);
-        expect(s.maxCompletedStep).toBe(3);
+        expect(s.currentStep).toBe(5);
+        expect(s.maxCompletedStep).toBe(4);
       });
 
       it("preserves all wizard data from prior steps", () => {
@@ -1184,7 +1187,7 @@ describe("wizardReducer", () => {
           { type: "GENERATION_START", proposalId: "second-id" },
         ]);
         expect(s.proposalId).toBe("second-id");
-        expect(s.currentStep).toBe(4);
+        expect(s.currentStep).toBe(5);
       });
     });
 
@@ -1254,12 +1257,12 @@ describe("wizardReducer", () => {
         expect(s.sectionProgress).toEqual(allCompleted);
       });
 
-      it("stays on step 4 after completion", () => {
+      it("stays on step 5 after completion", () => {
         const s = dispatchMany(stateReadyToGenerate(), [
           { type: "GENERATION_START", proposalId: "gen-302" },
           { type: "GENERATION_COMPLETE" },
         ]);
-        expect(s.currentStep).toBe(4);
+        expect(s.currentStep).toBe(5);
       });
     });
 
@@ -1373,8 +1376,8 @@ describe("wizardReducer", () => {
 
       it("RESTORE_DRAFT resets generation state for safety", () => {
         const draft: Partial<WizardState> = {
-          currentStep: 4,
-          maxCompletedStep: 3,
+          currentStep: 5,
+          maxCompletedStep: 4,
           proposalId: "restored-prop",
           generationStatus: "generating",
           sectionProgress: mockSections,
@@ -1384,27 +1387,27 @@ describe("wizardReducer", () => {
         expect(s.generationStatus).toBe("idle");
         expect(s.sectionProgress).toEqual([]);
         // But preserves step and proposalId
-        expect(s.currentStep).toBe(4);
+        expect(s.currentStep).toBe(5);
         expect(s.proposalId).toBe("restored-prop");
       });
     });
 
-    describe("step 4 navigation constraints", () => {
-      it("GO_NEXT on step 4 does nothing (step 4 is the last)", () => {
+    describe("step 5 navigation constraints", () => {
+      it("GO_NEXT on step 5 does nothing (step 5 is the last)", () => {
         const s = dispatchMany(stateReadyToGenerate(), [
           { type: "GENERATION_START", proposalId: "nav-1" },
           { type: "GO_NEXT" },
         ]);
-        expect(s.currentStep).toBe(4);
+        expect(s.currentStep).toBe(5);
       });
 
-      it("GO_BACK from step 4 returns to step 3 (reducer allows it)", () => {
+      it("GO_BACK from step 5 returns to step 4 (reducer allows it)", () => {
         const s = dispatchMany(stateReadyToGenerate(), [
           { type: "GENERATION_START", proposalId: "nav-2" },
           { type: "GO_BACK" },
         ]);
-        // The reducer allows GO_BACK from step 4, but the UI hides the back button
-        expect(s.currentStep).toBe(3);
+        // The reducer allows GO_BACK from step 5, but the UI hides the back button
+        expect(s.currentStep).toBe(4);
         // proposalId and generation status should be preserved
         expect(s.proposalId).toBe("nav-2");
       });

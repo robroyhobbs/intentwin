@@ -5,9 +5,10 @@
  *
  * Button labels and visibility change per step:
  * - Step 1: Back hidden, Next = "Continue" (disabled until ready)
- * - Step 2: Back = "Back to Input", Next = "Continue to Configure"
- * - Step 3: Back = "Back to Review", Next = "Generate Proposal" (primary style)
- * - Step 4: Hidden entirely (no navigation during generation)
+ * - Step 2: Back = "Back", Next = "Continue"
+ * - Step 3: Back = "Back", Next = "Continue to Configure"
+ * - Step 4: Back = "Back", Next = "Generate Proposal"
+ * - Step 5: Hidden entirely (no navigation during generation)
  */
 
 import { useWizard } from "./wizard-provider";
@@ -25,17 +26,18 @@ interface WizardBottomBarProps {
 }
 
 const STEP_CONFIG: Record<number, { backLabel: string | null; nextLabel: string; nextVariant: "default" | "primary" }> = {
-  1: { backLabel: null, nextLabel: "Continue", nextVariant: "default" },
-  2: { backLabel: "Back to Input", nextLabel: "Continue to Configure", nextVariant: "default" },
-  3: { backLabel: "Back to Review", nextLabel: "Generate Proposal", nextVariant: "primary" },
-  4: { backLabel: null, nextLabel: "", nextVariant: "default" }, // hidden on step 4
+  1: { backLabel: null, nextLabel: "Continue", nextVariant: "primary" },
+  2: { backLabel: "Back", nextLabel: "Continue", nextVariant: "primary" },
+  3: { backLabel: "Back", nextLabel: "Continue to Configure", nextVariant: "primary" },
+  4: { backLabel: "Back", nextLabel: "Generate Proposal", nextVariant: "primary" },
+  5: { backLabel: null, nextLabel: "", nextVariant: "default" }, // hidden on step 5
 };
 
 export function WizardBottomBar({ nextDisabled, onNext, onBack, nextLoading }: WizardBottomBarProps) {
   const { state, dispatch } = useWizard();
 
-  // Hide on step 4
-  if (state.currentStep === 4) return null;
+  // Hide on step 5 (generation)
+  if (state.currentStep === 5) return null;
 
   const config = STEP_CONFIG[state.currentStep] || STEP_CONFIG[1];
 
@@ -96,7 +98,7 @@ export function WizardBottomBar({ nextDisabled, onNext, onBack, nextLoading }: W
                 </svg>
               )}
               {config.nextLabel}
-              {!nextLoading && config.nextVariant !== "primary" && (
+              {!nextLoading && (
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14m-7-7l7 7-7 7" />
                 </svg>

@@ -69,7 +69,7 @@ export const INITIAL_STATE: WizardState = {
 // ────────────────────────────────────────────────────────
 
 function clampStep(step: number): WizardStep {
-  return Math.max(1, Math.min(4, step)) as WizardStep;
+  return Math.max(1, Math.min(5, step)) as WizardStep;
 }
 
 function maxCompleted(current: MaxCompletedStep, step: WizardStep): MaxCompletedStep {
@@ -84,7 +84,7 @@ function maxCompleted(current: MaxCompletedStep, step: WizardStep): MaxCompleted
 export function wizardReducer(state: WizardState, action: WizardAction): WizardState {
   switch (action.type) {
     case "GO_NEXT": {
-      if (state.currentStep >= 4) return state;
+      if (state.currentStep >= 5) return state;
       const nextStep = clampStep(state.currentStep + 1);
       return {
         ...state,
@@ -196,8 +196,8 @@ export function wizardReducer(state: WizardState, action: WizardAction): WizardS
         ...state,
         proposalId: action.proposalId,
         generationStatus: "generating",
-        currentStep: 4,
-        maxCompletedStep: 3,
+        currentStep: 5,
+        maxCompletedStep: 4,
       };
     }
 

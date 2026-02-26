@@ -5,9 +5,10 @@
  *
  * Renders the active step content based on currentStep from wizard state:
  *   Step 1: StepInput — document upload/paste/describe
- *   Step 2: StepReview — review & edit extracted data
- *   Step 3: StepConfigure — template, tone, sections, win strategy
- *   Step 4: StepGenerate — proposal creation, generation progress, redirect
+ *   Step 2: StepReview — review gaps and AI-inferred data
+ *   Step 3: StepBidDecision — bid/no-bid evaluation
+ *   Step 4: StepConfigure — template, tone, sections, win strategy
+ *   Step 5: StepGenerate — proposal creation, generation progress, redirect
  *
  * Renders within the dashboard layout (sidebar + header provided by parent).
  * A future phase may move this route outside the dashboard layout for full-screen wizard control.
@@ -20,6 +21,7 @@ import { WizardBottomBar } from "./wizard-bottom-bar";
 import { WIZARD_STEPS } from "./wizard-types";
 import { StepInput } from "./step-input";
 import { StepReview } from "./step-review";
+import { StepBidDecision } from "./step-bid-decision";
 import { StepConfigure } from "./step-configure";
 import { StepGenerate } from "./step-generate";
 
@@ -92,8 +94,10 @@ export function WizardShell() {
       case 2:
         return <StepReview />;
       case 3:
-        return <StepConfigure />;
+        return <StepBidDecision />;
       case 4:
+        return <StepConfigure />;
+      case 5:
         return <StepGenerate />;
       default:
         return <StepInput />;
@@ -108,17 +112,22 @@ export function WizardShell() {
   const step1NextDisabled =
     state.currentStep === 1 && state.intakeMode !== "manual";
 
-  // Step 2 Next: populate form fields from extraction + edits before advancing
+  // Step 2 Next: populate form fields from extraction + edits before advancing to bid decision
   const handleStep2Next = useCallback(() => {
     dispatch({ type: "POPULATE_FROM_EXTRACTION" });
     dispatch({ type: "GO_NEXT" });
   }, [dispatch]);
 
-  // Step 3 Next: only advance if win strategy has been generated.
+  // Step 3 (Bid Decision): no special disabled logic — the step itself handles
+  // confirmation internally via handleDecision(). The bottom bar Continue button
+  // lets the user advance once they've decided or want to skip.
+  // No disabled gate needed here.
+
+  // Step 4 Next: only advance if win strategy has been generated.
   // The "Generate Proposal" button in the bottom bar should be disabled until
   // the user has generated (and optionally edited) a win strategy and selected sections.
-  const step3NextDisabled =
-    state.currentStep === 3 && (!state.winStrategy || state.selectedSections.length === 0);
+  const step4NextDisabled =
+    state.currentStep === 4 && (!state.winStrategy || state.selectedSections.length === 0);
 
   // Determine nextDisabled and custom onNext per step
   const getBottomBarProps = () => {
@@ -133,8 +142,11 @@ export function WizardShell() {
           onNext: handleStep2Next,
         };
       case 3:
+        // Bid decision step — no special bottom bar logic
+        return {};
+      case 4:
         return {
-          nextDisabled: step3NextDisabled,
+          nextDisabled: step4NextDisabled,
         };
       default:
         return {};
@@ -175,8 +187,10 @@ export function WizardShellFullScreen() {
       case 2:
         return <StepReview />;
       case 3:
-        return <StepConfigure />;
+        return <StepBidDecision />;
       case 4:
+        return <StepConfigure />;
+      case 5:
         return <StepGenerate />;
       default:
         return <StepInput />;

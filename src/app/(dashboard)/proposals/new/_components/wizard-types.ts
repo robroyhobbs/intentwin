@@ -10,8 +10,8 @@ import type { BidEvaluation } from "@/lib/ai/bid-scoring";
 // Wizard State
 // ────────────────────────────────────────────────────────
 
-export type WizardStep = 1 | 2 | 3 | 4;
-export type MaxCompletedStep = 0 | 1 | 2 | 3;
+export type WizardStep = 1 | 2 | 3 | 4 | 5;
+export type MaxCompletedStep = 0 | 1 | 2 | 3 | 4;
 
 export interface SectionProgress {
   type: string;
@@ -108,8 +108,9 @@ export interface StepMeta {
 }
 
 export const WIZARD_STEPS: StepMeta[] = [
-  { step: 1, label: "Provide Documents", description: "Upload or paste your source material" },
-  { step: 2, label: "Review & Edit", description: "Verify extracted information" },
-  { step: 3, label: "Configure Proposal", description: "Choose sections and tone" },
-  { step: 4, label: "Generate Sections", description: "AI writes your proposal" },
+  { step: 1, label: "Upload", description: "Upload or paste your source material" },
+  { step: 2, label: "Review", description: "Check gaps and AI-inferred data" },
+  { step: 3, label: "Bid Decision", description: "Evaluate whether to bid" },
+  { step: 4, label: "Configure", description: "Choose sections and tone" },
+  { step: 5, label: "Generate", description: "AI writes your proposal" },
 ];
