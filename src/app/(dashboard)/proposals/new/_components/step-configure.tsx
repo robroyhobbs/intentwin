@@ -23,6 +23,7 @@ import {
   X,
 } from "lucide-react";
 import type { WinStrategyData } from "@/types/outcomes";
+import type { RfpSectionRequirement, RfpEvaluationCriterion } from "@/types/intake";
 import { OUTCOME_CATEGORIES } from "@/types/outcomes";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
 import { useWizard } from "./wizard-provider";
@@ -38,6 +39,14 @@ interface SectionTemplate {
   order: number;
   required: boolean;
   defaultEnabled: boolean;
+  /** RFP-derived requirement level — overrides static required/defaultEnabled */
+  rfpRequirementLevel?: "mandatory" | "recommended" | "optional";
+  /** Why the RFP requires this section */
+  rfpRationale?: string;
+  /** Specific RFP requirements this section must address */
+  rfpRequirements?: string[];
+  /** For custom sections: what the section should contain */
+  customDescription?: string;
 }
 
 interface TemplateResponse {
@@ -72,37 +81,58 @@ function SectionChecklist({
 }) {
   return (
     <div className="space-y-1">
-      {sections.map((section) => (
-        <label
-          key={section.type}
-          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${
-            selectedTypes.has(section.type)
-              ? "bg-[var(--accent-subtle)]"
-              : "hover:bg-[var(--background-subtle)]"
-          } ${section.required ? "cursor-default" : ""}`}
-        >
-          <input
-            type="checkbox"
-            checked={selectedTypes.has(section.type)}
-            onChange={() => onToggle(section.type)}
-            disabled={section.required}
-            className="w-4 h-4 rounded border-[var(--border)] text-[var(--accent)] focus:ring-[var(--accent)] disabled:opacity-60"
-          />
-          <span className="flex-1 text-sm text-[var(--foreground)]">
-            {section.title}
-          </span>
-          {section.required && (
-            <span className="text-[10px] text-[var(--foreground-muted)] uppercase tracking-wide">
-              Required
-            </span>
-          )}
-          {!section.required && !section.defaultEnabled && (
-            <span className="text-[10px] text-[var(--foreground-subtle)] uppercase tracking-wide">
-              Optional
-            </span>
-          )}
-        </label>
-      ))}
+      {sections.map((section) => {
+        const isMandatory = section.rfpRequirementLevel === "mandatory" || section.required;
+        const isRecommended = section.rfpRequirementLevel === "recommended";
+        const hasRfpContext = !!section.rfpRationale;
+
+        return (
+          <div key={section.type}>
+            <label
+              className={`flex items-start gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${
+                selectedTypes.has(section.type)
+                  ? "bg-[var(--accent-subtle)]"
+                  : "hover:bg-[var(--background-subtle)]"
+              } ${isMandatory ? "cursor-default" : ""}`}
+            >
+              <input
+                type="checkbox"
+                checked={selectedTypes.has(section.type)}
+                onChange={() => onToggle(section.type)}
+                disabled={isMandatory}
+                className="w-4 h-4 mt-0.5 rounded border-[var(--border)] text-[var(--accent)] focus:ring-[var(--accent)] disabled:opacity-60"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-[var(--foreground)]">
+                    {section.title}
+                  </span>
+                  {isMandatory && (
+                    <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-[var(--accent)]/10 text-[var(--accent)] uppercase tracking-wide font-semibold">
+                      {hasRfpContext ? "RFP Required" : "Required"}
+                    </span>
+                  )}
+                  {isRecommended && (
+                    <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 uppercase tracking-wide font-semibold">
+                      Recommended
+                    </span>
+                  )}
+                  {!isMandatory && !isRecommended && !section.defaultEnabled && (
+                    <span className="shrink-0 text-[10px] text-[var(--foreground-subtle)] uppercase tracking-wide">
+                      Optional
+                    </span>
+                  )}
+                </div>
+                {hasRfpContext && (
+                  <p className="text-xs text-[var(--foreground-muted)] mt-0.5 leading-relaxed">
+                    {section.rfpRationale}
+                  </p>
+                )}
+              </div>
+            </label>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -291,7 +321,12 @@ export function StepConfigure() {
   // Track which solicitation type we've already fetched to prevent double-fetch
   const fetchedTypeRef = useRef<string | null>(null);
 
-  // ── Fetch templates ──
+  // Get RFP analysis from extraction data (if available)
+  const rfpAnalysis = state.extractedData?.rfp_analysis ?? null;
+  const rfpSections = rfpAnalysis?.sections ?? [];
+  const rfpEvalCriteria = rfpAnalysis?.evaluation_criteria ?? [];
+
+  // ── Fetch templates and merge with RFP analysis ──
   const fetchTemplates = useCallback(async (solType: string, resetSections: boolean) => {
     setTemplateLoading(true);
     setTemplateError(null);
@@ -302,15 +337,76 @@ export function StepConfigure() {
         throw new Error(`Failed to fetch templates: ${response.status}`);
       }
       const data: TemplateResponse = await response.json();
+
+      // Merge RFP analysis into template sections
+      if (rfpSections.length > 0) {
+        // Build a lookup of RFP requirements by section_type
+        const rfpByType = new Map<string, RfpSectionRequirement>();
+        const customSections: RfpSectionRequirement[] = [];
+
+        for (const rfpSec of rfpSections) {
+          if (rfpSec.section_type === "custom") {
+            customSections.push(rfpSec);
+          } else {
+            rfpByType.set(rfpSec.section_type, rfpSec);
+          }
+        }
+
+        // Enhance existing sections with RFP data
+        data.sections = data.sections.map((section) => {
+          const rfpReq = rfpByType.get(section.type);
+          if (rfpReq) {
+            return {
+              ...section,
+              // RFP mandatory sections override static defaults
+              required: rfpReq.requirement_level === "mandatory" || section.required,
+              defaultEnabled: rfpReq.requirement_level !== "optional",
+              rfpRequirementLevel: rfpReq.requirement_level,
+              rfpRationale: rfpReq.rationale,
+              rfpRequirements: rfpReq.rfp_requirements,
+            };
+          }
+          return section;
+        });
+
+        // Add custom sections from RFP that don't map to standard types
+        let nextOrder = Math.max(...data.sections.map(s => s.order)) + 1;
+        for (const custom of customSections) {
+          data.sections.push({
+            type: `custom_${custom.title.toLowerCase().replace(/[^a-z0-9]+/g, "_").slice(0, 40)}`,
+            title: custom.title,
+            order: nextOrder++,
+            required: custom.requirement_level === "mandatory",
+            defaultEnabled: custom.requirement_level !== "optional",
+            rfpRequirementLevel: custom.requirement_level,
+            rfpRationale: custom.rationale,
+            rfpRequirements: custom.rfp_requirements,
+            customDescription: custom.custom_description,
+          });
+        }
+
+        // Sort by order
+        data.sections.sort((a, b) => a.order - b.order);
+      }
+
       setTemplateData(data);
 
-      // Initialize selected sections from defaults if:
-      // - User hasn't configured sections yet (first mount), OR
-      // - User changed solicitation type (resetSections = true)
+      // Initialize selected sections:
+      // - If RFP analysis is present, select all mandatory + recommended sections
+      // - Otherwise, use static defaults
       if (resetSections || state.selectedSections.length === 0) {
-        const defaultEnabled = data.sections
-          .filter((s) => s.defaultEnabled || s.required)
-          .map((s) => s.type);
+        let defaultEnabled: string[];
+        if (rfpSections.length > 0) {
+          // RFP-driven: select mandatory and recommended, skip optional
+          defaultEnabled = data.sections
+            .filter((s) => s.required || s.rfpRequirementLevel === "mandatory" || s.rfpRequirementLevel === "recommended" || s.defaultEnabled)
+            .map((s) => s.type);
+        } else {
+          // Static defaults
+          defaultEnabled = data.sections
+            .filter((s) => s.defaultEnabled || s.required)
+            .map((s) => s.type);
+        }
         dispatch({
           type: "UPDATE_CONFIG",
           payload: { selectedSections: defaultEnabled },
@@ -323,7 +419,7 @@ export function StepConfigure() {
     } finally {
       setTemplateLoading(false);
     }
-  }, [authFetch, dispatch, state.selectedSections.length]);
+  }, [authFetch, dispatch, state.selectedSections.length, rfpSections]);
 
   // Fetch on mount only (not on every solicitationType change — that's handled by handleSolicitationTypeChange)
   useEffect(() => {
@@ -335,9 +431,9 @@ export function StepConfigure() {
 
   // ── Section toggle ──
   const handleSectionToggle = (type: string) => {
-    // Don't allow unchecking required sections
+    // Don't allow unchecking required or RFP-mandatory sections
     const section = templateData?.sections.find((s) => s.type === type);
-    if (section?.required) return;
+    if (section?.required || section?.rfpRequirementLevel === "mandatory") return;
 
     const next = new Set(selectedSections);
     if (next.has(type)) {
@@ -479,6 +575,53 @@ export function StepConfigure() {
         </div>
       </div>
 
+      {/* RFP Analysis Summary (if available) */}
+      {rfpSections.length > 0 && (
+        <div className="rounded-xl border border-[var(--accent-muted)] bg-[var(--accent-subtle)] p-4">
+          <div className="flex items-start gap-3">
+            <Sparkles className="h-5 w-5 text-[var(--accent)] mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-[var(--foreground)]">
+                RFP-Driven Configuration
+              </p>
+              <p className="text-xs text-[var(--foreground-muted)] mt-1">
+                Sections and requirements were auto-configured from your RFP analysis.
+                {rfpSections.filter(s => s.requirement_level === "mandatory").length > 0 && (
+                  <> <strong>{rfpSections.filter(s => s.requirement_level === "mandatory").length} mandatory</strong> sections identified.</>
+                )}
+                {rfpEvalCriteria.length > 0 && (
+                  <> {rfpEvalCriteria.length} evaluation criteria mapped.</>
+                )}
+              </p>
+              {rfpAnalysis?.page_limit && (
+                <p className="text-xs text-[var(--foreground-muted)] mt-1">
+                  Page limit: <strong>{rfpAnalysis.page_limit}</strong>
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Evaluation Criteria (collapsed by default) */}
+          {rfpEvalCriteria.length > 0 && (
+            <details className="mt-3">
+              <summary className="text-xs font-semibold text-[var(--accent)] cursor-pointer hover:underline">
+                View Evaluation Criteria ({rfpEvalCriteria.length})
+              </summary>
+              <div className="mt-2 space-y-1.5">
+                {rfpEvalCriteria.map((criterion, idx) => (
+                  <div key={idx} className="flex items-start gap-2 text-xs text-[var(--foreground-muted)]">
+                    <span className="shrink-0 font-semibold text-[var(--foreground)]">
+                      {criterion.weight || "N/A"}
+                    </span>
+                    <span>{criterion.name}: {criterion.description}</span>
+                  </div>
+                ))}
+              </div>
+            </details>
+          )}
+        </div>
+      )}
+
       {/* Section Checklist */}
       <div>
         <div className="flex items-center justify-between mb-2">
@@ -487,6 +630,9 @@ export function StepConfigure() {
           </label>
           <span className="text-xs text-[var(--foreground-muted)]">
             {selectedSections.size} selected
+            {rfpSections.length > 0 && (
+              <> &middot; {templateData?.sections.filter(s => s.rfpRequirementLevel === "mandatory" || s.required).length ?? 0} required by RFP</>
+            )}
           </span>
         </div>
 

@@ -20,6 +20,7 @@ import { buildIndustryContext } from "@/lib/ai/industry-configs";
 import { createLogger } from "@/lib/utils/logger";
 import { SECTION_CONFIGS } from "@/lib/ai/pipeline/section-configs";
 import { extractCompetitiveObjections, buildSectionSpecificL1Context, buildTaskSectionL1Context } from "@/lib/ai/pipeline/context";
+import { buildEditorialStandards } from "@/lib/ai/prompts/editorial-standards";
 import { retrieveContext } from "@/lib/ai/pipeline/retrieval";
 import { shouldGenerateDiagram, generateDiagram } from "@/lib/ai/diagram-generator";
 import { buildTaskResponsePrompt } from "@/lib/ai/prompts/task-response";
@@ -116,9 +117,11 @@ export async function generateSingleSection(
   const supabase = createAdminClient();
 
   // For rfp_task sections, we don't look up SECTION_CONFIGS — we use task metadata
+  // For custom sections (prefixed "custom_"), we build prompts from RFP analysis
   const isTaskSection = sectionType === "rfp_task";
-  const config = isTaskSection ? null : SECTION_CONFIGS.find((c) => c.type === sectionType);
-  if (!isTaskSection && !config) {
+  const isCustomSection = sectionType.startsWith("custom_");
+  const config = (isTaskSection || isCustomSection) ? null : SECTION_CONFIGS.find((c) => c.type === sectionType);
+  if (!isTaskSection && !isCustomSection && !config) {
     throw new Error(`Unknown section type: ${sectionType}`);
   }
 
@@ -149,8 +152,25 @@ export async function generateSingleSection(
       }
     }
 
+    // For custom sections, read metadata from the section row (same pattern as task sections)
+    let customMeta: { title: string; description: string; rfp_requirements: string[] } | null = null;
+    if (isCustomSection) {
+      const { data: sectionRow } = await supabase
+        .from("proposal_sections")
+        .select("title, metadata")
+        .eq("id", sectionId)
+        .single();
+      const meta = sectionRow?.metadata as Record<string, unknown> | null;
+      customMeta = {
+        title: sectionRow?.title || sectionType,
+        description: (meta?.custom_description as string) || "",
+        rfp_requirements: (meta?.rfp_requirements as string[]) || [],
+      };
+    }
+
     log.info("Building search query for RAG retrieval", {
       isTaskSection,
+      isCustomSection,
       sectionType,
       taskNumber: taskMeta?.task_number,
     });
@@ -158,7 +178,9 @@ export async function generateSingleSection(
     // Build search query for RAG retrieval
     const searchQuery = isTaskSection
       ? `${taskMeta!.title} ${taskMeta!.description.slice(0, 100)} ${ctx.intakeData.client_industry || ""}`
-      : config!.searchQuery(ctx.intakeData, ctx.winStrategy);
+      : isCustomSection
+        ? `${customMeta!.title} ${customMeta!.description.slice(0, 100)} ${ctx.intakeData.client_industry || ""}`
+        : config!.searchQuery(ctx.intakeData, ctx.winStrategy);
 
     // Retrieve relevant context (org-scoped)
     const { context, chunkIds } = await retrieveContext(
@@ -169,7 +191,7 @@ export async function generateSingleSection(
 
     const solicitationType = (ctx.intakeData.solicitation_type as string) || "RFP";
 
-    // Build prompt: task sections use buildTaskResponsePrompt, fixed sections use config.buildPrompt
+    // Build prompt: task sections use buildTaskResponsePrompt, custom sections get a dynamic prompt, fixed sections use config.buildPrompt
     let basePrompt: string;
     if (isTaskSection && taskMeta) {
       const taskL1Context = buildTaskSectionL1Context(ctx.rawL1Context);
@@ -187,6 +209,45 @@ export async function generateSingleSection(
         audienceProfile: ctx.audienceProfile,
         primaryBrandName: ctx.primaryBrandName,
       });
+    } else if (isCustomSection && customMeta) {
+      // Custom sections from RFP analysis — build a dynamic prompt
+      const companyName = ctx.companyInfo?.name || "Our Company";
+      const requirementsList = customMeta.rfp_requirements.length > 0
+        ? customMeta.rfp_requirements.map((r, i) => `${i + 1}. ${r}`).join("\n")
+        : "Address all aspects described below.";
+
+      const sectionL1Context = buildSectionSpecificL1Context(ctx.rawL1Context, "approach", solicitationType);
+      basePrompt = `Write the **${customMeta.title}** section for a ${companyName} proposal.
+
+## Section Requirements (from RFP)
+${customMeta.description || `The RFP requires a "${customMeta.title}" section.`}
+
+### Specific Requirements to Address:
+${requirementsList}
+
+## Opportunity Details
+${JSON.stringify(ctx.intakeData, null, 2)}
+
+## Strategic Analysis
+${ctx.enhancedAnalysis}
+
+## Reference Material from Past Winning Proposals
+${context}
+${sectionL1Context || ""}
+
+## Instructions
+Write a thorough, evidence-backed response (400-600 words) for the "${customMeta.title}" section.
+
+**Structure your response to directly address each requirement listed above.**
+
+- Lead with the most critical requirement
+- Support every claim with evidence from the Company Context
+- Use specific metrics, certifications, and case studies where relevant
+- Address the evaluator's concerns proactively
+
+IMPORTANT: Reference specific ${companyName} capabilities from the Company Context. Do not make generic claims.
+
+${buildEditorialStandards(solicitationType, ctx.audienceProfile, ctx.primaryBrandName, differentiators, ctx.intakeData.tone as string | undefined)}`;
     } else {
       const sectionL1Context = buildSectionSpecificL1Context(ctx.rawL1Context, config!.type, solicitationType);
       basePrompt = config!.buildPrompt(
@@ -200,8 +261,8 @@ export async function generateSingleSection(
     }
 
     // For task sections, editorial standards + repetition limiter are already in the prompt
-    // For fixed sections, add persuasion layers, industry context, and repetition limiter
-    const effectiveType = isTaskSection ? "approach" : config!.type; // task sections use approach-like persuasion
+    // For fixed/custom sections, add persuasion layers, industry context, and repetition limiter
+    const effectiveType = isTaskSection ? "approach" : isCustomSection ? "approach" : config!.type;
 
     // Build persuasion layers
     const persuasionFramework = getPersuasionPrompt(effectiveType);
@@ -318,8 +379,8 @@ export async function generateSingleSection(
       .eq("id", sectionId);
 
     // Generate diagram image for applicable sections (non-blocking)
-    // Task sections don't get diagrams — they're response-focused, not methodology-focused
-    if (!isTaskSection && shouldGenerateDiagram(config!.type)) {
+    // Task and custom sections don't get diagrams — they're response-focused
+    if (!isTaskSection && !isCustomSection && shouldGenerateDiagram(config!.type)) {
       try {
         const companyName = (ctx.companyInfo?.name as string) || "Our Company";
         const clientName = (ctx.intakeData?.client_name as string) || "the Client";

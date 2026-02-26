@@ -203,8 +203,21 @@ Industry: ${(intakeData.client_industry as string) || "Not specified"}`;
     extractLaborCategoriesFromIntake(intakeData),
   );
 
-  // Enhanced analysis with outcome contract and competitive landscape (L1 is now passed separately)
-  const enhancedAnalysis = `${analysis}\n${outcomeContractContext}${competitiveLandscapeContext ? `\n\n${competitiveLandscapeContext}` : ""}`;
+  // Build evaluation criteria context from RFP analysis (if available)
+  const rfpAnalysis = intakeData.rfp_analysis as { evaluation_criteria?: Array<{ name: string; weight: string | null; description: string; mapped_sections: string[] }>; page_limit?: string } | null;
+  let evalCriteriaContext = "";
+  if (rfpAnalysis?.evaluation_criteria?.length) {
+    const criteriaLines = rfpAnalysis.evaluation_criteria.map(c =>
+      `- **${c.name}**${c.weight ? ` (${c.weight})` : ""}: ${c.description}`
+    ).join("\n");
+    evalCriteriaContext = `\n\n## EVALUATION CRITERIA (from RFP)
+The proposal will be scored on these criteria. Address each one directly:
+${criteriaLines}
+${rfpAnalysis.page_limit ? `\nPage limit: ${rfpAnalysis.page_limit}` : ""}`;
+  }
+
+  // Enhanced analysis with outcome contract, competitive landscape, and eval criteria (L1 is now passed separately)
+  const enhancedAnalysis = `${analysis}\n${outcomeContractContext}${competitiveLandscapeContext ? `\n\n${competitiveLandscapeContext}` : ""}${evalCriteriaContext}`;
 
   // Store L1 metadata on proposal for auditability (non-blocking)
   const l1Summary = {

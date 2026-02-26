@@ -128,28 +128,78 @@ export const generateProposalFn = inngest.createFunction(
       // Filter to only the sections the user selected in the wizard (Step 3).
       // If selected_sections is missing/empty (e.g., legacy proposals), generate all.
       const userSelectedSections = ctx.intakeData.selected_sections as string[] | undefined;
-      const applicableSections = userSelectedSections?.length
+      let applicableSections = userSelectedSections?.length
         ? allSections.filter(s => userSelectedSections.includes(s.type))
         : allSections;
+
+      // Handle custom sections from RFP analysis (prefixed with "custom_")
+      // These don't exist in SECTION_CONFIGS but were added by the user in Step 3
+      const rfpAnalysis = ctx.intakeData.rfp_analysis as { sections?: Array<{ section_type: string; title: string; rationale: string; custom_description?: string; rfp_requirements?: string[] }> } | null;
+      if (userSelectedSections?.length && rfpAnalysis?.sections) {
+        const customSelectedTypes = userSelectedSections.filter(t => t.startsWith("custom_"));
+        if (customSelectedTypes.length > 0) {
+          let nextOrder = applicableSections.length > 0
+            ? Math.max(...applicableSections.map(s => s.order)) + 1
+            : 13;
+
+          for (const customType of customSelectedTypes) {
+            // Find the matching RFP section requirement
+            const rfpSection = rfpAnalysis.sections.find(
+              s => s.section_type === "custom" &&
+              `custom_${s.title.toLowerCase().replace(/[^a-z0-9]+/g, "_").slice(0, 40)}` === customType
+            );
+            if (rfpSection) {
+              applicableSections.push({
+                type: customType,
+                title: rfpSection.title,
+                order: nextOrder++,
+                buildPrompt: () => "", // Custom sections use a generic prompt built in generate-single-section
+                searchQuery: (d: Record<string, unknown>) =>
+                  `${rfpSection.title} ${rfpSection.custom_description?.slice(0, 100) || ""} ${d.client_industry || ""}`,
+                taskMeta: undefined,
+              });
+            }
+          }
+        }
+      }
 
       stepLog.info("Section list built", {
         sectionCount: applicableSections.length,
         totalAvailable: allSections.length,
         userSelectedCount: userSelectedSections?.length ?? "all (no selection)",
+        customSections: applicableSections.filter(s => s.type.startsWith("custom_")).length,
         solicitationType,
         hasTaskStructure: !!rfpTaskStructure,
         sectionTypes: applicableSections.map(s => s.type),
       });
 
-      // Create section rows with optional task metadata
-      const sectionInserts = applicableSections.map((config) => ({
-        proposal_id: proposalId,
-        section_type: config.type,
-        section_order: config.order,
-        title: config.title,
-        generation_status: GenerationStatus.PENDING,
-        ...(config.taskMeta ? { metadata: config.taskMeta } : {}),
-      }));
+      // Create section rows with optional task/custom metadata
+      const sectionInserts = applicableSections.map((config) => {
+        // For custom sections, store RFP metadata for prompt building
+        let metadata: Record<string, unknown> | undefined;
+        if (config.taskMeta) {
+          metadata = config.taskMeta;
+        } else if (config.type.startsWith("custom_") && rfpAnalysis?.sections) {
+          const rfpSection = (rfpAnalysis.sections as Array<{ section_type: string; title: string; custom_description?: string; rfp_requirements?: string[]; rationale?: string }>)
+            .find(s => s.section_type === "custom" &&
+              `custom_${s.title.toLowerCase().replace(/[^a-z0-9]+/g, "_").slice(0, 40)}` === config.type);
+          if (rfpSection) {
+            metadata = {
+              custom_description: rfpSection.custom_description || rfpSection.rationale || "",
+              rfp_requirements: rfpSection.rfp_requirements || [],
+            };
+          }
+        }
+
+        return {
+          proposal_id: proposalId,
+          section_type: config.type,
+          section_order: config.order,
+          title: config.title,
+          generation_status: GenerationStatus.PENDING,
+          ...(metadata ? { metadata } : {}),
+        };
+      });
 
       const { data: sections, error: sectionError } = await supabase
         .from("proposal_sections")

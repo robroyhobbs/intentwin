@@ -185,6 +185,29 @@ Respond with a JSON object matching this exact structure:
     }
   },
 
+  "rfp_analysis": {
+    "sections": [
+      {
+        "section_type": "executive_summary" | "understanding" | "approach" | "methodology" | "team" | "case_studies" | "timeline" | "pricing" | "risk_mitigation" | "why_us" | "cover_letter" | "compliance_matrix_section" | "exceptions_terms" | "custom",
+        "title": "Section title (use standard title for known types, or RFP's heading for custom)",
+        "rationale": "Why this section is needed — cite the specific RFP section or requirement",
+        "requirement_level": "mandatory" | "recommended" | "optional",
+        "rfp_requirements": ["specific requirement from RFP this section must address"],
+        "custom_description": "Only for section_type='custom': what this section should contain"
+      }
+    ],
+    "evaluation_criteria": [
+      {
+        "name": "Criterion name (e.g., Technical Approach, Past Performance)",
+        "weight": "percentage or points if stated (e.g., '30%', '300 points'), null if not specified",
+        "description": "What evaluators are looking for",
+        "mapped_sections": ["section_type(s) that should address this criterion"]
+      }
+    ],
+    "page_limit": "page or word limit if specified, null otherwise",
+    "submission_format": "format requirements if specified (e.g., 'separate technical and cost volumes'), null otherwise"
+  },
+
   "gaps": [
     {
       "field": "field_name",
@@ -224,6 +247,26 @@ Respond with a JSON object matching this exact structure:
    - brief: Short informal document describing a need
    - verbal: Conversational description, first-person perspective
    - other: Doesn't fit other categories
+
+8. **RFP Analysis** (rfp_analysis field):
+   This is CRITICAL for producing a winning proposal. Analyze the document structure carefully:
+
+   **Section Mapping Rules:**
+   - Map every RFP-requested section to one of our standard section_types when possible
+   - If the RFP requires a section that doesn't map to any standard type (e.g., "Small Business Subcontracting Plan", "Organizational Conflict of Interest Statement", "Transition Plan"), use section_type="custom" and provide a clear custom_description
+   - Mark sections as "mandatory" when the RFP explicitly requires them (look for: "shall include", "must provide", "required sections", evaluation criteria references, Table of Contents requirements)
+   - Mark sections as "recommended" when they would strengthen the proposal even if not explicitly required (e.g., case studies are almost always beneficial even if not required)
+   - At minimum, always include: executive_summary, understanding, approach (these are always recommended)
+   - For pricing/cost sections: mark as mandatory if the RFP mentions cost evaluation, pricing volumes, or cost proposals
+   - For compliance_matrix_section: mark as mandatory if the RFP includes a compliance checklist or requirement matrix
+
+   **Evaluation Criteria Rules:**
+   - Extract ALL stated evaluation criteria, including weights/points if provided
+   - Map each criterion to the section(s) that should address it (e.g., "Technical Approach - 40%" maps to ["approach", "methodology"])
+   - If evaluation criteria aren't stated, infer them from the document structure and common government procurement practices
+   - Include both technical and management/cost criteria if separated
+
+   **For non-RFP inputs** (emails, notes, verbal): Include a minimal rfp_analysis with recommended sections based on the opportunity type. Mark everything as "recommended" rather than "mandatory".
 
 Respond ONLY with the JSON object, no additional text.`;
 }

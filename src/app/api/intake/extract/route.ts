@@ -241,11 +241,11 @@ export async function POST(request: NextRequest) {
       document_ids?.length > 0 ? "file" : content_type,
     );
 
-    // Call Gemini for extraction — 8192 tokens to prevent truncation on complex RFPs
+    // Call Gemini for extraction — 12288 tokens to accommodate rfp_analysis on complex RFPs
     const response = await generateText(prompt, {
       systemPrompt: EXTRACTION_SYSTEM_PROMPT,
       temperature: 0.3, // Lower temperature for structured extraction
-      maxTokens: 8192,
+      maxTokens: 12288,
     });
 
     // Parse JSON response using triple-strategy extraction (same as bid-scoring)
@@ -267,6 +267,16 @@ export async function POST(request: NextRequest) {
     if (!extracted.gaps) extracted.gaps = [];
     if (!extracted.input_type) extracted.input_type = "other";
     if (!extracted.input_summary) extracted.input_summary = "Document analyzed";
+
+    // Normalize rfp_analysis — ensure sections array and evaluation_criteria exist
+    if (extracted.rfp_analysis) {
+      if (!Array.isArray(extracted.rfp_analysis.sections)) {
+        extracted.rfp_analysis.sections = [];
+      }
+      if (!Array.isArray(extracted.rfp_analysis.evaluation_criteria)) {
+        extracted.rfp_analysis.evaluation_criteria = [];
+      }
+    }
 
     // Add source tracking
     if (document_ids?.length > 0) {

@@ -178,6 +178,7 @@ export function StepGenerate() {
           competitive_intel: state.competitiveIntel,
           tone: state.tone,
           selected_sections: state.selectedSections,
+          rfp_analysis: state.extractedData?.rfp_analysis ?? null,
         },
         win_strategy_data: state.winStrategy,
         bid_evaluation: state.bidEvaluation,
