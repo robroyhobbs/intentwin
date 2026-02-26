@@ -68,7 +68,7 @@ export const NARRATIVE_MAP: Record<string, string> = {
   outcomes: "metrics",
   benefits: "metrics",
   success_metrics: "metrics",
-  why_capgemini: "differentiator",
+  why_company: "differentiator",
   why_us: "differentiator",
   differentiators: "differentiator",
   value_proposition: "differentiator",

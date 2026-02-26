@@ -52,7 +52,7 @@ async function generatePdfWithGotenberg(
 ): Promise<Buffer> {
   const companyName = data.branding?.header_text || data.company_name || "IntentBid";
   const footerText = data.branding?.footer_text || "Confidential";
-  const primaryColor = data.branding?.primary_color || "#999";
+  const primaryColor = data.branding?.primary_color || "#0070AD";
 
   // Generate the main HTML with inline fonts (no CDN requests) and PDF-specific overrides
   // (forces all sections visible, hides TOC sidebar, removes scroll animations)
@@ -101,8 +101,8 @@ async function generatePdfWithGotenberg(
   );
 
   // PDF settings — match previous Puppeteer config
-  formData.append("paperWidth", "8.27"); // A4 width in inches
-  formData.append("paperHeight", "11.7"); // A4 height in inches
+  formData.append("paperWidth", "8.5"); // US Letter width in inches
+  formData.append("paperHeight", "11"); // US Letter height in inches
   formData.append("marginTop", "0.79"); // 20mm in inches
   formData.append("marginBottom", "0.79"); // 20mm in inches
   formData.append("marginLeft", "0.59"); // 15mm in inches
@@ -226,16 +226,16 @@ async function generatePdfWithLocalBrowser(
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const pdfBuffer = await page.pdf({
-      format: "A4",
+      format: "Letter",
       printBackground: true,
       margin: { top: "20mm", bottom: "20mm", left: "15mm", right: "15mm" },
       displayHeaderFooter: true,
       headerTemplate: `
-        <div style="font-size:8px; color:${data.branding?.primary_color || "#999"}; width:100%; text-align:center; padding:5px 0;">
+        <div style="font-size:8px; color:${data.branding?.primary_color || "#0070AD"}; width:100%; text-align:center; padding:5px 0;">
           ${data.title} | ${companyName} | ${footerText}
         </div>`,
       footerTemplate: `
-        <div style="font-size:8px; color:${data.branding?.primary_color || "#999"}; width:100%; text-align:center; padding:5px 0;">
+        <div style="font-size:8px; color:${data.branding?.primary_color || "#0070AD"}; width:100%; text-align:center; padding:5px 0;">
           Page <span class="pageNumber"></span> of <span class="totalPages"></span>
         </div>`,
       timeout: 60000,

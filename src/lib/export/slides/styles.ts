@@ -14,8 +14,8 @@ import type { BrandingSettings } from "./types";
  */
 export function getSlideStyles(branding?: BrandingSettings): string {
   const colors = buildColors(branding);
-  const fontDisplay = branding?.font_family || "Outfit";
-  const fontBody = branding?.font_family || "Sora";
+  const fontDisplay = branding?.font_family || "Inter";
+  const fontBody = branding?.font_family || "Inter";
 
   return `
 :root {

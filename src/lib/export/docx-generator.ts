@@ -140,6 +140,17 @@ function markdownToOoxml(md: string, primaryColor: string): string {
       continue;
     }
 
+    // Blockquote — render with left indent and accent color
+    if (trimmed.startsWith("> ")) {
+      const quoteText = trimmed.slice(2);
+      paragraphs.push(para(
+        inlineToRuns(quoteText),
+        undefined,
+        `<w:ind w:left="720"/><w:pBdr><w:left w:val="single" w:sz="12" w:space="8" w:color="${primaryColor}"/></w:pBdr>`,
+      ));
+      continue;
+    }
+
     // Unordered list
     if (/^[-*]\s/.test(trimmed)) {
       paragraphs.push(para(
@@ -459,6 +470,24 @@ export async function generateDocx(data: ProposalData): Promise<Buffer> {
     logoData = await fetchLogoImage(b.logo_url);
   }
 
+  // Fetch diagram images for embedding (parallel, non-blocking)
+  const diagramImages: Map<number, { buffer: Buffer; ext: string; rId: string }> = new Map();
+  const diagramFetches = data.sections.map(async (section, idx) => {
+    if (!section.diagram_image) return;
+    try {
+      const res = await fetch(section.diagram_image, { signal: AbortSignal.timeout(8000) });
+      if (!res.ok) return;
+      const contentType = res.headers.get("content-type") || "";
+      const ext = contentType.includes("png") ? "png" : "jpeg";
+      const arrayBuffer = await res.arrayBuffer();
+      // rId starts at rId10 to avoid conflicts with header/footer/styles/logo refs
+      diagramImages.set(idx, { buffer: Buffer.from(arrayBuffer), ext, rId: `rId${10 + idx}` });
+    } catch {
+      // Non-blocking — section just won't have a diagram
+    }
+  });
+  await Promise.all(diagramFetches);
+
   // Build section content
   const sectionsXml = data.sections
     .map((section, idx) => {
@@ -469,13 +498,21 @@ export async function generateDocx(data: ProposalData): Promise<Buffer> {
         "Heading1",
       );
       const content = markdownToOoxml(section.content, primary);
-      return heading + "\n" + content;
+
+      // Append diagram image if available (full-width, after section content)
+      const diagram = diagramImages.get(idx);
+      const diagramXml = diagram
+        ? `<w:p><w:pPr><w:jc w:val="center"/><w:spacing w:before="240" w:after="240"/></w:pPr><w:r><w:drawing><wp:inline xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" distT="0" distB="0" distL="0" distR="0"><wp:extent cx="5486400" cy="3200400"/><wp:docPr id="${10 + idx}" name="Diagram ${idx + 1}"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="${10 + idx}" name="diagram_${idx + 1}.${diagram.ext}"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${diagram.rId}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="5486400" cy="3200400"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`
+        : "";
+
+      return heading + "\n" + content + diagramXml;
     })
     .join("\n");
 
   // Build logo drawing XML for title page (if logo was fetched)
+  // Logo is 2.5" wide x 0.75" tall (EMU: 2286000 x 685800) — a reasonable aspect ratio for most logos
   const logoDrawingXml = logoData
-    ? `<w:p><w:pPr><w:jc w:val="left"/></w:pPr><w:r><w:drawing><wp:inline xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" distT="0" distB="0" distL="0" distR="0"><wp:extent cx="1828800" cy="457200"/><wp:docPr id="1" name="Logo"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="1" name="logo.${logoData.ext}"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="rId5"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="1828800" cy="457200"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`
+    ? `<w:p><w:pPr><w:jc w:val="left"/></w:pPr><w:r><w:drawing><wp:inline xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" distT="0" distB="0" distL="0" distR="0"><wp:extent cx="2286000" cy="685800"/><wp:docPr id="1" name="Logo"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="1" name="logo.${logoData.ext}"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="rId5"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="2286000" cy="685800"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`
     : "";
 
   // Title page + body
@@ -490,6 +527,26 @@ export async function generateDocx(data: ProposalData): Promise<Buffer> {
     ${para(run(`${escXml(b.header_text)}`, { color: secondary, bold: true, sz: 22 }))}
     ${para("")}
     <w:p><w:pPr><w:sectPr><w:headerReference w:type="default" r:id="rId2"/><w:footerReference w:type="default" r:id="rId3"/><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720"/><w:pgNumType w:start="0"/></w:sectPr></w:pPr></w:p>
+    ${para(run("Table of Contents", { bold: true, sz: 36, color: secondary }), "Heading1")}
+    <w:p>
+      <w:r>
+        <w:fldChar w:fldCharType="begin"/>
+      </w:r>
+      <w:r>
+        <w:instrText xml:space="preserve"> TOC \\o "1-3" \\h \\z \\u </w:instrText>
+      </w:r>
+      <w:r>
+        <w:fldChar w:fldCharType="separate"/>
+      </w:r>
+      <w:r>
+        <w:rPr><w:i/><w:color w:val="999999"/></w:rPr>
+        <w:t xml:space="preserve">Right-click and select "Update Field" to populate the table of contents.</w:t>
+      </w:r>
+      <w:r>
+        <w:fldChar w:fldCharType="end"/>
+      </w:r>
+    </w:p>
+    ${para("")}
     ${sectionsXml}
     <w:sectPr>
       <w:headerReference w:type="default" r:id="rId2"/>
@@ -503,10 +560,13 @@ export async function generateDocx(data: ProposalData): Promise<Buffer> {
   // Assemble OOXML zip
   const zip = new PizZip();
 
-  // Content Types — include image content type if logo exists
-  const imageContentType = logoData
-    ? `\n  <Default Extension="${logoData.ext}" ContentType="image/${logoData.ext === "svg" ? "svg+xml" : logoData.ext}"/>`
-    : "";
+  // Content Types — include image content types for logo and diagrams
+  const imageExtensions = new Set<string>();
+  if (logoData) imageExtensions.add(logoData.ext);
+  for (const [, img] of diagramImages) imageExtensions.add(img.ext);
+  const imageContentType = Array.from(imageExtensions)
+    .map(ext => `\n  <Default Extension="${ext}" ContentType="image/${ext === "svg" ? "svg+xml" : ext}"/>`)
+    .join("");
   zip.file(
     "[Content_Types].xml",
     `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -530,10 +590,13 @@ export async function generateDocx(data: ProposalData): Promise<Buffer> {
 </Relationships>`,
   );
 
-  // Word relationships (link to styles, numbering, header, footer, and optionally image)
+  // Word relationships (link to styles, numbering, header, footer, logo, and diagram images)
   const imageRel = logoData
     ? `\n  <Relationship Id="rId5" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image1.${logoData.ext}"/>`
     : "";
+  const diagramRels = Array.from(diagramImages.entries())
+    .map(([idx, img]) => `\n  <Relationship Id="${img.rId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/diagram_${idx + 1}.${img.ext}"/>`)
+    .join("");
   zip.file(
     "word/_rels/document.xml.rels",
     `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -541,7 +604,7 @@ export async function generateDocx(data: ProposalData): Promise<Buffer> {
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
   <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header1.xml"/>
   <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>
-  <Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/>${imageRel}
+  <Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/>${imageRel}${diagramRels}
 </Relationships>`,
   );
 
@@ -555,6 +618,11 @@ export async function generateDocx(data: ProposalData): Promise<Buffer> {
   // Embed logo image in the zip
   if (logoData) {
     zip.file(`word/media/image1.${logoData.ext}`, logoData.buffer);
+  }
+
+  // Embed diagram images in the zip
+  for (const [idx, img] of diagramImages) {
+    zip.file(`word/media/diagram_${idx + 1}.${img.ext}`, img.buffer);
   }
 
   return zip.generate({ type: "nodebuffer", compression: "DEFLATE" });

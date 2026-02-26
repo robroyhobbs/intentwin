@@ -98,7 +98,7 @@ export async function generateSlides(data: ProposalData): Promise<string> {
     .join("\n");
 
   // Build Google Fonts URL — include branding font if custom, plus defaults
-  const fontFamilies = new Set(["Outfit", "Sora"]);
+  const fontFamilies = new Set(["Inter"]);
   if (branding?.font_family) fontFamilies.add(branding.font_family);
   const fontParams = Array.from(fontFamilies)
     .map((f) => `family=${encodeURIComponent(f)}:wght@300;400;500;600;700;800;900`)

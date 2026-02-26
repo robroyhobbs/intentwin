@@ -17,7 +17,7 @@ function fontStack(family: string): string {
   return `'${family}', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
 }
 
-/** Default branding values matching the original hardcoded Capgemini theme */
+/** Default branding values */
 const DEFAULT_BRANDING: Required<BrandingSettings> = {
   logo_url: "",
   primary_color: "#0070AD",
@@ -255,7 +255,7 @@ export async function generateHtml(
     })
     .join("\n");
 
-  // Build TOC
+  // Build TOC (sidebar for HTML, inline for PDF)
   const tocHtml = data.sections
     .map((s, i) => {
       const slug = slugify(s.title);
@@ -265,6 +265,22 @@ export async function generateHtml(
       </a>`;
     })
     .join("\n");
+
+  // Inline TOC for PDF (replaces the hidden sidebar TOC)
+  const inlineTocHtml = options?.forPdf ? `
+    <div class="inline-toc">
+      <h2 class="inline-toc-title">Table of Contents</h2>
+      <div class="inline-toc-list">
+        ${data.sections.map((s, i) => {
+          const slug = slugify(s.title);
+          return `<a href="#${slug}" class="inline-toc-entry">
+            <span class="inline-toc-num">${String(i + 1).padStart(2, "0")}</span>
+            <span class="inline-toc-text">${escapeHtml(s.title)}</span>
+            <span class="inline-toc-dots"></span>
+          </a>`;
+        }).join("\n")}
+      </div>
+    </div>` : "";
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -298,14 +314,14 @@ ${options?.inlineFonts ? `<style>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">`}
 <style>
   :root {
-    --cap-blue: ${b.primary_color};
-    --cap-dark: ${b.secondary_color};
-    --cap-accent: ${b.accent_color};
-    --cap-light: #F5F7FA;
-    --cap-text: #333333;
-    --cap-text-light: #64748B;
-    --cap-border: #E2E8F0;
-    --cap-white: #FFFFFF;
+    --brand-primary: ${b.primary_color};
+    --brand-dark: ${b.secondary_color};
+    --brand-accent: ${b.accent_color};
+    --brand-light: #F5F7FA;
+    --brand-text: #333333;
+    --brand-text-light: #64748B;
+    --brand-border: #E2E8F0;
+    --brand-white: #FFFFFF;
     --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
     --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
     --shadow-lg: 0 8px 30px rgba(0,0,0,0.12);
@@ -318,8 +334,8 @@ ${options?.inlineFonts ? `<style>
 
   body {
     font-family: ${bodyFont};
-    color: var(--cap-text);
-    background: var(--cap-light);
+    color: var(--brand-text);
+    background: var(--brand-light);
     line-height: 1.7;
     -webkit-font-smoothing: antialiased;
   }
@@ -446,7 +462,7 @@ ${options?.inlineFonts ? `<style>
   }
   .stat-card {
     flex: 1;
-    background: var(--cap-white);
+    background: var(--brand-white);
     padding: 24px 28px;
     text-align: center;
   }
@@ -455,13 +471,13 @@ ${options?.inlineFonts ? `<style>
   .stat-value {
     font-size: 1.8rem;
     font-weight: 800;
-    color: var(--cap-dark);
+    color: var(--brand-dark);
   }
   .stat-label {
     font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.12em;
-    color: var(--cap-text-light);
+    color: var(--brand-text-light);
     margin-top: 4px;
     font-weight: 600;
   }
@@ -489,7 +505,7 @@ ${options?.inlineFonts ? `<style>
     font-size: 0.65rem;
     text-transform: uppercase;
     letter-spacing: 0.15em;
-    color: var(--cap-accent);
+    color: var(--brand-accent);
     font-weight: 700;
     margin-bottom: 16px;
     padding: 0 12px;
@@ -500,27 +516,27 @@ ${options?.inlineFonts ? `<style>
     gap: 10px;
     padding: 10px 12px;
     font-size: 0.8rem;
-    color: var(--cap-text-light);
+    color: var(--brand-text-light);
     text-decoration: none;
     border-radius: 10px;
     margin-bottom: 2px;
     transition: all 0.2s ease;
   }
   .toc-item:hover {
-    background: var(--cap-white);
-    color: var(--cap-blue);
+    background: var(--brand-white);
+    color: var(--brand-primary);
     box-shadow: var(--shadow-sm);
   }
   .toc-item.active {
-    background: var(--cap-white);
-    color: var(--cap-blue);
+    background: var(--brand-white);
+    color: var(--brand-primary);
     font-weight: 600;
     box-shadow: var(--shadow-sm);
   }
   .toc-num {
     font-size: 0.65rem;
     font-weight: 700;
-    color: var(--cap-accent);
+    color: var(--brand-accent);
     opacity: 0.7;
     min-width: 20px;
   }
@@ -547,7 +563,7 @@ ${options?.inlineFonts ? `<style>
   }
 
   .section-inner {
-    background: var(--cap-white);
+    background: var(--brand-white);
     border-radius: var(--radius);
     padding: 40px 44px;
     box-shadow: var(--shadow-sm);
@@ -564,7 +580,7 @@ ${options?.inlineFonts ? `<style>
   .section-number {
     font-size: 0.7rem;
     font-weight: 700;
-    color: var(--cap-accent);
+    color: var(--brand-accent);
     letter-spacing: 0.15em;
     text-transform: uppercase;
     margin-bottom: 8px;
@@ -573,9 +589,9 @@ ${options?.inlineFonts ? `<style>
     font-family: 'Playfair Display', Georgia, serif;
     font-size: 1.7rem;
     font-weight: 700;
-    color: var(--cap-dark);
+    color: var(--brand-dark);
     padding-left: 16px;
-    border-left: 4px solid var(--cap-blue);
+    border-left: 4px solid var(--brand-primary);
     line-height: 1.3;
   }
 
@@ -583,25 +599,25 @@ ${options?.inlineFonts ? `<style>
   .section-body h2 {
     font-family: 'Playfair Display', Georgia, serif;
     font-size: 1.35rem;
-    color: var(--cap-dark);
+    color: var(--brand-dark);
     margin: 32px 0 12px;
     font-weight: 700;
   }
   .section-body h3 {
     font-size: 1.1rem;
-    color: var(--cap-dark);
+    color: var(--brand-dark);
     margin: 24px 0 10px;
     font-weight: 600;
   }
   .section-body h4 {
     font-size: 0.95rem;
-    color: var(--cap-blue);
+    color: var(--brand-primary);
     margin: 20px 0 8px;
     font-weight: 600;
   }
   .section-body p {
     margin-bottom: 14px;
-    color: var(--cap-text);
+    color: var(--brand-text);
     font-size: 0.95rem;
   }
   .section-body ul, .section-body ol {
@@ -610,22 +626,22 @@ ${options?.inlineFonts ? `<style>
   .section-body li {
     margin-bottom: 8px;
     font-size: 0.95rem;
-    color: var(--cap-text);
+    color: var(--brand-text);
   }
   .section-body li::marker {
-    color: var(--cap-accent);
+    color: var(--brand-accent);
   }
   .section-body strong {
-    color: var(--cap-dark);
+    color: var(--brand-dark);
     font-weight: 600;
   }
   .inline-code {
-    background: var(--cap-light);
+    background: var(--brand-light);
     padding: 2px 8px;
     border-radius: 4px;
     font-size: 0.85em;
     font-family: 'SF Mono', Monaco, monospace;
-    color: var(--cap-blue);
+    color: var(--brand-primary);
   }
   .content-table {
     width: 100%;
@@ -640,10 +656,10 @@ ${options?.inlineFonts ? `<style>
   .content-table th, .content-table td {
     padding: 12px 16px;
     text-align: left;
-    border-bottom: 1px solid var(--cap-border);
+    border-bottom: 1px solid var(--brand-border);
   }
   .content-table th {
-    background: linear-gradient(135deg, var(--cap-dark), var(--cap-blue));
+    background: linear-gradient(135deg, var(--brand-dark), var(--brand-primary));
     color: #fff;
     font-weight: 600;
     font-size: 0.8rem;
@@ -651,15 +667,15 @@ ${options?.inlineFonts ? `<style>
     letter-spacing: 0.05em;
   }
   .content-table tr:last-child td { border-bottom: none; }
-  .content-table tr:nth-child(even) td { background: var(--cap-light); }
+  .content-table tr:nth-child(even) td { background: var(--brand-light); }
   .content-table tr:hover td { background: rgba(0,112,173,0.04); }
 
   /* Diagrams */
   .diagram-container {
     margin: 24px 0;
     padding: 28px;
-    background: linear-gradient(135deg, var(--cap-light) 0%, #E8F4FD 100%);
-    border: 1px solid var(--cap-border);
+    background: linear-gradient(135deg, var(--brand-light) 0%, #E8F4FD 100%);
+    border: 1px solid var(--brand-border);
     border-radius: 12px;
     text-align: center;
   }
@@ -677,7 +693,7 @@ ${options?.inlineFonts ? `<style>
 
   /* ===== FOOTER ===== */
   .footer {
-    background: linear-gradient(135deg, ${heroDark} 0%, var(--cap-dark) 100%);
+    background: linear-gradient(135deg, ${heroDark} 0%, var(--brand-dark) 100%);
     color: rgba(255,255,255,0.5);
     text-align: center;
     padding: 48px 40px;
@@ -690,7 +706,7 @@ ${options?.inlineFonts ? `<style>
     margin-bottom: 8px;
   }
   .footer-brand span {
-    color: var(--cap-accent);
+    color: var(--brand-accent);
   }
   .footer p {
     font-size: 0.8rem;
@@ -699,7 +715,7 @@ ${options?.inlineFonts ? `<style>
   .footer-divider {
     width: 60px;
     height: 2px;
-    background: linear-gradient(90deg, var(--cap-blue), var(--cap-accent));
+    background: linear-gradient(90deg, var(--brand-primary), var(--brand-accent));
     margin: 20px auto;
     border-radius: 1px;
   }
@@ -745,6 +761,51 @@ ${options?.forPdf ? `<style>
   }
   .toc { display: none !important; }
   .stats-bar { display: none !important; }
+
+  /* Inline TOC for PDF */
+  .inline-toc {
+    max-width: 700px;
+    margin: 48px auto 32px;
+    padding: 40px 44px;
+    background: #fff;
+    border: 1px solid #E2E8F0;
+    border-radius: 16px;
+    break-after: page;
+  }
+  .inline-toc-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.7rem;
+    font-weight: 700;
+    color: ${b.secondary_color};
+    margin-bottom: 24px;
+    padding-left: 16px;
+    border-left: 4px solid ${b.primary_color};
+  }
+  .inline-toc-entry {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding: 10px 0;
+    text-decoration: none;
+    border-bottom: 1px solid #F1F5F9;
+  }
+  .inline-toc-entry:last-child { border-bottom: none; }
+  .inline-toc-num {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: ${b.accent_color};
+    min-width: 24px;
+  }
+  .inline-toc-text {
+    font-size: 1rem;
+    color: ${b.secondary_color};
+    font-weight: 500;
+  }
+  .inline-toc-dots {
+    flex: 1;
+    border-bottom: 1px dotted #CBD5E1;
+    margin-bottom: 4px;
+  }
   .layout { max-width: 100%; padding: 0 40px; }
   .main { padding-bottom: 0; }
   body { background: #fff; }
@@ -797,6 +858,8 @@ ${options?.forPdf ? `<style>
     </div>
   </div>
 </div>
+
+${inlineTocHtml}
 
 <!-- Layout -->
 <div class="layout">

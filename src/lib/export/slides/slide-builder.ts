@@ -429,13 +429,7 @@ export function buildSlides(
             ? items
             : ["Similar engagements with measurable outcomes"],
         caseStudyNumber: 1,
-        metrics:
-          metrics.length > 0
-            ? metrics
-            : [
-                { value: "95%", label: "Client Satisfaction" },
-                { value: "40%", label: "Cost Reduction" },
-              ],
+        metrics: metrics.length > 0 ? metrics : undefined,
       });
     }
   }
@@ -449,15 +443,7 @@ export function buildSlides(
       type: "timeline",
       title: "Timeline & Milestones",
       subtitle: "Project Roadmap",
-      items:
-        items.length > 0
-          ? items
-          : [
-              "Phase 1: Discovery",
-              "Phase 2: Design",
-              "Phase 3: Build",
-              "Phase 4: Deploy",
-            ],
+      items: items.length > 0 ? items : undefined,
       phases: phases.length > 0 ? phases : undefined,
     });
   }
@@ -470,14 +456,7 @@ export function buildSlides(
       type: "investment",
       title: "Investment Overview",
       subtitle: "Commercial Framework",
-      items:
-        items.length > 0
-          ? items
-          : [
-              "Transparent pricing model",
-              "Value-based engagement",
-              "Flexible terms",
-            ],
+      items: items.length > 0 ? items : undefined,
     });
   }
 
@@ -489,14 +468,7 @@ export function buildSlides(
       type: "risk",
       title: "Risk Management",
       subtitle: "Mitigation Strategies",
-      items:
-        items.length > 0
-          ? items
-          : [
-              "Proactive risk identification",
-              "Comprehensive mitigation plans",
-              "Continuous monitoring",
-            ],
+      items: items.length > 0 ? items : undefined,
     });
   }
 
@@ -508,28 +480,21 @@ export function buildSlides(
       type: "differentiator",
       title: `Why ${companyName}`,
       subtitle: `The ${companyName} Advantage`,
-      items:
-        items.length > 0
-          ? items
-          : [
-              "Industry leadership",
-              "Proven expertise",
-              "Client-centric approach",
-            ],
+      items: items.length > 0 ? items : undefined,
     });
   }
 
   // 15. Next Steps / Closing
+  // Try to extract real next-steps from a dedicated section if available
+  const nextStepsSection = getSectionByType(sections, "next_steps");
+  const closingItems = nextStepsSection
+    ? extractItems(nextStepsSection.content, 4)
+    : [];
   slides.push({
     type: "closing",
     title: "Next Steps",
-    subtitle: "Ready to Transform?",
-    items: [
-      "Schedule discovery workshop",
-      "Define success metrics together",
-      "Finalize engagement terms",
-      "Mobilize expert delivery team",
-    ],
+    subtitle: `Partner with ${companyName}`,
+    items: closingItems.length > 0 ? closingItems : undefined,
   });
 
   return slides;

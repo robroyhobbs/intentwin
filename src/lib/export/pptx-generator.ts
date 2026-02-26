@@ -418,7 +418,7 @@ export async function generatePptx(data: ProposalData): Promise<Buffer> {
     white: DEFAULT_COLORS.white,
     muted: DEFAULT_COLORS.muted,
   };
-  const fontFamily = branding?.font_family || "Arial";
+  const fontFamily = branding?.font_family || "Inter";
   const footerText = branding?.footer_text || "Confidential";
   const headerText = branding?.header_text || companyName;
 

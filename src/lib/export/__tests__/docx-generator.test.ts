@@ -223,6 +223,47 @@ describe("generateDocx", () => {
     });
   });
 
+  describe("table of contents", () => {
+    it("includes TOC field code in document", async () => {
+      const xml = await genAndExtract(makeData(), "word/document.xml");
+      expect(xml).toContain("TOC");
+      expect(xml).toContain("fldChar");
+      expect(xml).toContain("Table of Contents");
+    });
+
+    it("includes TOC update instruction text", async () => {
+      const xml = await genAndExtract(makeData(), "word/document.xml");
+      expect(xml).toContain("Update Field");
+    });
+  });
+
+  describe("blockquote handling", () => {
+    it("converts blockquotes to indented paragraphs with left border", async () => {
+      const data = makeData({
+        sections: [
+          {
+            title: "Testimonial",
+            content: "> This solution exceeded our expectations.",
+            section_type: "case_studies",
+          },
+        ],
+      });
+      const xml = await genAndExtract(data, "word/document.xml");
+      expect(xml).toContain("exceeded our expectations");
+      expect(xml).toContain('w:left="720"'); // left indent
+      expect(xml).toContain("w:pBdr"); // paragraph border
+    });
+  });
+
+  describe("cover page section break", () => {
+    it("includes sectPr for cover page break", async () => {
+      const xml = await genAndExtract(makeData(), "word/document.xml");
+      // Should have two sectPr elements: one for cover page, one for final
+      const sectPrCount = (xml.match(/<w:sectPr>/g) || []).length;
+      expect(sectPrCount).toBeGreaterThanOrEqual(2);
+    });
+  });
+
   describe("XML safety", () => {
     it("escapes special characters in content", async () => {
       const data = makeData({

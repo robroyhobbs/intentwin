@@ -38,11 +38,11 @@ const customBranding: BrandingSettings = {
 
 describe("generateHtml", () => {
   describe("default branding (no branding provided)", () => {
-    it("uses default Capgemini colors in CSS variables", async () => {
+    it("uses default brand colors in CSS variables", async () => {
       const html = await generateHtml(makeData());
-      expect(html).toContain("--cap-blue: #0070AD");
-      expect(html).toContain("--cap-dark: #1B365D");
-      expect(html).toContain("--cap-accent: #12ABDB");
+      expect(html).toContain("--brand-primary: #0070AD");
+      expect(html).toContain("--brand-dark: #1B365D");
+      expect(html).toContain("--brand-accent: #12ABDB");
     });
 
     it("uses company name as hero label", async () => {
@@ -69,9 +69,9 @@ describe("generateHtml", () => {
   describe("custom branding", () => {
     it("applies custom colors to CSS variables", async () => {
       const html = await generateHtml(makeData({ branding: customBranding }));
-      expect(html).toContain("--cap-blue: #FF0000");
-      expect(html).toContain("--cap-dark: #00FF00");
-      expect(html).toContain("--cap-accent: #0000FF");
+      expect(html).toContain("--brand-primary: #FF0000");
+      expect(html).toContain("--brand-dark: #00FF00");
+      expect(html).toContain("--brand-accent: #0000FF");
     });
 
     it("applies custom font family", async () => {
@@ -132,7 +132,7 @@ describe("generateHtml", () => {
         font_family: "Helvetica",
       };
       const html = await generateHtml(makeData({ branding: partial }));
-      expect(html).toContain("--cap-blue: #AA0000");
+      expect(html).toContain("--brand-primary: #AA0000");
       // Missing header_text should fall back to company_name
       expect(html).toContain("TestCo Proposal");
       // Missing footer_text should fall back to "Confidential"
