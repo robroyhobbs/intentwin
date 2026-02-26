@@ -288,25 +288,21 @@ const POSTS: Record<string, BlogPost> = {
         <p>
           The real problem is threefold:
         </p>
-        <ol>
-          <li>
-            <strong>Proposal quality is inconsistent.</strong> When your best
-            capture manager writes, you win. When anyone else does, it&rsquo;s a
-            coin flip.
-          </li>
-          <li>
-            <strong>Institutional knowledge is trapped in people&rsquo;s heads.</strong>{" "}
-            Your VA case study from 2023 exists in a SharePoint folder somewhere.
-            Your CMMC certification details are in an email thread. Your key
-            differentiators change depending on who you ask.
-          </li>
-          <li>
-            <strong>Persuasion is applied by feel, not by system.</strong> Win
-            themes show up in the exec summary, then vanish. Evidence is
-            mentioned but not proven. The proposal tells the evaluator
-            you&rsquo;re qualified instead of showing them.
-          </li>
-        </ol>
+
+        {/* 3-problem cards */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1rem", margin: "1.5rem 0" }}>
+          {[
+            { num: "01", title: "Inconsistent quality", body: "When your best capture manager writes, you win. When anyone else does, it's a coin flip. Quality shouldn't depend on who's available." },
+            { num: "02", title: "Knowledge trapped in heads", body: "Your VA case study from 2023 is in a SharePoint folder. Your CMMC details are in an email thread. Your differentiators change depending on who you ask." },
+            { num: "03", title: "Persuasion by feel", body: "Win themes appear in the exec summary, then vanish. Evidence is mentioned but not proven. The proposal tells evaluators you're qualified instead of showing them." },
+          ].map(({ num, title, body }) => (
+            <div key={num} style={{ border: "1px solid var(--border)", borderRadius: "8px", padding: "1.25rem", background: "var(--surface)" }}>
+              <div style={{ fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.1em", color: "var(--foreground-muted)", marginBottom: "0.5rem" }}>{num}</div>
+              <div style={{ fontWeight: 600, marginBottom: "0.5rem", fontSize: "0.95rem" }}>{title}</div>
+              <div style={{ fontSize: "0.875rem", color: "var(--foreground-muted)", lineHeight: 1.6 }}>{body}</div>
+            </div>
+          ))}
+        </div>
 
         <h2>What we wanted to exist</h2>
         <p>
@@ -553,9 +549,44 @@ const POSTS: Record<string, BlogPost> = {
           Now imagine improving two variables: you double your submission rate by
           reducing proposal development time, and you improve your win rate from
           15% to 25% by only pursuing opportunities where you score well on
-          bid/no-bid and by improving proposal quality. That&rsquo;s 8 proposals
-          per month at 25% = 2 wins/month at $500K = $1M/month, $12M annually.
+          bid/no-bid and by improving proposal quality.
         </p>
+
+        {/* Revenue math visual */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: "1rem", alignItems: "center", margin: "1.5rem 0" }}>
+          <div style={{ border: "1px solid var(--border)", borderRadius: "8px", padding: "1.25rem", background: "var(--surface)" }}>
+            <div style={{ fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.08em", color: "var(--foreground-muted)", textTransform: "uppercase", marginBottom: "0.75rem" }}>Today</div>
+            {[
+              { label: "Proposals/month", val: "4" },
+              { label: "Win rate", val: "15%" },
+              { label: "Avg contract value", val: "$500K" },
+              { label: "Monthly wins", val: "~1" },
+            ].map(({ label, val }) => (
+              <div key={label} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.875rem", padding: "0.25rem 0", borderBottom: "1px solid var(--border)" }}>
+                <span style={{ color: "var(--foreground-muted)" }}>{label}</span>
+                <span style={{ fontWeight: 600 }}>{val}</span>
+              </div>
+            ))}
+            <div style={{ marginTop: "0.75rem", fontSize: "1.1rem", fontWeight: 700 }}>$3.6M/yr</div>
+          </div>
+          <div style={{ fontSize: "1.5rem", color: "var(--foreground-muted)", textAlign: "center" }}>→</div>
+          <div style={{ border: "1px solid var(--accent)", borderRadius: "8px", padding: "1.25rem", background: "rgba(124,58,237,0.05)" }}>
+            <div style={{ fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.08em", color: "var(--accent)", textTransform: "uppercase", marginBottom: "0.75rem" }}>With better process</div>
+            {[
+              { label: "Proposals/month", val: "8" },
+              { label: "Win rate", val: "25%" },
+              { label: "Avg contract value", val: "$500K" },
+              { label: "Monthly wins", val: "2" },
+            ].map(({ label, val }) => (
+              <div key={label} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.875rem", padding: "0.25rem 0", borderBottom: "1px solid rgba(124,58,237,0.2)" }}>
+                <span style={{ color: "var(--foreground-muted)" }}>{label}</span>
+                <span style={{ fontWeight: 600 }}>{val}</span>
+              </div>
+            ))}
+            <div style={{ marginTop: "0.75rem", fontSize: "1.1rem", fontWeight: 700, color: "var(--accent)" }}>$12M/yr</div>
+          </div>
+        </div>
+
         <p>
           That&rsquo;s not a marginal improvement. That&rsquo;s a different
           business. And neither variable requires hiring &mdash; it requires
@@ -612,50 +643,59 @@ const POSTS: Record<string, BlogPost> = {
         </p>
 
         <h2>What template decay looks like</h2>
+
+        {/* Template reuse decay bar */}
+        <div style={{ margin: "1.5rem 0", border: "1px solid var(--border)", borderRadius: "8px", overflow: "hidden" }}>
+          <div style={{ padding: "0.75rem 1rem", background: "var(--surface)", borderBottom: "1px solid var(--border)", fontSize: "0.75rem", fontWeight: 700, letterSpacing: "0.08em", color: "var(--foreground-muted)", textTransform: "uppercase" }}>
+            Proposal persuasiveness vs. reuse count
+          </div>
+          <div style={{ padding: "1rem 1.25rem", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+            {[
+              { use: "Original", pct: 92, label: "Written for this specific opportunity" },
+              { use: "2nd use", pct: 70, label: "Case study still relevant, win themes drifting" },
+              { use: "3rd use", pct: 48, label: "Evidence mismatched, agency names replaced" },
+              { use: "4th+ use", pct: 22, label: "Mad-libs shell. Evaluators can tell." },
+            ].map(({ use, pct, label }) => (
+              <div key={use}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", marginBottom: "0.25rem" }}>
+                  <span style={{ fontWeight: 600 }}>{use}</span>
+                  <span style={{ color: "var(--foreground-muted)" }}>{label}</span>
+                </div>
+                <div style={{ height: "6px", background: "var(--border)", borderRadius: "3px", overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${pct}%`, background: pct > 70 ? "var(--accent)" : pct > 40 ? "#f59e0b" : "#ef4444", borderRadius: "3px", transition: "width 0.3s" }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <p>
-          Here&rsquo;s a real example. This is a typical executive summary
-          opening from a proposal that started as a template:
+          Here&rsquo;s a real example. Compare two executive summary openings
+          &mdash; same company, same capability, different approach:
         </p>
-        <blockquote style={{ borderLeft: "3px solid var(--border)", paddingLeft: "1rem", margin: "1.5rem 0", color: "var(--foreground-muted)" }}>
-          <p>
-            &ldquo;[Company Name] is pleased to submit this proposal in response
-            to [Agency]&rsquo;s requirement for [service]. With over [X] years
-            of experience providing [general capability], we are uniquely
-            qualified to support [Agency]&rsquo;s mission. Our team of certified
-            professionals brings deep expertise in [domain] and a proven track
-            record of delivering results for federal clients.&rdquo;
-          </p>
-        </blockquote>
+
+        {/* Side-by-side quote comparison */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", margin: "1.5rem 0" }}>
+          <div style={{ border: "1px solid var(--border)", borderRadius: "8px", padding: "1.25rem" }}>
+            <div style={{ fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.08em", color: "#ef4444", textTransform: "uppercase", marginBottom: "0.75rem" }}>Template</div>
+            <p style={{ fontSize: "0.875rem", color: "var(--foreground-muted)", lineHeight: 1.7, margin: 0, fontStyle: "italic" }}>
+              &ldquo;[Company Name] is pleased to submit this proposal in response to [Agency]&rsquo;s requirement for [service]. With over [X] years of experience providing [general capability], we are uniquely qualified to support [Agency]&rsquo;s mission.&rdquo;
+            </p>
+            <div style={{ marginTop: "0.75rem", fontSize: "0.75rem", color: "#ef4444" }}>Every bracket is a tell. No specific claim. Nothing verifiable.</div>
+          </div>
+          <div style={{ border: "1px solid var(--accent)", borderRadius: "8px", padding: "1.25rem", background: "rgba(124,58,237,0.04)" }}>
+            <div style={{ fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.08em", color: "var(--accent)", textTransform: "uppercase", marginBottom: "0.75rem" }}>Intent-driven</div>
+            <p style={{ fontSize: "0.875rem", lineHeight: 1.7, margin: 0, fontStyle: "italic" }}>
+              &ldquo;When the Department of Veterans Affairs needed to migrate 340 production servers to AWS GovCloud &mdash; zero tolerance for data loss, 18-month mandate &mdash; they selected Apex Federal Solutions. We delivered in 16 months, zero data loss, $3.2M in annual savings.&rdquo;
+            </p>
+            <div style={{ marginTop: "0.75rem", fontSize: "0.75rem", color: "var(--accent)" }}>Opens with proof. Every claim is specific and verifiable.</div>
+          </div>
+        </div>
+
         <p>
-          Every bracket is a tell. This paragraph says nothing specific. It
-          makes no claim the evaluator can verify. It describes no outcome. It
-          reads exactly like what it is: a mad-libs template.
-        </p>
-        <p>
-          Now compare this to an executive summary opening written with intent
-          &mdash; meaning it starts from the specific evaluation criteria,
-          applies the company&rsquo;s strongest relevant evidence, and leads
-          with a verifiable outcome:
-        </p>
-        <blockquote style={{ borderLeft: "3px solid var(--accent)", paddingLeft: "1rem", margin: "1.5rem 0" }}>
-          <p>
-            &ldquo;When the Department of Veterans Affairs needed to migrate 340
-            production servers from legacy on-premises infrastructure to AWS
-            GovCloud &mdash; with zero tolerance for data loss and a
-            congressional mandate for completion within 18 months &mdash; they
-            selected Apex Federal Solutions. We delivered in 16 months, achieved
-            zero data loss across 2.1 petabytes, and reduced the VA&rsquo;s
-            infrastructure operating costs by $3.2M annually. We propose to
-            bring the same methodology, the same team leadership, and the same
-            commitment to measurable outcomes to [Agency]&rsquo;s cloud
-            modernization initiative.&rdquo;
-          </p>
-        </blockquote>
-        <p>
-          Same word count. Fundamentally different impact. The second version
-          opens with proof, not promises. Every claim is specific and
-          verifiable. The evaluator learns more in two sentences than the
-          template version communicates in an entire section.
+          Same word count. Fundamentally different impact. The evaluator learns
+          more in two sentences than the template version communicates in an
+          entire section.
         </p>
 
         <h2>What works instead</h2>
@@ -1004,6 +1044,33 @@ const POSTS: Record<string, BlogPost> = {
           an RFP for a DLA cloud migration contract worth $8.2M. Here&rsquo;s
           what happens:
         </p>
+
+        {/* 4-step pipeline diagram */}
+        <div style={{ margin: "1.5rem 0" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0", position: "relative" }}>
+            {[
+              { step: "01", label: "Extract", desc: "RFP → structured requirements, evaluation criteria, compliance items" },
+              { step: "02", label: "Score", desc: "Bid/no-bid scoring against your capabilities and past performance" },
+              { step: "03", label: "Intend", desc: "Win themes derived from competitive context for this specific bid" },
+              { step: "04", label: "Generate", desc: "10 sections, each built from intent + evidence, not templates" },
+            ].map(({ step, label, desc }, i) => (
+              <div key={step} style={{
+                border: "1px solid var(--border)",
+                borderLeft: i === 0 ? "1px solid var(--border)" : "none",
+                padding: "1.25rem",
+                background: i === 2 ? "rgba(124,58,237,0.06)" : "var(--surface)",
+                borderTop: i === 2 ? "2px solid var(--accent)" : "1px solid var(--border)",
+              }}>
+                <div style={{ fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.1em", color: i === 2 ? "var(--accent)" : "var(--foreground-muted)", marginBottom: "0.4rem" }}>{step}</div>
+                <div style={{ fontWeight: 700, fontSize: "1rem", marginBottom: "0.5rem" }}>{label}</div>
+                <div style={{ fontSize: "0.8rem", color: "var(--foreground-muted)", lineHeight: 1.5 }}>{desc}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize: "0.75rem", color: "var(--foreground-muted)", marginTop: "0.5rem", textAlign: "center" }}>
+            Intent is defined at step 03 and governs all content generated in step 04
+          </div>
+        </div>
 
         <h3>Step 1: Extraction</h3>
         <p>
