@@ -205,6 +205,16 @@ All tables now have `organization_id` columns with RLS policies:
 - **Review client factory pattern**: 3 near-identical AI client files (groq, mistral, openai) shared 80% code. Extracted `review-client-factory.ts` to eliminate duplication. Pattern: when 3+ files share structure, extract the common shape into a factory
 - **Project CLAUDE.md as agent guardrails**: Created project-level `CLAUDE.md` documenting code quality constraints, architecture reminders, and testing conventions. This ensures all agents (human and AI) follow the same rules without re-reading AGENTS.md
 
+### 2026-02-25 - Tiered Pricing & Feature Gates
+
+- **plan_tier CHECK constraint was missing values**: The DB constraint only allowed `trial`/`active`/`cancelled`. Adding `free` and `invite` required a migration (00005). Always audit CHECK constraints when adding new enum values to a column — a missing value causes hard 500s from Postgres
+- **Dynamic Stripe price creation causes price proliferation**: The original checkout route called `stripe.prices.create()` on every checkout session, generating unbounded prices in the Stripe dashboard. Fix: store price IDs as env vars (`STRIPE_STARTER_PRICE_ID`, `STRIPE_PRO_PRICE_ID`, `STRIPE_ENTERPRISE_PRICE_ID`) and resolve them via `getStripePriceId(tier, interval)`. Check `stripe.prices.list()` if you suspect proliferation
+- **invite tier = enterprise tier semantically**: Existing orgs on the old `invite` tier had unlimited access — the correct migration target is `enterprise`, not `free`. When mapping legacy tiers to new ones, reason from the access level (what they could do) not the name
+- **Feature flags belong in the subscription event**: Store `feature_flags` JSONB on the org row and populate it from `PRICING_TIERS` config during the Stripe webhook handler (subscription activated/updated). This avoids scatter — flag logic lives in one place (the config), not spread across every feature check
+- **Server-side feature gating pattern**: `checkFeature(organizationId, flag)` queries the org's `feature_flags` JSONB column and returns boolean. Call this at the top of protected API routes before any expensive work. Return `forbidden()` (403) not `unauthorized()` (401) — the user is authenticated but lacks the entitlement
+- **Token limit check before Inngest dispatch**: AI generation dispatches an async Inngest job. Check `ai_tokens_per_month` limit synchronously before dispatching — once the job is queued you can't easily stop it. Pattern: gate → check limits → dispatch
+- **Free tier is a product, not a crippled demo**: Free tier (DOCX-only, manual creation, no AI) should feel complete for its use case. Upgrade triggers are specific capability walls (AI generate button, RFP upload) not a general degraded experience. Prompt upgrades contextually at the moment of need, not on every page load
+
 ### 2026-02-15 - Race Conditions, Data Normalization & DevOps
 
 - **Race condition between regenerate and quality review**: Fire-and-forget async operations (regenerate section, quality review) can run simultaneously, leaving sections stuck in `generating` state. Fix: add mutual exclusion checks (query current status before proceeding) and use Next.js `after()` instead of detached promises for background work
