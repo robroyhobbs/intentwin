@@ -152,11 +152,13 @@ export function buildSectionSpecificL1Context(
       ...l1Context.companyContext.filter(c => c.category === "certifications" || c.category === "values")
     ];
   } else if (sectionType === "pricing") {
-    // Only fetch legal/pricing terms
+    // Fetch legal/pricing terms AND product pricing models so the pricing section
+    // can reference the company's actual pricing structures (fixed-fee, T&M, etc.)
     relevantCompany = [
       ...brandContext,
       ...l1Context.companyContext.filter(c => c.category === "legal")
     ];
+    relevantProducts = l1Context.productContexts;
   } else {
     // Default: Provide top 3 evidence points and product specs to avoid overwhelming
     relevantEvidence = l1Context.evidenceLibrary.slice(0, 3);

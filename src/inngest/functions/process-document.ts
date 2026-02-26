@@ -76,6 +76,20 @@ export const processDocumentFn = inngest.createFunction(
           log.warn("Document parsed but produced 0 sections");
         }
 
+        // Build full extracted text (capped at 200K chars) so /api/evidence/extract
+        // can read it without joining through document_chunks.
+        const extractedText = sections
+          .map((s) => (s.heading ? `## ${s.heading}\n${s.content}` : s.content))
+          .join("\n\n")
+          .slice(0, 200_000);
+
+        // Persist extracted text immediately — do this before chunking so the
+        // document is usable even if embedding batches fail/retry.
+        await supabase
+          .from("documents")
+          .update({ extracted_text: extractedText })
+          .eq("id", documentId);
+
         // Chunk sections
         const chunks = chunkSections(sections);
 
