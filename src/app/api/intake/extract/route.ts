@@ -348,7 +348,9 @@ export async function POST(request: NextRequest) {
 
     return ok({ extracted, assumptions });
   } catch (error) {
-    logger.error("Extraction error", error);
-    return serverError("Failed to extract intake data", error);
+    const errMsg = error instanceof Error ? error.message : String(error);
+    logger.error("Extraction error", { message: errMsg, stack: error instanceof Error ? error.stack : undefined });
+    // Surface first 200 chars of actual error to client for debugging
+    return serverError(`Failed to extract intake data: ${errMsg.slice(0, 200)}`, error);
   }
 }
