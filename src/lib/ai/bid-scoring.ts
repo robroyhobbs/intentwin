@@ -5,6 +5,7 @@ import { generateText } from "./gemini";
 import { intelligenceClient, buildIntelligenceContext, buildWinProbabilityContext } from "@/lib/intelligence";
 import type { WinProbabilityResponse } from "@/lib/intelligence";
 import type { L1Context } from "./pipeline/types";
+import { fetchL1ContextFromDb } from "./pipeline/fetch-l1-context";
 
 // Fixed scoring factors and weights
 export const SCORING_FACTORS = [
@@ -129,7 +130,7 @@ export async function scoreFromRequirements(
   });
 
   const [l1Context, agencyProfile, pricingRates, winProbability] = await Promise.all([
-    fetchL1ContextForScoring(supabase, serviceLine, industry, organizationId),
+    fetchL1ContextFromDb(supabase, serviceLine, industry, organizationId),
     agencyName
       ? intelligenceClient.getAgencyProfile(agencyName)
       : Promise.resolve(null),
@@ -246,7 +247,7 @@ export async function scoreBidOpportunity(
   }
 
   // Fetch L1 context for the organization
-  const l1Context = await fetchL1ContextForScoring(
+  const l1Context = await fetchL1ContextFromDb(
     supabase,
     proposal.intake_data?.service_line,
     proposal.intake_data?.industry,
@@ -357,73 +358,6 @@ export async function saveBidDecision(
 }
 
 // --- Internal helpers ---
-
-/**
- * Fetch L1 context for bid scoring.
- *
- * NOTE: This is intentionally a standalone copy of fetchL1Context from pipeline/context.ts.
- * We cannot import from context.ts here because bid-scoring.ts is imported by client components
- * (proposals/new/page.tsx) and context.ts transitively imports @/lib/sources/loader.ts which
- * uses Node's 'fs' module — causing Turbopack build failures in the browser bundle.
- *
- * Includes proper evidence ordering (is_verified desc, created_at desc) before limit.
- */
-async function fetchL1ContextForScoring(
-  supabase: ReturnType<typeof createAdminClient>,
-  serviceLine?: string,
-  industry?: string,
-  organizationId?: string,
-): Promise<L1Context> {
-  try {
-    let companyQuery = supabase
-      .from("company_context")
-      .select("id, category, key, title, content, metadata, is_locked, lock_reason, last_verified_at, verified_by")
-      .order("category");
-    if (organizationId) {
-      companyQuery = companyQuery.eq("organization_id", organizationId);
-    }
-    const { data: companyContext } = await companyQuery;
-
-    let productQuery = supabase.from("product_contexts").select("id, product_name, service_line, description, capabilities, specifications, pricing_models, constraints, supported_outcomes, is_locked, lock_reason");
-    if (organizationId) {
-      productQuery = productQuery.eq("organization_id", organizationId);
-    }
-    if (serviceLine) {
-      productQuery = productQuery.eq("service_line", serviceLine);
-    }
-    const { data: productContexts } = await productQuery;
-
-    let evidenceQuery = supabase
-      .from("evidence_library")
-      .select("id, evidence_type, title, summary, full_content, client_industry, service_line, client_size, outcomes_demonstrated, metrics, is_verified, verified_by, verified_at, verification_notes")
-      .eq("is_verified", true);
-    if (organizationId) {
-      evidenceQuery = evidenceQuery.eq("organization_id", organizationId);
-    }
-    if (serviceLine) {
-      evidenceQuery = evidenceQuery.eq("service_line", serviceLine);
-    }
-    if (industry) {
-      evidenceQuery = evidenceQuery.or(
-        `client_industry.eq.${industry},client_industry.is.null`,
-      );
-    }
-    const { data: evidenceLibrary } = await evidenceQuery
-      .order("is_verified", { ascending: false })
-      .order("created_at", { ascending: false })
-      .limit(10);
-
-    return {
-      companyContext: (companyContext || []) as L1Context["companyContext"],
-      productContexts: (productContexts || []) as L1Context["productContexts"],
-      evidenceLibrary: (evidenceLibrary || []) as L1Context["evidenceLibrary"],
-      teamMembers: [],
-    };
-  } catch (error) {
-    logger.error("Error fetching L1 context for scoring", error);
-    return { companyContext: [], productContexts: [], evidenceLibrary: [], teamMembers: [] };
-  }
-}
 
 function buildRfpSummary(requirements: Record<string, unknown>): string {
   const sections: string[] = [];

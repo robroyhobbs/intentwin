@@ -26,13 +26,9 @@ export {
 export {
   createMockGeminiClient,
   createMockVoyageClient,
-  createMockGroqClient,
-  createMockMistralClient,
   createMockAIPipeline,
   createMockAIResponse,
   createMockEmbeddingResponse,
-  createMockGroqReviewResponse,
-  createMockMistralReviewResponse,
 } from "./mock-ai";
 
 // Test data factories

@@ -1,3 +1,13 @@
+/**
+ * POST /api/proposals/temp/outcomes
+ *
+ * AI win-strategy generation for a pre-proposal (wizard flow, before a proposal record exists).
+ * Uses raw getUserContext instead of withProposalRoute since there's no proposal ID yet.
+ *
+ * Contrast with:
+ *   /api/proposals/[id]/outcomes — same AI generation for an existing proposal
+ *   /api/proposals/[id]/outcome  (singular) — deal outcome recording (GET+PATCH won/lost status)
+ */
 import { NextRequest } from "next/server";
 import { getUserContext } from "@/lib/supabase/auth-api";
 import { generateWinStrategy, OutcomeParseError } from "@/lib/ai/generate-outcomes";

@@ -10,9 +10,6 @@
  *
  * Supported providers:
  *   - Google Gemini (via baseUrl + customHeaders)
- *   - OpenAI (via baseURL + defaultHeaders)
- *   - Groq (via baseURL + defaultHeaders)
- *   - Mistral (via serverURL + customHeaders)
  *   - Voyage AI (via fetch URL + headers)
  */
 
@@ -51,49 +48,6 @@ export function geminiHeliconeOptions(): {
       "Helicone-Target-Url": "https://generativelanguage.googleapis.com",
       "Helicone-Target-Provider": "Google",
     },
-  };
-}
-
-// ── OpenAI ──
-
-/** OpenAI SDK constructor options for Helicone proxy */
-export function openaiHeliconeOptions(): {
-  baseURL?: string;
-  defaultHeaders?: Record<string, string>;
-} {
-  if (!isHeliconeEnabled()) return {};
-  return {
-    baseURL: "https://oai.helicone.ai/v1",
-    defaultHeaders: baseHeaders(),
-  };
-}
-
-// ── Groq ──
-
-/** Groq SDK constructor options for Helicone proxy */
-export function groqHeliconeOptions(): {
-  baseURL?: string;
-  defaultHeaders?: Record<string, string>;
-} {
-  if (!isHeliconeEnabled()) return {};
-  return {
-    baseURL: "https://groq.helicone.ai/openai/v1",
-    defaultHeaders: baseHeaders(),
-  };
-}
-
-// ── Mistral ──
-
-/** Mistral SDK constructor options for Helicone proxy */
-export function mistralHeliconeOptions(): {
-  serverURL?: string;
-  customHeaders?: Record<string, string>;
-} {
-  if (!isHeliconeEnabled()) return {};
-  return {
-    serverURL: "https://mistral.helicone.ai",
-    // Mistral SDK doesn't support defaultHeaders; we add via fetch interceptor
-    // But the Mistral JS SDK v1.14+ passes extraHeaders on requests
   };
 }
 

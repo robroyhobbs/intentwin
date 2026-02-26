@@ -1,15 +1,10 @@
 /**
- * Quality Overseer — 3-Judge Council Review + Remediation
+ * Quality Overseer — Gemini Review + Remediation
  *
- * Reviews all generated sections using a council of 3 LLMs:
- *   1. Gemini 2.0 Flash (Google)
- *   2. Llama 3.3 70B (Groq)
- *   3. Mistral Small (Mistral)
+ * Reviews all generated sections using Gemini. Sections scoring below
+ * REGEN_THRESHOLD are regenerated and re-reviewed.
  *
- * Judges review each section in parallel. Scores are aggregated via
- * weighted average with majority vote for pass/fail.
- *
- * Flow: Council reviews → Aggregate → Weak by consensus (2+)? → Gemini remediates → Gemini re-reviews → Store
+ * Flow: Gemini reviews → Weak sections? → Gemini remediates → Gemini re-reviews → Store
  */
 
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -18,8 +13,6 @@ import { logger } from "@/lib/utils/logger";
 import { logQualityReviewMetric } from "@/lib/observability/metrics";
 import { parallelBatch, PIPELINE_CONCURRENCY } from "./pipeline/retrieval";
 import { reviewWithGemini } from "./gemini-review-client";
-import { reviewWithGroq } from "./groq-client";
-import { reviewWithMistral } from "./mistral-client";
 import {
   buildQualityReviewPrompt,
   calculateSectionScore,
@@ -36,6 +29,7 @@ import { createProposalVersion } from "@/lib/versioning/create-version";
 // Types
 // ============================================================
 
+/** Single-judge review result stored in JSONB for backward compat. */
 export interface JudgeResult {
   judge_id: string;
   judge_name: string;
@@ -52,6 +46,7 @@ export interface JudgeResult {
   error?: string;
 }
 
+/** @deprecated Kept for backward compatibility with old council data in JSONB */
 export interface JudgeInfo {
   judge_id: string;
   judge_name: string;
@@ -60,6 +55,7 @@ export interface JudgeInfo {
   error?: string;
 }
 
+/** Section review stored in DB JSONB. judge_reviews is a single-element array (Gemini). */
 export interface CouncilSectionReview {
   section_id: string;
   section_type: string;
@@ -110,224 +106,16 @@ export interface QualityReviewResult {
 }
 
 // ============================================================
-// Judge Definitions
-// ============================================================
-
-interface JudgeDefinition {
-  id: string;
-  name: string;
-  provider: string;
-  reviewFn: (prompt: string) => Promise<QualityScores>;
-}
-
-/** Returns the model label for the initial "reviewing" status based on available judges. */
-export function getReviewModelLabel(): string {
-  const judges = getAvailableJudges();
-  return judges.length > 1
-    ? "council"
-    : judges[0]?.id || process.env.GEMINI_MODEL || "gemini-3.1-pro-preview";
-}
-
-function getAvailableJudges(): JudgeDefinition[] {
-  const judges: JudgeDefinition[] = [];
-
-  // Gemini is always available (uses same GEMINI_API_KEY as main generation)
-  const geminiModel = process.env.GEMINI_MODEL || "gemini-3.1-pro-preview";
-  judges.push({
-    id: geminiModel,
-    name: "Gemini",
-    provider: "google",
-    reviewFn: reviewWithGemini,
-  });
-
-  // Groq — optional, skipped if no API key
-  if (process.env.GROQ_API_KEY) {
-    judges.push({
-      id: "llama-3.3-70b",
-      name: "Llama 3.3",
-      provider: "groq",
-      reviewFn: reviewWithGroq,
-    });
-  }
-
-  // Mistral — optional, skipped if no API key
-  if (process.env.MISTRAL_API_KEY) {
-    judges.push({
-      id: "mistral-small",
-      name: "Mistral Small",
-      provider: "mistral",
-      reviewFn: reviewWithMistral,
-    });
-  }
-
-  return judges;
-}
-
-// ============================================================
-// Council Review (per-section)
-// ============================================================
-
-/**
- * Run all available judges on a single section prompt in parallel.
- * Returns individual JudgeResults + aggregated scores.
- */
-async function runCouncilReview(
-  prompt: string,
-  judges: JudgeDefinition[],
-): Promise<{
-  judgeResults: JudgeResult[];
-  aggregated: QualityScores;
-  aggregatedScore: number;
-}> {
-  // Run all judges in parallel — never Promise.all so one failure doesn't cancel others
-  const settled = await Promise.allSettled(
-    judges.map(async (judge) => {
-      try {
-        const scores = await judge.reviewFn(prompt);
-        const avg = calculateSectionScore(scores);
-        return {
-          judge_id: judge.id,
-          judge_name: judge.name,
-          provider: judge.provider,
-          scores: {
-            content_quality: scores.content_quality,
-            client_fit: scores.client_fit,
-            evidence: scores.evidence,
-            brand_voice: scores.brand_voice,
-          },
-          score: avg,
-          feedback: scores.feedback,
-          status: "completed" as const,
-        };
-      } catch (err) {
-        const isTimeout =
-          err instanceof Error &&
-          (err.message.includes("timeout") ||
-            err.message.includes("ETIMEDOUT"));
-        return {
-          judge_id: judge.id,
-          judge_name: judge.name,
-          provider: judge.provider,
-          scores: {
-            content_quality: 0,
-            client_fit: 0,
-            evidence: 0,
-            brand_voice: 0,
-          },
-          score: 0,
-          feedback: "",
-          status: (isTimeout ? "timeout" : "failed") as "timeout" | "failed",
-          error: err instanceof Error ? err.message : "Unknown error",
-        };
-      }
-    }),
-  );
-
-  // Extract results (allSettled always returns fulfilled since we catch inside)
-  const judgeResults: JudgeResult[] = settled.map((s) =>
-    s.status === "fulfilled"
-      ? s.value
-      : {
-          judge_id: "unknown",
-          judge_name: "Unknown",
-          provider: "unknown",
-          scores: {
-            content_quality: 0,
-            client_fit: 0,
-            evidence: 0,
-            brand_voice: 0,
-          },
-          score: 0,
-          feedback: "",
-          status: "failed" as const,
-          error: "Promise rejected unexpectedly",
-        },
-  );
-
-  // Filter to successful judges for aggregation
-  const successful = judgeResults.filter((r) => r.status === "completed");
-
-  if (successful.length === 0) {
-    // All judges failed — return zeros
-    return {
-      judgeResults,
-      aggregated: {
-        content_quality: 0,
-        client_fit: 0,
-        evidence: 0,
-        brand_voice: 0,
-        feedback: "All judges failed to review this section.",
-      },
-      aggregatedScore: 0,
-    };
-  }
-
-  // Average across successful judges
-  const avg = (arr: number[]) =>
-    Math.round((arr.reduce((s, v) => s + v, 0) / arr.length) * 10) / 10;
-
-  const aggregated: QualityScores = {
-    content_quality: avg(successful.map((r) => r.scores.content_quality)),
-    client_fit: avg(successful.map((r) => r.scores.client_fit)),
-    evidence: avg(successful.map((r) => r.scores.evidence)),
-    brand_voice: avg(successful.map((r) => r.scores.brand_voice)),
-    feedback: successful
-      .map((r) => `**${r.judge_name}:** ${r.feedback}`)
-      .join("\n\n"),
-  };
-
-  const aggregatedScore = calculateSectionScore(aggregated);
-
-  return { judgeResults, aggregated, aggregatedScore };
-}
-
-// ============================================================
-// Consensus Calculation
-// ============================================================
-
-function calculateConsensus(
-  sectionReviews: CouncilSectionReview[],
-): "unanimous" | "majority" | "split" {
-  if (sectionReviews.length === 0) return "split";
-
-  // Look at individual judge pass/fail across all sections
-  let unanimousCount = 0;
-  let _majorityCount = 0;
-  let splitCount = 0;
-
-  for (const section of sectionReviews) {
-    const successful = section.judge_reviews.filter(
-      (r) => r.status === "completed",
-    );
-    if (successful.length === 0) {
-      splitCount++;
-      continue;
-    }
-
-    const passes = successful.filter((r) => r.score >= PASS_THRESHOLD).length;
-    const fails = successful.length - passes;
-
-    if (passes === successful.length || fails === successful.length) {
-      unanimousCount++;
-    } else if (passes > fails || fails > passes) {
-      _majorityCount++;
-    } else {
-      splitCount++;
-    }
-  }
-
-  // Overall consensus from section-level agreement
-  if (unanimousCount === sectionReviews.length) return "unanimous";
-  if (splitCount > sectionReviews.length / 2) return "split";
-  return "majority";
-}
-
-// ============================================================
 // Core Function
 // ============================================================
 
+/** Returns the model label used for the initial "reviewing" status. */
+export function getReviewModelLabel(): string {
+  return process.env.GEMINI_MODEL || "gemini-3.1-pro-preview";
+}
+
 /**
- * Run quality review on all sections of a proposal using the 3-judge council.
+ * Run quality review on all sections of a proposal using Gemini.
  */
 export async function runQualityReview(
   proposalId: string,
@@ -336,19 +124,21 @@ export async function runQualityReview(
   const reviewStartTime = performance.now();
   const supabase = createAdminClient();
   const runAt = new Date().toISOString();
-  const judges = getAvailableJudges();
+  const geminiModel = process.env.GEMINI_MODEL || "gemini-3.1-pro-preview";
 
   const result: QualityReviewResult = {
     status: QualityReviewStatus.REVIEWING,
     run_at: runAt,
     trigger,
-    model: judges.length > 1 ? "council" : judges[0]?.id || "unknown",
-    judges: judges.map((j) => ({
-      judge_id: j.id,
-      judge_name: j.name,
-      provider: j.provider,
-      status: "completed" as const,
-    })),
+    model: geminiModel,
+    judges: [
+      {
+        judge_id: geminiModel,
+        judge_name: "Gemini",
+        provider: "google",
+        status: "completed" as const,
+      },
+    ],
     overall_score: 0,
     pass: false,
     sections: [],
@@ -411,7 +201,7 @@ export async function runQualityReview(
     // Dynamic threshold: competition-aware quality bar
     const dynamicThreshold = getQualityThreshold(intelligence);
 
-    // ── Round 1: Council reviews all sections ──
+    // ── Round 1: Review all sections ──
     const sectionReviews: CouncilSectionReview[] = [];
     const weakSections: {
       sectionId: string;
@@ -420,7 +210,6 @@ export async function runQualityReview(
       feedback: string;
     }[] = [];
 
-    // Parallelize section reviews (each section's judges already run in parallel internally)
     const sectionResults = await parallelBatch(
       sections,
       PIPELINE_CONCURRENCY,
@@ -436,41 +225,64 @@ export async function runQualityReview(
           winStrategy,
         });
 
-        const { judgeResults, aggregated, aggregatedScore } =
-          await runCouncilReview(prompt, judges);
+        let scores: QualityScores;
+        let reviewStatus: "completed" | "failed" = "completed";
+        let reviewError: string | undefined;
+
+        try {
+          scores = await reviewWithGemini(prompt);
+        } catch (err) {
+          reviewStatus = "failed";
+          reviewError = err instanceof Error ? err.message : "Unknown error";
+          scores = {
+            content_quality: 0,
+            client_fit: 0,
+            evidence: 0,
+            brand_voice: 0,
+            feedback: "",
+          };
+        }
+
+        const sectionScore = calculateSectionScore(scores);
+
+        // Build a single-element judge_reviews array for DB backward compat
+        const judgeResult: JudgeResult = {
+          judge_id: geminiModel,
+          judge_name: "Gemini",
+          provider: "google",
+          scores: {
+            content_quality: scores.content_quality,
+            client_fit: scores.client_fit,
+            evidence: scores.evidence,
+            brand_voice: scores.brand_voice,
+          },
+          score: sectionScore,
+          feedback: scores.feedback,
+          status: reviewStatus,
+          error: reviewError,
+        };
 
         const review: CouncilSectionReview = {
           section_id: section.id,
           section_type: section.section_type,
-          score: aggregatedScore,
+          score: sectionScore,
           dimensions: {
-            content_quality: aggregated.content_quality,
-            client_fit: aggregated.client_fit,
-            evidence: aggregated.evidence,
-            brand_voice: aggregated.brand_voice,
+            content_quality: scores.content_quality,
+            client_fit: scores.client_fit,
+            evidence: scores.evidence,
+            brand_voice: scores.brand_voice,
           },
-          feedback: aggregated.feedback,
-          judge_reviews: judgeResults,
+          feedback: scores.feedback,
+          judge_reviews: [judgeResult],
         };
 
-        // Council consensus for remediation: 2+ judges must score below threshold
-        // Uses dynamic threshold based on intelligence (competition level)
-        const successfulJudges = judgeResults.filter(
-          (r) => r.status === "completed",
-        );
-        const weakJudgeCount = successfulJudges.filter(
-          (r) => r.score < dynamicThreshold,
-        ).length;
+        const isWeak = reviewStatus === "completed" && sectionScore < dynamicThreshold;
 
-        const isWeak =
-          weakJudgeCount >= 2 ||
-          (successfulJudges.length === 1 && weakJudgeCount === 1);
-
-        return { review, isWeak, aggregatedScore, feedback: aggregated.feedback };
+        return { review, isWeak, sectionScore, feedback: scores.feedback };
       },
     );
 
-    // Collect results, treating any rejected section as a fatal error
+    // Collect results
     let hasFatalError = false;
     for (let i = 0; i < sectionResults.length; i++) {
       const settled = sectionResults[i];
@@ -480,12 +292,12 @@ export async function runQualityReview(
           weakSections.push({
             sectionId: sections[i].id,
             sectionType: sections[i].section_type,
-            score: settled.value.aggregatedScore,
+            score: settled.value.sectionScore,
             feedback: settled.value.feedback,
           });
         }
       } else {
-        logger.error(`Council review failed for section ${sections[i].id}`, settled.reason);
+        logger.error(`Review failed for section ${sections[i].id}`, settled.reason);
         hasFatalError = true;
       }
     }
@@ -497,19 +309,24 @@ export async function runQualityReview(
       return result;
     }
 
-    // Update judge info with actual statuses from the last section reviewed
+    // Update judge status from actual review results
     if (sectionReviews.length > 0 && result.judges) {
       const lastSection = sectionReviews[sectionReviews.length - 1];
-      result.judges = lastSection.judge_reviews.map((jr) => ({
-        judge_id: jr.judge_id,
-        judge_name: jr.judge_name,
-        provider: jr.provider,
-        status: jr.status,
-        error: jr.error,
-      }));
+      const geminiJudge = lastSection.judge_reviews[0];
+      if (geminiJudge) {
+        result.judges = [
+          {
+            judge_id: geminiJudge.judge_id,
+            judge_name: geminiJudge.judge_name,
+            provider: geminiJudge.provider,
+            status: geminiJudge.status,
+            error: geminiJudge.error,
+          },
+        ];
+      }
     }
 
-    // ── Round 2: Remediate weak sections (council consensus) ──
+    // ── Round 2: Remediate weak sections ──
     let remediationOccurred = false;
 
     for (const weak of weakSections) {
@@ -517,7 +334,7 @@ export async function runQualityReview(
         const originalSection = sections.find((s) => s.id === weak.sectionId);
         if (!originalSection) continue;
 
-        // Regenerate with Gemini, injecting council feedback
+        // Regenerate with Gemini, injecting feedback
         const regenPrompt = buildRemediationPrompt(
           originalSection.generated_content || "",
           originalSection.section_type,
@@ -538,7 +355,7 @@ export async function runQualityReview(
 
         remediationOccurred = true;
 
-        // Re-review with Gemini Flash (single judge, not full council)
+        // Re-review with Gemini
         const reReviewPrompt = buildQualityReviewPrompt({
           sectionContent: regeneratedContent,
           sectionType: weak.sectionType,
@@ -553,7 +370,7 @@ export async function runQualityReview(
         const newScores = await reviewWithGemini(reReviewPrompt);
         const newAvg = calculateSectionScore(newScores);
 
-        // Update the section review with GPT-4o re-review score
+        // Update the section review with re-review scores
         const existingReview = sectionReviews.find(
           (r) => r.section_id === weak.sectionId,
         );
@@ -601,10 +418,10 @@ export async function runQualityReview(
           ) / 10
         : 0;
     result.pass = result.overall_score >= PASS_THRESHOLD;
-    result.consensus = calculateConsensus(sectionReviews);
+    result.consensus = "unanimous"; // Single judge always unanimous
     result.status = QualityReviewStatus.COMPLETED;
 
-    // Log quality review metric (non-critical — never break main flow)
+    // Log quality review metric (non-critical)
     try {
       const sectionScores: Record<string, number> = {};
       for (const sr of sectionReviews) {
@@ -617,7 +434,7 @@ export async function runQualityReview(
         status: "success",
         overallScore: result.overall_score,
         sectionScores,
-        judgesUsed: judges.length,
+        judgesUsed: 1,
       });
     } catch {
       // Metric logging must never break quality review
@@ -631,7 +448,7 @@ export async function runQualityReview(
       await createProposalVersion({
         proposalId,
         triggerEvent: "generation_complete",
-        changeSummary: `Quality council remediated ${weakSections.length} section(s). Overall score: ${result.overall_score}`,
+        changeSummary: `Quality review remediated ${weakSections.length} section(s). Overall score: ${result.overall_score}`,
         label: "Quality Council Remediation",
       });
     }
@@ -645,10 +462,10 @@ export async function runQualityReview(
     try {
       logQualityReviewMetric({
         proposalId,
-        organizationId: "",  // proposal may not have been fetched
+        organizationId: "",
         durationMs: Math.round(performance.now() - reviewStartTime),
         status: "failure",
-        judgesUsed: judges.length,
+        judgesUsed: 1,
         error: err instanceof Error ? err.message : "Unknown error",
       });
     } catch {
@@ -676,9 +493,9 @@ async function storeResult(
 }
 
 /**
- * Extract quality council feedback for a specific section from the proposal's
- * quality_review JSONB column. Returns a formatted string with all judge
- * scores and comments, or null if no feedback exists.
+ * Extract quality review feedback for a specific section from the proposal's
+ * quality_review JSONB column. Returns a formatted string with scores and
+ * comments, or null if no feedback exists.
  */
 export async function getQualityFeedbackForSection(
   proposalId: string,
@@ -714,7 +531,7 @@ export async function getQualityFeedbackForSection(
     lines.push(`  - Brand Voice: ${sectionReview.dimensions.brand_voice}/10`);
     lines.push("");
 
-    // Include per-judge feedback if available (CouncilSectionReview)
+    // Include per-judge feedback if available (CouncilSectionReview — supports old multi-judge data too)
     const councilReview = sectionReview as CouncilSectionReview;
     if (councilReview.judge_reviews?.length) {
       for (const jr of councilReview.judge_reviews) {
@@ -738,7 +555,7 @@ export async function getQualityFeedbackForSection(
 }
 
 /**
- * Build a Gemini regeneration prompt that injects council feedback.
+ * Build a Gemini regeneration prompt that injects review feedback.
  */
 function buildRemediationPrompt(
   originalContent: string,
@@ -751,7 +568,7 @@ function buildRemediationPrompt(
 ## Original Content
 ${originalContent}
 
-## Quality Review Feedback (from independent reviewer council)
+## Quality Review Feedback
 ${feedback}
 
 ## Proposal Context

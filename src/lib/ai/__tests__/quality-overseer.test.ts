@@ -55,17 +55,7 @@ vi.mock("../gemini-review-client", () => ({
   reviewWithGemini: vi.fn(),
 }));
 
-// Mock Groq client
-vi.mock("../groq-client", () => ({
-  reviewWithGroq: vi.fn(),
-}));
-
-// Mock Mistral client
-vi.mock("../mistral-client", () => ({
-  reviewWithMistral: vi.fn(),
-}));
-
-// Mock claude (Gemini generation for remediation)
+// Mock gemini generation (for remediation)
 vi.mock("../gemini", () => ({
   generateText: vi.fn().mockResolvedValue("Regenerated content from Gemini."),
   buildSystemPrompt: vi.fn().mockReturnValue("System prompt"),
@@ -81,8 +71,6 @@ import {
   type CouncilSectionReview,
 } from "../quality-overseer";
 import { reviewWithGemini } from "../gemini-review-client";
-import { reviewWithGroq } from "../groq-client";
-import { reviewWithMistral } from "../mistral-client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createProposalVersion } from "@/lib/versioning/create-version";
 
@@ -199,31 +187,21 @@ const mockSections = [
 ];
 
 // ============================================================
-// Setup — Gemini-only council (no GROQ/MISTRAL keys in test env)
-//
-// The implementation reads env vars to decide which judges are
-// available. In the test setup, only GEMINI_API_KEY is stubbed
-// (via setup.ts as GOOGLE_AI_API_KEY), so we stub GEMINI_API_KEY
-// manually here. GROQ_API_KEY and MISTRAL_API_KEY are NOT set,
-// so the council has 1 judge (Gemini) unless we explicitly set them.
+// Setup
 // ============================================================
 
-describe("Quality Overseer (Council)", () => {
+describe("Quality Overseer (Gemini)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Ensure env vars are set for Gemini only (single-judge council)
     vi.stubEnv("GEMINI_API_KEY", "test-gemini-key");
     vi.stubEnv("GEMINI_MODEL", "gemini-test-model");
-    // Remove optional judge keys so only Gemini is available
-    delete process.env.GROQ_API_KEY;
-    delete process.env.MISTRAL_API_KEY;
   });
 
   // ============================================================
   // HAPPY PATH
   // ============================================================
   describe("Happy Path", () => {
-    it("reviews all sections using the Gemini judge", async () => {
+    it("reviews all sections using Gemini", async () => {
       const mockGemini = vi.mocked(reviewWithGemini);
       mockGemini.mockResolvedValue(highScores());
 
@@ -259,9 +237,7 @@ describe("Quality Overseer (Council)", () => {
 
     it("calculates overall score as average of all section scores", async () => {
       const mockGemini = vi.mocked(reviewWithGemini);
-      // Section 1: avg = 9.3 → rounds to 9.3
       mockGemini.mockResolvedValueOnce(highScores());
-      // Section 2: avg = 9.0
       mockGemini.mockResolvedValueOnce(borderlinePassScores());
 
       const supabase = buildMockSupabase(mockSections);
@@ -275,7 +251,6 @@ describe("Quality Overseer (Council)", () => {
 
     it("determines pass/fail based on PASS_THRESHOLD (9.0)", async () => {
       const mockGemini = vi.mocked(reviewWithGemini);
-      // Both sections score above 9.0
       mockGemini.mockResolvedValue(highScores());
 
       const supabase = buildMockSupabase(mockSections);
@@ -351,12 +326,11 @@ describe("Quality Overseer (Council)", () => {
       expect(result.pass).toBe(false);
     });
 
-    it("handles judge failure mid-review (marks status failed)", async () => {
+    it("handles Gemini failure mid-review gracefully", async () => {
       const mockGemini = vi.mocked(reviewWithGemini);
       // First section succeeds
       mockGemini.mockResolvedValueOnce(highScores());
-      // Second section throws — caught inside runCouncilReview, results in 0 score
-      // But if the outer try/catch catches it, status = failed
+      // Second section throws — caught inside review loop, results in score 0 → remediation
       mockGemini.mockRejectedValueOnce(new Error("Gemini API error"));
 
       const supabase = buildMockSupabase(mockSections);
@@ -364,13 +338,6 @@ describe("Quality Overseer (Council)", () => {
 
       const result = await runQualityReview("proposal-1", "manual");
 
-      // The council uses Promise.allSettled, so a single judge failing
-      // should result in score 0 for that section, not a total failure.
-      // With 1 judge failing = all judges failed for that section = score 0.
-      // With only 1 judge and it fails, aggregatedScore = 0, which is below
-      // REGEN_THRESHOLD. The section will be remediated.
-      // However, the re-review also calls reviewWithGemini, which may also fail.
-      // Let's ensure the result completes or fails gracefully.
       expect(["completed", "failed"]).toContain(result.status);
     });
 
@@ -396,7 +363,6 @@ describe("Quality Overseer (Council)", () => {
       const mockFrom = vi.fn();
       const supabase = { from: mockFrom };
 
-      // Proposals query returns error
       function chainableError() {
         const chain: Record<string, unknown> = {};
         const self = () => chain;
@@ -478,7 +444,7 @@ describe("Quality Overseer (Council)", () => {
       expect(result.pass).toBe(true);
     });
 
-    it("consensus field is set on completed reviews", async () => {
+    it("consensus is 'unanimous' for single-judge review", async () => {
       const mockGemini = vi.mocked(reviewWithGemini);
       mockGemini.mockResolvedValue(highScores());
 
@@ -487,8 +453,7 @@ describe("Quality Overseer (Council)", () => {
 
       const result = await runQualityReview("proposal-1", "manual");
 
-      expect(result.consensus).toBeDefined();
-      expect(["unanimous", "majority", "split"]).toContain(result.consensus);
+      expect(result.consensus).toBe("unanimous");
     });
 
     it("empty sections returns consensus 'split'", async () => {
@@ -498,191 +463,6 @@ describe("Quality Overseer (Council)", () => {
       const result = await runQualityReview("proposal-1", "manual");
 
       expect(result.consensus).toBe("split");
-    });
-  });
-
-  // ============================================================
-  // MULTI-JUDGE COUNCIL
-  // ============================================================
-  describe("Multi-Judge Council", () => {
-    beforeEach(() => {
-      // Enable all 3 judges
-      vi.stubEnv("GROQ_API_KEY", "test-groq-key");
-      vi.stubEnv("MISTRAL_API_KEY", "test-mistral-key");
-    });
-
-    it("uses all 3 judges when API keys are available", async () => {
-      const mockGemini = vi.mocked(reviewWithGemini);
-      const mockGroq = vi.mocked(reviewWithGroq);
-      const mockMistral = vi.mocked(reviewWithMistral);
-
-      mockGemini.mockResolvedValue(highScores("Gemini says good."));
-      mockGroq.mockResolvedValue(highScores("Groq says good."));
-      mockMistral.mockResolvedValue(highScores("Mistral says good."));
-
-      const supabase = buildMockSupabase([mockSections[0]]);
-      vi.mocked(createAdminClient).mockReturnValue(supabase as never);
-
-      const result = await runQualityReview("proposal-1", "manual");
-
-      // Each judge called once per section
-      expect(mockGemini).toHaveBeenCalledTimes(1);
-      expect(mockGroq).toHaveBeenCalledTimes(1);
-      expect(mockMistral).toHaveBeenCalledTimes(1);
-
-      expect(result.status).toBe("completed");
-      expect(result.model).toBe("council");
-    });
-
-    it("reports judges array with statuses", async () => {
-      const mockGemini = vi.mocked(reviewWithGemini);
-      const mockGroq = vi.mocked(reviewWithGroq);
-      const mockMistral = vi.mocked(reviewWithMistral);
-
-      mockGemini.mockResolvedValue(highScores());
-      mockGroq.mockResolvedValue(highScores());
-      mockMistral.mockResolvedValue(highScores());
-
-      const supabase = buildMockSupabase([mockSections[0]]);
-      vi.mocked(createAdminClient).mockReturnValue(supabase as never);
-
-      const result = await runQualityReview("proposal-1", "manual");
-
-      expect(result.judges).toBeDefined();
-      expect(result.judges!.length).toBe(3);
-      for (const judge of result.judges!) {
-        expect(judge).toHaveProperty("judge_id");
-        expect(judge).toHaveProperty("judge_name");
-        expect(judge).toHaveProperty("provider");
-        expect(judge).toHaveProperty("status");
-      }
-    });
-
-    it("council sections include per-judge reviews", async () => {
-      const mockGemini = vi.mocked(reviewWithGemini);
-      const mockGroq = vi.mocked(reviewWithGroq);
-      const mockMistral = vi.mocked(reviewWithMistral);
-
-      mockGemini.mockResolvedValue(highScores("Gemini feedback."));
-      mockGroq.mockResolvedValue(highScores("Groq feedback."));
-      mockMistral.mockResolvedValue(highScores("Mistral feedback."));
-
-      const supabase = buildMockSupabase([mockSections[0]]);
-      vi.mocked(createAdminClient).mockReturnValue(supabase as never);
-
-      const result = await runQualityReview("proposal-1", "manual");
-
-      const section = result.sections[0] as CouncilSectionReview;
-      expect(section.judge_reviews).toBeDefined();
-      expect(section.judge_reviews.length).toBe(3);
-    });
-
-    it("remediation requires 2+ judges to score below threshold", async () => {
-      const mockGemini = vi.mocked(reviewWithGemini);
-      const mockGroq = vi.mocked(reviewWithGroq);
-      const mockMistral = vi.mocked(reviewWithMistral);
-
-      // Gemini scores low, Groq and Mistral score high — only 1 weak judge
-      mockGemini.mockResolvedValue(lowScores("Gemini thinks weak."));
-      mockGroq.mockResolvedValue(highScores("Groq says fine."));
-      mockMistral.mockResolvedValue(highScores("Mistral says fine."));
-
-      const supabase = buildMockSupabase([mockSections[0]]);
-      vi.mocked(createAdminClient).mockReturnValue(supabase as never);
-
-      const result = await runQualityReview("proposal-1", "manual");
-
-      // Only 1 judge below threshold — should NOT trigger remediation
-      expect(result.remediation).toHaveLength(0);
-    });
-
-    it("remediation IS triggered when 2+ judges score below threshold", async () => {
-      const mockGemini = vi.mocked(reviewWithGemini);
-      const mockGroq = vi.mocked(reviewWithGroq);
-      const mockMistral = vi.mocked(reviewWithMistral);
-
-      // 2 of 3 judges score low — triggers remediation
-      mockGemini.mockResolvedValueOnce(lowScores("Gemini: weak."));
-      mockGroq.mockResolvedValueOnce(lowScores("Groq: weak."));
-      mockMistral.mockResolvedValueOnce(highScores("Mistral: fine."));
-
-      // Re-review after remediation (single Gemini re-review)
-      mockGemini.mockResolvedValueOnce(highScores("Better now."));
-
-      const supabase = buildMockSupabase([mockSections[0]]);
-      vi.mocked(createAdminClient).mockReturnValue(supabase as never);
-
-      const result = await runQualityReview("proposal-1", "manual");
-
-      expect(result.remediation).toHaveLength(1);
-    });
-
-    it("survives one judge failing (uses remaining judges' scores)", async () => {
-      const mockGemini = vi.mocked(reviewWithGemini);
-      const mockGroq = vi.mocked(reviewWithGroq);
-      const mockMistral = vi.mocked(reviewWithMistral);
-
-      mockGemini.mockResolvedValue(highScores("Gemini ok."));
-      mockGroq.mockRejectedValue(new Error("Groq is down"));
-      mockMistral.mockResolvedValue(highScores("Mistral ok."));
-
-      const supabase = buildMockSupabase([mockSections[0]]);
-      vi.mocked(createAdminClient).mockReturnValue(supabase as never);
-
-      const result = await runQualityReview("proposal-1", "manual");
-
-      expect(result.status).toBe("completed");
-      expect(result.overall_score).toBeGreaterThan(0);
-
-      // The failed judge should still appear in judge_reviews with failed status
-      const section = result.sections[0] as CouncilSectionReview;
-      const failedJudge = section.judge_reviews.find(
-        (jr) => jr.provider === "groq",
-      );
-      expect(failedJudge).toBeDefined();
-      expect(failedJudge!.status).toBe("failed");
-    });
-
-    it("aggregates scores as average across successful judges", async () => {
-      const mockGemini = vi.mocked(reviewWithGemini);
-      const mockGroq = vi.mocked(reviewWithGroq);
-      const mockMistral = vi.mocked(reviewWithMistral);
-
-      // Gemini: all 10s (avg 10)
-      mockGemini.mockResolvedValue({
-        content_quality: 10,
-        client_fit: 10,
-        evidence: 10,
-        brand_voice: 10,
-        feedback: "Perfect.",
-      });
-      // Groq: all 8s (avg 8)
-      mockGroq.mockResolvedValue({
-        content_quality: 8,
-        client_fit: 8,
-        evidence: 8,
-        brand_voice: 8,
-        feedback: "Ok.",
-      });
-      // Mistral: all 9s (avg 9)
-      mockMistral.mockResolvedValue({
-        content_quality: 9,
-        client_fit: 9,
-        evidence: 9,
-        brand_voice: 9,
-        feedback: "Good.",
-      });
-
-      const supabase = buildMockSupabase([mockSections[0]]);
-      vi.mocked(createAdminClient).mockReturnValue(supabase as never);
-
-      const result = await runQualityReview("proposal-1", "manual");
-
-      // Aggregated content_quality = (10+8+9)/3 = 9.0
-      const section = result.sections[0] as CouncilSectionReview;
-      expect(section.dimensions.content_quality).toBe(9);
-      // Overall score = 9.0
-      expect(result.overall_score).toBe(9);
     });
   });
 
@@ -699,7 +479,6 @@ describe("Quality Overseer (Council)", () => {
 
       await runQualityReview("proposal-1", "manual");
 
-      // Verify supabase query included proposal_id filter
       const fromCalls = supabase.from.mock.calls;
       const sectionCalls = fromCalls.filter(
         (c: string[]) => c[0] === "proposal_sections",
@@ -757,7 +536,7 @@ describe("Quality Overseer (Council)", () => {
       expect(result).toHaveProperty("remediation");
     });
 
-    it("model field reflects the Gemini model when only 1 judge", async () => {
+    it("model field reflects the Gemini model", async () => {
       const mockGemini = vi.mocked(reviewWithGemini);
       mockGemini.mockResolvedValue(highScores());
 
@@ -766,28 +545,37 @@ describe("Quality Overseer (Council)", () => {
 
       const result = await runQualityReview("proposal-1", "manual");
 
-      // With only Gemini available, model should be the gemini model ID
       expect(result.model).toBe("gemini-test-model");
     });
 
-    it("model field is 'council' when multiple judges available", async () => {
-      vi.stubEnv("GROQ_API_KEY", "test-groq-key");
-      vi.stubEnv("MISTRAL_API_KEY", "test-mistral-key");
-
+    it("judges array contains exactly one Gemini entry", async () => {
       const mockGemini = vi.mocked(reviewWithGemini);
-      const mockGroq = vi.mocked(reviewWithGroq);
-      const mockMistral = vi.mocked(reviewWithMistral);
-
       mockGemini.mockResolvedValue(highScores());
-      mockGroq.mockResolvedValue(highScores());
-      mockMistral.mockResolvedValue(highScores());
 
       const supabase = buildMockSupabase(mockSections);
       vi.mocked(createAdminClient).mockReturnValue(supabase as never);
 
       const result = await runQualityReview("proposal-1", "manual");
 
-      expect(result.model).toBe("council");
+      expect(result.judges).toBeDefined();
+      expect(result.judges!.length).toBe(1);
+      expect(result.judges![0].provider).toBe("google");
+      expect(result.judges![0].judge_name).toBe("Gemini");
+    });
+
+    it("section reviews include a single judge_reviews entry (Gemini)", async () => {
+      const mockGemini = vi.mocked(reviewWithGemini);
+      mockGemini.mockResolvedValue(highScores("Gemini feedback."));
+
+      const supabase = buildMockSupabase([mockSections[0]]);
+      vi.mocked(createAdminClient).mockReturnValue(supabase as never);
+
+      const result = await runQualityReview("proposal-1", "manual");
+
+      const section = result.sections[0] as CouncilSectionReview;
+      expect(section.judge_reviews).toBeDefined();
+      expect(section.judge_reviews.length).toBe(1);
+      expect(section.judge_reviews[0].provider).toBe("google");
     });
 
     it("section reviews include dimensions breakdown", async () => {

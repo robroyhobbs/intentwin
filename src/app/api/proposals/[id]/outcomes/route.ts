@@ -1,3 +1,13 @@
+/**
+ * POST /api/proposals/[id]/outcomes
+ *
+ * AI win-strategy generation for an existing proposal.
+ * Named "outcomes" (plural) = AI generation endpoint.
+ *
+ * Contrast with:
+ *   /api/proposals/[id]/outcome  (singular) — deal outcome recording (GET+PATCH won/lost status)
+ *   /api/proposals/temp/outcomes — same AI generation but pre-proposal (wizard flow)
+ */
 import { generateWinStrategy, OutcomeParseError } from "@/lib/ai/generate-outcomes";
 import { badRequest, ok, serverError, withProposalRoute } from "@/lib/api/response";
 

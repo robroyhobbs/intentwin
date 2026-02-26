@@ -22,7 +22,7 @@ IntentBid ingests an RFP or solicitation document, cross-references it against y
 - **Sunshine Law & FOIA Engine** -- Automated public records request generator tailored to state-specific statutes to acquire incumbent contracts and SLED pricing data.
 - **Industry Intelligence** -- Sector-specific proposal tuning for healthcare, financial services, manufacturing, and public sector
 - **Persuasion Engine** -- AI-driven persuasive writing optimization layered into generated content
-- **Quality Overseer** -- 3-judge LLM council review system with auto-remediation for sections scoring below threshold
+- **Quality Overseer** -- Gemini-powered review with auto-remediation for sections scoring below threshold
 - **Review Mode UI** -- Post-generation sidebar highlighting placeholders, unsubstantiated claims, and areas needing human review
 - **Evidence Library** -- Case studies, certifications, and metrics with verified sourcing and AI extraction
 - **Pricing Structure** -- Structured pricing tables with rate cards, labor categories, and fee schedules rather than vague cost language
@@ -75,7 +75,7 @@ IntentBid's dynamic generation pipelines are battle-tested to win across the ent
 |                       AI Layer                               |
 |  Google Gemini 3 Pro (generation + quality review)           |
 |  Voyage AI voyage-3 (1024d vector embeddings)                |
-|  15 section prompts | 3-judge quality council                |
+|  15 section prompts | Gemini quality review + remediation    |
 |  Pre-flight gate | Repetition limiter | Audience calibration |
 |  Industry configs | Persuasion engine                        |
 +--------------------------------------------------------------+
@@ -108,7 +108,7 @@ IntentBid's dynamic generation pipelines are battle-tested to win across the ent
 | Email | Resend (transactional) |
 | Editor | TipTap (rich text editing) |
 | Export | Puppeteer + chromium-min (PDF), docx (DOCX), pptxgenjs (PPTX), Google Slides API |
-| Testing | Vitest (1,531 tests) + Playwright (E2E) |
+| Testing | Vitest (1,516 tests) + Playwright (E2E) |
 | CI/CD | GitHub Actions (lint, typecheck, test, coverage, build) |
 | Deployment | Vercel (with `@sparticuz/chromium-min` for serverless PDF) |
 
@@ -116,7 +116,7 @@ IntentBid's dynamic generation pipelines are battle-tested to win across the ent
 
 IntentBid follows a 7-phase robustness improvement program:
 
-### Testing (1,531 tests, 0 failures)
+### Testing (1,516 tests, 0 failures)
 
 - **Unit tests** -- Core AI pipeline, prompt builders, export generators, quality checks, bid scoring, preflight gate, review mode, audience calibration, assumptions, boilerplate sections, team members
 - **Integration tests** -- API routes, auth flows, multi-tenancy isolation, RLS policies, pipeline integration, bulk import, compliance
