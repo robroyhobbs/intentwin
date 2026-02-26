@@ -7,7 +7,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { logger } from "@/lib/utils/logger";
 import { geminiHeliconeOptions } from "@/lib/observability/helicone";
 
-const IMAGE_MODEL = "gemini-3-pro-image-preview";
+const IMAGE_MODEL = "gemini-3.1-flash-image-preview";
 
 /**
  * Converts mermaid code to an image via Gemini image generation.

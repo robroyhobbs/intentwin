@@ -6,7 +6,7 @@ import { unauthorized, badRequest, ok, serverError } from "@/lib/api/response";
 /** AI image generation can be slow */
 export const maxDuration = 120;
 
-const IMAGE_MODEL = "gemini-3-pro-image-preview";
+const IMAGE_MODEL = "gemini-3.1-flash-image-preview";
 
 export async function POST(request: NextRequest) {
   try {

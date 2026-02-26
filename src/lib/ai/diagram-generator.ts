@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createLogger } from "@/lib/utils/logger";
 import { geminiHeliconeOptions } from "@/lib/observability/helicone";
 
-const IMAGE_MODEL = "gemini-3-pro-image-preview";
+const IMAGE_MODEL = "gemini-3.1-flash-image-preview";
 
 const log = createLogger({ operation: "diagramGenerator" });
 
