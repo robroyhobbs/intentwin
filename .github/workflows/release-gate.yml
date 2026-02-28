@@ -1,0 +1,82 @@
+name: Release Gate
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+    inputs:
+      deploy_command:
+        description: "Optional deploy command override"
+        required: false
+        type: string
+
+jobs:
+  gate:
+    name: Pre/Post Deploy Smoke Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      ALERT_EMAIL_TO: ${{ secrets.ALERT_EMAIL_TO }}
+      ALERT_EMAIL_FROM: ${{ secrets.ALERT_EMAIL_FROM }}
+      ROLLBACK_WEBHOOK_URL: ${{ secrets.ROLLBACK_WEBHOOK_URL }}
+      DEPLOY_COMMAND: ${{ secrets.DEPLOY_COMMAND }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pre-deploy smoke
+        run: |
+          chmod +x scripts/smoke-production.sh
+          bash scripts/smoke-production.sh
+
+      - name: Resolve deploy command
+        id: resolve_deploy
+        run: |
+          command="${{ inputs.deploy_command }}"
+          if [ -z "$command" ]; then
+            command="${DEPLOY_COMMAND:-}"
+          fi
+
+          if [ -z "$command" ]; then
+            if [ "${{ github.event_name }}" = "push" ]; then
+              echo "Missing DEPLOY_COMMAND secret for push-triggered release gate."
+              exit 1
+            fi
+            echo "No deploy command configured; running smoke-only gate."
+            echo "has_command=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "has_command=true" >> "$GITHUB_OUTPUT"
+          {
+            echo "command<<EOF"
+            echo "$command"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Deploy
+        if: steps.resolve_deploy.outputs.has_command == 'true'
+        run: bash -lc "${{ steps.resolve_deploy.outputs.command }}"
+
+      - name: Post-deploy smoke
+        id: post_smoke
+        continue-on-error: true
+        run: bash scripts/smoke-production.sh
+
+      - name: Trigger rollback
+        if: steps.post_smoke.outcome == 'failure' && env.ROLLBACK_WEBHOOK_URL != ''
+        run: |
+          curl -sS -X POST -H "Content-Type: application/json" \
+            --data "{\"source\":\"release-gate\",\"run_id\":\"${GITHUB_RUN_ID}\"}" \
+            "$ROLLBACK_WEBHOOK_URL" >/dev/null
+
+      - name: Notify failure
+        if: failure()
+        run: |
+          chmod +x scripts/send-alert.sh
+          bash scripts/send-alert.sh \
+            "release-gate failed (${GITHUB_REPOSITORY})" \
+            "Deploy and/or smoke gate failed. Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
