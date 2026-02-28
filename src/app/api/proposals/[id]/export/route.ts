@@ -1,29 +1,23 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { generateDocx } from "@/lib/export/docx-generator";
-import { generatePptx } from "@/lib/export/pptx-generator";
-import { generateHtml } from "@/lib/export/html-generator";
-import { generateSlides } from "@/lib/export/slides-generator";
-import { generatePdf } from "@/lib/export/pdf-generator";
 import { createProposalVersion } from "@/lib/versioning/create-version";
 import { nanoid } from "nanoid";
 import { format } from "date-fns";
 import { ProposalStatus, GenerationStatus } from "@/lib/constants/statuses";
 import { logger } from "@/lib/utils/logger";
 import { notFound, badRequest, ok, serverError, withProposalRoute } from "@/lib/api/response";
+import { isExportFormat } from "@/lib/export/formats";
+import { generateExportFile } from "@/lib/export/runtime";
 
 export const maxDuration = 120; // PDF generation with Chromium can take 30-60s
+const EXPORT_SLOW_WARN_MS = 15000;
 
 export const POST = withProposalRoute(
   async (request, { id }, context) => {
+    const startedAt = Date.now();
     const body = await request.json();
-    const formatType = body.format as
-      | "docx"
-      | "pptx"
-      | "html"
-      | "slides"
-      | "pdf";
+    const formatType = body.format as string;
 
-    if (!["docx", "pptx", "html", "slides", "pdf"].includes(formatType)) {
+    if (!isExportFormat(formatType)) {
       return badRequest('Format must be "docx", "pptx", "html", "slides", or "pdf"');
     }
 
@@ -101,37 +95,14 @@ export const POST = withProposalRoute(
       branding,
     };
 
-    // Generate the document
     let fileBuffer: Buffer;
     let mimeType: string;
     let extension: string;
-
     try {
-      if (formatType === "slides") {
-        const html = await generateSlides(proposalData);
-        fileBuffer = Buffer.from(html, "utf-8");
-        mimeType = "text/html";
-        extension = "html";
-      } else if (formatType === "html") {
-        const html = await generateHtml(proposalData);
-        fileBuffer = Buffer.from(html, "utf-8");
-        mimeType = "text/html";
-        extension = "html";
-      } else if (formatType === "pdf") {
-        fileBuffer = await generatePdf(proposalData);
-        mimeType = "application/pdf";
-        extension = "pdf";
-      } else if (formatType === "docx") {
-        fileBuffer = await generateDocx(proposalData);
-        mimeType =
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-        extension = "docx";
-      } else {
-        fileBuffer = await generatePptx(proposalData);
-        mimeType =
-          "application/vnd.openxmlformats-officedocument.presentationml.presentation";
-        extension = "pptx";
-      }
+      ({ fileBuffer, mimeType, extension } = await generateExportFile(
+        formatType,
+        proposalData,
+      ));
     } catch (genError) {
       const errorMsg = genError instanceof Error ? genError.message : String(genError);
       logger.error(`Export generation failed (${formatType})`, {
@@ -170,6 +141,25 @@ export const POST = withProposalRoute(
       .from("proposals")
       .update({ status: ProposalStatus.EXPORTED })
       .eq("id", id);
+
+    logger.info("Proposal export completed", {
+      proposalId: id,
+      organizationId: context.organizationId,
+      format: formatType,
+      sectionCount: sections.length,
+      fileSizeBytes: fileBuffer.length,
+      durationMs: Date.now() - startedAt,
+    });
+    const exportDurationMs = Date.now() - startedAt;
+    if (exportDurationMs > EXPORT_SLOW_WARN_MS) {
+      logger.warn("Proposal export exceeded SLO threshold", {
+        proposalId: id,
+        organizationId: context.organizationId,
+        format: formatType,
+        durationMs: exportDurationMs,
+        sloMs: EXPORT_SLOW_WARN_MS,
+      });
+    }
 
     return ok({
       downloadUrl: signedUrl?.signedUrl,
