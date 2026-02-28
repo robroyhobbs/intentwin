@@ -28,19 +28,29 @@ export const POST = withProposalRoute(
     }
 
     const adminClient = createAdminClient();
+    const fetchStartedAt = Date.now();
 
-    // Fetch proposal with organization data for branding
-    const { data: proposal } = await adminClient
-      .from("proposals")
-      .select(
-        `
-        id, title, status, intake_data, created_at,
-        organization:organizations(id, name, settings)
-      `,
-      )
-      .eq("id", id)
-      .eq("organization_id", context.organizationId)
-      .single();
+    // Fetch proposal and completed sections in parallel to reduce pre-generation latency
+    const [{ data: proposal }, { data: sections }] = await Promise.all([
+      adminClient
+        .from("proposals")
+        .select(
+          `
+          id, title, status, intake_data, created_at,
+          organization:organizations(id, name, settings)
+        `,
+        )
+        .eq("id", id)
+        .eq("organization_id", context.organizationId)
+        .single(),
+      adminClient
+        .from("proposal_sections")
+        .select("id, proposal_id, section_type, section_order, title, generated_content, edited_content, is_edited, generation_status, review_status, review_notes, diagram_image, created_at, updated_at")
+        .eq("proposal_id", id)
+        .eq("generation_status", GenerationStatus.COMPLETED)
+        .order("section_order", { ascending: true }),
+    ]);
+    fetchDurationMs = Date.now() - fetchStartedAt;
 
     if (!proposal) {
       return notFound("Proposal not found");
@@ -61,17 +71,9 @@ export const POST = withProposalRoute(
       footer_text: orgSettings.branding?.footer_text || "Confidential",
     };
 
-    const { data: sections } = await adminClient
-      .from("proposal_sections")
-      .select("id, proposal_id, section_type, section_order, title, generated_content, edited_content, is_edited, generation_status, review_status, review_notes, diagram_image, created_at, updated_at")
-      .eq("proposal_id", id)
-      .eq("generation_status", GenerationStatus.COMPLETED)
-      .order("section_order", { ascending: true });
-
     if (!sections || sections.length === 0) {
       return badRequest("No completed sections to export");
     }
-    fetchDurationMs = Date.now() - startedAt;
 
     // Create a version snapshot before export (non-blocking)
     try {
