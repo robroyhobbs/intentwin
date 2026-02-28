@@ -10,16 +10,28 @@ import { checkPlanLimit } from "@/lib/supabase/auth-api";
 import { conflict, ok, serverError, forbidden, withProposalRoute } from "@/lib/api/response";
 import { apiError } from "@/lib/api/response";
 
+const formatTimingMs = (value: number) => Math.max(0, Math.round(value));
+
 export const POST = withProposalRoute(
   async (_request, { id }, context, proposal) => {
+    const startedAt = Date.now();
+    let featureGateDurationMs = 0;
+    let preflightDurationMs = 0;
+    let claimDurationMs = 0;
+    let tokenCheckDurationMs = 0;
+    let queueDurationMs = 0;
+
     // ── Feature gate: ai_generation requires Starter+ ────────────────────
+    const featureGateStartedAt = Date.now();
     const canGenerate = await checkFeature(context.organizationId, "ai_generation");
+    featureGateDurationMs = Date.now() - featureGateStartedAt;
     if (!canGenerate) {
       return forbidden("AI proposal generation requires a Starter plan or above. Upgrade at /pricing.");
     }
 
     // ── Pre-flight readiness check (fail-open) ───────────────────────────
     // Runs before generation to surface data gaps. Never blocks generation.
+    const preflightStartedAt = Date.now();
     let preflight: PreflightResult | null = null;
     try {
       const intakeData = (proposal!.intake_data as Record<string, unknown>) || {};
@@ -42,9 +54,11 @@ export const POST = withProposalRoute(
         error: preflightError instanceof Error ? preflightError.message : String(preflightError),
       });
     }
+    preflightDurationMs = Date.now() - preflightStartedAt;
 
     // Atomic guard: only one generation at a time.
     // Uses UPDATE ... WHERE status != 'generating' as a database-level mutex.
+    const claimStartedAt = Date.now();
     const adminClientForClaim = createAdminClient();
     const { data: claimed, error: claimError } = await adminClientForClaim
       .from("proposals")
@@ -56,6 +70,7 @@ export const POST = withProposalRoute(
       .neq("status", ProposalStatus.GENERATING)
       .select("id")
       .maybeSingle();
+    claimDurationMs = Date.now() - claimStartedAt;
 
     if (claimError) {
       logger.error("Generation claim error", claimError);
@@ -67,7 +82,9 @@ export const POST = withProposalRoute(
     }
 
     // ── Token limit check ────────────────────────────────────────────────
+    const tokenCheckStartedAt = Date.now();
     const tokenCheck = await checkPlanLimit(context.organizationId, "ai_tokens_per_month");
+    tokenCheckDurationMs = Date.now() - tokenCheckStartedAt;
     if (!tokenCheck.allowed) {
       return apiError({
         message: tokenCheck.message || "AI token limit reached. Upgrade your plan to continue.",
@@ -78,17 +95,32 @@ export const POST = withProposalRoute(
 
     // Send event to Inngest for durable background execution.
     // Inngest handles retries, timeouts, and step-level persistence.
+    const queueStartedAt = Date.now();
     await inngest.send({
       name: "proposal/generate.requested",
       data: { proposalId: id },
     });
+    queueDurationMs = Date.now() - queueStartedAt;
 
-    return ok({
+    const totalDurationMs = Date.now() - startedAt;
+    const response = ok({
       status: ProposalStatus.GENERATING,
       proposalId: id,
       message: "Proposal generation started.",
       preflight: preflight ?? undefined,
     });
+    response.headers.set(
+      "Server-Timing",
+      [
+        `gate;dur=${formatTimingMs(featureGateDurationMs)}`,
+        `preflight;dur=${formatTimingMs(preflightDurationMs)}`,
+        `claim;dur=${formatTimingMs(claimDurationMs)}`,
+        `token;dur=${formatTimingMs(tokenCheckDurationMs)}`,
+        `queue;dur=${formatTimingMs(queueDurationMs)}`,
+        `total;dur=${formatTimingMs(totalDurationMs)}`,
+      ].join(", "),
+    );
+    return response;
   },
   { requireFullProposal: true },
 );

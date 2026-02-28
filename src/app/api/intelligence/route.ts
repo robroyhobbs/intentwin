@@ -13,25 +13,34 @@
 import { NextRequest } from "next/server";
 import { getUserContext } from "@/lib/supabase/auth-api";
 import { checkFeature } from "@/lib/features/check-feature";
-import { unauthorized, badRequest, ok, serverError, apiError } from "@/lib/api/response";
+import { unauthorized, badRequest, ok, apiError } from "@/lib/api/response";
 
 const INTELLIGENCE_API_URL = process.env.INTELLIGENCE_API_URL?.trim() || null;
 const INTELLIGENCE_SERVICE_KEY =
   process.env.INTELLIGENCE_SERVICE_KEY?.trim() || null;
+const formatTimingMs = (value: number) => Math.max(0, Math.round(value));
 
 function isConfigured(): boolean {
   return INTELLIGENCE_API_URL !== null && INTELLIGENCE_SERVICE_KEY !== null;
 }
 
 export async function GET(request: NextRequest) {
+  const startedAt = Date.now();
+  let authDurationMs = 0;
+  let featureGateDurationMs = 0;
+  let upstreamDurationMs = 0;
+  let decodeDurationMs = 0;
   // Verify user is authenticated
   const context = await getUserContext(request);
+  authDurationMs = Date.now() - startedAt;
   if (!context) {
     return unauthorized();
   }
 
   // Feature gate: intelligence_suite requires Pro+
+  const featureGateStartedAt = Date.now();
   const canUseIntelligence = await checkFeature(context.organizationId, "intelligence_suite");
+  featureGateDurationMs = Date.now() - featureGateStartedAt;
   if (!canUseIntelligence) {
     return apiError({
       message: "The intelligence suite requires a Pro plan or above. Upgrade at /pricing.",
@@ -70,6 +79,7 @@ export async function GET(request: NextRequest) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
 
+    const upstreamStartedAt = Date.now();
     const response = await fetch(targetUrl, {
       method: "GET",
       headers: {
@@ -78,6 +88,7 @@ export async function GET(request: NextRequest) {
       },
       signal: controller.signal,
     });
+    upstreamDurationMs = Date.now() - upstreamStartedAt;
 
     clearTimeout(timeout);
 
@@ -89,8 +100,22 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    const decodeStartedAt = Date.now();
     const data = await response.json();
-    return ok(data);
+    decodeDurationMs = Date.now() - decodeStartedAt;
+    const totalDurationMs = Date.now() - startedAt;
+    const proxyResponse = ok(data);
+    proxyResponse.headers.set(
+      "Server-Timing",
+      [
+        `auth;dur=${formatTimingMs(authDurationMs)}`,
+        `gate;dur=${formatTimingMs(featureGateDurationMs)}`,
+        `upstream;dur=${formatTimingMs(upstreamDurationMs)}`,
+        `decode;dur=${formatTimingMs(decodeDurationMs)}`,
+        `total;dur=${formatTimingMs(totalDurationMs)}`,
+      ].join(", "),
+    );
+    return proxyResponse;
   } catch (err) {
     if (err instanceof DOMException && err.name === "AbortError") {
       return apiError({
