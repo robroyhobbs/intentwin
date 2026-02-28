@@ -33,7 +33,7 @@ import {
 } from "lucide-react";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
 import { useWizard } from "./wizard-provider";
-import type { SectionProgress } from "./wizard-types";
+import type { SectionProgress } from "@/lib/proposal-core/wizard-state";
 
 // ────────────────────────────────────────────────────────
 // Constants

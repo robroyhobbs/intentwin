@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { AlertTriangle, RotateCcw, ArrowLeft } from "lucide-react";
+import { logger } from "@/lib/utils/logger";
 
 export default function ProposalDetailError({
   error,
@@ -12,7 +13,7 @@ export default function ProposalDetailError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("Proposal detail error:", error);
+    logger.error("Proposal detail error:", error);
   }, [error]);
 
   return (

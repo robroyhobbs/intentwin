@@ -39,8 +39,3 @@ afterAll(() => {
   // Restore all mocks
   vi.restoreAllMocks();
 });
-
-// Handle unhandled promise rejections
-process.on("unhandledRejection", (reason) => {
-  console.error("Unhandled Promise Rejection:", reason);
-});

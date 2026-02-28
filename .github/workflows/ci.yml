@@ -30,11 +30,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
       - run: npm ci
+      - run: npm run hygiene:check
+      - run: npm run guardrails:boundaries
+      - run: npm run guardrails:complexity:changed
       - run: npm run lint
 
   typecheck:
@@ -128,7 +133,7 @@ jobs:
       # Build-time env stubs (not real values — just enough to compile)
       NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
       NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
-      NEXT_PUBLIC_APP_URL: https://placeholder.intentwin.com
+      NEXT_PUBLIC_APP_URL: https://app.placeholder.intentbid.com
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

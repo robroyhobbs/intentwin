@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { AlertTriangle, RotateCcw } from "lucide-react";
+import { logger } from "@/lib/utils/logger";
 
 export default function EvidenceLibraryError({
   error,
@@ -11,7 +12,7 @@ export default function EvidenceLibraryError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("Evidence library error:", error);
+    logger.error("Evidence library error:", error);
   }, [error]);
 
   return (

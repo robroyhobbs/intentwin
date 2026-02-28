@@ -18,7 +18,7 @@ import { useCallback } from "react";
 import { useWizard } from "./wizard-provider";
 import { WizardSidebar } from "./wizard-sidebar";
 import { WizardBottomBar } from "./wizard-bottom-bar";
-import { WIZARD_STEPS } from "./wizard-types";
+import { WIZARD_STEPS } from "@/lib/proposal-core/wizard-state";
 import { StepInput } from "./step-input";
 import { StepReview } from "./step-review";
 import { StepBidDecision } from "./step-bid-decision";

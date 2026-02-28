@@ -1,0 +1,15 @@
+# Default owner
+* @robroyhobbs
+
+# Domain ownership
+/src/lib/proposal-core/ @robroyhobbs
+/src/lib/export/ @robroyhobbs
+/src/lib/intelligence/ @robroyhobbs
+/src/lib/supabase/ @robroyhobbs
+/src/lib/security/ @robroyhobbs
+/src/lib/observability/ @robroyhobbs
+/src/app/(dashboard)/proposals/ @robroyhobbs
+/src/components/ @robroyhobbs
+/src/inngest/ @robroyhobbs
+/supabase/ @robroyhobbs
+/docs/plans/ @robroyhobbs

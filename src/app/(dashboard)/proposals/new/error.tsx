@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { AlertTriangle, RotateCcw } from "lucide-react";
+import { logger } from "@/lib/utils/logger";
 
 export default function NewProposalError({
   error,
@@ -11,7 +12,7 @@ export default function NewProposalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("New proposal error:", error);
+    logger.error("New proposal error:", error);
   }, [error]);
 
   return (

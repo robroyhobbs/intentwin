@@ -54,6 +54,30 @@ See `AGENTS.md` for the full product overview, IDD 3-layer model, API patterns, 
 - **Error responses**: Use `apiError()` / `apiSuccess()` from `@/lib/api/response.ts`
 - **Input sanitization**: Use `sanitizeInput()` from `@/lib/security/sanitize.ts` for user input
 
+### Architecture + Coordination Guardrails
+
+- Domain boundary plan lives in `docs/plans/domain-boundaries.md` and should be treated as active guidance for new code placement and imports.
+- CODEOWNERS source of truth: `.github/CODEOWNERS`.
+- PR checklist source of truth: `.github/PULL_REQUEST_TEMPLATE.md`.
+- Log architecture or process changes for Claude/other LLMs with:
+  - `bash scripts/notify-llms.sh "<title>" "<summary>"`
+- When creating new GitHub repositories for this project family, use:
+  - `bash scripts/create-intentbid-repo.sh <suffix>`
+  - Repositories must use the `intentbid-*` prefix.
+- Performance guardrails:
+  - Capture baseline: `npm run perf:baseline`
+  - Enforce thresholds: `npm run perf:check`
+  - Weekly monitor workflow: `.github/workflows/perf-monitor.yml`
+- Production URL smoke checks:
+  - Manual/local: `npm run smoke:prod`
+  - Scheduled monitor: `.github/workflows/prod-smoke.yml`
+  - Release gate: `.github/workflows/release-gate.yml` (auto-runs on `main`/`master` pushes, plus manual dispatch)
+  - Deployment command secret: `DEPLOY_COMMAND` (used by release gate on push runs)
+  - Optional rollback trigger secret: `ROLLBACK_WEBHOOK_URL`
+- Alerting channels for monitor failures:
+  - Slack: `SLACK_WEBHOOK_URL`
+  - Email via Resend: `RESEND_API_KEY`, `ALERT_EMAIL_FROM`, `ALERT_EMAIL_TO`
+
 ## Testing
 
 - Test runner: `vitest` (run with `npx vitest run`)

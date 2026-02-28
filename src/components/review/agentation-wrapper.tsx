@@ -63,7 +63,10 @@ export function AgentationWrapper({
           toast.error(err.error || "Failed to save comment");
         }
       } catch (error) {
-        logger.error("Failed to save annotation", error);
+        logger.error("Failed to save annotation", error, {
+          proposalId,
+          sectionId: sectionId ?? null,
+        });
         toast.error("Failed to save comment — check your connection");
       }
     },

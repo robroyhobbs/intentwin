@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { AlertTriangle, RotateCcw } from "lucide-react";
+import { logger } from "@/lib/utils/logger";
 
 export default function KnowledgeBaseError({
   error,
@@ -11,7 +12,7 @@ export default function KnowledgeBaseError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("Knowledge base error:", error);
+    logger.error("Knowledge base error:", error);
   }, [error]);
 
   return (

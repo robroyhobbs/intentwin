@@ -13,7 +13,7 @@
  * Bid evaluation has been moved to Step 3 (StepBidDecision).
  */
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, createRef, useMemo } from "react";
 import {
   Lightbulb,
   AlertTriangle,
@@ -239,15 +239,14 @@ export function StepReview() {
   const [showAllFields, setShowAllFields] = useState(false);
 
   // Field refs for gap click scrolling
-  const fieldRefs = useRef<Record<string, React.RefObject<HTMLDivElement | null>>>({});
-  useEffect(() => {
+  const fieldRefs = useMemo(() => {
     const refs: Record<string, React.RefObject<HTMLDivElement | null>> = {};
     for (const group of FIELD_GROUPS) {
       for (const field of group.fields) {
-        refs[field.key] = { current: null };
+        refs[field.key] = createRef<HTMLDivElement>();
       }
     }
-    fieldRefs.current = refs;
+    return refs;
   }, []);
 
   // No extracted data
@@ -448,7 +447,7 @@ export function StepReview() {
                 inferredReasoning={getInferredReasoning(fieldDef)}
                 isGap={isFieldGap(fieldDef)}
                 onChange={handleFieldChange}
-                fieldRef={fieldRefs.current[fieldDef.key]}
+                fieldRef={fieldRefs[fieldDef.key]}
               />
             ))}
           </div>
@@ -486,7 +485,7 @@ export function StepReview() {
                       inferredReasoning={getInferredReasoning(fieldDef)}
                       isGap={isFieldGap(fieldDef)}
                       onChange={handleFieldChange}
-                      fieldRef={fieldRefs.current[fieldDef.key]}
+                      fieldRef={fieldRefs[fieldDef.key]}
                     />
                   ))}
                 </div>

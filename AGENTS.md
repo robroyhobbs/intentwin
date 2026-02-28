@@ -56,6 +56,14 @@ src/
 └── types/                # TypeScript types
 ```
 
+## Operational Coordination
+
+- Boundary/source-of-truth design doc: `docs/plans/domain-boundaries.md`
+- LLM update log (Claude + other assistants): `docs/plans/llm-change-log.md`
+  - Add entries via `scripts/notify-llms.sh "<title>" "<summary>"`
+- New GitHub repositories in this product family must use `intentbid-*` naming.
+  - Use `scripts/create-intentbid-repo.sh <suffix>` to enforce prefix.
+
 ## API Route Patterns
 
 **CRITICAL: Always use getUserContext for organization scoping!**

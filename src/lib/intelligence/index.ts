@@ -4,7 +4,7 @@
  * Public API for consuming procurement intelligence in the IntentBid pipeline.
  */
 
-export { intelligenceClient } from "./client";
+export { intelligenceClient, getIntelligenceClient } from "./client";
 export {
   buildIntelligenceContext,
   buildWinProbabilityContext,
@@ -28,3 +28,11 @@ export type {
   AgencyListItem,
   AgencyListResponse,
 } from "./types";
+export type {
+  IntelligenceService,
+  PricingRatesParams,
+  AwardsSearchParams,
+  WinProbabilityParams,
+  CompetitiveLandscapeParams,
+  ProposalIntelligenceParams,
+} from "./contracts";

@@ -10,7 +10,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useWizard } from "./wizard-provider";
-import { WIZARD_STEPS, type WizardStep } from "./wizard-types";
+import { WIZARD_STEPS, type WizardStep } from "@/lib/proposal-core/wizard-state";
 import { cn } from "@/lib/utils/cn";
 
 function StepIndicator({ step }: { step: WizardStep }) {

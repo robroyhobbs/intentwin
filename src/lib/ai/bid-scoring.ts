@@ -2,7 +2,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { logger } from "@/lib/utils/logger";
 import { extractJsonFromResponse } from "@/lib/utils/extract-json";
 import { generateText } from "./gemini";
-import { intelligenceClient, buildIntelligenceContext, buildWinProbabilityContext } from "@/lib/intelligence";
+import {
+  intelligenceClient,
+  buildIntelligenceContext,
+  buildWinProbabilityContext,
+} from "@/lib/intelligence";
 import type { WinProbabilityResponse } from "@/lib/intelligence";
 import type { L1Context } from "./pipeline/types";
 import { fetchL1ContextFromDb } from "./pipeline/fetch-l1-context";

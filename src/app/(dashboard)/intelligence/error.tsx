@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { AlertTriangle, RotateCcw } from "lucide-react";
+import { logger } from "@/lib/utils/logger";
 
 export default function IntelligenceError({
   error,
@@ -11,7 +12,7 @@ export default function IntelligenceError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("Intelligence error:", error);
+    logger.error("Intelligence error:", error);
   }, [error]);
 
   return (

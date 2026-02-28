@@ -21,8 +21,7 @@ import {
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { ExportGateModal } from "@/components/compliance/export-gate-modal";
-
-type ExportFormat = "slides" | "pptx" | "html" | "docx" | "pdf";
+import type { ExportFormat } from "@/lib/export/formats";
 
 const EXPORT_OPTIONS: {
   format: ExportFormat;

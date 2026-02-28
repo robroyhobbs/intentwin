@@ -16,8 +16,17 @@ import {
   type Dispatch,
   type ReactNode,
 } from "react";
-import { wizardReducer, INITIAL_STATE } from "./wizard-reducer";
-import type { WizardState, WizardAction } from "./wizard-types";
+import {
+  clearWizardDraft,
+  loadWizardDraft,
+  saveWizardDraft,
+} from "@/lib/proposal-core/wizard-draft";
+import {
+  wizardReducer,
+  INITIAL_STATE,
+  type WizardState,
+  type WizardAction,
+} from "@/lib/proposal-core/wizard-state";
 
 // ────────────────────────────────────────────────────────
 // Context
@@ -40,28 +49,7 @@ export function useWizard(): WizardContextValue {
 // Auto-Save Helpers
 // ────────────────────────────────────────────────────────
 
-const STORAGE_KEY = "proposal-wizard-state";
 const SAVE_DEBOUNCE_MS = 1000;
-
-/** Serialize state for sessionStorage (strips non-serializable fields) */
-function serializeForStorage(state: WizardState): string {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { files, isExtracting, extractionError, generationStatus, sectionProgress, ...serializable } = state;
-  return JSON.stringify(serializable);
-}
-
-function loadDraft(): Partial<WizardState> | null {
-  try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    // Basic validation: must have a currentStep
-    if (!parsed.currentStep) return null;
-    return parsed;
-  } catch {
-    return null;
-  }
-}
 
 // ────────────────────────────────────────────────────────
 // Provider Component
@@ -80,11 +68,7 @@ export function WizardProvider({ children }: WizardProviderProps) {
     if (state.generationStatus === "generating" || state.generationStatus === "complete") return;
 
     const timer = setTimeout(() => {
-      try {
-        sessionStorage.setItem(STORAGE_KEY, serializeForStorage(state));
-      } catch {
-        // sessionStorage full or unavailable — silently ignore
-      }
+      saveWizardDraft(state);
     }, SAVE_DEBOUNCE_MS);
 
     return () => clearTimeout(timer);
@@ -92,9 +76,9 @@ export function WizardProvider({ children }: WizardProviderProps) {
 
   // ── Draft restoration check on mount ──
   useEffect(() => {
-    const draft = loadDraft();
+    const draft = loadWizardDraft();
     if (draft && draft.clientName) {
-      dispatch({ type: "RESTORE_DRAFT", state: draft });
+      dispatch({ type: "RESTORE_DRAFT", state: draft as Partial<WizardState> });
     }
   }, []);
 
@@ -130,12 +114,8 @@ export function WizardProvider({ children }: WizardProviderProps) {
 
   // ── Clear draft on successful generation ──
   const clearDraft = useCallback(() => {
-    try {
-      sessionStorage.removeItem(STORAGE_KEY);
-    } catch {
-      // ignore
-    }
-  }, []);
+      clearWizardDraft();
+    }, []);
 
   useEffect(() => {
     if (state.generationStatus === "complete") {

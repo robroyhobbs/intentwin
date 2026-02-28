@@ -2,7 +2,7 @@ import { resend } from "./resend";
 import { logger } from "@/lib/utils/logger";
 
 const FROM_EMAIL = "IntentBid <notifications@intentbid.com>";
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://intentbid.com";
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://app.intentbid.com";
 
 function capitalize(s: string): string {
   if (!s) return s;

@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { AlertTriangle, RotateCcw } from "lucide-react";
+import { logger } from "@/lib/utils/logger";
 
 export default function AnalyticsError({
   error,
@@ -11,7 +12,7 @@ export default function AnalyticsError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("Analytics error:", error);
+    logger.error("Analytics error:", error);
   }, [error]);
 
   return (

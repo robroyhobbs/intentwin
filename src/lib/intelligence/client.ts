@@ -15,12 +15,40 @@ import type {
   WinProbabilityResponse,
   CompetitiveLandscapeResponse,
 } from "./types";
+import type {
+  IntelligenceService,
+  PricingRatesParams,
+  AwardsSearchParams,
+  WinProbabilityParams,
+  CompetitiveLandscapeParams,
+  ProposalIntelligenceParams,
+} from "./contracts";
 
 const logger = createLogger({ module: "intelligence-client" });
 
 // TTL cache: key -> { data, expiresAt }
 const cache = new Map<string, { data: unknown; expiresAt: number }>();
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const CACHE_MAX_ENTRIES = 250;
+const CACHE_CLEANUP_INTERVAL = 25;
+const REQUEST_SLOW_WARN_MS = 1500;
+let cacheWritesSinceCleanup = 0;
+
+function cleanupCache(now: number): void {
+  for (const [key, value] of cache.entries()) {
+    if (value.expiresAt <= now) {
+      cache.delete(key);
+    }
+  }
+
+  if (cache.size <= CACHE_MAX_ENTRIES) return;
+  const overflow = cache.size - CACHE_MAX_ENTRIES;
+  const oldestKeys = [...cache.entries()]
+    .sort((a, b) => a[1].expiresAt - b[1].expiresAt)
+    .slice(0, overflow)
+    .map(([key]) => key);
+  oldestKeys.forEach((key) => cache.delete(key));
+}
 
 /**
  * Typed client for the IntentBid Intelligence Service.
@@ -32,7 +60,7 @@ const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
  * - Silent degradation: if service is down, returns null
  * - Env var gated: if INTELLIGENCE_API_URL is unset, all methods return null
  */
-class IntelligenceClient {
+class IntelligenceClient implements IntelligenceService {
   private baseUrl: string | null;
   private apiKey: string | null;
   private timeoutMs: number;
@@ -63,11 +91,7 @@ class IntelligenceClient {
 
   // ── Pricing Intelligence ─────────────────────────────────────────────
 
-  async getPricingRates(params: {
-    categories: string[];
-    businessSize?: "small" | "large";
-    naicsCode?: string;
-  }): Promise<PricingLookupResponse | null> {
+  async getPricingRates(params: PricingRatesParams): Promise<PricingLookupResponse | null> {
     const searchParams = new URLSearchParams();
     searchParams.set("categories", params.categories.join(","));
     if (params.businessSize)
@@ -76,18 +100,13 @@ class IntelligenceClient {
 
     return this.cachedGet<PricingLookupResponse>(
       `/api/v1/pricing/rates?${searchParams.toString()}`,
-      `pricing:${params.categories.sort().join(",")}:${params.businessSize ?? ""}:${params.naicsCode ?? ""}`,
+      `pricing:${[...params.categories].sort().join(",")}:${params.businessSize ?? ""}:${params.naicsCode ?? ""}`,
     );
   }
 
   // ── Awards Search ────────────────────────────────────────────────────
 
-  async searchAwards(params: {
-    agency?: string;
-    naicsCode?: string;
-    competitionType?: string;
-    limit?: number;
-  }): Promise<AwardsSearchResponse | null> {
+  async searchAwards(params: AwardsSearchParams): Promise<AwardsSearchResponse | null> {
     const searchParams = new URLSearchParams();
     if (params.agency) searchParams.set("agency", params.agency);
     if (params.naicsCode) searchParams.set("naics_code", params.naicsCode);
@@ -103,14 +122,7 @@ class IntelligenceClient {
 
   // ── Win Probability ───────────────────────────────────────────────────
 
-  async getWinProbability(params: {
-    agency?: string;
-    naicsCode?: string;
-    awardAmount?: number;
-    competitionType?: string;
-    setAsideType?: string;
-    businessSize?: "small" | "large";
-  }): Promise<WinProbabilityResponse | null> {
+  async getWinProbability(params: WinProbabilityParams): Promise<WinProbabilityResponse | null> {
     const searchParams = new URLSearchParams();
     if (params.agency) searchParams.set("agency", params.agency);
     if (params.naicsCode) searchParams.set("naics_code", params.naicsCode);
@@ -131,10 +143,7 @@ class IntelligenceClient {
 
   // ── Competitive Landscape ──────────────────────────────────────────────
 
-  async getCompetitiveLandscape(params: {
-    agency?: string;
-    naicsCode?: string;
-  }): Promise<CompetitiveLandscapeResponse | null> {
+  async getCompetitiveLandscape(params: CompetitiveLandscapeParams): Promise<CompetitiveLandscapeResponse | null> {
     const searchParams = new URLSearchParams();
     if (params.agency) searchParams.set("agency", params.agency);
     if (params.naicsCode) searchParams.set("naics_code", params.naicsCode);
@@ -150,11 +159,7 @@ class IntelligenceClient {
   // Single method that fetches all intelligence needed for a proposal.
   // Called once in buildPipelineContext(). Runs sub-fetches in parallel.
 
-  async getProposalIntelligence(params: {
-    agencyName: string | null;
-    naicsCode: string | null;
-    laborCategories?: string[];
-  }): Promise<ProposalIntelligence | null> {
+  async getProposalIntelligence(params: ProposalIntelligenceParams): Promise<ProposalIntelligence | null> {
     if (!this.isConfigured) return null;
 
     const start = Date.now();
@@ -226,12 +231,14 @@ class IntelligenceClient {
     // Check cache first
     const cached = cache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
+      logger.debug("Intelligence cache hit", { cacheKey });
       return cached.data as T;
     }
 
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
+      const requestStartedAt = Date.now();
 
       const response = await fetch(`${this.baseUrl}${path}`, {
         method: "GET",
@@ -243,6 +250,14 @@ class IntelligenceClient {
       });
 
       clearTimeout(timeout);
+      const requestDurationMs = Date.now() - requestStartedAt;
+      if (requestDurationMs > REQUEST_SLOW_WARN_MS) {
+        logger.warn("Intelligence API request exceeded SLO threshold", {
+          path,
+          durationMs: requestDurationMs,
+          sloMs: REQUEST_SLOW_WARN_MS,
+        });
+      }
 
       if (!response.ok) {
         logger.warn("Intelligence API returned non-OK status", {
@@ -274,6 +289,10 @@ class IntelligenceClient {
         data,
         expiresAt: Date.now() + CACHE_TTL_MS,
       });
+      cacheWritesSinceCleanup++;
+      if (cacheWritesSinceCleanup % CACHE_CLEANUP_INTERVAL === 0) {
+        cleanupCache(Date.now());
+      }
 
       return data;
     } catch (err) {
@@ -291,4 +310,8 @@ class IntelligenceClient {
 }
 
 // Module-level singleton
-export const intelligenceClient = new IntelligenceClient();
+export const intelligenceClient: IntelligenceService = new IntelligenceClient();
+
+export function getIntelligenceClient(): IntelligenceService {
+  return intelligenceClient;
+}

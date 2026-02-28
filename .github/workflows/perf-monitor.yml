@@ -1,0 +1,60 @@
+name: Performance Monitor
+
+on:
+  schedule:
+    - cron: "0 13 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: perf-monitor
+  cancel-in-progress: true
+
+jobs:
+  monitor:
+    name: Baseline + Threshold Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+      NEXT_PUBLIC_APP_URL: https://app.placeholder.intentbid.com
+      GEMINI_API_KEY: test-mock-do-not-use
+      OPENAI_API_KEY: test-mock-do-not-use
+      GROQ_API_KEY: test-mock-do-not-use
+      MISTRAL_API_KEY: test-mock-do-not-use
+      VOYAGE_API_KEY: test-mock-do-not-use
+      HELICONE_API_KEY: ""
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      ALERT_EMAIL_TO: ${{ secrets.ALERT_EMAIL_TO }}
+      ALERT_EMAIL_FROM: ${{ secrets.ALERT_EMAIL_FROM }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+      - run: npm run guardrails:boundaries
+      - run: npm run perf:baseline
+      - run: npm run perf:check
+
+      - name: Upload performance baseline
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-baseline
+          path: docs/plans/performance-baseline.json
+          retention-days: 30
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          chmod +x scripts/send-alert.sh
+          bash scripts/send-alert.sh \
+            "perf-monitor failed (${GITHUB_REPOSITORY})" \
+            "Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
