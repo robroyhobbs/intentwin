@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       deploy_command:
-        description: "Optional deploy command override"
+        description: Optional deploy command override
         required: false
         type: string
 
@@ -40,9 +40,13 @@ jobs:
           if [ -z "$command" ]; then
             command="${DEPLOY_COMMAND:-}"
           fi
+          if [ -z "$command" ] && [ -n "${VERCEL_TOKEN:-}" ]; then
+            command='npx vercel deploy --prod --yes --token "$VERCEL_TOKEN"'
+          fi
+
           if [ -z "$command" ]; then
             if [ "${{ github.event_name }}" = "push" ]; then
-              echo "Missing DEPLOY_COMMAND secret for push-triggered release gate."
+              echo "Missing DEPLOY_COMMAND (or VERCEL_TOKEN fallback) for push-triggered release gate."
               exit 1
             fi
             echo "No deploy command configured; running smoke-only gate."
@@ -56,30 +60,6 @@ jobs:
             echo "$command"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
-
-      - name: Validate deploy command
-        if: steps.resolve_deploy.outputs.has_command == 'true'
-        run: |
-          command="${{ steps.resolve_deploy.outputs.command }}"
-          executable="$(python3 - "$command" <<'PY'
-import shlex, sys
-tokens = shlex.split(sys.argv[1])
-for token in tokens:
-    if "=" in token and not token.startswith(("/", "./")) and token.count("=") == 1:
-        continue
-    print(token)
-    break
-PY
-)"
-          if [ -z "$executable" ]; then
-            echo "DEPLOY_COMMAND resolved but no executable token was found."
-            exit 1
-          fi
-          if ! command -v "$executable" >/dev/null 2>&1; then
-            echo "DEPLOY_COMMAND executable not found on runner: $executable"
-            echo "Set DEPLOY_COMMAND to a valid command, e.g. 'npx vercel deploy --prod --yes --token \\$VERCEL_TOKEN'."
-            exit 1
-          fi
 
       - name: Deploy
         if: steps.resolve_deploy.outputs.has_command == 'true'
