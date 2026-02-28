@@ -24,6 +24,7 @@ jobs:
       ALERT_EMAIL_FROM: ${{ secrets.ALERT_EMAIL_FROM }}
       ROLLBACK_WEBHOOK_URL: ${{ secrets.ROLLBACK_WEBHOOK_URL }}
       DEPLOY_COMMAND: ${{ secrets.DEPLOY_COMMAND }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
@@ -39,10 +40,13 @@ jobs:
           if [ -z "$command" ]; then
             command="${DEPLOY_COMMAND:-}"
           fi
+          if [ -z "$command" ] && [ -n "${VERCEL_TOKEN:-}" ]; then
+            command='npx vercel deploy --prod --yes --token "$VERCEL_TOKEN"'
+          fi
 
           if [ -z "$command" ]; then
             if [ "${{ github.event_name }}" = "push" ]; then
-              echo "Missing DEPLOY_COMMAND secret for push-triggered release gate."
+              echo "Missing DEPLOY_COMMAND and VERCEL_TOKEN secrets for push-triggered release gate."
               exit 1
             fi
             echo "No deploy command configured; running smoke-only gate."
