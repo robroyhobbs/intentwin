@@ -4,7 +4,7 @@ set -euo pipefail
 check_url() {
   local url="$1"
   local name="$2"
-  local marker="$3"
+  local marker_csv="$3"
   local max_latency_ms="$4"
   local response
   local body
@@ -29,16 +29,25 @@ check_url() {
     return 1
   fi
 
-  if [[ "$body" != *"$marker"* ]]; then
-    echo "FAIL: $name ($url) missing content marker: $marker"
+  IFS='|' read -r -a markers <<< "$marker_csv"
+  local matched=0
+  for marker in "${markers[@]}"; do
+    if [[ "$body" == *"$marker"* ]]; then
+      matched=1
+      break
+    fi
+  done
+
+  if [[ "$matched" -ne 1 ]]; then
+    echo "FAIL: $name ($url) missing expected content markers: $marker_csv"
     return 1
   fi
 }
 
 MAX_LATENCY_MS="${SMOKE_MAX_LATENCY_MS:-5000}"
 
-check_url "https://intentbid.com" "marketing" "Invite-Only Early Access" "$MAX_LATENCY_MS"
-check_url "https://app.intentbid.com/login" "app-login" "Create proposals that" "$MAX_LATENCY_MS"
-check_url "https://app.intentbid.com" "app-root" "Structured persuasion intelligence" "$MAX_LATENCY_MS"
+check_url "https://intentbid.com" "marketing" "AI Proposal Intelligence Platform|Invite-only access for serious teams." "$MAX_LATENCY_MS"
+check_url "https://app.intentbid.com/login" "app-login" "AI Proposal Intelligence Platform|Generate winning proposals, RFPs, RFIs, and SOWs in hours." "$MAX_LATENCY_MS"
+check_url "https://app.intentbid.com" "app-root" "AI Proposal Intelligence Platform|Invite-only access for serious teams." "$MAX_LATENCY_MS"
 
 echo "Production smoke checks passed."
