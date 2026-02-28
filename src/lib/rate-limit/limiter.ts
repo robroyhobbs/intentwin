@@ -90,9 +90,11 @@ function ensureCleanup() {
   }, 60_000);
 
   // Don't prevent Node from exiting
-  if (cleanupTimer && typeof cleanupTimer === "object" && "unref" in cleanupTimer) {
-    cleanupTimer.unref();
-  }
+  cleanupTimer.unref?.();
+}
+
+function getWindowStart(now: number, windowMs: number): number {
+  return now - windowMs;
 }
 
 /**
@@ -116,7 +118,7 @@ export function checkRateLimit(
   ensureCleanup();
 
   const now = Date.now();
-  const windowStart = now - config.windowMs;
+  const windowStart = getWindowStart(now, config.windowMs);
   const fullKey = config.keyPrefix ? `${config.keyPrefix}:${key}` : key;
 
   let entry = store.get(fullKey);
@@ -200,7 +202,7 @@ export function getRateLimitStatus(
   config: RateLimitConfig,
 ): RateLimitResult {
   const now = Date.now();
-  const windowStart = now - config.windowMs;
+  const windowStart = getWindowStart(now, config.windowMs);
   const fullKey = config.keyPrefix ? `${config.keyPrefix}:${key}` : key;
 
   const entry = store.get(fullKey);

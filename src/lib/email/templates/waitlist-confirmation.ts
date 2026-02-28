@@ -1,3 +1,4 @@
+import { getFirstName } from "../get-first-name";
 import { escapeHtml } from "../escape-html";
 
 export function waitlistConfirmationEmail(params: {
@@ -5,7 +6,7 @@ export function waitlistConfirmationEmail(params: {
   company: string;
 }): string {
   const { name, company } = params;
-  const firstName = escapeHtml(name.split(" ")[0]);
+  const firstName = getFirstName(name);
   const safeCompany = escapeHtml(company);
 
   return `<!DOCTYPE html>
