@@ -46,8 +46,8 @@ check_url() {
 
 MAX_LATENCY_MS="${SMOKE_MAX_LATENCY_MS:-5000}"
 
-check_url "https://intentbid.com" "marketing" "AI Proposal Intelligence Platform|Invite-only access for serious teams." "$MAX_LATENCY_MS"
-check_url "https://app.intentbid.com/login" "app-login" "AI Proposal Intelligence Platform|Generate winning proposals, RFPs, RFIs, and SOWs in hours." "$MAX_LATENCY_MS"
-check_url "https://app.intentbid.com" "app-root" "AI Proposal Intelligence Platform|Invite-only access for serious teams." "$MAX_LATENCY_MS"
+check_url "https://intentbid.com" "marketing" "IntentBid — AI Proposal Intelligence|proposals without the headache." "$MAX_LATENCY_MS"
+check_url "https://app.intentbid.com/login" "app-login" "IntentBid - AI Proposal Intelligence Platform|Create proposals that" "$MAX_LATENCY_MS"
+check_url "https://app.intentbid.com" "app-root" "IntentBid - AI Proposal Intelligence Platform | Win More Deals|Invite-only access." "$MAX_LATENCY_MS"
 
 echo "Production smoke checks passed."
