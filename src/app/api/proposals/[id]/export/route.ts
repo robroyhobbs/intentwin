@@ -10,10 +10,16 @@ import { generateExportFile } from "@/lib/export/runtime";
 
 export const maxDuration = 120; // PDF generation with Chromium can take 30-60s
 const EXPORT_SLOW_WARN_MS = 15000;
+const formatTimingMs = (value: number) => Math.max(0, Math.round(value));
 
 export const POST = withProposalRoute(
   async (request, { id }, context) => {
     const startedAt = Date.now();
+    let fetchDurationMs = 0;
+    let generateDurationMs = 0;
+    let uploadDurationMs = 0;
+    let signedUrlDurationMs = 0;
+    let statusUpdateDurationMs = 0;
     const body = await request.json();
     const formatType = body.format as string;
 
@@ -65,6 +71,7 @@ export const POST = withProposalRoute(
     if (!sections || sections.length === 0) {
       return badRequest("No completed sections to export");
     }
+    fetchDurationMs = Date.now() - startedAt;
 
     // Create a version snapshot before export (non-blocking)
     try {
@@ -99,10 +106,12 @@ export const POST = withProposalRoute(
     let mimeType: string;
     let extension: string;
     try {
+      const generateStartedAt = Date.now();
       ({ fileBuffer, mimeType, extension } = await generateExportFile(
         formatType,
         proposalData,
       ));
+      generateDurationMs = Date.now() - generateStartedAt;
     } catch (genError) {
       const errorMsg = genError instanceof Error ? genError.message : String(genError);
       logger.error(`Export generation failed (${formatType})`, {
@@ -121,26 +130,32 @@ export const POST = withProposalRoute(
     const fileName = `${proposal.title.replace(/[^a-zA-Z0-9]/g, "_")}_${nanoid(6)}.${extension}`;
     const storagePath = `${context.organizationId}/${id}/${fileName}`;
 
+    const uploadStartedAt = Date.now();
     const { error: uploadError } = await adminClient.storage
       .from("exported-proposals")
       .upload(storagePath, fileBuffer, {
         contentType: mimeType,
       });
+    uploadDurationMs = Date.now() - uploadStartedAt;
 
     if (uploadError) {
       return serverError("Export upload failed", uploadError);
     }
 
     // Generate signed URL (1 hour expiry)
+    const signedUrlStartedAt = Date.now();
     const { data: signedUrl } = await adminClient.storage
       .from("exported-proposals")
       .createSignedUrl(storagePath, 3600);
+    signedUrlDurationMs = Date.now() - signedUrlStartedAt;
 
     // Update proposal status
+    const statusUpdateStartedAt = Date.now();
     await adminClient
       .from("proposals")
       .update({ status: ProposalStatus.EXPORTED })
       .eq("id", id);
+    statusUpdateDurationMs = Date.now() - statusUpdateStartedAt;
 
     logger.info("Proposal export completed", {
       proposalId: id,
@@ -161,10 +176,22 @@ export const POST = withProposalRoute(
       });
     }
 
-    return ok({
+    const response = ok({
       downloadUrl: signedUrl?.signedUrl,
       fileName,
       format: formatType,
     });
+    response.headers.set(
+      "Server-Timing",
+      [
+        `fetch;dur=${formatTimingMs(fetchDurationMs)}`,
+        `generate;dur=${formatTimingMs(generateDurationMs)}`,
+        `upload;dur=${formatTimingMs(uploadDurationMs)}`,
+        `sign;dur=${formatTimingMs(signedUrlDurationMs)}`,
+        `status;dur=${formatTimingMs(statusUpdateDurationMs)}`,
+        `total;dur=${formatTimingMs(exportDurationMs)}`,
+      ].join(", "),
+    );
+    return response;
   },
 );
