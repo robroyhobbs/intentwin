@@ -9,8 +9,7 @@ const PHASE_STYLES: Record<CreatePhase, string> = {
   intake: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
   strategy:
     "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400",
-  draft:
-    "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  draft: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
   finalize:
     "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
 };
@@ -86,9 +85,8 @@ export function BlockerItem({ blocker, onResolve }: BlockerItemProps) {
       <button
         type="button"
         onClick={onResolve}
-        disabled={blocker.resolved}
-        className="shrink-0 disabled:cursor-default"
-        aria-label={blocker.resolved ? "Resolved" : "Mark resolved"}
+        className="shrink-0 cursor-pointer"
+        aria-label={blocker.resolved ? "Mark unresolved" : "Mark resolved"}
       >
         {blocker.resolved ? <CheckboxChecked /> : <CheckboxEmpty />}
       </button>

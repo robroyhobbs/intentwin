@@ -99,6 +99,7 @@ export type CreateAction =
   | { type: "GENERATION_COMPLETE" }
   | { type: "GENERATION_FAIL" }
   | { type: "MARK_SECTION_REVIEWED"; sectionId: string }
+  | { type: "REVIEW_ALL_SECTIONS" }
   // Finalize
   | { type: "SET_BLOCKERS"; blockers: Blocker[] }
   | { type: "RESOLVE_BLOCKER"; blockerId: string }

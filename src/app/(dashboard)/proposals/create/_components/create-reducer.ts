@@ -129,6 +129,14 @@ export function createReducer(
         ),
       };
       break;
+    case "REVIEW_ALL_SECTIONS":
+      next = {
+        ...state,
+        sections: state.sections.map((s) =>
+          s.generationStatus === "complete" ? { ...s, reviewed: true } : s,
+        ),
+      };
+      break;
     case "SET_BLOCKERS":
       next = { ...state, blockers: action.blockers };
       break;
@@ -136,7 +144,7 @@ export function createReducer(
       next = {
         ...state,
         blockers: state.blockers.map((b) =>
-          b.id === action.blockerId ? { ...b, resolved: true } : b,
+          b.id === action.blockerId ? { ...b, resolved: !b.resolved } : b,
         ),
       };
       break;

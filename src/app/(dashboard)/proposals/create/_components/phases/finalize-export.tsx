@@ -29,8 +29,8 @@ async function callExportApi(
     );
   }
 
-  const data = (await res.json()) as { data: ExportResult };
-  return data.data;
+  const data = (await res.json()) as ExportResult;
+  return data;
 }
 
 // ── Small presentational pieces ─────────────────────────────────────────────
