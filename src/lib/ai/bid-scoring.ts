@@ -95,14 +95,48 @@ IMPORTANT: Return ONLY a JSON object in this exact format, wrapped in a markdown
 }
 \`\`\`
 
-Scoring guidance:
-- **Requirement Match (30%)**: How well do the RFP requirements align with what the firm typically delivers? Consider scope, domain, complexity.
-- **Past Performance (25%)**: Does the firm have relevant case studies, metrics, or prior work in this domain/industry?
-- **Capability Alignment (20%)**: How well do the firm's products, services, and certifications match what the RFP demands?
-- **Timeline Feasibility (15%)**: Is the RFP timeline realistic given the scope and the firm's capacity?
-- **Strategic Value (10%)**: Does this opportunity align with the firm's strategic goals, target markets, or growth areas?
+## Scoring Rubric (follow exactly)
 
-Be honest and calibrated. A score of 50 means neutral/uncertain. Below 30 means significant concerns. Above 80 means strong alignment.`;
+**Requirement Match (30%)**:
+- 80-100: 80%+ of stated requirements directly match firm's proven delivery areas
+- 60-79: 50-79% match, gaps are in adjacent/learnable areas
+- 40-59: Some overlap but significant gaps in core requirements
+- 20-39: Mostly outside firm's delivery areas
+- 0-19: No meaningful overlap with firm capabilities
+
+**Past Performance (25%)**:
+- 80-100: 3+ directly relevant case studies with quantified outcomes in same domain
+- 60-79: 1-2 relevant case studies or strong adjacent experience
+- 40-59: General industry experience but no specific case studies cited
+- 20-39: Minimal relevant experience, mostly aspirational
+- 0-19: No evidence of relevant past performance
+
+**Capability Alignment (20%)**:
+- 80-100: Firm has all required certifications, tools, and methodologies
+- 60-79: Has most capabilities, minor gaps easily filled
+- 40-59: Has core capabilities but missing key certifications or tools
+- 20-39: Significant capability gaps requiring new hires or partnerships
+- 0-19: Fundamental capability mismatch
+
+**Timeline Feasibility (15%)**:
+- 80-100: Timeline is generous relative to scope, firm has capacity
+- 60-79: Timeline is tight but achievable with existing resources
+- 40-59: Timeline requires careful planning and prioritization
+- 20-39: Timeline is aggressive, significant risk of delays
+- 0-19: Timeline is unrealistic for the stated scope
+
+**Strategic Value (10%)**:
+- 80-100: Directly advances stated strategic goals or enters priority market
+- 60-79: Aligns with growth direction, good brand-building opportunity
+- 40-59: Neutral — neither advances nor conflicts with strategy
+- 20-39: Low strategic fit, commodity work
+- 0-19: Conflicts with strategic direction or diverts from priorities
+
+## Rules
+- Use ONLY the evidence provided. Do not assume capabilities not listed.
+- When evidence is ambiguous, score to the LOWER band.
+- Scores must be integers divisible by 5 (e.g., 65, 70, 75 — not 67 or 73).
+- Each rationale must cite specific evidence from the input (company name, certification, case study title, or requirement text).`;
 
 /**
  * Score extracted RFP requirements during intake (before proposal creation).
@@ -133,24 +167,31 @@ export async function scoreFromRequirements(
     industry,
   });
 
-  const [l1Context, agencyProfile, pricingRates, winProbability] = await Promise.all([
-    fetchL1ContextFromDb(supabase, serviceLine, industry, organizationId),
-    agencyName
-      ? intelligenceClient.getAgencyProfile(agencyName)
-      : Promise.resolve(null),
-    intelligenceClient.getPricingRates({
-      categories: ["Software Developer", "Project Manager", "Systems Engineer"],
-      naicsCode: naicsCode ?? undefined,
-    }),
-    intelligenceClient.getWinProbability({
-      agency: agencyName ?? undefined,
-      naicsCode: naicsCode ?? undefined,
-      awardAmount: budgetRange ? parseFloat(String(budgetRange).replace(/[^0-9.]/g, "")) || undefined : undefined,
-      competitionType: competitionType ?? undefined,
-      setAsideType: setAside ?? undefined,
-      businessSize: "small",
-    }),
-  ]);
+  const [l1Context, agencyProfile, pricingRates, winProbability] =
+    await Promise.all([
+      fetchL1ContextFromDb(supabase, serviceLine, industry, organizationId),
+      agencyName
+        ? intelligenceClient.getAgencyProfile(agencyName)
+        : Promise.resolve(null),
+      intelligenceClient.getPricingRates({
+        categories: [
+          "Software Developer",
+          "Project Manager",
+          "Systems Engineer",
+        ],
+        naicsCode: naicsCode ?? undefined,
+      }),
+      intelligenceClient.getWinProbability({
+        agency: agencyName ?? undefined,
+        naicsCode: naicsCode ?? undefined,
+        awardAmount: budgetRange
+          ? parseFloat(String(budgetRange).replace(/[^0-9.]/g, "")) || undefined
+          : undefined,
+        competitionType: competitionType ?? undefined,
+        setAsideType: setAside ?? undefined,
+        businessSize: "small",
+      }),
+    ]);
 
   logger.info("[bid-scoring] Parallel fetch complete", {
     l1CompanyCount: l1Context.companyContext.length,
@@ -190,7 +231,7 @@ Based on the above, score each of the 5 bid evaluation factors (0-100) with rati
 
   const response = await generateText(prompt, {
     systemPrompt: BID_SCORING_SYSTEM_PROMPT,
-    temperature: 0.3,
+    temperature: 0,
     maxTokens: 4096,
   });
 
@@ -275,7 +316,7 @@ Based on the above, score each of the 5 bid evaluation factors (0-100) with rati
   // Call LLM for scoring
   const response = await generateText(prompt, {
     systemPrompt: BID_SCORING_SYSTEM_PROMPT,
-    temperature: 0.3,
+    temperature: 0,
     maxTokens: 4096,
   });
 
@@ -378,37 +419,42 @@ function buildRfpSummary(requirements: Record<string, unknown>): string {
   if (requirements.set_aside)
     sections.push(`**Set-Aside:** ${requirements.set_aside}`);
 
-  // Handle requirements array
+  // Handle requirements array (sorted for deterministic ordering)
   if (Array.isArray(requirements.requirements)) {
-    const reqList = requirements.requirements
+    const items = requirements.requirements
       .slice(0, 20)
       .map((r: string | { description?: string }) =>
-        typeof r === "string" ? `- ${r}` : `- ${r.description || r}`,
+        typeof r === "string" ? r : r.description || String(r),
       )
-      .join("\n");
-    sections.push(`**Key Requirements:**\n${reqList}`);
+      .sort((a: string, b: string) => a.localeCompare(b));
+    sections.push(
+      `**Key Requirements:**\n${items.map((r: string) => `- ${r}`).join("\n")}`,
+    );
   }
 
-  // Handle evaluation criteria
+  // Handle evaluation criteria (sorted for deterministic ordering)
   if (Array.isArray(requirements.evaluation_criteria)) {
-    const criteria = requirements.evaluation_criteria
+    const items = requirements.evaluation_criteria
       .slice(0, 10)
       .map((c: string | { criterion?: string; weight?: string }) =>
         typeof c === "string"
-          ? `- ${c}`
-          : `- ${c.criterion || c}${c.weight ? ` (${c.weight})` : ""}`,
+          ? c
+          : `${c.criterion || c}${c.weight ? ` (${c.weight})` : ""}`,
       )
-      .join("\n");
-    sections.push(`**Evaluation Criteria:**\n${criteria}`);
+      .sort((a: string, b: string) => a.localeCompare(b));
+    sections.push(
+      `**Evaluation Criteria:**\n${items.map((c: string) => `- ${c}`).join("\n")}`,
+    );
   }
 
-  // Handle compliance requirements
+  // Handle compliance requirements (sorted for deterministic ordering)
   if (Array.isArray(requirements.compliance_requirements)) {
-    const compliance = requirements.compliance_requirements
+    const items = [...requirements.compliance_requirements]
       .slice(0, 10)
-      .map((c: string) => `- ${c}`)
-      .join("\n");
-    sections.push(`**Compliance Requirements:**\n${compliance}`);
+      .sort((a: string, b: string) => a.localeCompare(b));
+    sections.push(
+      `**Compliance Requirements:**\n${items.map((c: string) => `- ${c}`).join("\n")}`,
+    );
   }
 
   if (requirements.technical_environment)
@@ -428,18 +474,18 @@ function buildRfpSummary(requirements: Record<string, unknown>): string {
 function buildL1Summary(l1Context: L1Context): string {
   const sections: string[] = [];
 
-  const brand = l1Context.companyContext.filter(
-    (c) => c.category === "brand" || c.category === "values",
-  );
+  const brand = l1Context.companyContext
+    .filter((c) => c.category === "brand" || c.category === "values")
+    .sort((a, b) => a.title.localeCompare(b.title));
   if (brand.length > 0) {
     sections.push(
       `**Company Identity:**\n${brand.map((c) => `- ${c.title}: ${c.content}`).join("\n")}`,
     );
   }
 
-  const certs = l1Context.companyContext.filter(
-    (c) => c.category === "certifications",
-  );
+  const certs = l1Context.companyContext
+    .filter((c) => c.category === "certifications")
+    .sort((a, b) => a.title.localeCompare(b.title));
   if (certs.length > 0) {
     sections.push(
       `**Certifications:**\n${certs.map((c) => `- ${c.title}`).join("\n")}`,
@@ -447,7 +493,10 @@ function buildL1Summary(l1Context: L1Context): string {
   }
 
   if (l1Context.productContexts.length > 0) {
-    const prods = l1Context.productContexts
+    const sorted = [...l1Context.productContexts].sort((a, b) =>
+      a.product_name.localeCompare(b.product_name),
+    );
+    const prods = sorted
       .map((p) => {
         const caps = Array.isArray(p.capabilities)
           ? p.capabilities.map((c: { name: string }) => c.name).join(", ")
@@ -459,7 +508,10 @@ function buildL1Summary(l1Context: L1Context): string {
   }
 
   if (l1Context.evidenceLibrary.length > 0) {
-    const evidence = l1Context.evidenceLibrary
+    const sorted = [...l1Context.evidenceLibrary].sort((a, b) =>
+      a.title.localeCompare(b.title),
+    );
+    const evidence = sorted
       .map((e) => `- ${e.title} (${e.evidence_type}): ${e.summary}`)
       .join("\n");
     sections.push(`**Past Performance & Evidence:**\n${evidence}`);
@@ -497,18 +549,23 @@ function parseScoresFromResponse(
   // Validate and clamp scores
   const result: Record<string, FactorScore> = {};
   for (const factor of SCORING_FACTORS) {
-    const raw = parsed[factor.key] as { score?: unknown; rationale?: unknown } | undefined;
+    const raw = parsed[factor.key] as
+      | { score?: unknown; rationale?: unknown }
+      | undefined;
     // Accept score as number or numeric string
     const rawScore = raw?.score;
-    const score = typeof rawScore === "number"
-      ? rawScore
-      : typeof rawScore === "string" && !isNaN(Number(rawScore))
-        ? Number(rawScore)
-        : null;
+    const score =
+      typeof rawScore === "number"
+        ? rawScore
+        : typeof rawScore === "string" && !isNaN(Number(rawScore))
+          ? Number(rawScore)
+          : null;
 
     if (raw && score !== null) {
+      // Round to nearest 5 for consistency with scoring rubric
+      const rounded = Math.round(score / 5) * 5;
       result[factor.key] = {
-        score: Math.max(0, Math.min(100, Math.round(score))),
+        score: Math.max(0, Math.min(100, rounded)),
         rationale:
           typeof raw.rationale === "string"
             ? raw.rationale.slice(0, 500)
