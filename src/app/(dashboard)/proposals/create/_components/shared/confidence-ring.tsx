@@ -6,13 +6,15 @@ interface ConfidenceRingProps {
 }
 
 function getColor(score: number): string {
-  if (score < 40) return "#ef4444"; // red-500
+  if (score === 0) return "#a1a1aa"; // zinc-400 (neutral)
+  if (score < 40) return "#f59e0b"; // amber-500 (building)
   if (score < 70) return "#f59e0b"; // amber-500
   return "#10b981"; // emerald-500
 }
 
 function getLabel(score: number): string {
-  if (score < 40) return "Low";
+  if (score === 0) return "Not started";
+  if (score < 40) return "Building";
   if (score < 70) return "Moderate";
   return "Strong";
 }
@@ -39,23 +41,29 @@ export function ConfidenceRing({ score, size = 80 }: ConfidenceRingProps) {
             strokeWidth={4}
             className="text-muted/30"
           />
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="none"
-            stroke={color}
-            strokeWidth={4}
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            strokeDashoffset={offset}
-            className="transition-all duration-700 ease-out"
-          />
+          {clamped > 0 && (
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              fill="none"
+              stroke={color}
+              strokeWidth={4}
+              strokeLinecap="round"
+              strokeDasharray={circumference}
+              strokeDashoffset={offset}
+              className="transition-all duration-700 ease-out"
+            />
+          )}
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-lg font-bold" style={{ color }}>
-            {clamped}
-          </span>
+          {clamped === 0 ? (
+            <span className="text-sm font-medium text-muted-foreground">--</span>
+          ) : (
+            <span className="text-lg font-bold" style={{ color }}>
+              {clamped}
+            </span>
+          )}
         </div>
       </div>
       <span className="text-xs font-medium text-muted-foreground">{label}</span>

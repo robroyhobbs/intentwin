@@ -1,13 +1,16 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
-import { LogOut, User } from "lucide-react";
+import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
+import { LogOut, User, ArrowLeft } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 export function Header() {
   const supabase = createClient();
   const router = useRouter();
+  const pathname = usePathname();
+  const isCreateFlow = pathname.startsWith("/proposals/create");
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -17,10 +20,22 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center justify-end gap-4 px-6 bg-[var(--background-secondary)] border-b border-[var(--border)]">
-      {/* IDD Badge */}
-      <div className="mr-auto flex items-center gap-2 text-xs text-[var(--foreground-subtle)]">
-        <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_6px_var(--accent)]" />
-        <span className="font-medium">IDD Active</span>
+      {/* Back link when sidebar is hidden, IDD badge otherwise */}
+      <div className="mr-auto flex items-center gap-2 text-xs">
+        {isCreateFlow ? (
+          <Link
+            href="/proposals"
+            className="flex items-center gap-1.5 text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span className="font-medium">Back to Proposals</span>
+          </Link>
+        ) : (
+          <div className="flex items-center gap-2 text-[var(--foreground-subtle)]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_6px_var(--accent)]" />
+            <span className="font-medium">IDD Active</span>
+          </div>
+        )}
       </div>
 
       <ThemeToggle />

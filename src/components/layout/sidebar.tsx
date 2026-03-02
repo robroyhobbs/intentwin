@@ -18,7 +18,6 @@ import {
   Globe,
   DollarSign,
   FileText,
-  Hash,
   Info,
   Briefcase,
 } from "lucide-react";
@@ -47,10 +46,26 @@ const navGroups = [
     label: "Intelligence",
     items: [
       { name: "Market Overview", href: "/intelligence", icon: Globe },
-      { name: "Public Records (FOIA)", href: "/intelligence/foia", icon: Library },
-      { name: "Agency Explorer", href: "/intelligence/agencies", icon: Building2 },
-      { name: "Rate Benchmarks", href: "/intelligence/rates", icon: DollarSign },
-      { name: "Opportunities", href: "/intelligence/opportunities", icon: Briefcase },
+      {
+        name: "Public Records (FOIA)",
+        href: "/intelligence/foia",
+        icon: Library,
+      },
+      {
+        name: "Agency Explorer",
+        href: "/intelligence/agencies",
+        icon: Building2,
+      },
+      {
+        name: "Rate Benchmarks",
+        href: "/intelligence/rates",
+        icon: DollarSign,
+      },
+      {
+        name: "Opportunities",
+        href: "/intelligence/opportunities",
+        icon: Briefcase,
+      },
       { name: "Award Search", href: "/intelligence/awards", icon: FileText },
       { name: "About Data", href: "/intelligence/about", icon: Info },
     ],
@@ -73,27 +88,68 @@ const navGroups = [
 export function Sidebar() {
   const pathname = usePathname();
 
+  // Hide sidebar during proposal creation for a focused workspace
+  if (pathname.startsWith("/proposals/create")) return null;
+
   return (
     <aside className="flex h-screen w-60 flex-col bg-[var(--sidebar-bg)] border-r border-[var(--sidebar-border)]">
       {/* Logo */}
       <div className="flex h-16 items-center px-4 border-b border-[var(--sidebar-border)]">
         <Link href="/proposals" className="flex items-center gap-3 group">
           <div className="relative flex h-9 w-9 items-center justify-center rounded-xl shadow-[0_0_15px_rgba(192,132,252,0.3)] transition-all group-hover:shadow-[0_0_20px_rgba(192,132,252,0.6)] group-hover:scale-105">
-            <svg width="100%" height="100%" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="512" height="512" rx="100" fill="#09090B"/>
-              <rect x="176" y="144" width="32" height="224" rx="16" fill="url(#monogram_grad_1)"/>
-              <path d="M232 144H320C355.346 144 384 172.654 384 208C384 233.167 369.458 254.918 348.65 265.558C374.881 275.64 394 300.911 394 330C394 369.764 361.764 402 322 402H232V144Z" stroke="url(#monogram_grad_2)" strokeWidth="28" strokeLinejoin="round" strokeLinecap="round"/>
-              <path d="M232 268H320" stroke="url(#monogram_grad_2)" strokeWidth="28" strokeLinecap="round"/>
-              <circle cx="192" cy="112" r="16" fill="url(#monogram_grad_1)"/>
-              <circle cx="232" cy="112" r="16" fill="url(#monogram_grad_2)"/>
+            <svg
+              width="100%"
+              height="100%"
+              viewBox="0 0 512 512"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <rect width="512" height="512" rx="100" fill="#09090B" />
+              <rect
+                x="176"
+                y="144"
+                width="32"
+                height="224"
+                rx="16"
+                fill="url(#monogram_grad_1)"
+              />
+              <path
+                d="M232 144H320C355.346 144 384 172.654 384 208C384 233.167 369.458 254.918 348.65 265.558C374.881 275.64 394 300.911 394 330C394 369.764 361.764 402 322 402H232V144Z"
+                stroke="url(#monogram_grad_2)"
+                strokeWidth="28"
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
+              <path
+                d="M232 268H320"
+                stroke="url(#monogram_grad_2)"
+                strokeWidth="28"
+                strokeLinecap="round"
+              />
+              <circle cx="192" cy="112" r="16" fill="url(#monogram_grad_1)" />
+              <circle cx="232" cy="112" r="16" fill="url(#monogram_grad_2)" />
               <defs>
-                <linearGradient id="monogram_grad_1" x1="176" y1="112" x2="208" y2="368" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#818CF8"/>
-                  <stop offset="1" stopColor="#C084FC"/>
+                <linearGradient
+                  id="monogram_grad_1"
+                  x1="176"
+                  y1="112"
+                  x2="208"
+                  y2="368"
+                  gradientUnits="userSpaceOnUse"
+                >
+                  <stop stopColor="#818CF8" />
+                  <stop offset="1" stopColor="#C084FC" />
                 </linearGradient>
-                <linearGradient id="monogram_grad_2" x1="232" y1="144" x2="394" y2="402" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#C084FC"/>
-                  <stop offset="1" stopColor="#F472B6"/>
+                <linearGradient
+                  id="monogram_grad_2"
+                  x1="232"
+                  y1="144"
+                  x2="394"
+                  y2="402"
+                  gradientUnits="userSpaceOnUse"
+                >
+                  <stop stopColor="#C084FC" />
+                  <stop offset="1" stopColor="#F472B6" />
                 </linearGradient>
               </defs>
             </svg>

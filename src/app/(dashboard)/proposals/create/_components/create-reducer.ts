@@ -18,21 +18,26 @@ export const initialState: CreateFlowState = {
   sections: [],
   generationStatus: "idle",
   blockers: [],
-  confidence: 20,
+  confidence: 0,
   finalApproved: false,
   exportedUrl: null,
 };
 
 function computeConfidence(state: CreateFlowState): number {
-  let score = 20;
-  if (state.completedPhases.has("intake")) score += 15;
-  if (state.completedPhases.has("strategy")) score += 20;
-  if (state.completedPhases.has("draft")) score += 25;
+  let score = 0;
+
+  // Each phase contributes to confidence when completed
+  if (state.completedPhases.has("intake")) score += 25;
+  if (state.completedPhases.has("strategy")) score += 25;
+  if (state.completedPhases.has("draft")) score += 30;
   if (state.completedPhases.has("finalize")) score += 20;
+
+  // Unresolved blockers reduce confidence
   const unresolvedBlockers = state.blockers.filter(
     (b: Blocker) => !b.resolved,
   ).length;
   score -= unresolvedBlockers * 5;
+
   return Math.max(0, Math.min(100, score));
 }
 

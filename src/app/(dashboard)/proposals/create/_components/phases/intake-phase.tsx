@@ -1,45 +1,31 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { useCreateFlow } from "../create-provider";
 import { StepIndicator } from "../shared/step-indicator";
 import {
-  filterValidFiles,
   uploadAndExtract,
+  fetchUrlAndExtract,
   getExtractionSummary,
 } from "./intake-helpers";
+import {
+  InputModeTabs,
+  DropZone,
+  UrlInput,
+  type InputMode,
+} from "./intake-input";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
 import { logger } from "@/lib/utils/logger";
 
 // ── Small presentational pieces ─────────────────────────────────────────────
-
-function UploadIcon() {
-  return (
-    <svg
-      className="h-10 w-10 text-muted-foreground"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={1.5}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775
-           5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118
-           19.5H6.75z"
-      />
-    </svg>
-  );
-}
 
 function IntakeHeader() {
   return (
     <div>
       <h2 className="text-lg font-semibold">Upload RFP Documents</h2>
       <p className="text-sm text-muted-foreground mt-1">
-        Upload your RFP or solicitation documents and we will automatically
-        extract key details to kickstart your proposal.
+        Upload your RFP documents or paste a solicitation URL and we will
+        automatically extract key details to kickstart your proposal.
       </p>
     </div>
   );
@@ -72,69 +58,6 @@ function ErrorBanner({
           Try again
         </button>
       </div>
-    </div>
-  );
-}
-
-function submitValidFiles(
-  source: FileList | null | undefined,
-  onFiles: (f: File[]) => void,
-) {
-  if (!source) return;
-  const valid = filterValidFiles(source);
-  if (valid.length > 0) onFiles(valid);
-}
-
-function DropZone({ onFiles }: { onFiles: (files: File[]) => void }) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [dragOver, setDragOver] = useState(false);
-  const openPicker = () => inputRef.current?.click();
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      setDragOver(false);
-      submitValidFiles(e.dataTransfer.files, onFiles);
-    },
-    [onFiles],
-  );
-
-  const border = dragOver
-    ? "border-primary bg-primary/5"
-    : "border-border hover:border-primary/50";
-
-  return (
-    <div
-      onDragOver={(e) => {
-        e.preventDefault();
-        setDragOver(true);
-      }}
-      onDragLeave={() => setDragOver(false)}
-      onDrop={handleDrop}
-      onClick={openPicker}
-      role="button"
-      aria-label="Upload RFP documents. Supports PDF, DOCX, TXT, and XLSX."
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") openPicker();
-      }}
-      className={`flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-12 cursor-pointer transition-colors ${border}`}
-    >
-      <UploadIcon />
-      <p className="text-sm font-medium">
-        Drag and drop your RFP files here, or click to browse
-      </p>
-      <p className="text-xs text-muted-foreground">
-        Supported: PDF, DOCX, TXT, XLSX
-      </p>
-      <input
-        ref={inputRef}
-        type="file"
-        multiple
-        accept=".pdf,.docx,.txt,.xlsx"
-        className="hidden"
-        onChange={() => submitValidFiles(inputRef.current?.files, onFiles)}
-      />
     </div>
   );
 }
@@ -196,7 +119,32 @@ function BuyerGoalInput({
   );
 }
 
-// ── Phase view renderers (keep IntakePhase under 50 lines) ──────────────────
+// ── Shared input selector ───────────────────────────────────────────────────
+
+function InputSelector({
+  mode,
+  onSwitch,
+  onFiles,
+  onUrl,
+}: {
+  mode: InputMode;
+  onSwitch: (m: InputMode) => void;
+  onFiles: (files: File[]) => void;
+  onUrl: (url: string) => void;
+}) {
+  return (
+    <>
+      <InputModeTabs mode={mode} onSwitch={onSwitch} />
+      {mode === "upload" ? (
+        <DropZone onFiles={onFiles} />
+      ) : (
+        <UrlInput onSubmit={onUrl} />
+      )}
+    </>
+  );
+}
+
+// ── Success view ────────────────────────────────────────────────────────────
 
 function IntakeSuccessView({ onContinue }: { onContinue: () => void }) {
   const { state, dispatch } = useCreateFlow();
@@ -222,9 +170,9 @@ function IntakeSuccessView({ onContinue }: { onContinue: () => void }) {
   );
 }
 
-// ── Main component ──────────────────────────────────────────────────────────
+// ── Handlers hook ───────────────────────────────────────────────────────────
 
-export function IntakePhase() {
+function useIntakeHandlers() {
   const { state, dispatch } = useCreateFlow();
   const authFetch = useAuthFetch();
 
@@ -233,6 +181,14 @@ export function IntakePhase() {
       dispatch({ type: "SET_FILES", files });
       logger.info("Intake: files selected", { count: files.length });
       void uploadAndExtract(files, dispatch, authFetch);
+    },
+    [dispatch, authFetch],
+  );
+
+  const handleUrl = useCallback(
+    (url: string) => {
+      logger.info("Intake: URL submitted", { url });
+      void fetchUrlAndExtract(url, dispatch, authFetch);
     },
     [dispatch, authFetch],
   );
@@ -246,6 +202,16 @@ export function IntakePhase() {
     dispatch({ type: "COMPLETE_PHASE", phase: "intake" });
     dispatch({ type: "SET_PHASE", phase: "strategy" });
   }, [dispatch]);
+
+  return { state, handleFiles, handleUrl, handleRetry, handleContinue };
+}
+
+// ── Main component ──────────────────────────────────────────────────────────
+
+export function IntakePhase() {
+  const { state, handleFiles, handleUrl, handleRetry, handleContinue } =
+    useIntakeHandlers();
+  const [inputMode, setInputMode] = useState<InputMode>("upload");
 
   if (state.isExtracting) {
     return (
@@ -261,7 +227,12 @@ export function IntakePhase() {
       <div className="max-w-2xl mx-auto space-y-6">
         <IntakeHeader />
         <ErrorBanner message={state.extractionError} onRetry={handleRetry} />
-        <DropZone onFiles={handleFiles} />
+        <InputSelector
+          mode={inputMode}
+          onSwitch={setInputMode}
+          onFiles={handleFiles}
+          onUrl={handleUrl}
+        />
       </div>
     );
   }
@@ -273,7 +244,12 @@ export function IntakePhase() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <IntakeHeader />
-      <DropZone onFiles={handleFiles} />
+      <InputSelector
+        mode={inputMode}
+        onSwitch={setInputMode}
+        onFiles={handleFiles}
+        onUrl={handleUrl}
+      />
     </div>
   );
 }

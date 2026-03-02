@@ -1,6 +1,7 @@
-// ── Coach Content Generator ── Rule-based content per phase ─────────────────
+// ── Coach Content Generator ── Advisory content per phase ────────────────────
+// Generates contextual guidance, risk flags, insights, and prompts.
+// Does NOT duplicate status info already visible in the main workspace.
 
-import { SCORING_FACTORS } from "@/lib/ai/bid-scoring";
 import type { CoachContent, CreateFlowState, RiskFlag } from "./create-types";
 import {
   buildIntakeInsights,
@@ -31,25 +32,21 @@ function getIntakeCoach(state: CreateFlowState): CoachContent {
   if (state.files.length === 0 && !state.extractedData) {
     return {
       ...emptyCoach(),
-      whyItMatters: "Waiting for your RFP document to begin analysis.",
-      signals: ["Supports PDF, DOCX, TXT, and XLSX formats"],
+      whyItMatters:
+        "Upload your RFP document or paste a URL to get started. We'll automatically extract requirements, evaluation criteria, deadlines, and compliance needs.",
     };
   }
 
   if (state.isExtracting) {
     const stepLabel =
       state.extractionStep === "uploading"
-        ? "Uploading"
+        ? "Uploading your document..."
         : state.extractionStep === "processing"
-          ? "Processing document content"
+          ? "Processing document content — this can take a minute for large files."
           : state.extractionStep === "extracting"
-            ? "AI is extracting key details"
-            : "Analyzing";
-    return {
-      ...emptyCoach(),
-      whyItMatters: stepLabel,
-      signals: [`${state.files.length} file(s) being analyzed`],
-    };
+            ? "AI is analyzing the document and extracting key details."
+            : "Analyzing your document...";
+    return { ...emptyCoach(), whyItMatters: stepLabel };
   }
 
   if (state.extractedData) {
@@ -58,41 +55,31 @@ function getIntakeCoach(state: CreateFlowState): CoachContent {
 
   return {
     ...emptyCoach(),
-    whyItMatters: `${state.files.length} file(s) ready for extraction.`,
-    signals: [`${state.files.length} document(s) uploaded`],
+    whyItMatters:
+      "Your files are ready. Click to begin extraction — we'll pull out requirements, evaluation criteria, and identify any gaps.",
   };
 }
 
 function buildExtractionCompleteCoach(state: CreateFlowState): CoachContent {
   const data = state.extractedData!;
-  const reqCount = data.extracted.key_requirements?.value?.length ?? 0;
-  const evalCount = data.rfp_analysis?.evaluation_criteria?.length ?? 0;
-  const clientName = data.extracted.client_name?.value ?? "Unknown";
+  const criticalGaps = data.gaps.filter((g) => g.importance === "critical");
 
-  const signals: string[] = [
-    `${reqCount} requirement(s) found`,
-    `${evalCount} evaluation criteria`,
-  ];
-  if (clientName !== "Unknown") signals.push(`Agency: ${clientName}`);
+  const riskFlags: RiskFlag[] = criticalGaps.map((g) => ({
+    id: `gap-${g.field}`,
+    label: `Missing: ${g.field.replace(/_/g, " ")}`,
+    severity: "high" as const,
+  }));
 
-  const solType =
-    data.extracted.solicitation_type?.value ??
-    data.inferred.solicitation_type?.value;
-  if (solType) signals.push(`Type: ${solType}`);
-
-  const riskFlags: RiskFlag[] = data.gaps
-    .filter((g) => g.importance === "critical")
-    .map((g) => ({
-      id: `gap-${g.field}`,
-      label: `Missing: ${g.field.replace(/_/g, " ")}`,
-      severity: "high" as const,
-    }));
+  const advisory =
+    criticalGaps.length > 0
+      ? "Extraction complete but some critical information is missing. Fill in the gaps below using the Buyer Goal field or re-upload a more complete document."
+      : "Extraction looks good. Review the summary and add any context via the Buyer Goal field before moving to Strategy.";
 
   return {
-    whyItMatters: `Found ${reqCount} requirements, ${evalCount} eval criteria. Agency: ${clientName}.`,
-    signals,
+    whyItMatters: advisory,
+    signals: [],
     riskFlags,
-    citations: buildSourceCitations(data.source_documents),
+    citations: [],
     actions: [],
     insights: buildIntakeInsights(data),
     prompts: buildIntakePrompts(data),
@@ -105,130 +92,89 @@ function getStrategyCoach(state: CreateFlowState): CoachContent {
   if (!state.bidEvaluation) {
     return {
       ...emptyCoach(),
-      whyItMatters: "Evaluating opportunity fit...",
-      signals: ["Scoring in progress"],
+      whyItMatters:
+        "Analyzing your opportunity against your firm's capabilities and past performance...",
     };
   }
 
   const score = state.bidEvaluation.weighted_total;
-  const factorSignals = buildFactorSignals(state);
   const insights = buildStrategyInsights(state);
-
-  const citations = state.winThemes
-    .filter((t) => t.confirmed)
-    .map((t) => ({ id: t.id, label: t.label }));
 
   let whyItMatters: string;
   let riskFlags: RiskFlag[];
 
   if (score < 40) {
     whyItMatters =
-      "Score is below typical win threshold. Consider passing, teaming, or identifying a strong differentiator.";
+      "This opportunity has weak alignment with your capabilities. Review the factor rationales below — consider passing, teaming with a partner, or identifying a unique differentiator before proceeding.";
     riskFlags = [{ id: "low-score", label: "Low bid score", severity: "high" }];
   } else if (score <= 70) {
     whyItMatters =
-      "Moderate alignment. Strong win themes can bridge the gap — select themes that highlight your unique strengths.";
+      "Moderate alignment — winnable with the right strategy. Review factor rationales below and select win themes that compensate for weaker areas.";
     riskFlags = [
-      { id: "moderate-score", label: "Moderate bid score", severity: "medium" },
+      { id: "moderate-score", label: "Moderate alignment", severity: "medium" },
     ];
   } else {
     whyItMatters =
-      "Strong alignment with opportunity. Focus win themes on your best differentiators.";
-    riskFlags = [
-      { id: "good-score", label: "Strong alignment", severity: "low" },
-    ];
+      "Strong fit. Focus on selecting win themes that emphasize your best differentiators. The factor rationales below show where you excel.";
+    riskFlags = [];
   }
 
   return {
     whyItMatters,
-    signals: [`Bid score: ${score}/100`, ...factorSignals],
+    signals: [],
     riskFlags,
-    citations,
+    citations: [],
     actions: [],
     insights,
   };
 }
 
-function buildFactorSignals(state: CreateFlowState): string[] {
-  if (!state.bidEvaluation) return [];
-  const scores = state.bidEvaluation.ai_scores;
-  return SCORING_FACTORS.map((f) => `${f.label}: ${scores[f.key]?.score ?? 0}`);
-}
-
 // ── Draft Phase ─────────────────────────────────────────────────────────────
 
-function draftSectionStats(state: CreateFlowState) {
-  const total = state.sections.length;
-  const complete = state.sections.filter(
-    (s) => s.generationStatus === "complete",
-  ).length;
+function getDraftCoach(state: CreateFlowState): CoachContent {
+  const insights = buildDraftInsights(state);
   const failed = state.sections.filter(
     (s) => s.generationStatus === "failed",
   ).length;
   const unreviewed = state.sections.filter(
     (s) => s.generationStatus === "complete" && !s.reviewed,
   ).length;
-  return { total, complete, failed, unreviewed };
-}
-
-function getDraftCoach(state: CreateFlowState): CoachContent {
-  const { total, complete, failed, unreviewed } = draftSectionStats(state);
-  const insights = buildDraftInsights(state);
 
   if (state.generationStatus === "generating") {
-    const pct = total > 0 ? Math.round((complete / total) * 100) : 0;
     return {
       ...emptyCoach(),
       whyItMatters:
-        "AI is generating your proposal sections. Each section is tailored to your RFP and win themes.",
-      signals: [`${complete}/${total} sections complete (${pct}%)`],
+        "Sections are being generated using your RFP analysis and win themes. Review each one as it completes — you can regenerate any section that needs improvement.",
       insights,
     };
   }
 
-  return buildDraftCompleteCoach(
-    state,
-    { complete, total, failed, unreviewed },
-    insights,
-  );
-}
-
-function buildDraftCompleteCoach(
-  state: CreateFlowState,
-  stats: {
-    complete: number;
-    total: number;
-    failed: number;
-    unreviewed: number;
-  },
-  insights: CoachContent["insights"],
-): CoachContent {
-  const { complete, total, failed, unreviewed } = stats;
   const riskFlags: RiskFlag[] = [];
   if (failed > 0)
     riskFlags.push({
       id: "gen-failed",
-      label: `Generation failed for ${failed} section(s)`,
+      label: `${failed} section(s) failed`,
       severity: "high",
     });
   if (unreviewed > 0)
     riskFlags.push({
       id: "unreviewed",
-      label: `${unreviewed} section(s) not yet reviewed`,
+      label: `${unreviewed} unreviewed`,
       severity: "medium",
     });
 
+  const advisory =
+    failed > 0
+      ? "Some sections failed to generate. Try regenerating them — the AI will attempt a different approach."
+      : unreviewed > 0
+        ? "Review each section before finalizing. Check that the content addresses the evaluation criteria shown in the analysis below."
+        : "All sections reviewed. Continue to finalize when ready.";
+
   return {
-    whyItMatters:
-      complete === total && failed === 0
-        ? "All sections generated. Review each section before continuing to finalize."
-        : `${complete}/${total} sections generated. Review completed sections while others finish.`,
-    signals: [
-      `${complete}/${total} sections complete`,
-      ...(failed > 0 ? [`${failed} failed`] : []),
-    ],
+    whyItMatters: advisory,
+    signals: [],
     riskFlags,
-    citations: buildSourceCitations(state.extractedData?.source_documents),
+    citations: [],
     actions: [],
     insights,
   };
@@ -248,8 +194,9 @@ function getFinalizeCoach(state: CreateFlowState): CoachContent {
     }));
 
     return {
-      whyItMatters: `Address ${unresolvedBlockers.length} issue(s) before export.`,
-      signals: unresolvedBlockers.map((b) => b.label),
+      whyItMatters:
+        "Resolve the blockers below before approving. Each one impacts your final confidence score — the analysis shows the estimated gain from resolving each.",
+      signals: [],
       riskFlags,
       citations: [],
       actions: [],
@@ -258,11 +205,13 @@ function getFinalizeCoach(state: CreateFlowState): CoachContent {
   }
 
   return {
-    whyItMatters: `Confidence: ${state.confidence}%. Ready to export.`,
-    signals: [`Confidence score: ${state.confidence}%`],
+    whyItMatters: state.finalApproved
+      ? "Proposal approved. Export to DOCX or PDF for submission."
+      : "No blockers remaining. Review the summary and approve the final package when ready.",
+    signals: [],
     riskFlags: [],
     citations: [],
-    actions: [{ label: "Export DOCX", actionType: "export_docx" }],
+    actions: [],
     insights,
   };
 }
@@ -277,11 +226,4 @@ function emptyCoach(): CoachContent {
     citations: [],
     actions: [],
   };
-}
-
-function buildSourceCitations(
-  docs?: { id: string; name: string; type: string }[],
-): CoachContent["citations"] {
-  if (!docs || docs.length === 0) return [];
-  return docs.map((d) => ({ id: d.id, label: d.name }));
 }

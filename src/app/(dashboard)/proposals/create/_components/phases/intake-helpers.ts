@@ -165,6 +165,80 @@ export async function uploadAndExtract(
   }
 }
 
+// ── URL-based extraction (fetch URL → extract content directly) ──────────────
+
+interface FetchUrlResponse {
+  content: string;
+  truncated: boolean;
+  url: string;
+  hostname: string;
+}
+
+async function fetchUrlContent(
+  url: string,
+  fetchFn: FetchFn,
+): Promise<FetchUrlResponse> {
+  const res = await fetchFn("/api/intake/fetch-url", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    const b = body as Record<string, string>;
+    throw new Error(b.error ?? b.message ?? "Failed to fetch URL");
+  }
+  return (await res.json()) as FetchUrlResponse;
+}
+
+async function extractFromContent(
+  content: string,
+  fetchFn: FetchFn,
+): Promise<ExtractionResponse> {
+  const res = await fetchFn("/api/intake/extract", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content, content_type: "pasted" }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    const b = body as Record<string, string>;
+    throw new Error(b.error ?? b.message ?? "Extraction failed");
+  }
+  return (await res.json()) as ExtractionResponse;
+}
+
+export async function fetchUrlAndExtract(
+  url: string,
+  dispatch: Dispatch<CreateAction>,
+  fetchFn: FetchFn,
+): Promise<void> {
+  dispatch({ type: "EXTRACTION_START" });
+  try {
+    dispatch({ type: "SET_EXTRACTION_STEP", step: "processing" });
+    const fetched = await fetchUrlContent(url, fetchFn);
+    logger.info("URL fetch complete", {
+      hostname: fetched.hostname,
+      contentLength: fetched.content.length,
+    });
+
+    dispatch({ type: "SET_EXTRACTION_STEP", step: "extracting" });
+    const result = await extractFromContent(fetched.content, fetchFn);
+    dispatch({
+      type: "EXTRACTION_SUCCESS",
+      payload: { extracted: result.extracted },
+    });
+    logger.info("URL extraction complete", {
+      gapCount: result.extracted.gaps?.length ?? 0,
+    });
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "URL fetch or extraction failed";
+    logger.error("URL intake error", { error: message });
+    dispatch({ type: "EXTRACTION_FAIL", error: message });
+  }
+}
+
 // ── Extraction summary helpers ──────────────────────────────────────────────
 
 export function getExtractionSummary(data: ExtractedIntake) {
