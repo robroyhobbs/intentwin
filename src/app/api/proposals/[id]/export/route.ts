@@ -14,6 +14,7 @@ import {
 import { isExportFormat } from "@/lib/export/formats";
 import { generateExportFile } from "@/lib/export/runtime";
 import { resolvePlaceholders } from "@/lib/export/resolve-placeholders";
+import { fetchL1ContextFromDb } from "@/lib/ai/pipeline/fetch-l1-context";
 
 export const maxDuration = 120; // PDF generation with Chromium can take 30-60s
 const EXPORT_SLOW_WARN_MS = 15000;
@@ -38,8 +39,8 @@ export const POST = withProposalRoute(async (request, { id }, context) => {
   const adminClient = createAdminClient();
   const fetchStartedAt = Date.now();
 
-  // Fetch proposal, sections, and user profile in parallel
-  const [{ data: proposal }, { data: sections }, { data: profile }] =
+  // Fetch proposal, sections, user profile, and L1 sources in parallel
+  const [{ data: proposal }, { data: sections }, { data: profile }, l1] =
     await Promise.all([
       adminClient
         .from("proposals")
@@ -65,6 +66,12 @@ export const POST = withProposalRoute(async (request, { id }, context) => {
         .select("full_name")
         .eq("id", context.user.id)
         .single(),
+      fetchL1ContextFromDb(
+        adminClient,
+        undefined,
+        undefined,
+        context.organizationId,
+      ),
     ]);
   fetchDurationMs = Date.now() - fetchStartedAt;
 
@@ -116,14 +123,23 @@ export const POST = withProposalRoute(async (request, { id }, context) => {
   const intakeData = proposal.intake_data as Record<string, string>;
   const exportDate = format(new Date(), "MMMM d, yyyy");
   const clientName = intakeData.client_name || "Client";
-  const signatoryName = profile?.full_name || organizationName;
 
-  // Auto-substitute all {placeholder} merge fields in section content
+  // Pick signatory from L1 team members, fall back to user profile, then org name
+  const leadMember = l1.teamMembers[0];
+  const signatoryName =
+    leadMember?.name || profile?.full_name || organizationName;
+  const signatoryTitle = leadMember?.title || "";
+
+  // Auto-substitute all merge fields and fill gap markers from L1 sources
   const placeholderValues = {
     date: exportDate,
     client_name: clientName,
     signatory_name: signatoryName,
-    signatory_title: "",
+    signatory_title: signatoryTitle,
+  };
+  const l1Sources = {
+    teamMembers: l1.teamMembers,
+    evidenceLibrary: l1.evidenceLibrary,
   };
 
   const proposalData = {
@@ -136,6 +152,7 @@ export const POST = withProposalRoute(async (request, { id }, context) => {
       content: resolvePlaceholders(
         s.edited_content || s.generated_content || "",
         placeholderValues,
+        l1Sources,
       ),
       section_type: s.section_type,
       diagram_image: s.diagram_image || null,
