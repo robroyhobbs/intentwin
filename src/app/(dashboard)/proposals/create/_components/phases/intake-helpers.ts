@@ -142,9 +142,11 @@ export async function uploadAndExtract(
     dispatch({ type: "SET_UPLOADED_DOC_IDS", ids: docIds });
 
     // 2. Poll each document until processing completes
+    dispatch({ type: "SET_EXTRACTION_STEP", step: "processing" });
     await Promise.all(docIds.map((id) => pollDocumentReady(id, fetchFn)));
 
     // 3. Run extraction across all documents
+    dispatch({ type: "SET_EXTRACTION_STEP", step: "extracting" });
     const result = await runExtraction(docIds, fetchFn);
     dispatch({
       type: "EXTRACTION_SUCCESS",

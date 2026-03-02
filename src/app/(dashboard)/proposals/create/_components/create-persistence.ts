@@ -5,7 +5,10 @@ import { logger } from "@/lib/utils/logger";
 const STORAGE_KEY = "intentwin:create-flow";
 
 /** JSON-safe shape — Set replaced with array, File[] dropped */
-interface SerializedState extends Omit<CreateFlowState, "completedPhases" | "files"> {
+interface SerializedState extends Omit<
+  CreateFlowState,
+  "completedPhases" | "files"
+> {
   completedPhases: CreatePhase[];
   files: never[];
 }
@@ -18,6 +21,7 @@ export function saveState(state: CreateFlowState): void {
       files: [],
       // Reset transient flags so a refresh doesn't get stuck
       isExtracting: false,
+      extractionStep: null,
     };
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(serialized));
   } catch {
@@ -40,6 +44,7 @@ export function loadState(): CreateFlowState | null {
       files: [],
       // Never resume mid-extraction — let user retry
       isExtracting: false,
+      extractionStep: null,
     };
 
     return restored;

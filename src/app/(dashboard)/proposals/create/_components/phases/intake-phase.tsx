@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { useCreateFlow } from "../create-provider";
+import { StepIndicator } from "../shared/step-indicator";
 import {
   filterValidFiles,
   uploadAndExtract,
@@ -40,15 +41,6 @@ function IntakeHeader() {
         Upload your RFP or solicitation documents and we will automatically
         extract key details to kickstart your proposal.
       </p>
-    </div>
-  );
-}
-
-function SpinnerOverlay({ label }: { label: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-border bg-card p-12">
-      <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-      <p className="text-sm text-muted-foreground">{label}</p>
     </div>
   );
 }
@@ -250,7 +242,7 @@ export function IntakePhase() {
     return (
       <div className="max-w-2xl mx-auto space-y-6">
         <IntakeHeader />
-        <SpinnerOverlay label="Uploading and analyzing your documents..." />
+        <StepIndicator current={state.extractionStep} />
       </div>
     );
   }

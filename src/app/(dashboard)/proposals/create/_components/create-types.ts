@@ -41,6 +41,8 @@ export interface CoachContent {
   actions: { label: string; actionType: string }[];
 }
 
+export type ExtractionStep = "uploading" | "processing" | "extracting";
+
 export interface CreateFlowState {
   phase: CreatePhase;
   completedPhases: Set<CreatePhase>;
@@ -49,6 +51,7 @@ export interface CreateFlowState {
   files: File[];
   uploadedDocIds: string[];
   isExtracting: boolean;
+  extractionStep: ExtractionStep | null;
   extractionError: string | null;
   extractedData: ExtractedIntake | null;
   buyerGoal: string;
@@ -78,6 +81,7 @@ export type CreateAction =
   | { type: "SET_FILES"; files: File[] }
   | { type: "SET_UPLOADED_DOC_IDS"; ids: string[] }
   | { type: "EXTRACTION_START" }
+  | { type: "SET_EXTRACTION_STEP"; step: ExtractionStep }
   | { type: "EXTRACTION_SUCCESS"; payload: { extracted: ExtractedIntake } }
   | { type: "EXTRACTION_FAIL"; error: string }
   | { type: "SET_BUYER_GOAL"; goal: string }

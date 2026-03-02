@@ -6,6 +6,7 @@ export const initialState: CreateFlowState = {
   files: [],
   uploadedDocIds: [],
   isExtracting: false,
+  extractionStep: null,
   extractionError: null,
   extractedData: null,
   buyerGoal: "",
@@ -59,12 +60,21 @@ export function createReducer(
       next = { ...state, uploadedDocIds: action.ids };
       break;
     case "EXTRACTION_START":
-      next = { ...state, isExtracting: true, extractionError: null };
+      next = {
+        ...state,
+        isExtracting: true,
+        extractionStep: "uploading",
+        extractionError: null,
+      };
+      break;
+    case "SET_EXTRACTION_STEP":
+      next = { ...state, extractionStep: action.step };
       break;
     case "EXTRACTION_SUCCESS":
       next = {
         ...state,
         isExtracting: false,
+        extractionStep: null,
         extractedData: action.payload.extracted,
       };
       break;
@@ -72,6 +82,7 @@ export function createReducer(
       next = {
         ...state,
         isExtracting: false,
+        extractionStep: null,
         extractionError: action.error,
       };
       break;
