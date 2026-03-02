@@ -29,8 +29,12 @@ async function callExportApi(
     );
   }
 
-  const data = (await res.json()) as ExportResult;
-  return data;
+  const data = (await res.json()) as Record<string, unknown>;
+  const url = (data.downloadUrl as string) ?? (data.download_url as string);
+  if (!url) {
+    throw new Error("Export succeeded but no download URL was returned");
+  }
+  return { downloadUrl: url };
 }
 
 // ── Small presentational pieces ─────────────────────────────────────────────
