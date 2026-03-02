@@ -51,7 +51,8 @@ async function uploadSingleFile(file: File, fetchFn: FetchFn): Promise<string> {
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    const msg = (body as Record<string, string>).message ?? res.statusText;
+    const b = body as Record<string, string>;
+    const msg = b.error ?? b.message ?? res.statusText;
     throw new Error(`Upload failed for ${file.name}: ${msg}`);
   }
 
@@ -76,7 +77,11 @@ async function pollDocumentReady(
     const doc = (await res.json()) as DocumentStatusResponse;
     if (doc.processing_status === "completed") return;
     if (doc.processing_status === "failed") {
-      throw new Error("Document processing failed on the server.");
+      const reason =
+        typeof doc.processing_error === "string" && doc.processing_error
+          ? doc.processing_error
+          : "Document processing failed on the server.";
+      throw new Error(reason);
     }
 
     await delay(POLL_INTERVAL_MS);
@@ -101,7 +106,8 @@ async function runExtraction(
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    const msg = (body as Record<string, string>).message ?? res.statusText;
+    const b = body as Record<string, string>;
+    const msg = b.error ?? b.message ?? res.statusText;
     throw new Error(`Extraction failed: ${msg}`);
   }
 

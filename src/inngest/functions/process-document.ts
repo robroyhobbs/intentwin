@@ -5,6 +5,7 @@ import { parseDocument } from "@/lib/documents/parser";
 import { chunkSections } from "@/lib/documents/chunker";
 import { generateEmbeddings } from "@/lib/ai/embeddings";
 import { PdfParseError } from "@/lib/documents/parsers/pdf";
+import { DocxParseError } from "@/lib/documents/parsers/docx";
 import { createLogger } from "@/lib/utils/logger";
 
 const EMBEDDING_BATCH_SIZE = 50;
@@ -46,7 +47,9 @@ export const processDocumentFn = inngest.createFunction(
         // Fetch document metadata
         const { data: doc, error: fetchError } = await supabase
           .from("documents")
-          .select("id, title, file_name, file_type, storage_path, mime_type, document_type, organization_id")
+          .select(
+            "id, title, file_name, file_type, storage_path, mime_type, document_type, organization_id",
+          )
           .eq("id", documentId)
           .single();
 
@@ -55,15 +58,12 @@ export const processDocumentFn = inngest.createFunction(
         }
 
         // Download file from Storage
-        const { data: fileData, error: downloadError } =
-          await supabase.storage
-            .from("knowledge-base-documents")
-            .download(doc.storage_path);
+        const { data: fileData, error: downloadError } = await supabase.storage
+          .from("knowledge-base-documents")
+          .download(doc.storage_path);
 
         if (downloadError || !fileData) {
-          throw new Error(
-            `Failed to download file: ${downloadError?.message}`,
-          );
+          throw new Error(`Failed to download file: ${downloadError?.message}`);
         }
 
         const arrayBuffer = await fileData.arrayBuffer();
@@ -107,7 +107,7 @@ export const processDocumentFn = inngest.createFunction(
       } catch (error) {
         // Set failure status
         const errorMessage =
-          error instanceof PdfParseError
+          error instanceof PdfParseError || error instanceof DocxParseError
             ? error.userMessage
             : error instanceof Error
               ? error.message
@@ -136,8 +136,7 @@ export const processDocumentFn = inngest.createFunction(
           .update({
             processing_status: ProcessingStatus.COMPLETED,
             chunk_count: 0,
-            parsed_text_preview:
-              "No extractable text content found.",
+            parsed_text_preview: "No extractable text content found.",
           })
           .eq("id", documentId);
       });
@@ -154,44 +153,36 @@ export const processDocumentFn = inngest.createFunction(
       const end = Math.min(start + EMBEDDING_BATCH_SIZE, chunks.length);
       const batchChunks = chunks.slice(start, end);
 
-      const inserted = await step.run(
-        `embed-batch-${batchIdx}`,
-        async () => {
-          const supabase = createAdminClient();
+      const inserted = await step.run(`embed-batch-${batchIdx}`, async () => {
+        const supabase = createAdminClient();
 
-          // Generate embeddings for this batch
-          const chunkTexts = batchChunks.map((c) => c.content);
-          const embeddings = await generateEmbeddings(
-            chunkTexts,
-            "document",
-          );
+        // Generate embeddings for this batch
+        const chunkTexts = batchChunks.map((c) => c.content);
+        const embeddings = await generateEmbeddings(chunkTexts, "document");
 
-          // Build rows
-          const chunkRows = batchChunks.map((chunk, i) => ({
-            document_id: documentId,
-            content: chunk.content,
-            chunk_index: chunk.chunkIndex,
-            token_count: chunk.tokenCount,
-            section_heading: chunk.sectionHeading,
-            page_number: chunk.pageNumber,
-            slide_number: chunk.slideNumber,
-            embedding: JSON.stringify(embeddings[i]),
-            metadata: {},
-          }));
+        // Build rows
+        const chunkRows = batchChunks.map((chunk, i) => ({
+          document_id: documentId,
+          content: chunk.content,
+          chunk_index: chunk.chunkIndex,
+          token_count: chunk.tokenCount,
+          section_heading: chunk.sectionHeading,
+          page_number: chunk.pageNumber,
+          slide_number: chunk.slideNumber,
+          embedding: JSON.stringify(embeddings[i]),
+          metadata: {},
+        }));
 
-          const { error: insertError } = await supabase
-            .from("document_chunks")
-            .insert(chunkRows);
+        const { error: insertError } = await supabase
+          .from("document_chunks")
+          .insert(chunkRows);
 
-          if (insertError) {
-            throw new Error(
-              `Failed to insert chunks: ${insertError.message}`,
-            );
-          }
+        if (insertError) {
+          throw new Error(`Failed to insert chunks: ${insertError.message}`);
+        }
 
-          return batchChunks.length;
-        },
-      );
+        return batchChunks.length;
+      });
 
       totalInserted += inserted;
     }
