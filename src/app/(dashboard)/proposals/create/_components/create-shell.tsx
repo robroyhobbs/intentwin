@@ -4,6 +4,7 @@ import { useCreateFlow } from "./create-provider";
 import { PhaseStrip } from "./phase-strip";
 import { IntakePhase } from "./phases/intake-phase";
 import { StrategyPhase } from "./phases/strategy-phase";
+import { DraftPhase } from "./phases/draft-phase";
 
 export function CreateShell() {
   const { state } = useCreateFlow();
@@ -20,11 +21,7 @@ export function CreateShell() {
           {/* Phase content -- wired in Tasks 4-6 */}
           {state.phase === "intake" && <IntakePhase />}
           {state.phase === "strategy" && <StrategyPhase />}
-          {state.phase === "draft" && (
-            <div className="text-muted-foreground text-sm">
-              Draft phase -- coming in Task 6
-            </div>
-          )}
+          {state.phase === "draft" && <DraftPhase />}
           {state.phase === "finalize" && (
             <div className="text-muted-foreground text-sm">
               Finalize phase -- coming in Task 8
