@@ -75,7 +75,16 @@ async function pollDocumentReady(
     }
 
     const doc = (await res.json()) as DocumentStatusResponse;
-    if (doc.processing_status === "completed") return;
+    if (doc.processing_status === "completed") {
+      if (doc.chunk_count === 0) {
+        throw new Error(
+          "This document was processed but no text could be extracted. " +
+            "It may contain only images or unsupported formatting. " +
+            "Try uploading a different file format (PDF, TXT, or DOCX with text content).",
+        );
+      }
+      return;
+    }
     if (doc.processing_status === "failed") {
       const reason =
         typeof doc.processing_error === "string" && doc.processing_error
