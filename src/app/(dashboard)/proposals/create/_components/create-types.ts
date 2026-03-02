@@ -33,12 +33,32 @@ export interface RiskFlag {
   severity: "low" | "medium" | "high";
 }
 
+/** A labeled key-value insight for the coach panel (e.g., confidence scores). */
+export interface CoachInsight {
+  id: string;
+  label: string;
+  value: string;
+  detail?: string;
+  severity?: "low" | "medium" | "high";
+}
+
+/** A suggested question or action prompt for the user. */
+export interface CoachPrompt {
+  id: string;
+  question: string;
+  importance: "critical" | "helpful" | "nice_to_have";
+}
+
 export interface CoachContent {
   whyItMatters: string;
   signals: string[];
   riskFlags: RiskFlag[];
   citations: { id: string; label: string }[];
   actions: { label: string; actionType: string }[];
+  /** Detailed insights grouped by topic (factor rationales, field confidence, etc.). */
+  insights?: CoachInsight[];
+  /** Gap-filling prompts suggesting what info the user should add. */
+  prompts?: CoachPrompt[];
 }
 
 export type ExtractionStep = "uploading" | "processing" | "extracting";
