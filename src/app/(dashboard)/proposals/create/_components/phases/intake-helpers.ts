@@ -7,7 +7,7 @@ type FetchFn = (url: string, options?: RequestInit) => Promise<Response>;
 
 const ACCEPTED_EXTENSIONS = [".pdf", ".docx", ".txt", ".xlsx"];
 const POLL_INTERVAL_MS = 2_000;
-const POLL_TIMEOUT_MS = 60_000;
+const POLL_TIMEOUT_MS = 300_000; // 5 min — matches server maxDuration
 
 // ── Response types from API routes ──────────────────────────────────────────
 
@@ -82,7 +82,9 @@ async function pollDocumentReady(
     await delay(POLL_INTERVAL_MS);
   }
 
-  throw new Error("Document processing timed out after 60 seconds.");
+  throw new Error(
+    "Document processing is taking longer than expected. Please try again.",
+  );
 }
 
 // ── Trigger extraction ──────────────────────────────────────────────────────
