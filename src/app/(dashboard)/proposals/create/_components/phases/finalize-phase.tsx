@@ -5,7 +5,7 @@ import { useCreateFlow } from "../create-provider";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
 import type { Blocker, CreateFlowState } from "../create-types";
 import { BlockerItem } from "../shared/blocker-item";
-import { ConfidencePill } from "../shared/confidence-pill";
+import { ConfidenceRing } from "../shared/confidence-ring";
 import { ExportButtons } from "./finalize-export";
 import { logger } from "@/lib/utils/logger";
 
@@ -78,17 +78,43 @@ function FinalizeHeader() {
   );
 }
 
-function ConfidenceDisplay({ score }: { score: number }) {
+function ProposalSummary({ state }: { state: CreateFlowState }) {
+  const sectionCount = state.sections.length;
+  const wordCount = state.sections.reduce(
+    (sum, s) => sum + (s.content ? s.content.split(/\s+/).length : 0),
+    0,
+  );
+  const reviewed = state.sections.filter((s) => s.reviewed).length;
+  const themes = state.winThemes.filter((t) => t.confirmed).length;
+
+  const stats = [
+    { label: "Sections", value: String(sectionCount) },
+    {
+      label: "Words",
+      value:
+        wordCount > 1000
+          ? `${(wordCount / 1000).toFixed(1)}k`
+          : String(wordCount),
+    },
+    { label: "Reviewed", value: `${reviewed}/${sectionCount}` },
+    { label: "Win Themes", value: String(themes) },
+  ];
+
   return (
-    <div className="rounded-xl border border-border bg-card p-6 flex items-center justify-between">
-      <div>
-        <h3 className="text-sm font-semibold">Proposal Confidence</h3>
-        <p className="text-xs text-muted-foreground mt-1">
-          Based on completed phases, resolved blockers, and reviewed sections.
-        </p>
-      </div>
-      <div className="text-2xl font-bold">
-        <ConfidencePill score={score} />
+    <div className="rounded-xl border border-border bg-card p-6">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1">
+          <h3 className="text-sm font-semibold">Proposal Summary</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
+            {stats.map((s) => (
+              <div key={s.label}>
+                <p className="text-lg font-bold">{s.value}</p>
+                <p className="text-xs text-muted-foreground">{s.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+        <ConfidenceRing score={state.confidence} size={72} />
       </div>
     </div>
   );
@@ -218,7 +244,7 @@ export function FinalizePhase() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <FinalizeHeader />
-      <ConfidenceDisplay score={state.confidence} />
+      <ProposalSummary state={state} />
       <BlockerChecklist blockers={state.blockers} onResolve={handleResolve} />
       <ApproveButton
         disabled={hasUnresolved}
