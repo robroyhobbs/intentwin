@@ -31,8 +31,16 @@ function SpinnerBanner({ label }: { label: string }) {
 
 function ErrorBanner({ onRetry }: { onRetry: () => void }) {
   return (
-    <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-start gap-3">
-      <span className="text-destructive text-lg leading-none mt-0.5">!</span>
+    <div
+      role="alert"
+      className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-start gap-3"
+    >
+      <span
+        className="text-destructive text-lg leading-none mt-0.5"
+        aria-hidden="true"
+      >
+        !
+      </span>
       <div className="flex-1">
         <p className="text-sm text-destructive">
           Proposal generation failed. Please try again.

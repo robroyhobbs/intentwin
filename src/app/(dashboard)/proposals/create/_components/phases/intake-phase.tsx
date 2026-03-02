@@ -53,8 +53,16 @@ function ErrorBanner({
   onRetry: () => void;
 }) {
   return (
-    <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-start gap-3">
-      <span className="text-destructive text-lg leading-none mt-0.5">!</span>
+    <div
+      role="alert"
+      className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-start gap-3"
+    >
+      <span
+        className="text-destructive text-lg leading-none mt-0.5"
+        aria-hidden="true"
+      >
+        !
+      </span>
       <div className="flex-1">
         <p className="text-sm text-destructive">{message}</p>
         <button
@@ -105,6 +113,7 @@ function DropZone({ onFiles }: { onFiles: (files: File[]) => void }) {
       onDrop={handleDrop}
       onClick={openPicker}
       role="button"
+      aria-label="Upload RFP documents. Supports PDF, DOCX, TXT, and XLSX."
       tabIndex={0}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") openPicker();

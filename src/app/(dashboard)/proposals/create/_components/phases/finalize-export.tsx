@@ -160,7 +160,11 @@ export function ExportButtons({
           onClick={() => void handleExport("pdf")}
         />
       </div>
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      {error && (
+        <p role="alert" className="text-xs text-destructive">
+          {error}
+        </p>
+      )}
       {exportedUrl && <DownloadLink url={exportedUrl} />}
     </div>
   );
