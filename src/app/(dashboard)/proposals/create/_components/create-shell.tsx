@@ -2,6 +2,7 @@
 
 import { useCreateFlow } from "./create-provider";
 import { PhaseStrip } from "./phase-strip";
+import { IntakePhase } from "./phases/intake-phase";
 
 export function CreateShell() {
   const { state } = useCreateFlow();
@@ -16,11 +17,7 @@ export function CreateShell() {
         />
         <div className="flex-1 overflow-auto p-8">
           {/* Phase content -- wired in Tasks 4-6 */}
-          {state.phase === "intake" && (
-            <div className="text-muted-foreground text-sm">
-              Intake phase -- upload your RFP to get started.
-            </div>
-          )}
+          {state.phase === "intake" && <IntakePhase />}
           {state.phase === "strategy" && (
             <div className="text-muted-foreground text-sm">
               Strategy phase -- coming in Task 5
