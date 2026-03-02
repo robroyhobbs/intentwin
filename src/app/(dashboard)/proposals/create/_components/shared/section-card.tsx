@@ -1,11 +1,16 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { ProposalContentRenderer } from "@/components/proposal-content-renderer";
 import type { SectionDraft } from "../create-types";
 
 // ── Status indicators ───────────────────────────────────────────────────────
 
-function StatusIndicator({ status }: { status: SectionDraft["generationStatus"] }) {
+function StatusIndicator({
+  status,
+}: {
+  status: SectionDraft["generationStatus"];
+}) {
   switch (status) {
     case "generating":
       return (
@@ -13,7 +18,11 @@ function StatusIndicator({ status }: { status: SectionDraft["generationStatus"] 
       );
     case "complete":
       return (
-        <svg className="h-4 w-4 text-emerald-500 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+        <svg
+          className="h-4 w-4 text-emerald-500 shrink-0"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
           <path
             fillRule="evenodd"
             d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -23,7 +32,11 @@ function StatusIndicator({ status }: { status: SectionDraft["generationStatus"] 
       );
     case "failed":
       return (
-        <svg className="h-4 w-4 text-destructive shrink-0" viewBox="0 0 20 20" fill="currentColor">
+        <svg
+          className="h-4 w-4 text-destructive shrink-0"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
           <path
             fillRule="evenodd"
             d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
@@ -107,25 +120,26 @@ function CardBody({ section, onMarkReviewed, onRegenerate }: CardBodyProps) {
       )}
 
       {section.content && (
-        <div className="prose prose-sm max-w-none text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">
-          {section.content}
-        </div>
+        <ProposalContentRenderer
+          content={section.content}
+          className="text-sm text-foreground/90 leading-relaxed"
+        />
       )}
 
       <div className="flex items-center gap-2 pt-2 border-t border-border">
-        {onMarkReviewed && !section.reviewed && section.generationStatus === "complete" && (
-          <button
-            type="button"
-            onClick={() => onMarkReviewed(section.id)}
-            className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-          >
-            Mark as Reviewed
-          </button>
-        )}
+        {onMarkReviewed &&
+          !section.reviewed &&
+          section.generationStatus === "complete" && (
+            <button
+              type="button"
+              onClick={() => onMarkReviewed(section.id)}
+              className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              Mark as Reviewed
+            </button>
+          )}
         {section.reviewed && (
-          <span className="text-xs font-medium text-emerald-600">
-            Reviewed
-          </span>
+          <span className="text-xs font-medium text-emerald-600">Reviewed</span>
         )}
         {onRegenerate && section.generationStatus !== "generating" && (
           <button
@@ -159,17 +173,13 @@ export function SectionCard({
   const [expanded, setExpanded] = useState(defaultExpanded);
   const toggle = useCallback(() => setExpanded((prev) => !prev), []);
 
-  const borderClass = section.reviewed
-    ? "border-l-2 border-l-emerald-500"
-    : "";
+  const borderClass = section.reviewed ? "border-l-2 border-l-emerald-500" : "";
 
   return (
-    <div className={`rounded-lg border border-border bg-card overflow-hidden ${borderClass}`}>
-      <CardHeader
-        section={section}
-        expanded={expanded}
-        onToggle={toggle}
-      />
+    <div
+      className={`rounded-lg border border-border bg-card overflow-hidden ${borderClass}`}
+    >
+      <CardHeader section={section} expanded={expanded} onToggle={toggle} />
       {expanded && (
         <CardBody
           section={section}

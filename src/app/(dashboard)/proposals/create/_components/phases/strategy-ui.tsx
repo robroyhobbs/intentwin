@@ -1,7 +1,11 @@
 import type { BidEvaluation } from "@/lib/ai/bid-scoring";
 import { SCORING_FACTORS } from "@/lib/ai/bid-scoring";
 import type { WinTheme } from "../create-types";
-import { getScoreColor, getScoreBgColor, getRecommendationBadge } from "./strategy-helpers";
+import {
+  getScoreColor,
+  getScoreBgColor,
+  getRecommendationBadge,
+} from "./strategy-helpers";
 
 // ── Loading spinner ─────────────────────────────────────────────────────────
 
@@ -89,7 +93,9 @@ export function ScoreCard({ evaluation }: { evaluation: BidEvaluation }) {
     <div className="rounded-xl border border-border bg-card p-6 space-y-5">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold">Bid Score</h3>
-        <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${badge.className}`}>
+        <span
+          className={`text-xs font-medium px-2.5 py-1 rounded-full ${badge.className}`}
+        >
           {badge.label}
         </span>
       </div>
@@ -133,7 +139,7 @@ export function BidDecisionButtons({
   onSkip: () => void;
 }) {
   return (
-    <div className="flex gap-3">
+    <div className="flex flex-col sm:flex-row gap-3">
       <button
         onClick={onProceed}
         className="flex-1 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"

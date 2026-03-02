@@ -21,12 +21,6 @@ interface CreateProposalResponse {
   proposal: { id: string };
 }
 
-interface GenerateResponse {
-  status: string;
-  proposalId: string;
-  message: string;
-}
-
 interface ApiSection {
   id: string;
   section_type: string;
@@ -167,11 +161,8 @@ export async function triggerGeneration(
     throw new Error(`Failed to trigger generation: ${msg}`);
   }
 
-  const data = (await res.json()) as GenerateResponse;
-  logger.info("Generation triggered", {
-    proposalId,
-    status: data.status,
-  });
+  const data = (await res.json()) as { status: string };
+  logger.info("Generation triggered", { proposalId, status: data.status });
 }
 
 // ── Poll sections ───────────────────────────────────────────────────────────
@@ -233,6 +224,47 @@ export async function pollSections(
   if (mountedRef.current) {
     dispatch({ type: "GENERATION_FAIL" });
     logger.error("Generation polling timed out", undefined, { proposalId });
+  }
+}
+
+// ── Regenerate a single section ─────────────────────────────────────────────
+
+export async function regenerateSection(
+  proposalId: string,
+  sectionId: string,
+  dispatch: Dispatch<CreateAction>,
+  fetchFn: FetchFn,
+): Promise<void> {
+  dispatch({
+    type: "UPDATE_SECTION",
+    sectionId,
+    updates: { generationStatus: "generating", content: "" },
+  });
+
+  try {
+    const res = await fetchFn(
+      `/api/proposals/${proposalId}/sections/${sectionId}/regenerate`,
+      { method: "POST" },
+    );
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(
+        (body as Record<string, string>).error ??
+          `Regenerate failed (${res.status})`,
+      );
+    }
+
+    logger.info("Section regeneration triggered", { proposalId, sectionId });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Regeneration failed";
+    logger.error("Section regeneration error", err, { sectionId });
+    dispatch({
+      type: "UPDATE_SECTION",
+      sectionId,
+      updates: { generationStatus: "failed" },
+    });
+    throw new Error(msg);
   }
 }
 

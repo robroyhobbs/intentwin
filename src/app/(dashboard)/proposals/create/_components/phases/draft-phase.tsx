@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { useCreateFlow } from "../create-provider";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
 import { SectionCard } from "../shared/section-card";
-import { runDraftFlow } from "./draft-helpers";
+import { runDraftFlow, regenerateSection } from "./draft-helpers";
 
 // ── Small presentational pieces ─────────────────────────────────────────────
 
@@ -84,6 +84,7 @@ function ProgressSummary({
 
 function SectionList() {
   const { state, dispatch } = useCreateFlow();
+  const authFetch = useAuthFetch();
   const sorted = [...state.sections].sort((a, b) => a.order - b.order);
 
   const handleMarkReviewed = useCallback(
@@ -91,6 +92,14 @@ function SectionList() {
       dispatch({ type: "MARK_SECTION_REVIEWED", sectionId });
     },
     [dispatch],
+  );
+
+  const handleRegenerate = useCallback(
+    (sectionId: string) => {
+      if (!state.proposalId) return;
+      void regenerateSection(state.proposalId, sectionId, dispatch, authFetch);
+    },
+    [state.proposalId, dispatch, authFetch],
   );
 
   if (sorted.length === 0) return null;
@@ -102,6 +111,7 @@ function SectionList() {
           key={section.id}
           section={section}
           onMarkReviewed={handleMarkReviewed}
+          onRegenerate={state.proposalId ? handleRegenerate : undefined}
           defaultExpanded={
             state.generationStatus === "complete" &&
             section.generationStatus === "complete"

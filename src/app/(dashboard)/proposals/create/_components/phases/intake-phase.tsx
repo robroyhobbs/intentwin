@@ -156,7 +156,7 @@ function ExtractionSummary({
   return (
     <div className="rounded-xl border border-border bg-card p-6">
       <h3 className="text-sm font-semibold mb-4">Extraction Summary</h3>
-      <dl className="grid grid-cols-2 gap-x-6 gap-y-3">
+      <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
         {rows.map((r) => (
           <div key={r.label}>
             <dt className="text-xs text-muted-foreground">{r.label}</dt>

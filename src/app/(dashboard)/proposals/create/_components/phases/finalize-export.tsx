@@ -142,7 +142,7 @@ export function ExportButtons({
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-semibold">Export</h3>
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
         <ExportBtn
           label="Export DOCX"
           disabled={!enabled || !proposalId}

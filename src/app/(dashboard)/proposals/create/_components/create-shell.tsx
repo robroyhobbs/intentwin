@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useCreateFlow } from "./create-provider";
 import { PhaseStrip } from "./phase-strip";
 import { IntakePhase } from "./phases/intake-phase";
@@ -8,8 +9,26 @@ import { DraftPhase } from "./phases/draft-phase";
 import { FinalizePhase } from "./phases/finalize-phase";
 import { DecisionCoach } from "./decision-coach";
 
+function useNavigationGuard() {
+  const { state } = useCreateFlow();
+  const hasProgress =
+    state.completedPhases.size > 0 ||
+    state.generationStatus === "generating" ||
+    state.sections.length > 0;
+
+  useEffect(() => {
+    if (!hasProgress) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [hasProgress]);
+}
+
 export function CreateShell() {
   const { state } = useCreateFlow();
+  useNavigationGuard();
 
   return (
     <div className="flex h-full gap-0 -m-6">
@@ -19,8 +38,7 @@ export function CreateShell() {
           currentPhase={state.phase}
           completedPhases={state.completedPhases}
         />
-        <div className="flex-1 overflow-auto p-8">
-          {/* Phase content -- wired in Tasks 4-6 */}
+        <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
           {state.phase === "intake" && <IntakePhase />}
           {state.phase === "strategy" && <StrategyPhase />}
           {state.phase === "draft" && <DraftPhase />}
