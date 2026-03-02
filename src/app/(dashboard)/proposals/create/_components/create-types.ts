@@ -90,12 +90,17 @@ export type CreateAction =
   // Draft
   | { type: "SET_PROPOSAL_ID"; id: string }
   | { type: "GENERATION_START" }
-  | { type: "UPDATE_SECTION"; sectionId: string; updates: Partial<SectionDraft> }
+  | {
+      type: "UPDATE_SECTION";
+      sectionId: string;
+      updates: Partial<SectionDraft>;
+    }
   | { type: "SET_SECTIONS"; sections: SectionDraft[] }
   | { type: "GENERATION_COMPLETE" }
   | { type: "GENERATION_FAIL" }
   | { type: "MARK_SECTION_REVIEWED"; sectionId: string }
   // Finalize
+  | { type: "SET_BLOCKERS"; blockers: Blocker[] }
   | { type: "RESOLVE_BLOCKER"; blockerId: string }
   | { type: "APPROVE_FINAL" }
   | { type: "SET_EXPORTED_URL"; url: string }

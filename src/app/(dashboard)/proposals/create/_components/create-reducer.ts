@@ -129,6 +129,9 @@ export function createReducer(
         ),
       };
       break;
+    case "SET_BLOCKERS":
+      next = { ...state, blockers: action.blockers };
+      break;
     case "RESOLVE_BLOCKER":
       next = {
         ...state,
@@ -149,6 +152,5 @@ export function createReducer(
       return state;
   }
 
-  next.confidence = computeConfidence(next);
-  return next;
+  return { ...next, confidence: computeConfidence(next) };
 }
