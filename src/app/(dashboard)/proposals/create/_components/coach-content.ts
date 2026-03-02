@@ -186,34 +186,68 @@ function getFinalizeCoach(state: CreateFlowState): CoachContent {
   const unresolvedBlockers = state.blockers.filter((b) => !b.resolved);
   const insights = buildFinalizeInsights(state);
 
-  if (unresolvedBlockers.length > 0) {
-    const riskFlags: RiskFlag[] = unresolvedBlockers.map((b) => ({
-      id: b.id,
-      label: b.label,
-      severity: "high" as const,
-    }));
+  const riskFlags: RiskFlag[] = unresolvedBlockers.map((b) => ({
+    id: b.id,
+    label: b.label,
+    severity: "high" as const,
+  }));
 
-    return {
-      whyItMatters:
-        "Resolve the blockers below before approving. Each one impacts your final confidence score — the analysis shows the estimated gain from resolving each.",
-      signals: [],
-      riskFlags,
-      citations: [],
-      actions: [],
-      insights,
-    };
-  }
+  const whyItMatters = buildFinalizeSummary(state);
 
   return {
-    whyItMatters: state.finalApproved
-      ? "Proposal approved. Export to DOCX or PDF for submission."
-      : "No blockers remaining. Review the summary and approve the final package when ready.",
+    whyItMatters,
     signals: [],
-    riskFlags: [],
+    riskFlags,
     citations: [],
     actions: [],
     insights,
   };
+}
+
+function buildFinalizeSummary(state: CreateFlowState): string {
+  const parts: string[] = [];
+  const ev = state.bidEvaluation;
+  const data = state.extractedData;
+
+  // Proposal summary
+  const client = data?.extracted?.client_name?.value;
+  const type = data?.extracted?.solicitation_type?.value;
+  if (client || type) {
+    parts.push(`${type || "Proposal"} for ${client || "this opportunity"}.`);
+  }
+
+  // Bid fit vs completion distinction
+  if (ev) {
+    const score = Math.round(ev.weighted_total);
+    const rec = ev.recommendation;
+    const recLabel =
+      rec === "bid" ? "Bid" : rec === "evaluate" ? "Evaluate" : "Pass";
+    parts.push(
+      `Bid fit: ${score}/100 (${recLabel}). This measures how well the opportunity matches your capabilities — not proposal quality.`,
+    );
+  }
+
+  // Sections status
+  const completed = state.sections.filter(
+    (s) => s.generationStatus === "complete",
+  ).length;
+  const failed = state.sections.filter(
+    (s) => s.generationStatus === "failed",
+  ).length;
+  if (failed > 0) {
+    parts.push(
+      `${completed} sections generated, ${failed} failed. Regenerate failed sections before exporting.`,
+    );
+  }
+
+  // Final CTA
+  if (state.finalApproved) {
+    parts.push("Ready to export. Download as DOCX or PDF for submission.");
+  } else {
+    parts.push("Review the summary below, then approve to export.");
+  }
+
+  return parts.join(" ");
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────

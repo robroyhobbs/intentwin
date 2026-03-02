@@ -1,7 +1,6 @@
 // ── Coach Insights & Prompts ── Deep data surfacing for Decision Coach ──────
 // Builds structured insight rows and gap-filling prompts from state data.
 
-import { SCORING_FACTORS } from "@/lib/ai/bid-scoring";
 import type {
   CoachInsight,
   CoachPrompt,
@@ -240,54 +239,5 @@ export function buildDraftInsights(state: CreateFlowState): CoachInsight[] {
   return [...buildDraftWordStats(state), ...buildCriteriaCoverage(state)];
 }
 
-// ── Finalize Insights ───────────────────────────────────────────────────────
-
-export function buildFinalizeInsights(state: CreateFlowState): CoachInsight[] {
-  const insights: CoachInsight[] = [];
-  const reviewed = state.sections.filter((s) => s.reviewed).length;
-  const total = state.sections.length;
-  const themes = state.winThemes.filter((t) => t.confirmed).length;
-
-  insights.push({
-    id: "fin-reviewed",
-    label: "Sections Reviewed",
-    value: `${reviewed}/${total}`,
-    severity: reviewed < total ? "medium" : "low",
-  });
-  insights.push({
-    id: "fin-themes",
-    label: "Active Win Themes",
-    value: String(themes),
-    severity: themes === 0 ? "high" : "low",
-  });
-
-  if (state.bidEvaluation) {
-    insights.push({
-      id: "fin-bid-score",
-      label: "Bid Score",
-      value: `${Math.round(state.bidEvaluation.weighted_total)}/100`,
-      severity:
-        state.bidEvaluation.weighted_total < 40
-          ? "high"
-          : state.bidEvaluation.weighted_total < 70
-            ? "medium"
-            : "low",
-    });
-  }
-
-  // Blocker impact
-  const unresolved = state.blockers.filter((b) => !b.resolved);
-  if (unresolved.length > 0) {
-    const impactPerBlocker = Math.round(15 / unresolved.length);
-    for (const b of unresolved) {
-      insights.push({
-        id: `impact-${b.id}`,
-        label: b.label,
-        value: `+${impactPerBlocker}% if resolved`,
-        severity: "high",
-      });
-    }
-  }
-
-  return insights;
-}
+// Finalize insights extracted to coach-insights-finalize.ts
+export { buildFinalizeInsights } from "./coach-insights-finalize";

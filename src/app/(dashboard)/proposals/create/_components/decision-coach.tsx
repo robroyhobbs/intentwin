@@ -171,14 +171,22 @@ function PromptsSection({ prompts }: { prompts: CoachPrompt[] }) {
 export function DecisionCoach() {
   const { state } = useCreateFlow();
   const content = useMemo(() => getCoachContent(state), [state]);
+  const isFinalize = state.phase === "finalize";
 
   return (
     <div className="space-y-5">
-      {/* Header + confidence */}
+      {/* Header + progress ring */}
       <div className="flex items-start justify-between">
-        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-          Decision Coach
-        </h3>
+        <div>
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+            {isFinalize ? "Proposal Summary" : "Decision Coach"}
+          </h3>
+          {isFinalize && state.bidEvaluation && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Bid fit: {Math.round(state.bidEvaluation.weighted_total)}/100
+            </p>
+          )}
+        </div>
         <ConfidenceRing score={state.confidence} size={56} />
       </div>
 

@@ -14,9 +14,22 @@ function getColor(score: number): string {
 
 function getLabel(score: number): string {
   if (score === 0) return "Not started";
-  if (score < 40) return "Building";
-  if (score < 70) return "Moderate";
-  return "Strong";
+  if (score < 50) return "In progress";
+  if (score < 100) return "Almost done";
+  return "Complete";
+}
+
+function CenterValue({ value, color }: { value: number; color: string }) {
+  if (value === 0) {
+    return (
+      <span className="text-sm font-medium text-muted-foreground">--</span>
+    );
+  }
+  return (
+    <span className="text-lg font-bold" style={{ color }}>
+      {value}
+    </span>
+  );
 }
 
 export function ConfidenceRing({ score, size = 80 }: ConfidenceRingProps) {
@@ -57,13 +70,7 @@ export function ConfidenceRing({ score, size = 80 }: ConfidenceRingProps) {
           )}
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          {clamped === 0 ? (
-            <span className="text-sm font-medium text-muted-foreground">--</span>
-          ) : (
-            <span className="text-lg font-bold" style={{ color }}>
-              {clamped}
-            </span>
-          )}
+          <CenterValue value={clamped} color={color} />
         </div>
       </div>
       <span className="text-xs font-medium text-muted-foreground">{label}</span>
