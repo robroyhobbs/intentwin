@@ -6,6 +6,7 @@
  * for file size compliance.
  */
 
+import { NonRetriableError } from "inngest";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { GenerationStatus } from "@/lib/constants/statuses";
 import { generateText } from "@/lib/ai/gemini";
@@ -370,23 +371,37 @@ ${buildEditorialStandards(solicitationType, ctx.audienceProfile, ctx.primaryBran
       systemPromptLength: ctx.systemPrompt.length,
     });
 
-    // Generate content with a timeout to prevent Gemini hangs
-    const generatedContentRaw = await Promise.race([
-      generateText(prompt, {
-        systemPrompt: ctx.systemPrompt,
-      }),
-      new Promise<never>((_, reject) =>
-        setTimeout(
-          () =>
-            reject(
-              new Error(
-                `AI generation timed out after 180s for section ${sectionType}`,
+    // Generate content with a timeout to prevent Gemini hangs.
+    // 90s is generous — most sections complete in 8-15s. The old 180s timeout
+    // combined with 3 retries meant a single failing section could burn tokens
+    // for 12 minutes before giving up.
+    const SECTION_TIMEOUT_MS = 90_000;
+    let generatedContentRaw: string;
+    try {
+      generatedContentRaw = await Promise.race([
+        generateText(prompt, {
+          systemPrompt: ctx.systemPrompt,
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(
+            () =>
+              reject(
+                new Error(
+                  `AI generation timed out after 90s for section ${sectionType}`,
+                ),
               ),
-            ),
-          180_000,
+            SECTION_TIMEOUT_MS,
+          ),
         ),
-      ),
-    ]);
+      ]);
+    } catch (genErr) {
+      const msg = genErr instanceof Error ? genErr.message : String(genErr);
+      // Timeouts and permanent AI errors should NOT retry — they just burn tokens
+      if (msg.includes("timed out") || msg.includes("SAFETY")) {
+        throw new NonRetriableError(msg, { cause: genErr });
+      }
+      throw genErr;
+    }
 
     log.info("AI generation completed", {
       sectionType,

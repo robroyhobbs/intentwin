@@ -142,7 +142,7 @@ export const generateProposalFn = inngest.createFunction(
       const userSelectedSections = ctx.intakeData.selected_sections as
         | string[]
         | undefined;
-      let applicableSections = userSelectedSections?.length
+      const applicableSections = userSelectedSections?.length
         ? allSections.filter((s) => userSelectedSections.includes(s.type))
         : allSections;
 
@@ -346,65 +346,48 @@ export const generateProposalFn = inngest.createFunction(
       }
     }
 
-    // Steps 3-N: Generate remaining sections in batches to avoid Gemini rate limits.
-    // Launching all 10+ sections simultaneously causes 429 rate limit errors and
-    // timeout failures. Batching 3 at a time keeps throughput high while staying
-    // under rate limits.
+    // Steps 3-N: Generate ALL remaining sections in true parallel.
+    // Each section is an independent Inngest step — if one fails, the others
+    // continue unaffected. No sequential batching; Gemini handles concurrent
+    // requests fine and Inngest retries individual steps independently.
     const remainingSections = sections.filter(
       (s) => s.sectionType !== "executive_summary",
     );
 
-    const BATCH_SIZE = 3;
-
-    log.info("Starting batched section generation", {
+    log.info("Starting parallel section generation (all at once)", {
       proposalId,
       sectionCount: remainingSections.length,
-      batchSize: BATCH_SIZE,
       differentiatorCount: differentiators.length,
     });
 
-    const remainingResults: PromiseSettledResult<
-      Awaited<ReturnType<typeof generateSingleSection>>
-    >[] = [];
-
-    for (let i = 0; i < remainingSections.length; i += BATCH_SIZE) {
-      const batch = remainingSections.slice(i, i + BATCH_SIZE);
-      log.info(`Starting batch ${Math.floor(i / BATCH_SIZE) + 1}`, {
-        proposalId,
-        batchSections: batch.map((s) => s.sectionType),
-      });
-
-      const batchResults = await Promise.allSettled(
-        batch.map((section) => {
-          const stepId =
-            section.sectionType === "rfp_task"
-              ? `section-rfp_task-${section.title.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 50)}`
-              : `section-${section.sectionType}`;
-          return step.run(stepId, async () => {
-            log.info(`Generating section: ${section.sectionType}`, {
-              proposalId,
-              sectionId: section.id,
-              stepId,
-            });
-            const result = await generateSingleSection(
-              section.id,
-              section.sectionType,
-              ctx,
-              differentiators,
-            );
-            log.info(`Section generated: ${section.sectionType}`, {
-              proposalId,
-              sectionId: section.id,
-              chunkCount: result.chunkCount,
-              contentLength: result.generatedContent?.length ?? 0,
-            });
-            return result;
+    const remainingResults = await Promise.allSettled(
+      remainingSections.map((section) => {
+        const stepId =
+          section.sectionType === "rfp_task"
+            ? `section-rfp_task-${section.title.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 50)}`
+            : `section-${section.sectionType}`;
+        return step.run(stepId, async () => {
+          log.info(`Generating section: ${section.sectionType}`, {
+            proposalId,
+            sectionId: section.id,
+            stepId,
           });
-        }),
-      );
-
-      remainingResults.push(...batchResults);
-    }
+          const result = await generateSingleSection(
+            section.id,
+            section.sectionType,
+            ctx,
+            differentiators,
+          );
+          log.info(`Section generated: ${section.sectionType}`, {
+            proposalId,
+            sectionId: section.id,
+            chunkCount: result.chunkCount,
+            contentLength: result.generatedContent?.length ?? 0,
+          });
+          return result;
+        });
+      }),
+    );
 
     // Log individual section results for debugging
     remainingResults.forEach((r, i) => {
