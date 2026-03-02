@@ -8,7 +8,10 @@ import { buildSectionList } from "@/lib/ai/pipeline/section-configs";
 import { buildPipelineContext } from "@/lib/ai/pipeline/context";
 import { extractDifferentiators } from "@/lib/ai/pipeline/differentiators";
 import { generateSingleSection } from "./generate-single-section";
-import type { PipelineContext, RfpTaskStructure } from "@/lib/ai/pipeline/types";
+import type {
+  PipelineContext,
+  RfpTaskStructure,
+} from "@/lib/ai/pipeline/types";
 
 const log = createLogger({ operation: "generate-proposal" });
 
@@ -49,7 +52,10 @@ export const generateProposalFn = inngest.createFunction(
       const proposalId = event.data.event?.data?.proposalId;
       if (!proposalId) return;
 
-      const failLog = createLogger({ operation: "generate-proposal-failure", proposalId });
+      const failLog = createLogger({
+        operation: "generate-proposal-failure",
+        proposalId,
+      });
       failLog.error("Proposal generation PERMANENTLY FAILED", {
         error: event.data.error?.message,
         functionId: event.data.function_id,
@@ -63,9 +69,10 @@ export const generateProposalFn = inngest.createFunction(
         .select("generation_status")
         .eq("proposal_id", proposalId);
 
-      const completedCount = sections?.filter(
-        (s) => s.generation_status === GenerationStatus.COMPLETED
-      ).length ?? 0;
+      const completedCount =
+        sections?.filter(
+          (s) => s.generation_status === GenerationStatus.COMPLETED,
+        ).length ?? 0;
 
       if (completedCount > 0) {
         // Partial success — move to review with warning
@@ -77,7 +84,10 @@ export const generateProposalFn = inngest.createFunction(
             generation_error: `Generation partially failed: ${completedCount} of ${sections?.length ?? 0} sections completed. Some sections failed permanently. You can regenerate failed sections individually.`,
           })
           .eq("id", proposalId);
-        failLog.info("Partial success — moved to review", { completedCount, total: sections?.length });
+        failLog.info("Partial success — moved to review", {
+          completedCount,
+          total: sections?.length,
+        });
       } else {
         // Total failure — revert to draft
         await supabase
@@ -119,34 +129,53 @@ export const generateProposalFn = inngest.createFunction(
         .eq("proposal_id", proposalId);
 
       // Read task structure from the proposal (may be null)
-      const rfpTaskStructure = (ctx.proposal.rfp_task_structure as RfpTaskStructure | null) ?? null;
+      const rfpTaskStructure =
+        (ctx.proposal.rfp_task_structure as RfpTaskStructure | null) ?? null;
 
       // Determine which sections to generate (task-mirrored or fixed)
-      const solicitationType = (ctx.intakeData.solicitation_type as string) || "RFP";
+      const solicitationType =
+        (ctx.intakeData.solicitation_type as string) || "RFP";
       const allSections = buildSectionList(rfpTaskStructure, solicitationType);
 
       // Filter to only the sections the user selected in the wizard (Step 3).
       // If selected_sections is missing/empty (e.g., legacy proposals), generate all.
-      const userSelectedSections = ctx.intakeData.selected_sections as string[] | undefined;
+      const userSelectedSections = ctx.intakeData.selected_sections as
+        | string[]
+        | undefined;
       let applicableSections = userSelectedSections?.length
-        ? allSections.filter(s => userSelectedSections.includes(s.type))
+        ? allSections.filter((s) => userSelectedSections.includes(s.type))
         : allSections;
 
       // Handle custom sections from RFP analysis (prefixed with "custom_")
       // These don't exist in SECTION_CONFIGS but were added by the user in Step 3
-      const rfpAnalysis = ctx.intakeData.rfp_analysis as { sections?: Array<{ section_type: string; title: string; rationale: string; custom_description?: string; rfp_requirements?: string[] }> } | null;
+      const rfpAnalysis = ctx.intakeData.rfp_analysis as {
+        sections?: Array<{
+          section_type: string;
+          title: string;
+          rationale: string;
+          custom_description?: string;
+          rfp_requirements?: string[];
+        }>;
+      } | null;
       if (userSelectedSections?.length && rfpAnalysis?.sections) {
-        const customSelectedTypes = userSelectedSections.filter(t => t.startsWith("custom_"));
+        const customSelectedTypes = userSelectedSections.filter((t) =>
+          t.startsWith("custom_"),
+        );
         if (customSelectedTypes.length > 0) {
-          let nextOrder = applicableSections.length > 0
-            ? Math.max(...applicableSections.map(s => s.order)) + 1
-            : 13;
+          let nextOrder =
+            applicableSections.length > 0
+              ? Math.max(...applicableSections.map((s) => s.order)) + 1
+              : 13;
 
           for (const customType of customSelectedTypes) {
             // Find the matching RFP section requirement
             const rfpSection = rfpAnalysis.sections.find(
-              s => s.section_type === "custom" &&
-              `custom_${s.title.toLowerCase().replace(/[^a-z0-9]+/g, "_").slice(0, 40)}` === customType
+              (s) =>
+                s.section_type === "custom" &&
+                `custom_${s.title
+                  .toLowerCase()
+                  .replace(/[^a-z0-9]+/g, "_")
+                  .slice(0, 40)}` === customType,
             );
             if (rfpSection) {
               applicableSections.push({
@@ -167,10 +196,12 @@ export const generateProposalFn = inngest.createFunction(
         sectionCount: applicableSections.length,
         totalAvailable: allSections.length,
         userSelectedCount: userSelectedSections?.length ?? "all (no selection)",
-        customSections: applicableSections.filter(s => s.type.startsWith("custom_")).length,
+        customSections: applicableSections.filter((s) =>
+          s.type.startsWith("custom_"),
+        ).length,
         solicitationType,
         hasTaskStructure: !!rfpTaskStructure,
-        sectionTypes: applicableSections.map(s => s.type),
+        sectionTypes: applicableSections.map((s) => s.type),
       });
 
       // Create section rows with optional task/custom metadata
@@ -180,12 +211,26 @@ export const generateProposalFn = inngest.createFunction(
         if (config.taskMeta) {
           metadata = config.taskMeta;
         } else if (config.type.startsWith("custom_") && rfpAnalysis?.sections) {
-          const rfpSection = (rfpAnalysis.sections as Array<{ section_type: string; title: string; custom_description?: string; rfp_requirements?: string[]; rationale?: string }>)
-            .find(s => s.section_type === "custom" &&
-              `custom_${s.title.toLowerCase().replace(/[^a-z0-9]+/g, "_").slice(0, 40)}` === config.type);
+          const rfpSection = (
+            rfpAnalysis.sections as Array<{
+              section_type: string;
+              title: string;
+              custom_description?: string;
+              rfp_requirements?: string[];
+              rationale?: string;
+            }>
+          ).find(
+            (s) =>
+              s.section_type === "custom" &&
+              `custom_${s.title
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, "_")
+                .slice(0, 40)}` === config.type,
+          );
           if (rfpSection) {
             metadata = {
-              custom_description: rfpSection.custom_description || rfpSection.rationale || "",
+              custom_description:
+                rfpSection.custom_description || rfpSection.rationale || "",
               rfp_requirements: rfpSection.rfp_requirements || [],
             };
           }
@@ -207,10 +252,10 @@ export const generateProposalFn = inngest.createFunction(
         .select("id, section_type, title");
 
       if (sectionError || !sections) {
-        stepLog.error("Failed to create section rows", { error: sectionError?.message });
-        throw new Error(
-          `Failed to create sections: ${sectionError?.message}`,
-        );
+        stepLog.error("Failed to create section rows", {
+          error: sectionError?.message,
+        });
+        throw new Error(`Failed to create sections: ${sectionError?.message}`);
       }
 
       stepLog.info("Section rows created", { count: sections.length });
@@ -244,92 +289,122 @@ export const generateProposalFn = inngest.createFunction(
       industryConfig: serializedCtx.industryConfig ?? null,
     };
 
-    const metrics = createPipelineMetrics(
-      proposalId,
-      ctx.organizationId,
-      {
-        industry: ctx.industry,
-        opportunityType: ctx.serviceLine,
-      },
-    );
+    const metrics = createPipelineMetrics(proposalId, ctx.organizationId, {
+      industry: ctx.industry,
+      opportunityType: ctx.serviceLine,
+    });
 
     // Step 2: Generate executive summary FIRST (needed for differentiator extraction)
     // If exec summary fails, remaining sections still generate without the repetition limiter.
-    const execSection = sections.find((s) => s.sectionType === "executive_summary");
+    const execSection = sections.find(
+      (s) => s.sectionType === "executive_summary",
+    );
     let differentiators: string[] = [];
     let execFailed = false;
 
     if (execSection) {
       try {
-        const execResult = await step.run("section-executive_summary", async () => {
-          log.info("Generating executive summary", { sectionId: execSection.id, proposalId });
-          const result = await generateSingleSection(
-            execSection.id,
-            execSection.sectionType,
-            ctx,
-          );
-          log.info("Executive summary generated", {
-            proposalId,
-            chunkCount: result.chunkCount,
-            contentLength: result.generatedContent?.length ?? 0,
-          });
-          return result;
-        });
+        const execResult = await step.run(
+          "section-executive_summary",
+          async () => {
+            log.info("Generating executive summary", {
+              sectionId: execSection.id,
+              proposalId,
+            });
+            const result = await generateSingleSection(
+              execSection.id,
+              execSection.sectionType,
+              ctx,
+            );
+            log.info("Executive summary generated", {
+              proposalId,
+              chunkCount: result.chunkCount,
+              contentLength: result.generatedContent?.length ?? 0,
+            });
+            return result;
+          },
+        );
 
         // Extract differentiators from the generated executive summary
         if (execResult.generatedContent) {
           differentiators = extractDifferentiators(execResult.generatedContent);
-          log.info("Differentiators extracted", { count: differentiators.length, proposalId });
+          log.info("Differentiators extracted", {
+            count: differentiators.length,
+            proposalId,
+          });
         }
       } catch (err) {
         // Exec summary failed — continue without repetition limiter (graceful degradation)
         execFailed = true;
-        log.error("Executive summary generation FAILED — continuing without repetition limiter", {
-          proposalId,
-          error: err instanceof Error ? err.message : String(err),
-        });
+        log.error(
+          "Executive summary generation FAILED — continuing without repetition limiter",
+          {
+            proposalId,
+            error: err instanceof Error ? err.message : String(err),
+          },
+        );
       }
     }
 
-    // Steps 3-N: Generate remaining sections in parallel with differentiators
+    // Steps 3-N: Generate remaining sections in batches to avoid Gemini rate limits.
+    // Launching all 10+ sections simultaneously causes 429 rate limit errors and
+    // timeout failures. Batching 3 at a time keeps throughput high while staying
+    // under rate limits.
     const remainingSections = sections.filter(
       (s) => s.sectionType !== "executive_summary",
     );
 
-    log.info("Starting parallel section generation", {
+    const BATCH_SIZE = 3;
+
+    log.info("Starting batched section generation", {
       proposalId,
       sectionCount: remainingSections.length,
+      batchSize: BATCH_SIZE,
       differentiatorCount: differentiators.length,
     });
 
-    const remainingResults = await Promise.allSettled(
-      remainingSections.map((section) => {
-        // Use title-based step ID for rfp_task sections to avoid duplicate step names
-        const stepId = section.sectionType === "rfp_task"
-          ? `section-rfp_task-${section.title.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 50)}`
-          : `section-${section.sectionType}`;
-        return step.run(stepId, async () => {
-          log.info(`Generating section: ${section.sectionType}`, {
-            proposalId,
-            sectionId: section.id,
-            stepId,
+    const remainingResults: PromiseSettledResult<
+      Awaited<ReturnType<typeof generateSingleSection>>
+    >[] = [];
+
+    for (let i = 0; i < remainingSections.length; i += BATCH_SIZE) {
+      const batch = remainingSections.slice(i, i + BATCH_SIZE);
+      log.info(`Starting batch ${Math.floor(i / BATCH_SIZE) + 1}`, {
+        proposalId,
+        batchSections: batch.map((s) => s.sectionType),
+      });
+
+      const batchResults = await Promise.allSettled(
+        batch.map((section) => {
+          const stepId =
+            section.sectionType === "rfp_task"
+              ? `section-rfp_task-${section.title.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 50)}`
+              : `section-${section.sectionType}`;
+          return step.run(stepId, async () => {
+            log.info(`Generating section: ${section.sectionType}`, {
+              proposalId,
+              sectionId: section.id,
+              stepId,
+            });
+            const result = await generateSingleSection(
+              section.id,
+              section.sectionType,
+              ctx,
+              differentiators,
+            );
+            log.info(`Section generated: ${section.sectionType}`, {
+              proposalId,
+              sectionId: section.id,
+              chunkCount: result.chunkCount,
+              contentLength: result.generatedContent?.length ?? 0,
+            });
+            return result;
           });
-          const result = await generateSingleSection(
-            section.id,
-            section.sectionType,
-            ctx,
-            differentiators,
-          );
-          log.info(`Section generated: ${section.sectionType}`, {
-            proposalId,
-            sectionId: section.id,
-            chunkCount: result.chunkCount,
-            contentLength: result.generatedContent?.length ?? 0,
-          });
-          return result;
-        });
-      }),
-    );
+        }),
+      );
+
+      remainingResults.push(...batchResults);
+    }
 
     // Log individual section results for debugging
     remainingResults.forEach((r, i) => {
@@ -345,7 +420,10 @@ export const generateProposalFn = inngest.createFunction(
 
     // Combine results for tracking: exec summary (if it ran) + remaining
     // Build a map of sectionType -> result for the return value
-    const sectionResultMap = new Map<string, { status: string; error?: string }>();
+    const sectionResultMap = new Map<
+      string,
+      { status: string; error?: string }
+    >();
     if (execSection) {
       sectionResultMap.set("executive_summary", {
         status: execFailed ? "rejected" : "fulfilled",
@@ -356,7 +434,9 @@ export const generateProposalFn = inngest.createFunction(
       const sectionType = remainingSections[i].sectionType;
       sectionResultMap.set(sectionType, {
         status: r.status,
-        ...(r.status === "rejected" ? { error: (r as PromiseRejectedResult).reason?.message || "Unknown" } : {}),
+        ...(r.status === "rejected"
+          ? { error: (r as PromiseRejectedResult).reason?.message || "Unknown" }
+          : {}),
       });
     });
 
@@ -376,18 +456,23 @@ export const generateProposalFn = inngest.createFunction(
         .eq("proposal_id", proposalId);
 
       if (fetchError) {
-        finalizeLog.error("Failed to fetch final section statuses", { error: fetchError.message });
+        finalizeLog.error("Failed to fetch final section statuses", {
+          error: fetchError.message,
+        });
       }
 
       const completedCount =
-        finalSections?.filter((s) => s.generation_status === GenerationStatus.COMPLETED)
-          .length ?? 0;
+        finalSections?.filter(
+          (s) => s.generation_status === GenerationStatus.COMPLETED,
+        ).length ?? 0;
       const failedCount =
-        finalSections?.filter((s) => s.generation_status === GenerationStatus.FAILED)
-          .length ?? 0;
+        finalSections?.filter(
+          (s) => s.generation_status === GenerationStatus.FAILED,
+        ).length ?? 0;
       const pendingCount =
-        finalSections?.filter((s) => s.generation_status === GenerationStatus.PENDING)
-          .length ?? 0;
+        finalSections?.filter(
+          (s) => s.generation_status === GenerationStatus.PENDING,
+        ).length ?? 0;
       const totalCount = finalSections?.length ?? 0;
 
       finalizeLog.info("Section generation results", {
@@ -468,8 +553,7 @@ export const generateProposalFn = inngest.createFunction(
     // Step 13: Send completion event (triggers quality review + compliance in parallel)
     // Only send if at least some sections succeeded
     if (result.completedCount > 0) {
-      const allSucceeded =
-        result.failedCount === 0;
+      const allSucceeded = result.failedCount === 0;
       await step.sendEvent("send-completion", {
         name: "proposal/generated",
         data: {

@@ -19,10 +19,17 @@ import {
 import { buildIndustryContext } from "@/lib/ai/industry-configs";
 import { createLogger } from "@/lib/utils/logger";
 import { SECTION_CONFIGS } from "@/lib/ai/pipeline/section-configs";
-import { extractCompetitiveObjections, buildSectionSpecificL1Context, buildTaskSectionL1Context } from "@/lib/ai/pipeline/context";
+import {
+  extractCompetitiveObjections,
+  buildSectionSpecificL1Context,
+  buildTaskSectionL1Context,
+} from "@/lib/ai/pipeline/context";
 import { buildEditorialStandards } from "@/lib/ai/prompts/editorial-standards";
 import { retrieveContext } from "@/lib/ai/pipeline/retrieval";
-import { shouldGenerateDiagram, generateDiagram } from "@/lib/ai/diagram-generator";
+import {
+  shouldGenerateDiagram,
+  generateDiagram,
+} from "@/lib/ai/diagram-generator";
 import { buildTaskResponsePrompt } from "@/lib/ai/prompts/task-response";
 import type { PipelineContext } from "@/lib/ai/pipeline/types";
 import type { BidEvaluation, FactorKey } from "@/lib/ai/bid-scoring";
@@ -72,10 +79,12 @@ export function buildBidEvalRiskBlock(
 
   if (weakFactors.length === 0) return "";
 
-  const factorLines = weakFactors.map((factor) => {
-    const data = bidEvaluation.ai_scores[factor.key];
-    return `  - **${factor.label}** (score: ${data.score}/100): ${data.rationale}`;
-  }).join("\n");
+  const factorLines = weakFactors
+    .map((factor) => {
+      const data = bidEvaluation.ai_scores[factor.key];
+      return `  - **${factor.label}** (score: ${data.score}/100): ${data.rationale}`;
+    })
+    .join("\n");
 
   return `\n\n---\n\n## BID RISK AREAS — ADDRESS IN THIS SECTION
 The bid evaluation identified these areas as weak for this opportunity:
@@ -120,7 +129,10 @@ export async function generateSingleSection(
   // For custom sections (prefixed "custom_"), we build prompts from RFP analysis
   const isTaskSection = sectionType === "rfp_task";
   const isCustomSection = sectionType.startsWith("custom_");
-  const config = (isTaskSection || isCustomSection) ? null : SECTION_CONFIGS.find((c) => c.type === sectionType);
+  const config =
+    isTaskSection || isCustomSection
+      ? null
+      : SECTION_CONFIGS.find((c) => c.type === sectionType);
   if (!isTaskSection && !isCustomSection && !config) {
     throw new Error(`Unknown section type: ${sectionType}`);
   }
@@ -153,7 +165,11 @@ export async function generateSingleSection(
     }
 
     // For custom sections, read metadata from the section row (same pattern as task sections)
-    let customMeta: { title: string; description: string; rfp_requirements: string[] } | null = null;
+    let customMeta: {
+      title: string;
+      description: string;
+      rfp_requirements: string[];
+    } | null = null;
     if (isCustomSection) {
       const { data: sectionRow } = await supabase
         .from("proposal_sections")
@@ -189,7 +205,8 @@ export async function generateSingleSection(
       ctx.organizationId,
     );
 
-    const solicitationType = (ctx.intakeData.solicitation_type as string) || "RFP";
+    const solicitationType =
+      (ctx.intakeData.solicitation_type as string) || "RFP";
 
     // Build prompt: task sections use buildTaskResponsePrompt, custom sections get a dynamic prompt, fixed sections use config.buildPrompt
     let basePrompt: string;
@@ -212,11 +229,18 @@ export async function generateSingleSection(
     } else if (isCustomSection && customMeta) {
       // Custom sections from RFP analysis — build a dynamic prompt
       const companyName = ctx.companyInfo?.name || "Our Company";
-      const requirementsList = customMeta.rfp_requirements.length > 0
-        ? customMeta.rfp_requirements.map((r, i) => `${i + 1}. ${r}`).join("\n")
-        : "Address all aspects described below.";
+      const requirementsList =
+        customMeta.rfp_requirements.length > 0
+          ? customMeta.rfp_requirements
+              .map((r, i) => `${i + 1}. ${r}`)
+              .join("\n")
+          : "Address all aspects described below.";
 
-      const sectionL1Context = buildSectionSpecificL1Context(ctx.rawL1Context, "approach", solicitationType);
+      const sectionL1Context = buildSectionSpecificL1Context(
+        ctx.rawL1Context,
+        "approach",
+        solicitationType,
+      );
       basePrompt = `Write the **${customMeta.title}** section for a ${companyName} proposal.
 
 ## Section Requirements (from RFP)
@@ -249,7 +273,11 @@ IMPORTANT: Reference specific ${companyName} capabilities from the Company Conte
 
 ${buildEditorialStandards(solicitationType, ctx.audienceProfile, ctx.primaryBrandName, differentiators, ctx.intakeData.tone as string | undefined)}`;
     } else {
-      const sectionL1Context = buildSectionSpecificL1Context(ctx.rawL1Context, config!.type, solicitationType);
+      const sectionL1Context = buildSectionSpecificL1Context(
+        ctx.rawL1Context,
+        config!.type,
+        solicitationType,
+      );
       basePrompt = config!.buildPrompt(
         ctx.intakeData,
         ctx.enhancedAnalysis,
@@ -262,7 +290,11 @@ ${buildEditorialStandards(solicitationType, ctx.audienceProfile, ctx.primaryBran
 
     // For task sections, editorial standards + repetition limiter are already in the prompt
     // For fixed/custom sections, add persuasion layers, industry context, and repetition limiter
-    const effectiveType = isTaskSection ? "approach" : isCustomSection ? "approach" : config!.type;
+    const effectiveType = isTaskSection
+      ? "approach"
+      : isCustomSection
+        ? "approach"
+        : config!.type;
 
     // Build persuasion layers
     const persuasionFramework = getPersuasionPrompt(effectiveType);
@@ -294,22 +326,29 @@ ${buildEditorialStandards(solicitationType, ctx.audienceProfile, ctx.primaryBran
 
     // Repetition limiter — applied to all sections except executive_summary
     // For task sections, it's already embedded via buildTaskResponsePrompt's differentiators param
-    const repetitionBlock = (!isTaskSection && sectionType !== "executive_summary" && differentiators?.length)
-      ? buildRepetitionLimiterBlock(differentiators)
-      : "";
+    const repetitionBlock =
+      !isTaskSection &&
+      sectionType !== "executive_summary" &&
+      differentiators?.length
+        ? buildRepetitionLimiterBlock(differentiators)
+        : "";
 
     // Bid evaluation risk guidance — injects weak factor rationale for relevant sections
-    const bidEvalBlock = buildBidEvalRiskBlock(ctx.bidEvaluation, isTaskSection ? "rfp_task" : sectionType);
+    const bidEvalBlock = buildBidEvalRiskBlock(
+      ctx.bidEvaluation,
+      isTaskSection ? "rfp_task" : sectionType,
+    );
 
     // Inject intelligence context from pipeline (Stream A: Deeper Pipeline)
     // Agency context goes into ALL sections; pricing context only for pricing/cost sections
     const agencyBlock = ctx.agencyContext
       ? `\n\n---\n\n${ctx.agencyContext}`
       : "";
-    const pricingBlock = (sectionType === "pricing" || sectionType === "rfp_task")
-      && ctx.pricingContext
-      ? `\n\n---\n\n${ctx.pricingContext}`
-      : "";
+    const pricingBlock =
+      (sectionType === "pricing" || sectionType === "rfp_task") &&
+      ctx.pricingContext
+        ? `\n\n---\n\n${ctx.pricingContext}`
+        : "";
 
     const prompt = [
       basePrompt,
@@ -337,7 +376,15 @@ ${buildEditorialStandards(solicitationType, ctx.audienceProfile, ctx.primaryBran
         systemPrompt: ctx.systemPrompt,
       }),
       new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error(`AI generation timed out after 120s for section ${sectionType}`)), 120_000)
+        setTimeout(
+          () =>
+            reject(
+              new Error(
+                `AI generation timed out after 180s for section ${sectionType}`,
+              ),
+            ),
+          180_000,
+        ),
       ),
     ]);
 
@@ -347,11 +394,15 @@ ${buildEditorialStandards(solicitationType, ctx.audienceProfile, ctx.primaryBran
     });
 
     // Strip out the Chain of Thought block before saving
-    let generatedContent = generatedContentRaw.replace(/<thought_process>[\s\S]*?<\/thought_process>/, '').trim();
-    if (generatedContent.startsWith('```markdown')) {
-      generatedContent = generatedContent.replace(/^```markdown/, '').replace(/```$/, '').trim();
+    let generatedContent = generatedContentRaw
+      .replace(/<thought_process>[\s\S]*?<\/thought_process>/, "")
+      .trim();
+    if (generatedContent.startsWith("```markdown")) {
+      generatedContent = generatedContent
+        .replace(/^```markdown/, "")
+        .replace(/```$/, "")
+        .trim();
     }
-
 
     // Editorial pass disabled — prompt engineering handles formatting/quality.
     // Re-enable if output quality needs a second polish pass:
@@ -364,7 +415,9 @@ ${buildEditorialStandards(solicitationType, ctx.audienceProfile, ctx.primaryBran
       const themes = ctx.winStrategy?.win_themes ?? [];
       runQualityChecks(generatedContent, effectiveType, themes, avoidTerms);
     } catch {
-      log.warn(`Quality check failed for ${sectionType}${taskMeta ? ` (task ${taskMeta.task_number})` : ""}`);
+      log.warn(
+        `Quality check failed for ${sectionType}${taskMeta ? ` (task ${taskMeta.task_number})` : ""}`,
+      );
     }
 
     // Update section with content
@@ -380,10 +433,15 @@ ${buildEditorialStandards(solicitationType, ctx.audienceProfile, ctx.primaryBran
 
     // Generate diagram image for applicable sections (non-blocking)
     // Task and custom sections don't get diagrams — they're response-focused
-    if (!isTaskSection && !isCustomSection && shouldGenerateDiagram(config!.type)) {
+    if (
+      !isTaskSection &&
+      !isCustomSection &&
+      shouldGenerateDiagram(config!.type)
+    ) {
       try {
         const companyName = (ctx.companyInfo?.name as string) || "Our Company";
-        const clientName = (ctx.intakeData?.client_name as string) || "the Client";
+        const clientName =
+          (ctx.intakeData?.client_name as string) || "the Client";
         const diagramImage = await generateDiagram(
           config!.type,
           generatedContent,
@@ -397,30 +455,31 @@ ${buildEditorialStandards(solicitationType, ctx.audienceProfile, ctx.primaryBran
             .eq("id", sectionId);
         }
       } catch {
-        log.warn(`Diagram generation failed for ${config!.type} — continuing without diagram`);
+        log.warn(
+          `Diagram generation failed for ${config!.type} — continuing without diagram`,
+        );
       }
     }
 
     // Store source references (non-blocking)
     if (chunkIds.length > 0) {
       try {
-        const sourceInserts = chunkIds.map(
-          (chunkId: string, idx: number) => ({
-            section_id: sectionId,
-            chunk_id: chunkId,
-            relevance_score: 1 - idx * 0.1,
-          }),
-        );
+        const sourceInserts = chunkIds.map((chunkId: string, idx: number) => ({
+          section_id: sectionId,
+          chunk_id: chunkId,
+          relevance_score: 1 - idx * 0.1,
+        }));
         await supabase.from("section_sources").insert(sourceInserts);
       } catch {
-        log.warn(`Source tracking failed for ${sectionType}${taskMeta ? ` (task ${taskMeta.task_number})` : ""}`);
+        log.warn(
+          `Source tracking failed for ${sectionType}${taskMeta ? ` (task ${taskMeta.task_number})` : ""}`,
+        );
       }
     }
 
     return { chunkCount: chunkIds.length, generatedContent };
   } catch (err) {
-    const errorMessage =
-      err instanceof Error ? err.message : "Unknown error";
+    const errorMessage = err instanceof Error ? err.message : "Unknown error";
     const errorStack = err instanceof Error ? err.stack : undefined;
 
     log.error("Section generation FAILED", {
