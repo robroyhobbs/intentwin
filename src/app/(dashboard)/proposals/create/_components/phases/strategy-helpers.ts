@@ -1,0 +1,184 @@
+import type { Dispatch } from "react";
+import type { CreateAction } from "../create-types";
+import type { WinTheme } from "../create-types";
+import type { ExtractedIntake } from "@/types/intake";
+import type { BidEvaluation } from "@/lib/ai/bid-scoring";
+import { logger } from "@/lib/utils/logger";
+
+// ── API response types ──────────────────────────────────────────────────────
+
+interface BidEvaluationApiResponse {
+  status: string;
+  evaluation: BidEvaluation;
+}
+
+interface WinStrategyApiResponse {
+  win_strategy: {
+    win_themes: string[];
+    success_metrics: string[];
+    differentiators: string[];
+    target_outcomes: {
+      id: string;
+      outcome: string;
+      category: string;
+      priority: string;
+    }[];
+    generated_at: string;
+  };
+}
+
+// ── Flatten extracted data into bid-evaluation request shape ─────────────────
+
+export function buildRfpRequirements(extracted: ExtractedIntake) {
+  const ext = extracted.extracted;
+  return {
+    title: ext.scope_description?.value ?? "",
+    client_name: ext.client_name?.value ?? "",
+    agency: ext.client_name?.value ?? "",
+    scope: ext.scope_description?.value ?? "",
+    requirements: ext.key_requirements?.value ?? [],
+    budget_range: ext.budget_range?.value ?? "",
+    evaluation_criteria: ext.decision_criteria?.value ?? [],
+    compliance_requirements: ext.compliance_requirements?.value ?? [],
+    technical_environment: ext.technical_environment?.value ?? "",
+    source_text: extracted.source_text ?? "",
+  };
+}
+
+// ── Flatten extracted data into win-strategy request shape ───────────────────
+
+export function buildIntakeData(extracted: ExtractedIntake) {
+  const ext = extracted.extracted;
+  return {
+    client_name: ext.client_name?.value ?? "",
+    client_industry: ext.client_industry?.value ?? "",
+    scope_description: ext.scope_description?.value ?? "",
+    current_state_pains: ext.current_state_pains?.value ?? [],
+    desired_outcomes: ext.desired_outcomes?.value ?? [],
+    budget_range: ext.budget_range?.value ?? "",
+    timeline_expectation: ext.timeline?.value ?? "",
+  };
+}
+
+// ── Map API win_themes (string[]) to WinTheme[] ─────────────────────────────
+
+function mapWinThemes(themes: string[]): WinTheme[] {
+  return themes.map((label, i) => ({
+    id: `theme-${i}`,
+    label,
+    description: "",
+    confirmed: true,
+  }));
+}
+
+// ── Fetch bid evaluation from API ───────────────────────────────────────────
+
+export async function fetchBidEvaluation(
+  extractedData: ExtractedIntake,
+  dispatch: Dispatch<CreateAction>,
+): Promise<void> {
+  try {
+    const rfpRequirements = buildRfpRequirements(extractedData);
+
+    const res = await fetch("/api/intake/bid-evaluation", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rfp_requirements: rfpRequirements }),
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      const msg =
+        (body as Record<string, string>).message ?? res.statusText;
+      throw new Error(`Bid evaluation failed: ${msg}`);
+    }
+
+    const data = (await res.json()) as BidEvaluationApiResponse;
+    dispatch({ type: "SET_BID_EVALUATION", evaluation: data.evaluation });
+
+    logger.info("Bid evaluation complete", {
+      weightedTotal: data.evaluation.weighted_total,
+      recommendation: data.evaluation.recommendation,
+    });
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "Bid evaluation failed";
+    logger.error("Bid evaluation error", { error: message });
+    throw err;
+  }
+}
+
+// ── Fetch win strategy from API ─────────────────────────────────────────────
+
+export async function fetchWinStrategy(
+  extractedData: ExtractedIntake,
+  dispatch: Dispatch<CreateAction>,
+): Promise<void> {
+  try {
+    const intakeData = buildIntakeData(extractedData);
+
+    const res = await fetch("/api/proposals/temp/outcomes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ intake_data: intakeData }),
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      const msg =
+        (body as Record<string, string>).message ?? res.statusText;
+      throw new Error(`Win strategy generation failed: ${msg}`);
+    }
+
+    const data = (await res.json()) as WinStrategyApiResponse;
+    const themes = mapWinThemes(data.win_strategy.win_themes);
+    dispatch({ type: "SET_WIN_THEMES", themes });
+
+    logger.info("Win strategy generated", {
+      themeCount: themes.length,
+    });
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "Win strategy generation failed";
+    logger.error("Win strategy error", { error: message });
+    throw err;
+  }
+}
+
+// ── Score color helpers ─────────────────────────────────────────────────────
+
+export function getScoreColor(score: number): string {
+  if (score > 70) return "text-emerald-600";
+  if (score >= 40) return "text-amber-600";
+  return "text-red-600";
+}
+
+export function getScoreBgColor(score: number): string {
+  if (score > 70) return "bg-emerald-50 border-emerald-200";
+  if (score >= 40) return "bg-amber-50 border-amber-200";
+  return "bg-red-50 border-red-200";
+}
+
+export function getRecommendationBadge(rec: string): {
+  label: string;
+  className: string;
+} {
+  switch (rec) {
+    case "bid":
+      return {
+        label: "Bid",
+        className:
+          "bg-emerald-100 text-emerald-800 border border-emerald-200",
+      };
+    case "evaluate":
+      return {
+        label: "Evaluate",
+        className: "bg-amber-100 text-amber-800 border border-amber-200",
+      };
+    default:
+      return {
+        label: "Pass",
+        className: "bg-red-100 text-red-800 border border-red-200",
+      };
+  }
+}
