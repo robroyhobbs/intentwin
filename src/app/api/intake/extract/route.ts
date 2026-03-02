@@ -6,14 +6,23 @@ import {
   buildExtractionPrompt,
   buildMultiDocumentContent,
 } from "@/lib/ai/prompts/extract-intake";
-import { buildAssumptionsPrompt, type Assumption } from "@/lib/ai/prompts/assumptions";
+import { runParallelExtraction } from "@/lib/ai/prompts/extract-parallel";
+import {
+  buildAssumptionsPrompt,
+  type Assumption,
+} from "@/lib/ai/prompts/assumptions";
 import type { DocumentForExtraction } from "@/lib/ai/prompts/extract-intake";
-import type { ExtractedIntake } from "@/types/intake";
 import type { DocumentRole } from "@/types/proposal-documents";
 import { logger } from "@/lib/utils/logger";
 import { extractJsonFromResponse } from "@/lib/utils/extract-json";
 import { checkFeature } from "@/lib/features/check-feature";
-import { unauthorized, badRequest, notFound, ok, serverError } from "@/lib/api/response";
+import {
+  unauthorized,
+  badRequest,
+  notFound,
+  ok,
+  serverError,
+} from "@/lib/api/response";
 import { apiError } from "@/lib/api/response";
 
 /** Allow up to 5 minutes for AI extraction */
@@ -29,10 +38,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Feature gate: document_extraction requires Starter+
-    const canExtract = await checkFeature(context.organizationId, "document_extraction");
+    const canExtract = await checkFeature(
+      context.organizationId,
+      "document_extraction",
+    );
     if (!canExtract) {
       return apiError({
-        message: "Document extraction requires a Starter plan or above. Upgrade at /pricing.",
+        message:
+          "Document extraction requires a Starter plan or above. Upgrade at /pricing.",
         status: 403,
         code: "FEATURE_GATED",
       });
@@ -48,7 +61,7 @@ export async function POST(request: NextRequest) {
     const {
       content,
       document_ids,
-      document_roles,  // Optional: { [document_id]: DocumentRole }
+      document_roles, // Optional: { [document_id]: DocumentRole }
       content_type = "pasted",
     } = body;
 
@@ -153,7 +166,9 @@ export async function POST(request: NextRequest) {
 
       // If we have role-aware documents, build the combined content with role labels
       if (hasRoles && documentsForExtraction.length > 0) {
-        const multiDocContent = buildMultiDocumentContent(documentsForExtraction);
+        const multiDocContent = buildMultiDocumentContent(
+          documentsForExtraction,
+        );
         // Preserve any pasted content alongside role-labelled documents
         const pastedPrefix = content?.trim()
           ? `=== USER-PROVIDED CONTENT ===\n${content.trim()}\n\n`
@@ -186,31 +201,32 @@ export async function POST(request: NextRequest) {
       return badRequest(hint);
     }
 
-    // Build extraction prompt
-    const prompt = buildExtractionPrompt(
-      combinedContent,
-      document_ids?.length > 0 ? "file" : content_type,
-    );
-
     // ── Parallel AI calls ──────────────────────────────────────────────────
-    // Extraction and assumptions are independent — run them concurrently.
-    // Assumptions prompt is built from a rough flat intake derived from the
-    // raw content (not the parsed result) so it can start immediately.
-    const roughFlatIntake: Record<string, unknown> = { raw_content: combinedContent.slice(0, 3000) };
+    // Run 3 micro-extractors in parallel (quick fields, requirements, RFP
+    // structure) plus assumptions. Falls back to single-call if all 3 fail.
+    const resolvedContentType: "file" | "pasted" | "verbal" =
+      document_ids?.length > 0 ? "file" : content_type;
 
+    const roughFlatIntake: Record<string, unknown> = {
+      raw_content: combinedContent.slice(0, 3000),
+    };
     const assumptionsPromptEarly = buildAssumptionsPrompt(
       roughFlatIntake,
       "Analyze the provided RFP content",
     );
 
-    const [response, assumptionsResponseRaw] = await Promise.all([
-      generateText(prompt, {
+    const [extracted, assumptionsResponseRaw] = await Promise.all([
+      runParallelExtraction({
+        content: combinedContent,
+        contentType: resolvedContentType,
+        generateFn: generateText,
+        parseFn: extractJsonFromResponse,
         systemPrompt: EXTRACTION_SYSTEM_PROMPT,
-        temperature: 0.3,
-        maxTokens: 12288,
+        fallbackBuilder: buildExtractionPrompt,
       }),
       generateText(assumptionsPromptEarly, {
-        systemPrompt: "You are an expert proposal analyst. Respond with valid JSON only — a JSON array of assumption objects.",
+        systemPrompt:
+          "You are an expert proposal analyst. Respond with valid JSON only — a JSON array of assumption objects.",
         temperature: 0.4,
         maxTokens: 4096,
       }).catch((err) => {
@@ -221,36 +237,6 @@ export async function POST(request: NextRequest) {
       }),
     ]);
 
-    // Parse JSON response using triple-strategy extraction (same as bid-scoring)
-    let extracted: ExtractedIntake;
-    const parsed = extractJsonFromResponse(response);
-    if (!parsed) {
-      logger.error("Failed to parse extraction response after all strategies", {
-        responseLength: response?.length,
-        first200: response?.slice(0, 200),
-        last200: response?.slice(-200),
-      });
-      return serverError("Failed to parse extraction results");
-    }
-    extracted = parsed as unknown as ExtractedIntake;
-
-    // Ensure required sub-objects exist (AI may omit them for non-RFP docs like resumes)
-    if (!extracted.extracted) extracted.extracted = {} as ExtractedIntake["extracted"];
-    if (!extracted.inferred) extracted.inferred = {} as ExtractedIntake["inferred"];
-    if (!extracted.gaps) extracted.gaps = [];
-    if (!extracted.input_type) extracted.input_type = "other";
-    if (!extracted.input_summary) extracted.input_summary = "Document analyzed";
-
-    // Normalize rfp_analysis — ensure sections array and evaluation_criteria exist
-    if (extracted.rfp_analysis) {
-      if (!Array.isArray(extracted.rfp_analysis.sections)) {
-        extracted.rfp_analysis.sections = [];
-      }
-      if (!Array.isArray(extracted.rfp_analysis.evaluation_criteria)) {
-        extracted.rfp_analysis.evaluation_criteria = [];
-      }
-    }
-
     // Add source tracking
     if (document_ids?.length > 0) {
       const adminClient = createAdminClient();
@@ -258,40 +244,44 @@ export async function POST(request: NextRequest) {
         .from("documents")
         .select("id, title, file_type")
         .in("id", document_ids);
-
       extracted.source_documents = docs?.map((d) => ({
         id: d.id,
         name: d.title,
         type: d.file_type,
       }));
     }
-
     if (content) {
-      extracted.source_text = content.substring(0, 1000); // First 1000 chars as preview
+      extracted.source_text = content.substring(0, 1000);
     }
 
-    // Parse assumptions from the parallel call
-    let assumptions: Assumption[] = [];
-    if (assumptionsResponseRaw) {
-      try {
-        const assumptionsMatch = assumptionsResponseRaw.match(/```(?:json)?\s*([\s\S]*?)```/);
-        const assumptionsJson = assumptionsMatch ? assumptionsMatch[1] : assumptionsResponseRaw;
-        const parsedAssumptions = JSON.parse(assumptionsJson.trim());
-        if (Array.isArray(parsedAssumptions)) {
-          assumptions = parsedAssumptions;
-        }
-      } catch (assumptionsError) {
-        logger.warn("Failed to parse assumptions response", {
-          error: assumptionsError instanceof Error ? assumptionsError.message : String(assumptionsError),
-        });
-      }
-    }
-
+    const assumptions = parseAssumptions(assumptionsResponseRaw);
     return ok({ extracted, assumptions });
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : String(error);
-    logger.error("Extraction error", { message: errMsg, stack: error instanceof Error ? error.stack : undefined });
-    // Surface first 200 chars of actual error to client for debugging
-    return serverError(`Failed to extract intake data: ${errMsg.slice(0, 200)}`, error);
+    logger.error("Extraction error", {
+      message: errMsg,
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    return serverError(
+      `Failed to extract intake data: ${errMsg.slice(0, 200)}`,
+      error,
+    );
+  }
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function parseAssumptions(raw: string | null): Assumption[] {
+  if (!raw) return [];
+  try {
+    const match = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+    const json = match ? match[1] : raw;
+    const parsed = JSON.parse(json.trim());
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    logger.warn("Failed to parse assumptions response", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return [];
   }
 }
