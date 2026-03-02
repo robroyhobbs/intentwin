@@ -6,19 +6,43 @@
 import { useMemo } from "react";
 import { useCreateFlow } from "./create-provider";
 import { getCoachContent } from "./coach-content";
-import { ConfidencePill } from "./shared/confidence-pill";
+import { ConfidenceRing } from "./shared/confidence-ring";
+import { PhaseTimeline } from "./shared/phase-timeline";
 import { RiskFlagChip } from "./shared/risk-flag";
 import { CitationPill } from "./shared/citation-pill";
 import type { CoachContent } from "./create-types";
 
+// ── Phase tips ──────────────────────────────────────────────────────────────
+
+const PHASE_TIPS: Record<string, string> = {
+  intake:
+    "Upload your RFP or solicitation document. We'll extract key requirements, evaluation criteria, and deadlines automatically.",
+  strategy:
+    "Review the bid/no-bid score and select win themes that align with your strengths. This shapes how the proposal is framed.",
+  draft:
+    "Each section is generated based on your RFP analysis and win themes. Review sections and regenerate any that need improvement.",
+  finalize:
+    "Resolve any blockers, approve the final proposal, and export to DOCX or PDF for submission.",
+};
+
 // ── Sub-sections ────────────────────────────────────────────────────────────
+
+function TipSection({ phase }: { phase: string }) {
+  const tip = PHASE_TIPS[phase];
+  if (!tip) return null;
+  return (
+    <div className="rounded-lg bg-primary/5 border border-primary/10 p-3">
+      <p className="text-xs text-foreground/70 leading-relaxed">{tip}</p>
+    </div>
+  );
+}
 
 function WhySection({ text }: { text: string }) {
   if (!text) return null;
   return (
     <div className="space-y-1">
       <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-        Why this matters
+        Status
       </h4>
       <p className="text-sm text-foreground leading-relaxed">{text}</p>
     </div>
@@ -52,7 +76,7 @@ function RisksSection({ flags }: { flags: CoachContent["riskFlags"] }) {
   return (
     <div className="space-y-1.5">
       <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-        Risk flags
+        Attention needed
       </h4>
       <div className="flex flex-wrap gap-1.5">
         {flags.map((flag) => (
@@ -87,28 +111,6 @@ function SourcesSection({
   );
 }
 
-function ActionsSection({ actions }: { actions: CoachContent["actions"] }) {
-  if (actions.length === 0) return null;
-  return (
-    <div className="space-y-1.5">
-      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-        Actions
-      </h4>
-      <div className="flex flex-wrap gap-2">
-        {actions.map((action) => (
-          <button
-            key={action.actionType}
-            type="button"
-            className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-          >
-            {action.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ── Main Component ──────────────────────────────────────────────────────────
 
 export function DecisionCoach() {
@@ -117,18 +119,30 @@ export function DecisionCoach() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      {/* Header with timeline */}
+      <div className="space-y-3">
         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
           Decision Coach
         </h3>
-        <ConfidencePill score={state.confidence} />
+        <PhaseTimeline
+          current={state.phase}
+          completed={state.completedPhases}
+        />
       </div>
 
+      {/* Confidence ring */}
+      <div className="flex justify-center py-1">
+        <ConfidenceRing score={state.confidence} />
+      </div>
+
+      {/* Contextual tip */}
+      <TipSection phase={state.phase} />
+
+      {/* Dynamic content */}
       <WhySection text={content.whyItMatters} />
       <SignalsSection signals={content.signals} />
       <RisksSection flags={content.riskFlags} />
       <SourcesSection citations={content.citations} />
-      <ActionsSection actions={content.actions} />
     </div>
   );
 }

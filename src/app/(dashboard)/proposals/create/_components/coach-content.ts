@@ -32,16 +32,24 @@ function getIntakeCoach(state: CreateFlowState): CoachContent {
   if (state.files.length === 0 && !state.extractedData) {
     return {
       ...base,
-      whyItMatters: "Upload your RFP to get started.",
-      signals: ["No documents uploaded yet"],
+      whyItMatters: "Waiting for your RFP document to begin analysis.",
+      signals: ["Supports PDF, DOCX, TXT, and XLSX formats"],
     };
   }
 
   if (state.isExtracting) {
+    const stepLabel =
+      state.extractionStep === "uploading"
+        ? "Uploading"
+        : state.extractionStep === "processing"
+          ? "Processing document content"
+          : state.extractionStep === "extracting"
+            ? "AI is extracting key details"
+            : "Analyzing";
     return {
       ...base,
-      whyItMatters: "Analyzing your documents...",
-      signals: [`Processing ${state.files.length} file(s)`],
+      whyItMatters: stepLabel,
+      signals: [`${state.files.length} file(s) being analyzed`],
     };
   }
 
@@ -128,8 +136,9 @@ function buildStrategyContent(
   if (score < 40) {
     return {
       ...base,
-      whyItMatters: "Below typical win threshold. Consider passing or teaming.",
-      signals: [`Bid score: ${score}`, ...factorSignals],
+      whyItMatters:
+        "Score is below typical win threshold. Consider passing, teaming, or identifying a strong differentiator.",
+      signals: [`Bid score: ${score}/100`, ...factorSignals],
       riskFlags: [
         { id: "low-score", label: "Low bid score", severity: "high" },
       ],
@@ -139,8 +148,9 @@ function buildStrategyContent(
   if (score <= 70) {
     return {
       ...base,
-      whyItMatters: "Moderate fit. Review factors carefully.",
-      signals: [`Bid score: ${score}`, ...factorSignals],
+      whyItMatters:
+        "Moderate alignment. Strong win themes can bridge the gap — select themes that highlight your unique strengths.",
+      signals: [`Bid score: ${score}/100`, ...factorSignals],
       riskFlags: [
         {
           id: "moderate-score",
@@ -153,8 +163,9 @@ function buildStrategyContent(
 
   return {
     ...base,
-    whyItMatters: "Strong fit. Past performance aligns well.",
-    signals: [`Bid score: ${score}`, ...factorSignals],
+    whyItMatters:
+      "Strong alignment with opportunity. Focus win themes on your best differentiators.",
+    signals: [`Bid score: ${score}/100`, ...factorSignals],
     riskFlags: [
       { id: "good-score", label: "Strong alignment", severity: "low" },
     ],
@@ -195,9 +206,11 @@ function buildDraftGeneratingCoach(
   complete: number,
   total: number,
 ): CoachContent {
+  const pct = total > 0 ? Math.round((complete / total) * 100) : 0;
   return {
-    whyItMatters: "Sections are being generated...",
-    signals: [`${complete}/${total} sections complete`],
+    whyItMatters:
+      "AI is generating your proposal sections. Each section is tailored to your RFP and win themes.",
+    signals: [`${complete}/${total} sections complete (${pct}%)`],
     riskFlags: [],
     citations: [],
     actions: [],
@@ -232,8 +245,8 @@ function buildDraftCompleteCoach(
   return {
     whyItMatters:
       complete === total && failed === 0
-        ? "All sections generated. Review each section."
-        : `${complete}/${total} sections generated.`,
+        ? "All sections generated. Review each section before continuing to finalize."
+        : `${complete}/${total} sections generated. Review completed sections while others finish.`,
     signals: [
       `${complete}/${total} sections complete`,
       ...(failed > 0 ? [`${failed} failed`] : []),
