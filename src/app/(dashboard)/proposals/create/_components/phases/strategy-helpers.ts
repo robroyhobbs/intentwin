@@ -5,6 +5,8 @@ import type { ExtractedIntake } from "@/types/intake";
 import type { BidEvaluation } from "@/lib/ai/bid-scoring";
 import { logger } from "@/lib/utils/logger";
 
+type FetchFn = (url: string, options?: RequestInit) => Promise<Response>;
+
 // ── API response types ──────────────────────────────────────────────────────
 
 interface BidEvaluationApiResponse {
@@ -76,11 +78,12 @@ function mapWinThemes(themes: string[]): WinTheme[] {
 export async function fetchBidEvaluation(
   extractedData: ExtractedIntake,
   dispatch: Dispatch<CreateAction>,
+  fetchFn: FetchFn,
 ): Promise<void> {
   try {
     const rfpRequirements = buildRfpRequirements(extractedData);
 
-    const res = await fetch("/api/intake/bid-evaluation", {
+    const res = await fetchFn("/api/intake/bid-evaluation", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ rfp_requirements: rfpRequirements }),
@@ -88,8 +91,7 @@ export async function fetchBidEvaluation(
 
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      const msg =
-        (body as Record<string, string>).message ?? res.statusText;
+      const msg = (body as Record<string, string>).message ?? res.statusText;
       throw new Error(`Bid evaluation failed: ${msg}`);
     }
 
@@ -113,11 +115,12 @@ export async function fetchBidEvaluation(
 export async function fetchWinStrategy(
   extractedData: ExtractedIntake,
   dispatch: Dispatch<CreateAction>,
+  fetchFn: FetchFn,
 ): Promise<void> {
   try {
     const intakeData = buildIntakeData(extractedData);
 
-    const res = await fetch("/api/proposals/temp/outcomes", {
+    const res = await fetchFn("/api/proposals/temp/outcomes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ intake_data: intakeData }),
@@ -125,8 +128,7 @@ export async function fetchWinStrategy(
 
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      const msg =
-        (body as Record<string, string>).message ?? res.statusText;
+      const msg = (body as Record<string, string>).message ?? res.statusText;
       throw new Error(`Win strategy generation failed: ${msg}`);
     }
 
@@ -167,8 +169,7 @@ export function getRecommendationBadge(rec: string): {
     case "bid":
       return {
         label: "Bid",
-        className:
-          "bg-emerald-100 text-emerald-800 border border-emerald-200",
+        className: "bg-emerald-100 text-emerald-800 border border-emerald-200",
       };
     case "evaluate":
       return {

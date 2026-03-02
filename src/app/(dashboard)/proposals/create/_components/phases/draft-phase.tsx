@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { useCreateFlow } from "../create-provider";
+import { useAuthFetch } from "@/hooks/use-auth-fetch";
 import { SectionCard } from "../shared/section-card";
 import { runDraftFlow } from "./draft-helpers";
 
@@ -28,11 +29,7 @@ function SpinnerBanner({ label }: { label: string }) {
   );
 }
 
-function ErrorBanner({
-  onRetry,
-}: {
-  onRetry: () => void;
-}) {
+function ErrorBanner({ onRetry }: { onRetry: () => void }) {
   return (
     <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-start gap-3">
       <span className="text-destructive text-lg leading-none mt-0.5">!</span>
@@ -68,7 +65,9 @@ function ProgressSummary({
         <span className="font-medium">Generation Progress</span>
         <span className="text-muted-foreground">
           {completed}/{total} sections
-          {failed > 0 && <span className="text-destructive ml-1">({failed} failed)</span>}
+          {failed > 0 && (
+            <span className="text-destructive ml-1">({failed} failed)</span>
+          )}
         </span>
       </div>
       <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -104,7 +103,8 @@ function SectionList() {
           section={section}
           onMarkReviewed={handleMarkReviewed}
           defaultExpanded={
-            state.generationStatus === "complete" && section.generationStatus === "complete"
+            state.generationStatus === "complete" &&
+            section.generationStatus === "complete"
           }
         />
       ))}
@@ -134,14 +134,14 @@ function ContinueButton() {
   );
 }
 
-// ── Main component ──────────────────────────────────────────────────────────
+// ── Draft flow hook ─────────────────────────────────────────────────────────
 
-export function DraftPhase() {
+function useDraftFlow() {
   const { state, dispatch } = useCreateFlow();
+  const authFetch = useAuthFetch();
   const mountedRef = useRef(true);
   const startedRef = useRef(false);
 
-  // Cleanup on unmount
   useEffect(() => {
     mountedRef.current = true;
     return () => {
@@ -149,22 +149,33 @@ export function DraftPhase() {
     };
   }, []);
 
-  // Auto-start draft flow if no proposalId yet
   useEffect(() => {
     if (state.proposalId !== null) return;
     if (state.generationStatus !== "idle") return;
     if (startedRef.current) return;
     startedRef.current = true;
-    void runDraftFlow(state, dispatch, mountedRef);
-  }, [state, dispatch]);
+    void runDraftFlow(state, dispatch, mountedRef, authFetch);
+  }, [state, dispatch, authFetch]);
 
   const handleRetry = useCallback(() => {
     startedRef.current = true;
-    void runDraftFlow(state, dispatch, mountedRef);
-  }, [state, dispatch]);
+    void runDraftFlow(state, dispatch, mountedRef, authFetch);
+  }, [state, dispatch, authFetch]);
 
-  const completed = state.sections.filter((s) => s.generationStatus === "complete").length;
-  const failed = state.sections.filter((s) => s.generationStatus === "failed").length;
+  const completed = state.sections.filter(
+    (s) => s.generationStatus === "complete",
+  ).length;
+  const failed = state.sections.filter(
+    (s) => s.generationStatus === "failed",
+  ).length;
+
+  return { state, completed, failed, handleRetry };
+}
+
+// ── Main component ──────────────────────────────────────────────────────────
+
+export function DraftPhase() {
+  const { state, completed, failed, handleRetry } = useDraftFlow();
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -174,9 +185,10 @@ export function DraftPhase() {
         <SpinnerBanner label="Setting up your proposal..." />
       )}
 
-      {state.generationStatus === "generating" && state.sections.length === 0 && (
-        <SpinnerBanner label="Setting up your proposal..." />
-      )}
+      {state.generationStatus === "generating" &&
+        state.sections.length === 0 && (
+          <SpinnerBanner label="Setting up your proposal..." />
+        )}
 
       {state.sections.length > 0 && state.generationStatus !== "idle" && (
         <ProgressSummary

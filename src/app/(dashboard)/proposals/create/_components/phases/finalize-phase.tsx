@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { useCreateFlow } from "../create-provider";
+import { useAuthFetch } from "@/hooks/use-auth-fetch";
 import type { Blocker, CreateFlowState } from "../create-types";
 import { BlockerItem } from "../shared/blocker-item";
 import { ConfidencePill } from "../shared/confidence-pill";
@@ -181,6 +182,7 @@ function ApproveButton({
 
 export function FinalizePhase() {
   const { state, dispatch } = useCreateFlow();
+  const authFetch = useAuthFetch();
   const computedRef = useRef(false);
 
   // Auto-compute blockers on mount
@@ -217,10 +219,7 @@ export function FinalizePhase() {
     <div className="max-w-2xl mx-auto space-y-6">
       <FinalizeHeader />
       <ConfidenceDisplay score={state.confidence} />
-      <BlockerChecklist
-        blockers={state.blockers}
-        onResolve={handleResolve}
-      />
+      <BlockerChecklist blockers={state.blockers} onResolve={handleResolve} />
       <ApproveButton
         disabled={hasUnresolved}
         approved={state.finalApproved}
@@ -231,6 +230,7 @@ export function FinalizePhase() {
         enabled={state.finalApproved}
         exportedUrl={state.exportedUrl}
         onExported={handleExported}
+        fetchFn={authFetch}
       />
     </div>
   );

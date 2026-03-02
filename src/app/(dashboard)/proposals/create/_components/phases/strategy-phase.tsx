@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useCreateFlow } from "../create-provider";
+import { useAuthFetch } from "@/hooks/use-auth-fetch";
 import { logger } from "@/lib/utils/logger";
 import { fetchBidEvaluation, fetchWinStrategy } from "./strategy-helpers";
 import {
@@ -16,7 +17,9 @@ import {
 
 // ── Custom hook: auto-fetch bid evaluation ──────────────────────────────────
 
-function useBidScoring() {
+function useBidScoring(
+  authFetch: (url: string, options?: RequestInit) => Promise<Response>,
+) {
   const { state, dispatch } = useCreateFlow();
   const [isScoring, setIsScoring] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +38,7 @@ function useBidScoring() {
       setIsScoring(true);
       setError(null);
 
-      fetchBidEvaluation(data, dispatch)
+      fetchBidEvaluation(data, dispatch, authFetch)
         .catch((err: unknown) => {
           const msg = err instanceof Error ? err.message : "Scoring failed";
           setError(msg);
@@ -43,7 +46,7 @@ function useBidScoring() {
         })
         .finally(() => setIsScoring(false));
     });
-  }, [state.bidEvaluation, state.extractedData, dispatch]);
+  }, [state.bidEvaluation, state.extractedData, dispatch, authFetch]);
 
   const retry = useCallback(() => {
     if (!state.extractedData) return;
@@ -51,20 +54,22 @@ function useBidScoring() {
     setError(null);
     setIsScoring(true);
 
-    fetchBidEvaluation(state.extractedData, dispatch)
+    fetchBidEvaluation(state.extractedData, dispatch, authFetch)
       .catch((err: unknown) => {
         const msg = err instanceof Error ? err.message : "Scoring failed";
         setError(msg);
       })
       .finally(() => setIsScoring(false));
-  }, [state.extractedData, dispatch]);
+  }, [state.extractedData, dispatch, authFetch]);
 
   return { isScoring, error, retry };
 }
 
 // ── Custom hook: auto-fetch win strategy ────────────────────────────────────
 
-function useWinStrategy() {
+function useWinStrategy(
+  authFetch: (url: string, options?: RequestInit) => Promise<Response>,
+) {
   const { state, dispatch } = useCreateFlow();
   const [isGenerating, setIsGenerating] = useState(false);
   const inflightRef = useRef(false);
@@ -81,7 +86,7 @@ function useWinStrategy() {
     queueMicrotask(() => {
       setIsGenerating(true);
 
-      fetchWinStrategy(data, dispatch)
+      fetchWinStrategy(data, dispatch, authFetch)
         .catch((err: unknown) => {
           const msg =
             err instanceof Error ? err.message : "Theme generation failed";
@@ -95,6 +100,7 @@ function useWinStrategy() {
     state.winThemes.length,
     state.extractedData,
     dispatch,
+    authFetch,
   ]);
 
   return { isGenerating };
@@ -153,8 +159,9 @@ function ScoredView({ isGenerating }: { isGenerating: boolean }) {
 
 export function StrategyPhase() {
   const { state } = useCreateFlow();
-  const { isScoring, error, retry } = useBidScoring();
-  const { isGenerating } = useWinStrategy();
+  const authFetch = useAuthFetch();
+  const { isScoring, error, retry } = useBidScoring(authFetch);
+  const { isGenerating } = useWinStrategy(authFetch);
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">

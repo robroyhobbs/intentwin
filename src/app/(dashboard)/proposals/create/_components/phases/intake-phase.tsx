@@ -7,6 +7,7 @@ import {
   uploadAndExtract,
   getExtractionSummary,
 } from "./intake-helpers";
+import { useAuthFetch } from "@/hooks/use-auth-fetch";
 import { logger } from "@/lib/utils/logger";
 
 // ── Small presentational pieces ─────────────────────────────────────────────
@@ -224,19 +225,21 @@ function IntakeSuccessView({ onContinue }: { onContinue: () => void }) {
 
 export function IntakePhase() {
   const { state, dispatch } = useCreateFlow();
+  const authFetch = useAuthFetch();
 
   const handleFiles = useCallback(
     (files: File[]) => {
       dispatch({ type: "SET_FILES", files });
       logger.info("Intake: files selected", { count: files.length });
-      void uploadAndExtract(files, dispatch);
+      void uploadAndExtract(files, dispatch, authFetch);
     },
-    [dispatch],
+    [dispatch, authFetch],
   );
 
   const handleRetry = useCallback(() => {
-    if (state.files.length > 0) void uploadAndExtract(state.files, dispatch);
-  }, [state.files, dispatch]);
+    if (state.files.length > 0)
+      void uploadAndExtract(state.files, dispatch, authFetch);
+  }, [state.files, dispatch, authFetch]);
 
   const handleContinue = useCallback(() => {
     dispatch({ type: "COMPLETE_PHASE", phase: "intake" });

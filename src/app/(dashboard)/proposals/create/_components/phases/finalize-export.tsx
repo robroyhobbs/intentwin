@@ -3,6 +3,8 @@
 import { useCallback, useState } from "react";
 import { logger } from "@/lib/utils/logger";
 
+type FetchFn = (url: string, options?: RequestInit) => Promise<Response>;
+
 // ── Export API call ─────────────────────────────────────────────────────────
 
 interface ExportResult {
@@ -12,8 +14,9 @@ interface ExportResult {
 async function callExportApi(
   proposalId: string,
   format: "docx" | "pdf",
+  fetchFn: FetchFn,
 ): Promise<ExportResult> {
-  const res = await fetch(`/api/proposals/${proposalId}/export`, {
+  const res = await fetchFn(`/api/proposals/${proposalId}/export`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ format }),
@@ -78,21 +81,13 @@ function DownloadLink({ url }: { url: string }) {
   );
 }
 
-// ── Export buttons panel ─────────────────────────────────────────────────────
+// ── Export hook ──────────────────────────────────────────────────────────────
 
-export interface ExportButtonsProps {
-  proposalId: string | null;
-  enabled: boolean;
-  exportedUrl: string | null;
-  onExported: (url: string) => void;
-}
-
-export function ExportButtons({
-  proposalId,
-  enabled,
-  exportedUrl,
-  onExported,
-}: ExportButtonsProps) {
+function useExport(
+  proposalId: string | null,
+  onExported: (url: string) => void,
+  fetchFn: FetchFn,
+) {
   const [exporting, setExporting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -103,7 +98,7 @@ export function ExportButtons({
       setError(null);
 
       try {
-        const result = await callExportApi(proposalId, format);
+        const result = await callExportApi(proposalId, format, fetchFn);
         onExported(result.downloadUrl);
         logger.info("Finalize: export complete", { format, proposalId });
       } catch (err) {
@@ -115,13 +110,38 @@ export function ExportButtons({
         setExporting(null);
       }
     },
-    [proposalId, onExported],
+    [proposalId, onExported, fetchFn],
+  );
+
+  return { exporting, error, handleExport };
+}
+
+// ── Export buttons panel ─────────────────────────────────────────────────────
+
+export interface ExportButtonsProps {
+  proposalId: string | null;
+  enabled: boolean;
+  exportedUrl: string | null;
+  onExported: (url: string) => void;
+  fetchFn: FetchFn;
+}
+
+export function ExportButtons({
+  proposalId,
+  enabled,
+  exportedUrl,
+  onExported,
+  fetchFn,
+}: ExportButtonsProps) {
+  const { exporting, error, handleExport } = useExport(
+    proposalId,
+    onExported,
+    fetchFn,
   );
 
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-semibold">Export</h3>
-
       <div className="flex items-center gap-3">
         <ExportBtn
           label="Export DOCX"
@@ -136,9 +156,7 @@ export function ExportButtons({
           onClick={() => void handleExport("pdf")}
         />
       </div>
-
       {error && <p className="text-xs text-destructive">{error}</p>}
-
       {exportedUrl && <DownloadLink url={exportedUrl} />}
     </div>
   );

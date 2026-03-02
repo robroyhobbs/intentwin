@@ -3,6 +3,8 @@ import type { CreateAction } from "../create-types";
 import type { ExtractedIntake } from "@/types/intake";
 import { logger } from "@/lib/utils/logger";
 
+type FetchFn = (url: string, options?: RequestInit) => Promise<Response>;
+
 const ACCEPTED_EXTENSIONS = [".pdf", ".docx", ".txt", ".xlsx"];
 const POLL_INTERVAL_MS = 2_000;
 const POLL_TIMEOUT_MS = 60_000;
@@ -36,13 +38,13 @@ export function filterValidFiles(files: FileList | File[]): File[] {
 
 // ── Upload a single file ────────────────────────────────────────────────────
 
-async function uploadSingleFile(file: File): Promise<string> {
+async function uploadSingleFile(file: File, fetchFn: FetchFn): Promise<string> {
   const formData = new FormData();
   formData.append("file", file);
   formData.append("title", file.name);
   formData.append("document_type", "rfp");
 
-  const res = await fetch("/api/documents/upload", {
+  const res = await fetchFn("/api/documents/upload", {
     method: "POST",
     body: formData,
   });
@@ -59,11 +61,14 @@ async function uploadSingleFile(file: File): Promise<string> {
 
 // ── Poll until document processing completes ────────────────────────────────
 
-async function pollDocumentReady(docId: string): Promise<void> {
+async function pollDocumentReady(
+  docId: string,
+  fetchFn: FetchFn,
+): Promise<void> {
   const deadline = Date.now() + POLL_TIMEOUT_MS;
 
   while (Date.now() < deadline) {
-    const res = await fetch(`/api/documents/${docId}`);
+    const res = await fetchFn(`/api/documents/${docId}`);
     if (!res.ok) {
       throw new Error(`Failed to check document status: ${res.statusText}`);
     }
@@ -84,8 +89,9 @@ async function pollDocumentReady(docId: string): Promise<void> {
 
 async function runExtraction(
   docIds: string[],
+  fetchFn: FetchFn,
 ): Promise<ExtractionResponse> {
-  const res = await fetch("/api/intake/extract", {
+  const res = await fetchFn("/api/intake/extract", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ document_ids: docIds }),
@@ -105,6 +111,7 @@ async function runExtraction(
 export async function uploadAndExtract(
   files: File[],
   dispatch: Dispatch<CreateAction>,
+  fetchFn: FetchFn,
 ): Promise<void> {
   dispatch({ type: "EXTRACTION_START" });
 
@@ -112,16 +119,16 @@ export async function uploadAndExtract(
     // 1. Upload all files sequentially
     const docIds: string[] = [];
     for (const file of files) {
-      const id = await uploadSingleFile(file);
+      const id = await uploadSingleFile(file, fetchFn);
       docIds.push(id);
     }
     dispatch({ type: "SET_UPLOADED_DOC_IDS", ids: docIds });
 
     // 2. Poll each document until processing completes
-    await Promise.all(docIds.map(pollDocumentReady));
+    await Promise.all(docIds.map((id) => pollDocumentReady(id, fetchFn)));
 
     // 3. Run extraction across all documents
-    const result = await runExtraction(docIds);
+    const result = await runExtraction(docIds, fetchFn);
     dispatch({
       type: "EXTRACTION_SUCCESS",
       payload: { extracted: result.extracted },
@@ -145,10 +152,14 @@ export function getExtractionSummary(data: ExtractedIntake) {
   const e = data.extracted;
   return {
     clientName: e.client_name?.value ?? "Unknown",
-    solicitationType: e.solicitation_type?.value ?? e.opportunity_type?.value ?? "Not specified",
+    solicitationType:
+      e.solicitation_type?.value ??
+      e.opportunity_type?.value ??
+      "Not specified",
     requirementsCount: e.key_requirements?.value?.length ?? 0,
     budgetRange: e.budget_range?.value ?? "Not specified",
-    criticalGaps: data.gaps?.filter((g) => g.importance === "critical").length ?? 0,
+    criticalGaps:
+      data.gaps?.filter((g) => g.importance === "critical").length ?? 0,
   };
 }
 

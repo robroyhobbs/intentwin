@@ -1,6 +1,12 @@
 import type { Dispatch } from "react";
-import type { CreateAction, CreateFlowState, SectionDraft } from "../create-types";
+import type {
+  CreateAction,
+  CreateFlowState,
+  SectionDraft,
+} from "../create-types";
 import { logger } from "@/lib/utils/logger";
+
+type FetchFn = (url: string, options?: RequestInit) => Promise<Response>;
 
 // ── Constants ───────────────────────────────────────────────────────────────
 
@@ -115,10 +121,11 @@ export function buildProposalPayload(state: CreateFlowState): {
 export async function createProposal(
   state: CreateFlowState,
   dispatch: Dispatch<CreateAction>,
+  fetchFn: FetchFn,
 ): Promise<string> {
   const payload = buildProposalPayload(state);
 
-  const res = await fetch("/api/proposals", {
+  const res = await fetchFn("/api/proposals", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -139,8 +146,11 @@ export async function createProposal(
 
 // ── Trigger generation ──────────────────────────────────────────────────────
 
-export async function triggerGeneration(proposalId: string): Promise<void> {
-  const res = await fetch(`/api/proposals/${proposalId}/generate`, {
+export async function triggerGeneration(
+  proposalId: string,
+  fetchFn: FetchFn,
+): Promise<void> {
+  const res = await fetchFn(`/api/proposals/${proposalId}/generate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
   });
@@ -169,8 +179,9 @@ export async function triggerGeneration(proposalId: string): Promise<void> {
 function allTerminal(sections: ApiSection[]): boolean {
   return (
     sections.length > 0 &&
-    sections.every((s) =>
-      s.generation_status === "completed" || s.generation_status === "failed",
+    sections.every(
+      (s) =>
+        s.generation_status === "completed" || s.generation_status === "failed",
     )
   );
 }
@@ -183,6 +194,7 @@ export async function pollSections(
   proposalId: string,
   dispatch: Dispatch<CreateAction>,
   mountedRef: { current: boolean },
+  fetchFn: FetchFn,
 ): Promise<void> {
   const deadline = Date.now() + POLL_TIMEOUT_MS;
   let interval = POLL_INITIAL_MS;
@@ -190,7 +202,7 @@ export async function pollSections(
   while (Date.now() < deadline) {
     if (!mountedRef.current) return;
 
-    const res = await fetch(`/api/proposals/${proposalId}`);
+    const res = await fetchFn(`/api/proposals/${proposalId}`);
     if (!res.ok) {
       logger.warn("Poll request failed", { proposalId, status: res.status });
       await delay(interval);
@@ -230,20 +242,22 @@ export async function runDraftFlow(
   state: CreateFlowState,
   dispatch: Dispatch<CreateAction>,
   mountedRef: { current: boolean },
+  fetchFn: FetchFn,
 ): Promise<void> {
   dispatch({ type: "GENERATION_START" });
 
   try {
-    const proposalId = await createProposal(state, dispatch);
+    const proposalId = await createProposal(state, dispatch, fetchFn);
     if (!mountedRef.current) return;
 
-    await triggerGeneration(proposalId);
+    await triggerGeneration(proposalId, fetchFn);
     if (!mountedRef.current) return;
 
-    await pollSections(proposalId, dispatch, mountedRef);
+    await pollSections(proposalId, dispatch, mountedRef, fetchFn);
   } catch (err) {
     if (!mountedRef.current) return;
-    const message = err instanceof Error ? err.message : "Draft generation failed";
+    const message =
+      err instanceof Error ? err.message : "Draft generation failed";
     logger.error("Draft flow error", err, { message });
     dispatch({ type: "GENERATION_FAIL" });
   }
