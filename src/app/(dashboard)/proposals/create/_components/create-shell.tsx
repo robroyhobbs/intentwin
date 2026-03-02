@@ -5,6 +5,7 @@ import { PhaseStrip } from "./phase-strip";
 import { IntakePhase } from "./phases/intake-phase";
 import { StrategyPhase } from "./phases/strategy-phase";
 import { DraftPhase } from "./phases/draft-phase";
+import { DecisionCoach } from "./decision-coach";
 
 export function CreateShell() {
   const { state } = useCreateFlow();
@@ -32,12 +33,7 @@ export function CreateShell() {
 
       {/* Decision Coach panel */}
       <aside className="w-[340px] border-l border-border bg-card overflow-auto p-6 shrink-0 hidden lg:block">
-        <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-          Decision Coach
-        </div>
-        <div className="text-sm text-muted-foreground">
-          Contextual guidance will appear here.
-        </div>
+        <DecisionCoach />
       </aside>
     </div>
   );
