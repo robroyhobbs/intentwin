@@ -1,6 +1,7 @@
 // ── Coach Insights & Prompts ── Deep data surfacing for Decision Coach ──────
 // Builds structured insight rows and gap-filling prompts from state data.
 
+import { SCORING_FACTORS } from "@/lib/ai/bid-scoring";
 import type {
   CoachInsight,
   CoachPrompt,
