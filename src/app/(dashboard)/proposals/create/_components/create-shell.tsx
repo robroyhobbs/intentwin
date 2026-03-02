@@ -5,6 +5,7 @@ import { PhaseStrip } from "./phase-strip";
 import { IntakePhase } from "./phases/intake-phase";
 import { StrategyPhase } from "./phases/strategy-phase";
 import { DraftPhase } from "./phases/draft-phase";
+import { FinalizePhase } from "./phases/finalize-phase";
 import { DecisionCoach } from "./decision-coach";
 
 export function CreateShell() {
@@ -23,11 +24,7 @@ export function CreateShell() {
           {state.phase === "intake" && <IntakePhase />}
           {state.phase === "strategy" && <StrategyPhase />}
           {state.phase === "draft" && <DraftPhase />}
-          {state.phase === "finalize" && (
-            <div className="text-muted-foreground text-sm">
-              Finalize phase -- coming in Task 8
-            </div>
-          )}
+          {state.phase === "finalize" && <FinalizePhase />}
         </div>
       </div>
 
