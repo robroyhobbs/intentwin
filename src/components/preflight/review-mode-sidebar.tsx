@@ -20,20 +20,26 @@ interface ReviewModeSidebarProps {
 
 /**
  * Regex patterns for detecting placeholders in generated content.
- * Matches:
- * - [CASE STUDY NEEDED: ...]
- * - [TEAM MEMBER NEEDED: ...]
- * - {signatory_name}, {signatory_title}, {date}, {client_name}
- * - $TBD
+ * Matches known markers AND catch-all patterns for AI-generated brackets.
  */
 const PLACEHOLDER_PATTERNS = [
+  // Known structured markers
   /\[CASE STUDY NEEDED:[^\]]*\]/g,
   /\[TEAM MEMBER NEEDED:[^\]]*\]/g,
+  /\[PRODUCT NEEDED:[^\]]*\]/g,
+  // Known merge fields
   /\{signatory_name\}/g,
   /\{signatory_title\}/g,
   /\{date\}/g,
   /\{client_name\}/g,
   /\$TBD/g,
+  // Catch-all: AI-generated square bracket placeholders
+  // Matches [Insert X], [TBD], [Verify X], [Client Name], [Your X], [Add X], etc.
+  /\[(?:Insert|TBD|TODO|Verify|VERIFY|Check|Confirm|Add|Your|Needs?|Provide|Specify|Enter|Fill|Include|Update|Replace|Placeholder)[^\]]*\]/gi,
+  // Catch-all: any [ALL CAPS TEXT] that looks like a placeholder (3+ chars)
+  /\[[A-Z][A-Z\s]{2,}[A-Z]\]/g,
+  // Catch-all: curly brace placeholders like {pricing_details}, {company_name}, etc.
+  /\{[a-z][a-z_]{2,}\}/g,
 ];
 
 /**
@@ -70,9 +76,7 @@ function extractPlaceholders(sections: Section[]): PlaceholderItem[] {
  * A placeholder is resolved if it appeared in generated_content but
  * is no longer present in edited_content.
  */
-function markResolvedPlaceholders(
-  sections: Section[],
-): PlaceholderItem[] {
+function markResolvedPlaceholders(sections: Section[]): PlaceholderItem[] {
   const items: PlaceholderItem[] = [];
 
   for (const section of sections) {

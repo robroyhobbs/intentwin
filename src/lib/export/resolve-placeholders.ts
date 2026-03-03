@@ -178,7 +178,21 @@ export function resolvePlaceholders(
   result = result.replace(/\[PRODUCT NEEDED:[^\]]*\]/g, "");
   result = result.replace(/\$TBD/g, "");
 
-  // 5. Clean up double-blank-lines from stripped markers
+  // 5. Strip AI-generated bracket placeholders that slipped through prompt rules
+  // [Insert X], [TBD], [Verify X], [Your X], [Add X], [Needs X], etc.
+  result = result.replace(
+    /\[(?:Insert|TBD|TODO|Verify|VERIFY|Check|Confirm|Add|Your|Needs?|Provide|Specify|Enter|Fill|Include|Update|Replace|Placeholder)[^\]]*\]/gi,
+    "",
+  );
+  // [ALL CAPS PLACEHOLDER] patterns (3+ chars)
+  result = result.replace(/\[[A-Z][A-Z\s]{2,}[A-Z]\]/g, "");
+  // {unknown_merge_field} patterns (not already handled above)
+  result = result.replace(
+    /\{(?!date\}|client_name\}|signatory_name\}|signatory_title\})[a-z][a-z_]{2,}\}/g,
+    "",
+  );
+
+  // 6. Clean up double-blank-lines from stripped markers
   result = result.replace(/\n{3,}/g, "\n\n");
 
   return result;

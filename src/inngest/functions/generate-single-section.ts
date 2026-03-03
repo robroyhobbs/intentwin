@@ -429,6 +429,17 @@ ${buildEditorialStandards(solicitationType, ctx.audienceProfile, ctx.primaryBran
         .trim();
     }
 
+    // Strip AI-generated bracket placeholders that violate editorial rules.
+    // Known markers ([CASE STUDY NEEDED], {signatory_name}, etc.) are preserved
+    // for the review sidebar to surface — only unexpected AI brackets are removed.
+    generatedContent = generatedContent
+      .replace(
+        /\[(?:Insert|TBD|TODO|Verify|VERIFY|Check|Confirm|Add|Your|Needs?|Provide|Specify|Enter|Fill|Include|Update|Replace|Placeholder)[^\]]*\]/gi,
+        "",
+      )
+      .replace(/\[[A-Z][A-Z\s]{2,}[A-Z]\]/g, "")
+      .replace(/\n{3,}/g, "\n\n");
+
     // Editorial pass disabled — prompt engineering handles formatting/quality.
     // Re-enable if output quality needs a second polish pass:
     // const companyName = (ctx.companyInfo?.name as string) || "Our Company";
