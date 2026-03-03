@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useCreateFlow } from "../create-provider";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
 import { SectionCard } from "../shared/section-card";
@@ -60,14 +60,59 @@ function ErrorBanner({ onRetry }: { onRetry: () => void }) {
   );
 }
 
+function ElapsedTime() {
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    const start = Date.now();
+    const timer = setInterval(() => {
+      setElapsed(Math.floor((Date.now() - start) / 1000));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+  const minutes = Math.floor(elapsed / 60);
+  const seconds = elapsed % 60;
+  const label = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+  return (
+    <span className="text-xs text-muted-foreground tabular-nums">{label}</span>
+  );
+}
+
+function RetryFailedButton() {
+  const { state, dispatch } = useCreateFlow();
+  const authFetch = useAuthFetch();
+  const failedSections = state.sections.filter(
+    (s) => s.generationStatus === "failed",
+  );
+
+  const handleRetryAll = useCallback(() => {
+    if (!state.proposalId) return;
+    for (const section of failedSections) {
+      void regenerateSection(state.proposalId, section.id, dispatch, authFetch);
+    }
+  }, [state.proposalId, failedSections, dispatch, authFetch]);
+
+  if (failedSections.length === 0) return null;
+
+  return (
+    <button
+      onClick={handleRetryAll}
+      className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
+    >
+      Retry {failedSections.length} failed section(s)
+    </button>
+  );
+}
+
 function ProgressSummary({
   total,
   completed,
   failed,
+  isGenerating,
 }: {
   total: number;
   completed: number;
   failed: number;
+  isGenerating: boolean;
 }) {
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
 
@@ -75,16 +120,19 @@ function ProgressSummary({
     <div className="rounded-lg border border-border bg-card p-4">
       <div className="flex items-center justify-between text-sm mb-2">
         <span className="font-medium">Generation Progress</span>
-        <span className="text-muted-foreground">
-          {completed}/{total} sections
-          {failed > 0 && (
-            <span className="text-destructive ml-1">({failed} failed)</span>
-          )}
-        </span>
+        <div className="flex items-center gap-2">
+          {isGenerating && <ElapsedTime />}
+          <span className="text-muted-foreground">
+            {completed}/{total} sections
+            {failed > 0 && (
+              <span className="text-destructive ml-1">({failed} failed)</span>
+            )}
+          </span>
+        </div>
       </div>
       <div className="h-2 bg-muted rounded-full overflow-hidden">
         <div
-          className="h-full bg-primary rounded-full transition-all duration-500"
+          className={`h-full bg-primary rounded-full transition-all duration-500 ${isGenerating ? "animate-glow-pulse" : ""}`}
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -236,16 +284,17 @@ export function DraftPhase() {
           total={state.sections.length}
           completed={completed}
           failed={failed}
+          isGenerating={state.generationStatus === "generating"}
         />
-      )}
-
-      {state.generationStatus === "failed" && state.sections.length === 0 && (
-        <ErrorBanner onRetry={handleRetry} />
       )}
 
       <SectionList />
 
-      {state.generationStatus === "failed" && state.sections.length > 0 && (
+      {state.generationStatus === "complete" && failed > 0 && (
+        <RetryFailedButton />
+      )}
+
+      {state.generationStatus === "failed" && state.sections.length === 0 && (
         <ErrorBanner onRetry={handleRetry} />
       )}
 
