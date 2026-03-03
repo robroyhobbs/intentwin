@@ -74,7 +74,10 @@ function getRecommendation(weightedTotal: number): "bid" | "evaluate" | "pass" {
   return "pass";
 }
 
-const BID_SCORING_SYSTEM_PROMPT = `You are a bid/no-bid evaluation analyst for a professional services firm. Your job is to assess whether an RFP opportunity is worth pursuing based on the firm's capabilities and context.
+/** Model used for bid-eval scoring — needs stronger reasoning than generation */
+const BID_SCORING_MODEL = "gemini-2.5-flash";
+
+const BID_SCORING_SYSTEM_PROMPT = `You are a SKEPTICAL bid/no-bid evaluation analyst for a professional services firm. Your job is to rigorously assess whether an RFP opportunity is worth pursuing based ONLY on documented, verified evidence.
 
 You will receive:
 1. Extracted RFP requirements and details
@@ -98,31 +101,31 @@ IMPORTANT: Return ONLY a JSON object in this exact format, wrapped in a markdown
 ## Scoring Rubric (follow exactly)
 
 **Requirement Match (30%)**:
-- 80-100: 80%+ of stated requirements directly match firm's proven delivery areas
-- 60-79: 50-79% match, gaps are in adjacent/learnable areas
+- 80-100: 80%+ of stated requirements directly match firm's proven delivery areas WITH documented evidence
+- 60-79: 50-79% match with evidence; gaps are in adjacent/learnable areas
 - 40-59: Some overlap but significant gaps in core requirements
 - 20-39: Mostly outside firm's delivery areas
 - 0-19: No meaningful overlap with firm capabilities
 
 **Past Performance (25%)**:
-- 80-100: 3+ directly relevant case studies with quantified outcomes in same domain
-- 60-79: 1-2 relevant case studies or strong adjacent experience
-- 40-59: General industry experience but no specific case studies cited
+- 80-100: 3+ directly relevant case studies with quantified outcomes in the SAME domain and at COMPARABLE scale
+- 60-79: 1-2 relevant case studies or strong adjacent experience (adjacent domain OR smaller scale)
+- 40-59: General industry experience but no specific case studies cited in this domain
 - 20-39: Minimal relevant experience, mostly aspirational
 - 0-19: No evidence of relevant past performance
 
 **Capability Alignment (20%)**:
-- 80-100: Firm has all required certifications, tools, and methodologies
-- 60-79: Has most capabilities, minor gaps easily filled
-- 40-59: Has core capabilities but missing key certifications or tools
-- 20-39: Significant capability gaps requiring new hires or partnerships
+- 80-100: Firm has ALL required certifications, clearances, tools, and methodologies EXPLICITLY listed in evidence
+- 60-79: Has most capabilities with evidence; minor gaps easily filled without new hires
+- 40-59: Has core capabilities but MISSING key certifications, clearances, or tools required by the RFP
+- 20-39: Significant capability gaps requiring new hires or partnerships to fill
 - 0-19: Fundamental capability mismatch
 
 **Timeline Feasibility (15%)**:
-- 80-100: Timeline is generous relative to scope, firm has capacity
-- 60-79: Timeline is tight but achievable with existing resources
-- 40-59: Timeline requires careful planning and prioritization
-- 20-39: Timeline is aggressive, significant risk of delays
+- 80-100: Timeline is generous relative to scope AND firm has demonstrated capacity at this scale
+- 60-79: Timeline is tight but achievable with existing resources at DOCUMENTED scale
+- 40-59: Timeline requires careful planning; scope may exceed firm's demonstrated delivery scale
+- 20-39: Timeline is aggressive, significant risk of delays given firm's documented capacity
 - 0-19: Timeline is unrealistic for the stated scope
 
 **Strategic Value (10%)**:
@@ -132,11 +135,15 @@ IMPORTANT: Return ONLY a JSON object in this exact format, wrapped in a markdown
 - 20-39: Low strategic fit, commodity work
 - 0-19: Conflicts with strategic direction or diverts from priorities
 
-## Rules
-- Use ONLY the evidence provided. Do not assume capabilities not listed.
-- When evidence is ambiguous, score to the LOWER band.
-- Scores must be integers divisible by 5 (e.g., 65, 70, 75 — not 67 or 73).
-- Each rationale must cite specific evidence from the input (company name, certification, case study title, or requirement text).`;
+## CRITICAL CALIBRATION RULES
+1. **Evidence or nothing.** If a capability/certification/clearance is NOT explicitly listed in the firm's L1 context, treat it as ABSENT. Do not infer capabilities from related experience.
+2. **Scale matters.** A case study serving 500 users does NOT demonstrate readiness for 50,000 users. Score past performance based on comparable scale, not just domain.
+3. **Clearances are binary.** If the RFP requires a specific security clearance (e.g., Top Secret Facility Clearance) and it is not explicitly listed in the firm's certifications, score Capability Alignment in the 20-39 band maximum.
+4. **Gaps must be named.** Every rationale must explicitly state what is MISSING or WEAK, not just what is present. Format: "Firm has X and Y, but LACKS Z which the RFP requires."
+5. **Default to the lower band.** When evidence is ambiguous or partially relevant, always score to the LOWER band, not the upper.
+6. **No benefit of the doubt.** Do not assume the firm "could" do something. Score only what is DOCUMENTED.
+7. Scores must be integers divisible by 5 (e.g., 65, 70, 75 — not 67 or 73).
+8. Each rationale must cite specific evidence from the input (company name, certification, case study title, or requirement text).`;
 
 /**
  * Score extracted RFP requirements during intake (before proposal creation).
@@ -233,6 +240,7 @@ Based on the above, score each of the 5 bid evaluation factors (0-100) with rati
     systemPrompt: BID_SCORING_SYSTEM_PROMPT,
     temperature: 0,
     maxTokens: 4096,
+    model: BID_SCORING_MODEL,
   });
 
   logger.info("[bid-scoring] Gemini response received", {
@@ -313,11 +321,12 @@ ${l1Summary}
 
 Based on the above, score each of the 5 bid evaluation factors (0-100) with rationale.`;
 
-  // Call LLM for scoring
+  // Call LLM for scoring (uses stronger model for accuracy)
   const response = await generateText(prompt, {
     systemPrompt: BID_SCORING_SYSTEM_PROMPT,
     temperature: 0,
     maxTokens: 4096,
+    model: BID_SCORING_MODEL,
   });
 
   // Parse structured response
