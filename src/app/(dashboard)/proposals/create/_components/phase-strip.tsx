@@ -57,7 +57,7 @@ function PhaseItem(props: PhaseItemProps) {
     <div className="flex items-center shrink-0">
       {index > 0 && (
         <div
-          className={`w-8 sm:w-12 h-0.5 transition-colors duration-500 ${
+          className={`w-8 sm:w-12 h-1 rounded-full transition-colors duration-500 ${
             isCompleted || isActive ? "bg-[var(--accent)]" : "bg-border"
           }`}
         />
@@ -65,14 +65,14 @@ function PhaseItem(props: PhaseItemProps) {
       <button
         onClick={() => reachable && onSelect(phaseKey)}
         disabled={!reachable}
-        className={`flex items-center gap-2 sm:gap-3 transition-all ${
-          !reachable ? "cursor-not-allowed opacity-40" : "cursor-pointer"
-        }`}
+        className={`flex items-center gap-2 sm:gap-3 rounded-lg px-2 py-1.5 transition-all ${
+          !reachable
+            ? "cursor-not-allowed opacity-40"
+            : "cursor-pointer hover:bg-[var(--background-tertiary)]"
+        } ${isActive ? "shadow-[0_0_12px_rgba(192,132,252,0.4)]" : ""}`}
       >
         <PhaseIcon phase={phaseKey} state={iconState} size="sm" />
-        <span
-          className={`text-xs sm:text-sm font-medium transition-colors ${labelCls}`}
-        >
+        <span className={`text-sm font-medium transition-colors ${labelCls}`}>
           {label}
         </span>
       </button>

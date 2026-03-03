@@ -13,8 +13,8 @@ import { ScoreBar } from "../shared/score-bar";
 
 export function SpinnerOverlay({ label }: { label: string }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-border bg-card p-12">
-      <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+    <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-border bg-card p-12 animate-fade-in">
+      <div className="h-10 w-10 animate-spin rounded-full border-3 border-[var(--accent)]/20 border-t-[var(--accent)]" />
       <p className="text-sm text-muted-foreground">{label}</p>
     </div>
   );
@@ -154,10 +154,10 @@ export function WinThemeChips({
           <button
             key={theme.id}
             onClick={() => onToggle(theme.id)}
-            className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
+            className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-all ${
               theme.confirmed
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground"
+                ? "bg-primary text-primary-foreground shadow-sm border border-[var(--success)]"
+                : "bg-muted text-muted-foreground border border-dashed border-[var(--border)] opacity-80 hover:opacity-100"
             }`}
           >
             {theme.label}

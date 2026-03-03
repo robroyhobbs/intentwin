@@ -56,14 +56,18 @@ export function VerdictCard({ verdict }: VerdictCardProps) {
   return (
     <div
       data-testid="verdict-card"
-      className={`rounded-lg border border-border border-l-4 ${cfg.borderColor} ${cfg.bgColor} p-4 animate-fade-in`}
+      className={`rounded-lg border border-border border-l-4 ${cfg.borderColor} ${cfg.bgColor} p-4 animate-fade-in-up`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1">
           <h4 className="text-lg font-bold text-foreground">{cfg.label}</h4>
-          <p className="text-sm text-muted-foreground mt-1">{cfg.description}</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {cfg.description}
+          </p>
         </div>
-        <div className={`h-9 w-9 rounded-lg ${cfg.iconBg} flex items-center justify-center shrink-0`}>
+        <div
+          className={`h-9 w-9 rounded-lg ${cfg.iconBg} flex items-center justify-center shrink-0`}
+        >
           <Icon size={18} className={cfg.iconColor} />
         </div>
       </div>

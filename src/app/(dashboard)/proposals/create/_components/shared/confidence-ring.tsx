@@ -65,7 +65,7 @@ export function ConfidenceRing({ score, size = 80 }: ConfidenceRingProps) {
               strokeLinecap="round"
               strokeDasharray={circumference}
               strokeDashoffset={offset}
-              className="transition-all duration-700 ease-out"
+              style={{ transition: "stroke-dashoffset 1s ease-out 0.3s" }}
             />
           )}
         </svg>

@@ -90,26 +90,31 @@ export function DropZone({ onFiles }: { onFiles: (files: File[]) => void }) {
   );
 
   const border = dragOver
-    ? "border-primary bg-primary/5"
-    : "border-border hover:border-primary/50";
+    ? "border-[var(--accent)] bg-[var(--accent-subtle)] shadow-[var(--shadow-glow)]"
+    : "border-border hover:border-[var(--accent)]/50";
 
   return (
     <div
-      onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+      onDragOver={(e) => {
+        e.preventDefault();
+        setDragOver(true);
+      }}
       onDragLeave={() => setDragOver(false)}
       onDrop={handleDrop}
       onClick={openPicker}
       role="button"
       aria-label="Upload RFP documents. Supports PDF, DOCX, TXT, and XLSX."
       tabIndex={0}
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") openPicker(); }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") openPicker();
+      }}
       className={`flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-12 cursor-pointer transition-colors ${border}`}
     >
       <UploadIcon />
       <p className="text-sm font-medium">
         Drag and drop your RFP files here, or click to browse
       </p>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-sm text-muted-foreground">
         Supported: PDF, DOCX, TXT, XLSX
       </p>
       <input

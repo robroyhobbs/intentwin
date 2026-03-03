@@ -25,11 +25,11 @@ export function PhaseTimeline({ current, completed }: PhaseTimelineProps) {
           <div key={phase.key} className="flex items-center">
             {idx > 0 && (
               <div
-                className={`h-0.5 w-4 ${isDone || isCurrent ? "bg-primary" : "bg-muted"}`}
+                className={`h-1 w-4 rounded-full ${isDone || isCurrent ? "bg-primary" : "bg-muted"}`}
               />
             )}
             <div
-              className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold shrink-0 ${
+              className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold shrink-0 ${
                 isDone
                   ? "bg-primary text-primary-foreground"
                   : isCurrent

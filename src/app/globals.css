@@ -1,6 +1,6 @@
 /* TODO: Migrate Space Grotesk and Playfair Display to next/font/google in layout.tsx
    to eliminate this render-blocking @import. Do not remove until fonts are loaded via next/font. */
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
 /* ===== BOLD PREMIUM THEME ===== */
@@ -9,11 +9,11 @@
 :root {
   /* Core Colors - Bold Dark Theme */
   --black: #000000;
-  --electric: #C084FC;
-  --electric-dim: #818CF8;
+  --electric: #c084fc;
+  --electric-dim: #818cf8;
   --blue: #0066ff;
   --purple: #8b5cf6;
-  --cyan: #12ABDB;
+  --cyan: #12abdb;
 
   /* Backgrounds - True Dark */
   --background: #09090b;
@@ -29,12 +29,12 @@
   /* Borders - Subtle glow */
   --border: #27272a;
   --border-subtle: #18181b;
-  --border-focus: #C084FC;
+  --border-focus: #c084fc;
   --border-glow: rgba(192, 132, 252, 0.3);
 
   /* Primary Accent - Electric Green */
-  --accent: #C084FC;
-  --accent-hover: #818CF8;
+  --accent: #c084fc;
+  --accent-hover: #818cf8;
   --accent-subtle: rgba(192, 132, 252, 0.1);
   --accent-muted: rgba(192, 132, 252, 0.2);
 
@@ -68,15 +68,15 @@
   --sidebar-text-muted: #888888;
   --sidebar-hover: #1a1a1a;
   --sidebar-active: rgba(192, 132, 252, 0.15);
-  --sidebar-active-border: #C084FC;
+  --sidebar-active-border: #c084fc;
   --sidebar-width: 240px;
 
   /* Shadows - Glow effects */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
   --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.6);
-  --shadow-glow: 0 0 20px rgba(0, 255, 136, 0.15);
-  --shadow-glow-intense: 0 0 30px rgba(0, 255, 136, 0.3);
+  --shadow-glow: 0 0 20px rgba(192, 132, 252, 0.15);
+  --shadow-glow-intense: 0 0 30px rgba(192, 132, 252, 0.3);
 
   /* Grid pattern for backgrounds */
   --grid-color: rgba(255, 255, 255, 0.03);
@@ -127,8 +127,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: 'Space Grotesk', var(--font-geist-sans), system-ui, sans-serif;
-  --font-display: 'Playfair Display', Georgia, serif;
+  --font-sans: "Space Grotesk", var(--font-geist-sans), system-ui, sans-serif;
+  --font-display: "Playfair Display", Georgia, serif;
   --font-mono: var(--font-geist-mono);
 }
 
@@ -141,7 +141,12 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family:
+    "Space Grotesk",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
   font-size: 14px;
   line-height: 1.6;
   letter-spacing: -0.01em;
@@ -165,15 +170,20 @@ body {
 
 /* ===== Typography ===== */
 
-h1, h2, h3, h4, h5, h6 {
-  font-family: 'Space Grotesk', sans-serif;
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Space Grotesk", sans-serif;
   font-weight: 600;
   letter-spacing: -0.02em;
   color: var(--foreground);
 }
 
 .font-display {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: "Playfair Display", Georgia, serif;
 }
 
 .text-muted {
@@ -189,7 +199,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .tiny-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -215,7 +225,7 @@ select {
   border-radius: 8px;
   padding: 0.75rem 1rem;
   font-size: 14px;
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: "Space Grotesk", sans-serif;
   transition: all 0.2s ease;
 }
 
@@ -235,7 +245,9 @@ textarea:focus,
 select:focus {
   border-color: var(--accent);
   outline: none;
-  box-shadow: 0 0 0 3px var(--accent-subtle), var(--shadow-glow);
+  box-shadow:
+    0 0 0 3px var(--accent-subtle),
+    var(--shadow-glow);
 }
 
 /* Checkbox accent */
@@ -275,7 +287,7 @@ input[type="checkbox"] {
   gap: 0.5rem;
   background: var(--accent);
   color: #fff;
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: "Space Grotesk", sans-serif;
   font-weight: 600;
   font-size: 14px;
   padding: 0.625rem 1.25rem;
@@ -310,7 +322,7 @@ input[type="checkbox"] {
   gap: 0.5rem;
   background: transparent;
   color: var(--foreground);
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: "Space Grotesk", sans-serif;
   font-weight: 500;
   font-size: 14px;
   padding: 0.625rem 1.25rem;
@@ -337,7 +349,7 @@ input[type="checkbox"] {
   gap: 0.5rem;
   background: transparent;
   color: var(--foreground-muted);
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: "Space Grotesk", sans-serif;
   font-weight: 500;
   font-size: 14px;
   padding: 0.5rem 1rem;
@@ -359,7 +371,7 @@ input[type="checkbox"] {
   gap: 0.5rem;
   background: transparent;
   color: var(--foreground-muted);
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: "Space Grotesk", sans-serif;
   font-weight: 500;
   font-size: 14px;
   padding: 0.5rem 1rem;
@@ -380,7 +392,7 @@ input[type="checkbox"] {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  padding: 0.25rem 0.75rem;
+  padding: 0.375rem 0.875rem;
   border-radius: 9999px;
   font-size: 11px;
   font-weight: 600;
@@ -428,18 +440,39 @@ input[type="checkbox"] {
   flex-shrink: 0;
 }
 
-.status-dot-success { background: var(--success); box-shadow: 0 0 8px var(--success); }
-.status-dot-warning { background: var(--warning); box-shadow: 0 0 8px var(--warning); }
-.status-dot-danger { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
-.status-dot-info { background: var(--info); box-shadow: 0 0 8px var(--info); }
-.status-dot-accent { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
-.status-dot-muted { background: var(--foreground-subtle); }
+.status-dot-success {
+  background: var(--success);
+  box-shadow: 0 0 8px var(--success);
+}
+.status-dot-warning {
+  background: var(--warning);
+  box-shadow: 0 0 8px var(--warning);
+}
+.status-dot-danger {
+  background: var(--danger);
+  box-shadow: 0 0 8px var(--danger);
+}
+.status-dot-info {
+  background: var(--info);
+  box-shadow: 0 0 8px var(--info);
+}
+.status-dot-accent {
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+.status-dot-muted {
+  background: var(--foreground-subtle);
+}
 
 /* ===== Animations ===== */
 
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes fade-in-up {
@@ -464,30 +497,65 @@ input[type="checkbox"] {
   }
 }
 
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 @keyframes glow-pulse {
-  0%, 100% { box-shadow: var(--shadow-glow); }
-  50% { box-shadow: var(--shadow-glow-intense); }
+  0%,
+  100% {
+    box-shadow: var(--shadow-glow);
+  }
+  50% {
+    box-shadow: var(--shadow-glow-intense);
+  }
 }
 
 @keyframes gradient-shift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 .animate-fade-in {
@@ -514,17 +582,31 @@ input[type="checkbox"] {
   animation: glow-pulse 2s ease-in-out infinite;
 }
 
+.animate-scale-in {
+  animation: scale-in 0.3s ease-out;
+}
+
 .animate-gradient {
   background-size: 200% 200%;
   animation: gradient-shift 3s ease infinite;
 }
 
 /* Stagger delays for lists */
-.stagger-1 { animation-delay: 0.05s; }
-.stagger-2 { animation-delay: 0.1s; }
-.stagger-3 { animation-delay: 0.15s; }
-.stagger-4 { animation-delay: 0.2s; }
-.stagger-5 { animation-delay: 0.25s; }
+.stagger-1 {
+  animation-delay: 0.05s;
+}
+.stagger-2 {
+  animation-delay: 0.1s;
+}
+.stagger-3 {
+  animation-delay: 0.15s;
+}
+.stagger-4 {
+  animation-delay: 0.2s;
+}
+.stagger-5 {
+  animation-delay: 0.25s;
+}
 
 /* ===== Skeleton Loading ===== */
 
@@ -621,7 +703,8 @@ input[type="checkbox"] {
   text-decoration: underline;
 }
 
-.prose ul, .prose ol {
+.prose ul,
+.prose ol {
   margin-bottom: 1em;
   padding-left: 1.5em;
 }
@@ -650,7 +733,7 @@ input[type="checkbox"] {
 /* ===== Progress Bar ===== */
 
 .progress-bar {
-  height: 4px;
+  height: 6px;
   border-radius: 2px;
   background: var(--background-tertiary);
   overflow: hidden;
@@ -685,7 +768,11 @@ input[type="checkbox"] {
 }
 
 .bg-dark-gradient {
-  background: linear-gradient(180deg, var(--background) 0%, var(--background-secondary) 100%);
+  background: linear-gradient(
+    180deg,
+    var(--background) 0%,
+    var(--background-secondary) 100%
+  );
 }
 
 .text-accent {
@@ -756,7 +843,7 @@ input[type="checkbox"] {
 
 /* Stats display */
 .stat-value {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: "Space Grotesk", sans-serif;
   font-size: 2rem;
   font-weight: 700;
   color: var(--accent);

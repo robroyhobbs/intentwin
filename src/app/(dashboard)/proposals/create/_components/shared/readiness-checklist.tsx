@@ -26,7 +26,7 @@ function ChecklistRow({ item }: { item: ReadinessItem }) {
         <Circle
           data-checked="false"
           size={16}
-          className="text-muted-foreground/40 shrink-0 mt-0.5"
+          className="text-muted-foreground/60 shrink-0 mt-0.5"
         />
       )}
       <div className="flex-1 min-w-0">
@@ -36,9 +36,7 @@ function ChecklistRow({ item }: { item: ReadinessItem }) {
           {item.label}
         </span>
         {!item.checked && item.hint && (
-          <p className="text-[11px] text-muted-foreground/60 mt-0.5">
-            {item.hint}
-          </p>
+          <p className="text-xs text-muted-foreground/60 mt-0.5">{item.hint}</p>
         )}
       </div>
     </div>

@@ -18,11 +18,7 @@ import { StrengthCard } from "./shared/strength-card";
 import { IntelStats } from "./shared/intel-stats";
 import { ReadinessChecklist } from "./shared/readiness-checklist";
 import type { BidIntelligenceContext } from "@/lib/ai/bid-scoring";
-import type {
-  CoachContent,
-  CoachInsight,
-  CoachPrompt,
-} from "./create-types";
+import type { CoachContent, CoachInsight, CoachPrompt } from "./create-types";
 
 // ── Collapsible wrapper ─────────────────────────────────────────────────────
 
@@ -88,7 +84,7 @@ function CoachHeader({ isFinalize }: { isFinalize: boolean }) {
 function AdvisorySection({ text }: { text: string }) {
   if (!text) return null;
   return (
-    <div className="rounded-lg bg-primary/5 border border-primary/10 p-3">
+    <div className="rounded-lg bg-[var(--accent-subtle)] border border-[var(--accent-muted)] p-3">
       <p className="text-sm text-foreground/80 leading-relaxed">{text}</p>
     </div>
   );
@@ -136,7 +132,7 @@ function InsightRow({ insight }: { insight: CoachInsight }) {
           </span>
         </div>
         {insight.detail && (
-          <p className="text-[11px] text-muted-foreground/70 leading-snug mt-0.5">
+          <p className="text-xs text-muted-foreground/70 leading-snug mt-0.5">
             {insight.detail}
           </p>
         )}
@@ -191,7 +187,7 @@ function PromptsSection({ prompts }: { prompts: CoachPrompt[] }) {
           className={`rounded-lg p-3 ${IMPORTANCE_COLORS[p.importance]}`}
         >
           <span
-            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${IMPORTANCE_PILLS[p.importance]}`}
+            className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${IMPORTANCE_PILLS[p.importance]}`}
           >
             {IMPORTANCE_LABELS[p.importance]}
           </span>
@@ -237,7 +233,11 @@ function BidAnalysis({
             Your Strengths
           </h4>
           {content.strengths.map((s) => (
-            <StrengthCard key={s.id} factor={s.factor} rationale={s.rationale} />
+            <StrengthCard
+              key={s.id}
+              factor={s.factor}
+              rationale={s.rationale}
+            />
           ))}
         </div>
       )}
@@ -258,7 +258,7 @@ export function DecisionCoach() {
   const isFinalize = state.phase === "finalize";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in-up">
       <CoachHeader isFinalize={isFinalize} />
       {content.nextStep && <NextStepCard text={content.nextStep} />}
       <AdvisorySection text={content.whyItMatters} />

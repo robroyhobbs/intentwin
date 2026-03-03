@@ -23,10 +23,10 @@ const CHIP_COLORS: Record<RiskFlagProps["severity"], string> = {
 export function RiskFlagChip({ severity, label }: RiskFlagProps) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${CHIP_COLORS[severity]}`}
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${CHIP_COLORS[severity]}`}
     >
       <span
-        className={`h-1.5 w-1.5 rounded-full ${DOT_COLORS[severity]}`}
+        className={`h-2 w-2 rounded-full ${DOT_COLORS[severity]}`}
         aria-hidden="true"
       />
       {label}

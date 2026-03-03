@@ -173,11 +173,13 @@ export function SectionCard({
   const [expanded, setExpanded] = useState(defaultExpanded);
   const toggle = useCallback(() => setExpanded((prev) => !prev), []);
 
-  const borderClass = section.reviewed ? "border-l-2 border-l-emerald-500" : "";
+  const borderClass = section.reviewed
+    ? "border-l-3 border-l-emerald-500 shadow-sm"
+    : "";
 
   return (
     <div
-      className={`rounded-lg border border-border bg-card overflow-hidden ${borderClass}`}
+      className={`rounded-lg border border-border bg-card overflow-hidden hover-glow ${borderClass}`}
     >
       <CardHeader section={section} expanded={expanded} onToggle={toggle} />
       {expanded && (

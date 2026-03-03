@@ -27,7 +27,7 @@ function DraftHeader() {
 function SpinnerBanner({ label }: { label: string }) {
   return (
     <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-6">
-      <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent shrink-0" />
+      <div className="h-8 w-8 animate-spin rounded-full border-3 border-[var(--accent)]/20 border-t-[var(--accent)] shrink-0" />
       <p className="text-sm text-muted-foreground">{label}</p>
     </div>
   );
@@ -130,9 +130,9 @@ function ProgressSummary({
           </span>
         </div>
       </div>
-      <div className="h-2 bg-muted rounded-full overflow-hidden">
+      <div className="h-3 bg-muted rounded-full overflow-hidden">
         <div
-          className={`h-full bg-primary rounded-full transition-all duration-500 ${isGenerating ? "animate-glow-pulse" : ""}`}
+          className={`h-full bg-primary rounded-full transition-all duration-500 shadow-[0_0_8px_var(--accent)] ${isGenerating ? "animate-glow-pulse" : ""}`}
           style={{ width: `${pct}%` }}
         />
       </div>

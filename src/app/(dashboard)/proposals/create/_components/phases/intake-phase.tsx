@@ -164,7 +164,7 @@ function IntakeSuccessView({ onContinue }: { onContinue: () => void }) {
       <div className="flex justify-end">
         <button
           onClick={onContinue}
-          className="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+          className="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-all shadow-[var(--shadow-glow)] hover:shadow-[var(--shadow-glow-intense)]"
         >
           Continue to Strategy
         </button>
