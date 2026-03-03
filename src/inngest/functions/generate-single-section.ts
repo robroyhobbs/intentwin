@@ -396,8 +396,17 @@ ${buildEditorialStandards(solicitationType, ctx.audienceProfile, ctx.primaryBran
       ]);
     } catch (genErr) {
       const msg = genErr instanceof Error ? genErr.message : String(genErr);
-      // Timeouts and permanent AI errors should NOT retry — they just burn tokens
-      if (msg.includes("timed out") || msg.includes("SAFETY")) {
+      const msgLower = msg.toLowerCase();
+      // Timeouts and permanent AI errors should NOT retry — they just burn tokens.
+      // AI_BLOCKED comes from our own generateText() validation (safety filter,
+      // empty response, etc.). These won't succeed on retry with the same prompt.
+      const isNonRetriable =
+        msgLower.includes("timed out") ||
+        msgLower.includes("ai_blocked") ||
+        msgLower.includes("safety") ||
+        msgLower.includes("blocked") ||
+        msgLower.includes("content filter");
+      if (isNonRetriable) {
         throw new NonRetriableError(msg, { cause: genErr });
       }
       throw genErr;

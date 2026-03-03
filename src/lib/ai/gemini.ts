@@ -140,7 +140,9 @@ export async function generateText(
 ): Promise<string> {
   const genAI = getClient();
   const primaryModel =
-    options.model || process.env.GEMINI_MODEL?.trim() || "gemini-3.1-pro-preview";
+    options.model ||
+    process.env.GEMINI_MODEL?.trim() ||
+    "gemini-3.1-pro-preview";
 
   const modelsToTry = [primaryModel];
   if (primaryModel !== FALLBACK_MODEL) {
@@ -151,17 +153,39 @@ export async function generateText(
 
   for (const modelName of modelsToTry) {
     try {
-      const model = genAI.getGenerativeModel({
-        model: modelName,
-        systemInstruction: options.systemPrompt || SYSTEM_PROMPT,
-        generationConfig: {
-          maxOutputTokens: options.maxTokens || 4096,
-          temperature: options.temperature ?? 0.7,
+      const model = genAI.getGenerativeModel(
+        {
+          model: modelName,
+          systemInstruction: options.systemPrompt || SYSTEM_PROMPT,
+          generationConfig: {
+            maxOutputTokens: options.maxTokens || 4096,
+            temperature: options.temperature ?? 0.7,
+          },
         },
-      }, heliconeOpts);
+        heliconeOpts,
+      );
 
       const result = await model.generateContent(prompt);
       const response = result.response;
+
+      // Validate response before extracting text — Gemini can return
+      // blocked/empty responses that cause cryptic errors in .text()
+      const candidates = response.candidates;
+      if (!candidates?.length) {
+        const blockReason = response.promptFeedback?.blockReason;
+        throw new Error(
+          `AI_BLOCKED: No candidates returned (reason: ${blockReason || "unknown"})`,
+        );
+      }
+      const finishReason = candidates[0].finishReason;
+      if (
+        finishReason &&
+        finishReason !== "STOP" &&
+        finishReason !== "MAX_TOKENS"
+      ) {
+        throw new Error(`AI_BLOCKED: finishReason=${finishReason}`);
+      }
+
       return response.text();
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
@@ -175,10 +199,15 @@ export async function generateText(
         msg.includes("model") ||
         msg.includes("429") ||
         msg.includes("rate limit") ||
-        msg.includes("quota");
+        msg.includes("quota") ||
+        msg.includes("ai_blocked") ||
+        msg.includes("safety") ||
+        msg.includes("blocked");
 
       if (isRetryable && modelName !== FALLBACK_MODEL) {
-        logger.warn(`[AI] ${modelName} failed (${lastError.message.slice(0, 100)}), falling back to ${FALLBACK_MODEL}`);
+        logger.warn(
+          `[AI] ${modelName} failed (${lastError.message.slice(0, 100)}), falling back to ${FALLBACK_MODEL}`,
+        );
         continue;
       }
       logger.error(`[AI] Generation failed on ${modelName}`, {
