@@ -1,8 +1,5 @@
 "use client";
 
-// ── Decision Coach Panel ────────────────────────────────────────────────────
-// Contextual guidance sidebar — advisory, not status-reporting.
-
 import { useMemo, useState, useCallback } from "react";
 import {
   Sparkles,
@@ -13,18 +10,18 @@ import {
 } from "lucide-react";
 import { useCreateFlow } from "./create-provider";
 import { getCoachContent } from "./coach-content";
-import { SCORING_FACTORS } from "@/lib/ai/bid-scoring";
-import { ConfidenceRing } from "./shared/confidence-ring";
 import { AlertCard } from "./shared/alert-card";
 import { NextStepCard } from "./shared/next-step-card";
-import { RadarChart } from "./shared/radar-chart";
-import { ScoreBar } from "./shared/score-bar";
+import { VerdictCard } from "./shared/verdict-card";
+import { GapCard } from "./shared/gap-card";
+import { StrengthCard } from "./shared/strength-card";
+import { IntelStats } from "./shared/intel-stats";
 import { ReadinessChecklist } from "./shared/readiness-checklist";
+import type { BidIntelligenceContext } from "@/lib/ai/bid-scoring";
 import type {
   CoachContent,
   CoachInsight,
   CoachPrompt,
-  CreateFlowState,
 } from "./create-types";
 
 // ── Collapsible wrapper ─────────────────────────────────────────────────────
@@ -67,13 +64,32 @@ function CollapsibleSection({
   );
 }
 
+// ── Coach Header ────────────────────────────────────────────────────────────
+
+function CoachHeader({ isFinalize }: { isFinalize: boolean }) {
+  return (
+    <div className="flex items-center gap-2.5">
+      <div className="h-8 w-8 rounded-lg bg-[var(--accent)] flex items-center justify-center">
+        {isFinalize ? (
+          <Clipboard size={14} className="text-white" />
+        ) : (
+          <Sparkles size={14} className="text-white" />
+        )}
+      </div>
+      <h3 className="text-sm font-semibold">
+        {isFinalize ? "Proposal Summary" : "Decision Coach"}
+      </h3>
+    </div>
+  );
+}
+
 // ── Advisory text ───────────────────────────────────────────────────────────
 
 function AdvisorySection({ text }: { text: string }) {
   if (!text) return null;
   return (
     <div className="rounded-lg bg-primary/5 border border-primary/10 p-3">
-      <p className="text-xs text-foreground/80 leading-relaxed">{text}</p>
+      <p className="text-sm text-foreground/80 leading-relaxed">{text}</p>
     </div>
   );
 }
@@ -132,7 +148,7 @@ function InsightRow({ insight }: { insight: CoachInsight }) {
 function InsightsSection({ insights }: { insights: CoachInsight[] }) {
   if (insights.length === 0) return null;
   return (
-    <CollapsibleSection title="Detailed Analysis" defaultOpen={false}>
+    <CollapsibleSection title="Details" defaultOpen={false}>
       <div className="divide-y divide-border/50">
         {insights.map((ins) => (
           <InsightRow key={ins.id} insight={ins} />
@@ -150,6 +166,12 @@ const IMPORTANCE_COLORS: Record<string, string> = {
   nice_to_have: "border-l-2 border-l-border border border-border bg-card",
 };
 
+const IMPORTANCE_PILLS: Record<string, string> = {
+  critical: "bg-red-500/10 text-red-500",
+  helpful: "bg-amber-500/10 text-amber-500",
+  nice_to_have: "bg-muted text-muted-foreground",
+};
+
 const IMPORTANCE_LABELS: Record<string, string> = {
   critical: "Critical",
   helpful: "Helpful",
@@ -159,89 +181,71 @@ const IMPORTANCE_LABELS: Record<string, string> = {
 function PromptsSection({ prompts }: { prompts: CoachPrompt[] }) {
   if (prompts.length === 0) return null;
   return (
-    <CollapsibleSection title="Information Needed" defaultOpen={true}>
-      <div className="space-y-2">
-        {prompts.map((p) => (
-          <div
-            key={p.id}
-            className={`rounded-lg p-2.5 ${IMPORTANCE_COLORS[p.importance]}`}
+    <div className="space-y-2">
+      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+        What&apos;s Missing
+      </h4>
+      {prompts.map((p) => (
+        <div
+          key={p.id}
+          className={`rounded-lg p-3 ${IMPORTANCE_COLORS[p.importance]}`}
+        >
+          <span
+            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${IMPORTANCE_PILLS[p.importance]}`}
           >
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              {IMPORTANCE_LABELS[p.importance]}
-            </span>
-            <p className="text-xs text-foreground/80 leading-relaxed mt-0.5">
-              {p.question}
-            </p>
-          </div>
-        ))}
-      </div>
-    </CollapsibleSection>
+            {IMPORTANCE_LABELS[p.importance]}
+          </span>
+          <p className="text-sm text-foreground/80 leading-relaxed mt-1.5">
+            {p.question}
+          </p>
+        </div>
+      ))}
+    </div>
   );
 }
 
-// ── Bid Visualization ───────────────────────────────────────────────────────
+// ── Bid Analysis ────────────────────────────────────────────────────────────
 
-function BidVisualization({
-  evaluation,
+function BidAnalysis({
+  content,
+  intelligence,
 }: {
-  evaluation: NonNullable<CreateFlowState["bidEvaluation"]>;
+  content: CoachContent;
+  intelligence?: BidIntelligenceContext | null;
 }) {
-  const radarScores = SCORING_FACTORS.map((f) => ({
-    label: f.label,
-    score: evaluation.ai_scores[f.key]?.score ?? 0,
-  }));
-
   return (
-    <CollapsibleSection title="Bid Factor Analysis" defaultOpen={true}>
-      <div className="space-y-4">
-        <RadarChart scores={radarScores} size={240} />
+    <div className="space-y-3">
+      {content.verdict && <VerdictCard verdict={content.verdict} />}
+      {content.gaps && content.gaps.length > 0 && (
         <div className="space-y-2">
-          {SCORING_FACTORS.map((f) => (
-            <ScoreBar
-              key={f.key}
-              label={f.label}
-              score={evaluation.ai_scores[f.key]?.score ?? 0}
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            Gaps to Address
+          </h4>
+          {content.gaps.map((g) => (
+            <GapCard
+              key={g.id}
+              factor={g.factor}
+              rationale={g.rationale}
+              score={g.score}
             />
           ))}
         </div>
-      </div>
-    </CollapsibleSection>
-  );
-}
-
-// ── Coach Header ─────────────────────────────────────────────────────────────
-
-function CoachHeader({
-  isFinalize,
-  bidScore,
-  confidence,
-}: {
-  isFinalize: boolean;
-  bidScore: number | null;
-  confidence: number;
-}) {
-  return (
-    <div className="flex items-start justify-between">
-      <div className="flex items-center gap-2.5">
-        <div className="h-8 w-8 rounded-lg bg-[var(--accent)] flex items-center justify-center">
-          {isFinalize ? (
-            <Clipboard size={14} className="text-white" />
-          ) : (
-            <Sparkles size={14} className="text-white" />
-          )}
+      )}
+      {content.strengths && content.strengths.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            Your Strengths
+          </h4>
+          {content.strengths.map((s) => (
+            <StrengthCard key={s.id} factor={s.factor} rationale={s.rationale} />
+          ))}
         </div>
-        <div>
-          <h3 className="text-sm font-semibold">
-            {isFinalize ? "Proposal Summary" : "Decision Coach"}
-          </h3>
-          {isFinalize && bidScore !== null && (
-            <p className="text-xs text-muted-foreground">
-              Bid fit: {Math.round(bidScore)}/100
-            </p>
-          )}
-        </div>
-      </div>
-      <ConfidenceRing score={confidence} size={56} />
+      )}
+      {intelligence && (
+        <CollapsibleSection title="Market Intelligence" defaultOpen={false}>
+          <IntelStats intelligence={intelligence} />
+        </CollapsibleSection>
+      )}
     </div>
   );
 }
@@ -252,21 +256,21 @@ export function DecisionCoach() {
   const { state } = useCreateFlow();
   const content = useMemo(() => getCoachContent(state), [state]);
   const isFinalize = state.phase === "finalize";
-  const bidScore = state.bidEvaluation?.weighted_total ?? null;
 
   return (
-    <div className="space-y-5">
-      <CoachHeader
-        isFinalize={isFinalize}
-        bidScore={bidScore}
-        confidence={state.confidence}
-      />
+    <div className="space-y-6">
+      <CoachHeader isFinalize={isFinalize} />
       {content.nextStep && <NextStepCard text={content.nextStep} />}
       <AdvisorySection text={content.whyItMatters} />
-      {state.bidEvaluation && (
-        <BidVisualization evaluation={state.bidEvaluation} />
+      {content.verdict && (
+        <BidAnalysis
+          content={content}
+          intelligence={state.bidEvaluation?.intelligence}
+        />
       )}
-      <RisksSection flags={content.riskFlags} />
+      {content.riskFlags.length > 0 && (
+        <RisksSection flags={content.riskFlags} />
+      )}
       {content.prompts && content.prompts.length > 0 && (
         <PromptsSection prompts={content.prompts} />
       )}
@@ -276,9 +280,7 @@ export function DecisionCoach() {
       {isFinalize &&
         content.readinessItems &&
         content.readinessItems.length > 0 && (
-          <CollapsibleSection title="Export Readiness" defaultOpen={true}>
-            <ReadinessChecklist items={content.readinessItems} />
-          </CollapsibleSection>
+          <ReadinessChecklist items={content.readinessItems} />
         )}
     </div>
   );
