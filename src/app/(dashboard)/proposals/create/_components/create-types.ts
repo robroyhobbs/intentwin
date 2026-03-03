@@ -1,5 +1,6 @@
 import type { ExtractedIntake } from "@/types/intake";
 import type { BidEvaluation } from "@/lib/ai/bid-scoring";
+import type { ReadinessItem } from "./shared/readiness-checklist";
 
 export type CreatePhase = "intake" | "strategy" | "draft" | "finalize";
 
@@ -59,6 +60,10 @@ export interface CoachContent {
   insights?: CoachInsight[];
   /** Gap-filling prompts suggesting what info the user should add. */
   prompts?: CoachPrompt[];
+  /** Contextual directive text for the "Next Step" card. */
+  nextStep?: string;
+  /** Readiness checklist items (finalize phase only). */
+  readinessItems?: ReadinessItem[];
 }
 
 export type ExtractionStep = "uploading" | "processing" | "extracting";

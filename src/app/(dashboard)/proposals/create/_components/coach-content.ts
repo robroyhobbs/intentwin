@@ -10,6 +10,7 @@ import {
   buildDraftInsights,
   buildFinalizeInsights,
 } from "./coach-insights";
+import { buildReadinessItems } from "./coach-insights-finalize";
 
 // ── Public API ──────────────────────────────────────────────────────────────
 
@@ -34,6 +35,7 @@ function getIntakeCoach(state: CreateFlowState): CoachContent {
       ...emptyCoach(),
       whyItMatters:
         "Upload your RFP document or paste a URL to get started. We'll automatically extract requirements, evaluation criteria, deadlines, and compliance needs.",
+      nextStep: "Upload your RFP document to begin",
     };
   }
 
@@ -46,7 +48,11 @@ function getIntakeCoach(state: CreateFlowState): CoachContent {
           : state.extractionStep === "extracting"
             ? "AI is analyzing the document and extracting key details."
             : "Analyzing your document...";
-    return { ...emptyCoach(), whyItMatters: stepLabel };
+    return {
+      ...emptyCoach(),
+      whyItMatters: stepLabel,
+      nextStep: "Processing your document...",
+    };
   }
 
   if (state.extractedData) {
@@ -57,6 +63,7 @@ function getIntakeCoach(state: CreateFlowState): CoachContent {
     ...emptyCoach(),
     whyItMatters:
       "Your files are ready. Click to begin extraction — we'll pull out requirements, evaluation criteria, and identify any gaps.",
+    nextStep: "Start extraction to analyze your document",
   };
 }
 
@@ -83,6 +90,7 @@ function buildExtractionCompleteCoach(state: CreateFlowState): CoachContent {
     actions: [],
     insights: buildIntakeInsights(data),
     prompts: buildIntakePrompts(data),
+    nextStep: "Review the extraction and fill any gaps below",
   };
 }
 
@@ -94,6 +102,7 @@ function getStrategyCoach(state: CreateFlowState): CoachContent {
       ...emptyCoach(),
       whyItMatters:
         "Analyzing your opportunity against your firm's capabilities and past performance...",
+      nextStep: "Analyzing your opportunity...",
     };
   }
 
@@ -126,6 +135,7 @@ function getStrategyCoach(state: CreateFlowState): CoachContent {
     citations: [],
     actions: [],
     insights,
+    nextStep: "Select win themes that emphasize your strengths",
   };
 }
 
@@ -146,6 +156,7 @@ function getDraftCoach(state: CreateFlowState): CoachContent {
       whyItMatters:
         "Sections are being generated using your RFP analysis and win themes. Review each one as it completes — you can regenerate any section that needs improvement.",
       insights,
+      nextStep: "Review each section as it generates",
     };
   }
 
@@ -170,6 +181,11 @@ function getDraftCoach(state: CreateFlowState): CoachContent {
         ? "Review each section before finalizing. Check that the content addresses the evaluation criteria shown in the analysis below."
         : "All sections reviewed. Continue to finalize when ready.";
 
+  const draftNextStep =
+    unreviewed > 0
+      ? `${unreviewed} section(s) need review before finalizing`
+      : "All sections reviewed — continue to finalize";
+
   return {
     whyItMatters: advisory,
     signals: [],
@@ -177,6 +193,7 @@ function getDraftCoach(state: CreateFlowState): CoachContent {
     citations: [],
     actions: [],
     insights,
+    nextStep: draftNextStep,
   };
 }
 
@@ -194,6 +211,15 @@ function getFinalizeCoach(state: CreateFlowState): CoachContent {
 
   const whyItMatters = buildFinalizeSummary(state);
 
+  let nextStep: string;
+  if (unresolvedBlockers.length > 0) {
+    nextStep = `Resolve ${unresolvedBlockers.length} blocker(s) before approving`;
+  } else if (!state.finalApproved) {
+    nextStep = "Approve and export your proposal";
+  } else {
+    nextStep = "Ready to export — download as DOCX or PDF";
+  }
+
   return {
     whyItMatters,
     signals: [],
@@ -201,6 +227,8 @@ function getFinalizeCoach(state: CreateFlowState): CoachContent {
     citations: [],
     actions: [],
     insights,
+    nextStep,
+    readinessItems: buildReadinessItems(state),
   };
 }
 

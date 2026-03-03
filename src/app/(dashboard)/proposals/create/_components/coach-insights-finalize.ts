@@ -3,6 +3,7 @@
 
 import { SCORING_FACTORS } from "@/lib/ai/bid-scoring";
 import type { CoachInsight, CreateFlowState } from "./create-types";
+import type { ReadinessItem } from "./shared/readiness-checklist";
 
 function buildStrengths(
   ev: NonNullable<CreateFlowState["bidEvaluation"]>,
@@ -142,4 +143,49 @@ export function buildFinalizeInsights(state: CreateFlowState): CoachInsight[] {
     : [];
   const tips = buildNextTimeTips(state);
   return [...checklist, ...evalInsights, ...tips];
+}
+
+export function buildReadinessItems(state: CreateFlowState): ReadinessItem[] {
+  const completeSections = state.sections.filter(
+    (s) => s.generationStatus === "complete",
+  );
+  const reviewedSections = state.sections.filter((s) => s.reviewed);
+  const unresolvedBlockers = state.blockers.filter((b) => !b.resolved);
+  const totalSections = state.sections.length;
+
+  return [
+    {
+      id: "all-generated",
+      label: "All sections generated",
+      checked: completeSections.length === totalSections && totalSections > 0,
+      hint:
+        completeSections.length < totalSections
+          ? `${totalSections - completeSections.length} section(s) pending`
+          : undefined,
+    },
+    {
+      id: "all-reviewed",
+      label: "All sections reviewed",
+      checked: reviewedSections.length === totalSections && totalSections > 0,
+      hint:
+        reviewedSections.length < totalSections
+          ? `${totalSections - reviewedSections.length} section(s) need review`
+          : undefined,
+    },
+    {
+      id: "no-blockers",
+      label: "No unresolved blockers",
+      checked: unresolvedBlockers.length === 0,
+      hint:
+        unresolvedBlockers.length > 0
+          ? `${unresolvedBlockers.length} blocker(s) remaining`
+          : undefined,
+    },
+    {
+      id: "approved",
+      label: "Final package approved",
+      checked: state.finalApproved,
+      hint: !state.finalApproved ? "Approve to enable export" : undefined,
+    },
+  ];
 }

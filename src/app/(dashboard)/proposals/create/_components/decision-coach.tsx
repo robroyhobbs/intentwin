@@ -4,11 +4,28 @@
 // Contextual guidance sidebar — advisory, not status-reporting.
 
 import { useMemo, useState, useCallback } from "react";
+import {
+  Sparkles,
+  Clipboard,
+  CheckCircle,
+  AlertTriangle,
+  XCircle,
+} from "lucide-react";
 import { useCreateFlow } from "./create-provider";
 import { getCoachContent } from "./coach-content";
+import { SCORING_FACTORS } from "@/lib/ai/bid-scoring";
 import { ConfidenceRing } from "./shared/confidence-ring";
-import { RiskFlagChip } from "./shared/risk-flag";
-import type { CoachContent, CoachInsight, CoachPrompt } from "./create-types";
+import { AlertCard } from "./shared/alert-card";
+import { NextStepCard } from "./shared/next-step-card";
+import { RadarChart } from "./shared/radar-chart";
+import { ScoreBar } from "./shared/score-bar";
+import { ReadinessChecklist } from "./shared/readiness-checklist";
+import type {
+  CoachContent,
+  CoachInsight,
+  CoachPrompt,
+  CreateFlowState,
+} from "./create-types";
 
 // ── Collapsible wrapper ─────────────────────────────────────────────────────
 
@@ -67,13 +84,9 @@ function RisksSection({ flags }: { flags: CoachContent["riskFlags"] }) {
   if (flags.length === 0) return null;
   return (
     <CollapsibleSection title="Attention needed" defaultOpen={true}>
-      <div className="flex flex-wrap gap-1.5">
+      <div className="space-y-2">
         {flags.map((flag) => (
-          <RiskFlagChip
-            key={flag.id}
-            severity={flag.severity}
-            label={flag.label}
-          />
+          <AlertCard key={flag.id} severity={flag.severity} text={flag.label} />
         ))}
       </div>
     </CollapsibleSection>
@@ -82,19 +95,21 @@ function RisksSection({ flags }: { flags: CoachContent["riskFlags"] }) {
 
 // ── Insights ────────────────────────────────────────────────────────────────
 
-const SEVERITY_DOT: Record<string, string> = {
-  high: "bg-red-500",
-  medium: "bg-amber-500",
-  low: "bg-emerald-500",
+const SEVERITY_ICON: Record<
+  string,
+  { icon: React.ElementType; color: string }
+> = {
+  high: { icon: XCircle, color: "text-red-500" },
+  medium: { icon: AlertTriangle, color: "text-amber-500" },
+  low: { icon: CheckCircle, color: "text-emerald-500" },
 };
 
 function InsightRow({ insight }: { insight: CoachInsight }) {
+  const cfg = SEVERITY_ICON[insight.severity ?? "low"];
+  const Icon = cfg.icon;
   return (
     <div className="flex items-start gap-2 py-1.5">
-      <span
-        className={`mt-1.5 h-1.5 w-1.5 rounded-full shrink-0 ${SEVERITY_DOT[insight.severity ?? "low"]}`}
-        aria-hidden="true"
-      />
+      <Icon size={14} className={`${cfg.color} shrink-0 mt-0.5`} />
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline justify-between gap-1">
           <span className="text-xs font-medium text-foreground truncate">
@@ -130,11 +145,9 @@ function InsightsSection({ insights }: { insights: CoachInsight[] }) {
 // ── Prompts ─────────────────────────────────────────────────────────────────
 
 const IMPORTANCE_COLORS: Record<string, string> = {
-  critical:
-    "border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/20",
-  helpful:
-    "border-amber-200 bg-amber-50 dark:border-amber-900/40 dark:bg-amber-950/20",
-  nice_to_have: "border-border bg-muted/30",
+  critical: "border-l-2 border-l-red-500 border border-border bg-card",
+  helpful: "border-l-2 border-l-amber-500 border border-border bg-card",
+  nice_to_have: "border-l-2 border-l-border border border-border bg-card",
 };
 
 const IMPORTANCE_LABELS: Record<string, string> = {
@@ -151,7 +164,7 @@ function PromptsSection({ prompts }: { prompts: CoachPrompt[] }) {
         {prompts.map((p) => (
           <div
             key={p.id}
-            className={`rounded-lg border p-2.5 ${IMPORTANCE_COLORS[p.importance]}`}
+            className={`rounded-lg p-2.5 ${IMPORTANCE_COLORS[p.importance]}`}
           >
             <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               {IMPORTANCE_LABELS[p.importance]}
@@ -166,45 +179,107 @@ function PromptsSection({ prompts }: { prompts: CoachPrompt[] }) {
   );
 }
 
+// ── Bid Visualization ───────────────────────────────────────────────────────
+
+function BidVisualization({
+  evaluation,
+}: {
+  evaluation: NonNullable<CreateFlowState["bidEvaluation"]>;
+}) {
+  const radarScores = SCORING_FACTORS.map((f) => ({
+    label: f.label,
+    score: evaluation.ai_scores[f.key]?.score ?? 0,
+  }));
+
+  return (
+    <CollapsibleSection title="Bid Factor Analysis" defaultOpen={true}>
+      <div className="space-y-4">
+        <RadarChart scores={radarScores} size={240} />
+        <div className="space-y-2">
+          {SCORING_FACTORS.map((f) => (
+            <ScoreBar
+              key={f.key}
+              label={f.label}
+              score={evaluation.ai_scores[f.key]?.score ?? 0}
+            />
+          ))}
+        </div>
+      </div>
+    </CollapsibleSection>
+  );
+}
+
+// ── Coach Header ─────────────────────────────────────────────────────────────
+
+function CoachHeader({
+  isFinalize,
+  bidScore,
+  confidence,
+}: {
+  isFinalize: boolean;
+  bidScore: number | null;
+  confidence: number;
+}) {
+  return (
+    <div className="flex items-start justify-between">
+      <div className="flex items-center gap-2.5">
+        <div className="h-8 w-8 rounded-lg bg-[var(--accent)] flex items-center justify-center">
+          {isFinalize ? (
+            <Clipboard size={14} className="text-white" />
+          ) : (
+            <Sparkles size={14} className="text-white" />
+          )}
+        </div>
+        <div>
+          <h3 className="text-sm font-semibold">
+            {isFinalize ? "Proposal Summary" : "Decision Coach"}
+          </h3>
+          {isFinalize && bidScore !== null && (
+            <p className="text-xs text-muted-foreground">
+              Bid fit: {Math.round(bidScore)}/100
+            </p>
+          )}
+        </div>
+      </div>
+      <ConfidenceRing score={confidence} size={56} />
+    </div>
+  );
+}
+
 // ── Main Component ──────────────────────────────────────────────────────────
 
 export function DecisionCoach() {
   const { state } = useCreateFlow();
   const content = useMemo(() => getCoachContent(state), [state]);
   const isFinalize = state.phase === "finalize";
+  const bidScore = state.bidEvaluation?.weighted_total ?? null;
 
   return (
     <div className="space-y-5">
-      {/* Header + progress ring */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-            {isFinalize ? "Proposal Summary" : "Decision Coach"}
-          </h3>
-          {isFinalize && state.bidEvaluation && (
-            <p className="text-xs text-muted-foreground mt-1">
-              Bid fit: {Math.round(state.bidEvaluation.weighted_total)}/100
-            </p>
-          )}
-        </div>
-        <ConfidenceRing score={state.confidence} size={56} />
-      </div>
-
-      {/* Advisory guidance — the main contextual message */}
+      <CoachHeader
+        isFinalize={isFinalize}
+        bidScore={bidScore}
+        confidence={state.confidence}
+      />
+      {content.nextStep && <NextStepCard text={content.nextStep} />}
       <AdvisorySection text={content.whyItMatters} />
-
-      {/* Risk flags (always visible if present) */}
+      {state.bidEvaluation && (
+        <BidVisualization evaluation={state.bidEvaluation} />
+      )}
       <RisksSection flags={content.riskFlags} />
-
-      {/* Prompts for missing info (always visible if present) */}
       {content.prompts && content.prompts.length > 0 && (
         <PromptsSection prompts={content.prompts} />
       )}
-
-      {/* Detailed analysis (collapsed by default) */}
       {content.insights && content.insights.length > 0 && (
         <InsightsSection insights={content.insights} />
       )}
+      {isFinalize &&
+        content.readinessItems &&
+        content.readinessItems.length > 0 && (
+          <CollapsibleSection title="Export Readiness" defaultOpen={true}>
+            <ReadinessChecklist items={content.readinessItems} />
+          </CollapsibleSection>
+        )}
     </div>
   );
 }
