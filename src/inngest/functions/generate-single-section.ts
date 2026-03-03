@@ -381,6 +381,7 @@ ${buildEditorialStandards(solicitationType, ctx.audienceProfile, ctx.primaryBran
       generatedContentRaw = await Promise.race([
         generateText(prompt, {
           systemPrompt: ctx.systemPrompt,
+          maxTokens: 8192,
         }),
         new Promise<never>((_, reject) =>
           setTimeout(

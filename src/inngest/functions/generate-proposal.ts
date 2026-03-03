@@ -346,48 +346,77 @@ export const generateProposalFn = inngest.createFunction(
       }
     }
 
-    // Steps 3-N: Generate ALL remaining sections in true parallel.
-    // Each section is an independent Inngest step — if one fails, the others
-    // continue unaffected. No sequential batching; Gemini handles concurrent
-    // requests fine and Inngest retries individual steps independently.
+    // Steps 3-N: Generate remaining sections in BATCHES of 3.
+    // Firing all 10+ sections simultaneously overwhelms the Gemini API
+    // with concurrent requests, causing rate-limit failures. Batching
+    // keeps concurrent load manageable while still parallelizing within
+    // each batch. Inngest retries individual steps independently.
     const remainingSections = sections.filter(
       (s) => s.sectionType !== "executive_summary",
     );
 
-    log.info("Starting parallel section generation (all at once)", {
+    const BATCH_SIZE = 3;
+    const batches: (typeof remainingSections)[] = [];
+    for (let i = 0; i < remainingSections.length; i += BATCH_SIZE) {
+      batches.push(remainingSections.slice(i, i + BATCH_SIZE));
+    }
+
+    log.info("Starting batched section generation", {
       proposalId,
       sectionCount: remainingSections.length,
+      batchCount: batches.length,
+      batchSize: BATCH_SIZE,
       differentiatorCount: differentiators.length,
     });
 
-    const remainingResults = await Promise.allSettled(
-      remainingSections.map((section) => {
-        const stepId =
-          section.sectionType === "rfp_task"
-            ? `section-rfp_task-${section.title.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 50)}`
-            : `section-${section.sectionType}`;
-        return step.run(stepId, async () => {
-          log.info(`Generating section: ${section.sectionType}`, {
-            proposalId,
-            sectionId: section.id,
-            stepId,
+    const remainingResults: PromiseSettledResult<{
+      generatedContent?: string | null;
+      chunkCount?: number;
+    }>[] = [];
+
+    for (let batchIdx = 0; batchIdx < batches.length; batchIdx++) {
+      const batch = batches[batchIdx];
+
+      if (batchIdx > 0) {
+        await step.sleep(`batch-delay-${batchIdx}`, "2s");
+      }
+
+      log.info(`Processing batch ${batchIdx + 1}/${batches.length}`, {
+        proposalId,
+        sections: batch.map((s) => s.sectionType),
+      });
+
+      const batchResults = await Promise.allSettled(
+        batch.map((section) => {
+          const stepId =
+            section.sectionType === "rfp_task"
+              ? `section-rfp_task-${section.title.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 50)}`
+              : `section-${section.sectionType}`;
+          return step.run(stepId, async () => {
+            log.info(`Generating section: ${section.sectionType}`, {
+              proposalId,
+              sectionId: section.id,
+              stepId,
+            });
+            const result = await generateSingleSection(
+              section.id,
+              section.sectionType,
+              ctx,
+              differentiators,
+            );
+            log.info(`Section generated: ${section.sectionType}`, {
+              proposalId,
+              sectionId: section.id,
+              chunkCount: result.chunkCount,
+              contentLength: result.generatedContent?.length ?? 0,
+            });
+            return result;
           });
-          const result = await generateSingleSection(
-            section.id,
-            section.sectionType,
-            ctx,
-            differentiators,
-          );
-          log.info(`Section generated: ${section.sectionType}`, {
-            proposalId,
-            sectionId: section.id,
-            chunkCount: result.chunkCount,
-            contentLength: result.generatedContent?.length ?? 0,
-          });
-          return result;
-        });
-      }),
-    );
+        }),
+      );
+
+      remainingResults.push(...batchResults);
+    }
 
     // Log individual section results for debugging
     remainingResults.forEach((r, i) => {
