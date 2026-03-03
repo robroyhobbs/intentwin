@@ -6,6 +6,8 @@ import {
   getScoreBgColor,
   getRecommendationBadge,
 } from "./strategy-helpers";
+import { PhaseIcon } from "../shared/phase-icon";
+import { ScoreBar } from "../shared/score-bar";
 
 // ── Loading spinner ─────────────────────────────────────────────────────────
 
@@ -47,37 +49,14 @@ export function ErrorBanner({
 
 export function StrategyHeader() {
   return (
-    <div>
-      <h2 className="text-lg font-semibold">Bid Strategy</h2>
-      <p className="text-sm text-muted-foreground mt-1">
-        Review the AI-scored bid evaluation and select your win themes before
-        proceeding to draft generation.
-      </p>
-    </div>
-  );
-}
-
-// ── Factor row ──────────────────────────────────────────────────────────────
-
-function FactorRow({
-  label,
-  score,
-  weight,
-}: {
-  label: string;
-  score: number;
-  weight: number;
-}) {
-  const color = getScoreColor(score);
-  return (
-    <div className="flex items-center justify-between py-1.5">
-      <div className="flex items-center gap-2">
-        <span className="text-sm">{label}</span>
-        <span className="text-xs text-muted-foreground">({weight}%)</span>
+    <div className="flex items-center gap-3">
+      <PhaseIcon phase="strategy" state="active" />
+      <div>
+        <h2 className="text-xl font-bold">Bid Strategy</h2>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          AI-scored bid evaluation — review factors and select win themes.
+        </p>
       </div>
-      <span className={`text-sm font-semibold tabular-nums ${color}`}>
-        {score}
-      </span>
     </div>
   );
 }
@@ -101,12 +80,10 @@ export function ScoreCard({ evaluation }: { evaluation: BidEvaluation }) {
       </div>
 
       <div className={`rounded-lg border p-4 text-center ${totalBg}`}>
-        <div className={`text-4xl font-bold ${totalColor}`}>
+        <div className={`stat-value ${totalColor}`}>
           {Math.round(evaluation.weighted_total)}
         </div>
-        <div className="text-xs text-muted-foreground mt-1">
-          Weighted Score / 100
-        </div>
+        <div className="stat-label mt-1">Weighted Score / 100</div>
       </div>
 
       <div className="space-y-2">
@@ -116,11 +93,10 @@ export function ScoreCard({ evaluation }: { evaluation: BidEvaluation }) {
         {SCORING_FACTORS.map((factor) => {
           const factorScore = evaluation.ai_scores[factor.key];
           return (
-            <FactorRow
+            <ScoreBar
               key={factor.key}
-              label={factor.label}
+              label={`${factor.label} (${factor.weight}%)`}
               score={factorScore.score}
-              weight={factor.weight}
             />
           );
         })}

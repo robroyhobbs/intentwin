@@ -6,6 +6,8 @@ import { useAuthFetch } from "@/hooks/use-auth-fetch";
 import type { Blocker, CreateFlowState } from "../create-types";
 import { BlockerItem } from "../shared/blocker-item";
 import { ConfidenceRing } from "../shared/confidence-ring";
+import { PhaseIcon } from "../shared/phase-icon";
+import { StatBlock } from "../shared/stat-block";
 import { ExportButtons } from "./finalize-export";
 import { logger } from "@/lib/utils/logger";
 
@@ -69,11 +71,14 @@ function computeBlockers(state: CreateFlowState): Blocker[] {
 
 function FinalizeHeader() {
   return (
-    <div>
-      <h2 className="text-lg font-semibold">Finalize Proposal</h2>
-      <p className="text-sm text-muted-foreground mt-1">
-        Review blockers, approve the final package, and export your proposal.
-      </p>
+    <div className="flex items-center gap-3">
+      <PhaseIcon phase="finalize" state="active" />
+      <div>
+        <h2 className="text-xl font-bold">Finalize Proposal</h2>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Review blockers, approve the final package, and export.
+        </p>
+      </div>
     </div>
   );
 }
@@ -107,10 +112,7 @@ function ProposalSummary({ state }: { state: CreateFlowState }) {
           <h3 className="text-sm font-semibold">Proposal Summary</h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
             {stats.map((s) => (
-              <div key={s.label}>
-                <p className="text-lg font-bold">{s.value}</p>
-                <p className="text-xs text-muted-foreground">{s.label}</p>
-              </div>
+              <StatBlock key={s.label} label={s.label} value={s.value} />
             ))}
           </div>
         </div>

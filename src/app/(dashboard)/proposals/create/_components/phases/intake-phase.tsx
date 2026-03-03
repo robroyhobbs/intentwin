@@ -3,6 +3,8 @@
 import { useCallback, useState } from "react";
 import { useCreateFlow } from "../create-provider";
 import { StepIndicator } from "../shared/step-indicator";
+import { PhaseIcon } from "../shared/phase-icon";
+import { StatBlock } from "../shared/stat-block";
 import {
   uploadAndExtract,
   fetchUrlAndExtract,
@@ -21,12 +23,15 @@ import { logger } from "@/lib/utils/logger";
 
 function IntakeHeader() {
   return (
-    <div>
-      <h2 className="text-lg font-semibold">Upload RFP Documents</h2>
-      <p className="text-sm text-muted-foreground mt-1">
-        Upload your RFP documents or paste a solicitation URL and we will
-        automatically extract key details to kickstart your proposal.
-      </p>
+    <div className="flex items-center gap-3">
+      <PhaseIcon phase="intake" state="active" />
+      <div>
+        <h2 className="text-xl font-bold">Upload RFP Documents</h2>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Upload your RFP or paste a URL — we extract requirements, criteria,
+          and gaps automatically.
+        </p>
+      </div>
     </div>
   );
 }
@@ -69,25 +74,23 @@ function ExtractionSummary({
 }: {
   summary: ReturnType<typeof getExtractionSummary>;
 }) {
-  const rows = [
-    { label: "Client / Agency", value: summary.clientName },
-    { label: "Solicitation Type", value: summary.solicitationType },
-    { label: "Requirements", value: String(summary.requirementsCount) },
-    { label: "Budget Range", value: summary.budgetRange },
-    { label: "Critical Gaps", value: String(summary.criticalGaps) },
-  ];
-
   return (
-    <div className="rounded-xl border border-border bg-card p-6">
+    <div className="card p-6">
       <h3 className="text-sm font-semibold mb-4">Extraction Summary</h3>
-      <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
-        {rows.map((r) => (
-          <div key={r.label}>
-            <dt className="text-xs text-muted-foreground">{r.label}</dt>
-            <dd className="text-sm font-medium mt-0.5">{r.value}</dd>
-          </div>
-        ))}
-      </dl>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
+        <StatBlock label="Client" value={summary.clientName} />
+        <StatBlock label="Type" value={summary.solicitationType} />
+        <StatBlock
+          label="Requirements"
+          value={String(summary.requirementsCount)}
+        />
+        <StatBlock label="Budget" value={summary.budgetRange} />
+        <StatBlock
+          label="Critical Gaps"
+          value={String(summary.criticalGaps)}
+          color={summary.criticalGaps > 0 ? "danger" : "success"}
+        />
+      </div>
     </div>
   );
 }

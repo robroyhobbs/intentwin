@@ -4,6 +4,7 @@ import { useCallback } from "react";
 import type { CreatePhase } from "./create-types";
 import { useCreateFlow } from "./create-provider";
 import { clearState } from "./create-persistence";
+import { PhaseIcon } from "./shared/phase-icon";
 
 const PHASES: { key: CreatePhase; label: string }[] = [
   { key: "intake", label: "Intake" },
@@ -28,29 +29,7 @@ function isPhaseReachable(
   return completed.has(PHASES[idx - 1].key);
 }
 
-function CheckIcon() {
-  return (
-    <svg
-      className="h-3.5 w-3.5"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={3}
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-    </svg>
-  );
-}
-
-function PhaseItem({
-  phaseKey,
-  label,
-  index,
-  isActive,
-  isCompleted,
-  reachable,
-  onSelect,
-}: {
+interface PhaseItemProps {
   phaseKey: CreatePhase;
   label: string;
   index: number;
@@ -58,26 +37,41 @@ function PhaseItem({
   isCompleted: boolean;
   reachable: boolean;
   onSelect: (phase: CreatePhase) => void;
-}) {
+}
+
+function PhaseItem(props: PhaseItemProps) {
+  const { phaseKey, label, index, isActive, isCompleted, reachable, onSelect } =
+    props;
+  const iconState = isCompleted
+    ? "completed"
+    : isActive
+      ? "active"
+      : "inactive";
+  const labelCls = isActive
+    ? "text-foreground font-bold"
+    : isCompleted
+      ? "text-[var(--accent)]"
+      : "text-muted-foreground";
+
   return (
     <div className="flex items-center shrink-0">
       {index > 0 && (
         <div
-          className={`w-6 sm:w-10 h-0.5 ${isCompleted || isActive ? "bg-primary" : "bg-border"}`}
+          className={`w-8 sm:w-12 h-0.5 transition-colors duration-500 ${
+            isCompleted || isActive ? "bg-[var(--accent)]" : "bg-border"
+          }`}
         />
       )}
       <button
         onClick={() => reachable && onSelect(phaseKey)}
         disabled={!reachable}
-        className={`flex items-center gap-2 sm:gap-2.5 transition-all ${!reachable ? "cursor-not-allowed opacity-40" : "cursor-pointer"}`}
+        className={`flex items-center gap-2 sm:gap-3 transition-all ${
+          !reachable ? "cursor-not-allowed opacity-40" : "cursor-pointer"
+        }`}
       >
-        <div
-          className={`flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full text-xs font-bold transition-all shrink-0 ${isCompleted ? "bg-primary text-primary-foreground" : ""} ${isActive && !isCompleted ? "border-2 border-primary text-primary bg-primary/5" : ""} ${!isActive && !isCompleted ? "border-2 border-muted text-muted-foreground" : ""}`}
-        >
-          {isCompleted ? <CheckIcon /> : index + 1}
-        </div>
+        <PhaseIcon phase={phaseKey} state={iconState} size="sm" />
         <span
-          className={`text-xs sm:text-sm font-medium transition-colors ${isActive ? "text-foreground" : ""} ${isCompleted && !isActive ? "text-primary" : ""} ${!isActive && !isCompleted ? "text-muted-foreground" : ""}`}
+          className={`text-xs sm:text-sm font-medium transition-colors ${labelCls}`}
         >
           {label}
         </span>
@@ -126,7 +120,7 @@ export function PhaseStrip({ currentPhase, completedPhases }: PhaseStripProps) {
             Start over
           </button>
         )}
-        <span className="text-xs font-medium text-muted-foreground bg-muted px-2.5 py-1 rounded-full">
+        <span className="badge badge-accent">
           {Math.round((completedPhases.size / 4) * 100)}%
         </span>
       </div>

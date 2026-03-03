@@ -4,18 +4,22 @@ import { useCallback, useEffect, useRef } from "react";
 import { useCreateFlow } from "../create-provider";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
 import { SectionCard } from "../shared/section-card";
+import { PhaseIcon } from "../shared/phase-icon";
 import { runDraftFlow, regenerateSection } from "./draft-helpers";
 
 // ── Small presentational pieces ─────────────────────────────────────────────
 
 function DraftHeader() {
   return (
-    <div>
-      <h2 className="text-lg font-semibold">Proposal Draft</h2>
-      <p className="text-sm text-muted-foreground mt-1">
-        Your proposal sections are being generated. Review each section as it
-        completes.
-      </p>
+    <div className="flex items-center gap-3">
+      <PhaseIcon phase="draft" state="active" />
+      <div>
+        <h2 className="text-xl font-bold">Proposal Draft</h2>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Sections generate from your RFP analysis and win themes. Review each
+          as it completes.
+        </p>
+      </div>
     </div>
   );
 }
