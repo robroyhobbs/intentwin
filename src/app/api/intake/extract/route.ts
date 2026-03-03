@@ -215,27 +215,28 @@ export async function POST(request: NextRequest) {
       "Analyze the provided RFP content",
     );
 
-    const [extracted, assumptionsResponseRaw] = await Promise.all([
-      runParallelExtraction({
-        content: combinedContent,
-        contentType: resolvedContentType,
-        generateFn: generateText,
-        parseFn: extractJsonFromResponse,
-        systemPrompt: EXTRACTION_SYSTEM_PROMPT,
-        fallbackBuilder: buildExtractionPrompt,
-      }),
-      generateText(assumptionsPromptEarly, {
-        systemPrompt:
-          "You are an expert proposal analyst. Respond with valid JSON only — a JSON array of assumption objects.",
-        temperature: 0.4,
-        maxTokens: 4096,
-      }).catch((err) => {
-        logger.warn("Assumptions generation failed during extraction", {
-          error: err instanceof Error ? err.message : String(err),
-        });
-        return null;
-      }),
-    ]);
+    // Run extraction first, then assumptions — avoids 4 concurrent Gemini
+    // calls which can trigger rate limits on the API key.
+    const extracted = await runParallelExtraction({
+      content: combinedContent,
+      contentType: resolvedContentType,
+      generateFn: generateText,
+      parseFn: extractJsonFromResponse,
+      systemPrompt: EXTRACTION_SYSTEM_PROMPT,
+      fallbackBuilder: buildExtractionPrompt,
+    });
+
+    const assumptionsResponseRaw = await generateText(assumptionsPromptEarly, {
+      systemPrompt:
+        "You are an expert proposal analyst. Respond with valid JSON only — a JSON array of assumption objects.",
+      temperature: 0.4,
+      maxTokens: 4096,
+    }).catch((err) => {
+      logger.warn("Assumptions generation failed during extraction", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+      return null;
+    });
 
     // Add source tracking
     if (document_ids?.length > 0) {

@@ -32,6 +32,21 @@ interface ParallelResults {
   rfpStructure: Record<string, unknown> | null;
 }
 
+interface ExtractCall {
+  name: string;
+  prompt: string;
+  maxTokens: number;
+}
+
+interface ExtractionOpts {
+  content: string;
+  contentType: ContentType;
+  generateFn: GenerateFn;
+  parseFn: ParseFn;
+  systemPrompt: string;
+  fallbackBuilder: (c: string, ct: ContentType) => string;
+}
+
 // ── Merge Results ────────────────────────────────────────────────────────────
 
 export function mergeExtractionResults(
@@ -68,42 +83,63 @@ export function mergeExtractionResults(
 
 // ── Parallel Orchestrator ────────────────────────────────────────────────────
 
-export async function runParallelExtraction(opts: {
-  content: string;
-  contentType: ContentType;
-  generateFn: GenerateFn;
-  parseFn: ParseFn;
-  systemPrompt: string;
-  fallbackBuilder: (c: string, ct: ContentType) => string;
-}): Promise<ExtractedIntake> {
-  const { content, contentType, generateFn, parseFn, systemPrompt } = opts;
+/** Stagger delay between launching parallel calls to avoid rate limits */
+const STAGGER_MS = 300;
+/** Delay before fallback to let rate limits recover */
+const FALLBACK_DELAY_MS = 2_000;
+
+/** Launch 3 staggered extraction calls and return their settled results. */
+async function launchStaggeredCalls(
+  calls: ExtractCall[],
+  opts: Pick<ExtractionOpts, "generateFn" | "parseFn" | "systemPrompt">,
+): Promise<PromiseSettledResult<Record<string, unknown> | null>[]> {
+  const promises: Promise<Record<string, unknown> | null>[] = [];
+  for (let i = 0; i < calls.length; i++) {
+    const c = calls[i];
+    promises.push(
+      extractWithParse({
+        name: c.name,
+        generateFn: opts.generateFn,
+        parseFn: opts.parseFn,
+        systemPrompt: opts.systemPrompt,
+        prompt: c.prompt,
+        maxTokens: c.maxTokens,
+      }),
+    );
+    if (i < calls.length - 1) await delay(STAGGER_MS);
+  }
+  return Promise.allSettled(promises);
+}
+
+export async function runParallelExtraction(
+  opts: ExtractionOpts,
+): Promise<ExtractedIntake> {
+  const { content, contentType } = opts;
   const truncated = truncateForQuickFields(content);
 
-  const [qfResult, reqResult, rfpResult] = await Promise.allSettled([
-    extractWithParse(
-      generateFn, parseFn, systemPrompt,
-      buildQuickFieldsPrompt(truncated, contentType), 4096,
-    ),
-    extractWithParse(
-      generateFn, parseFn, systemPrompt,
-      buildRequirementsPrompt(content, contentType), 6144,
-    ),
-    extractWithParse(
-      generateFn, parseFn, systemPrompt,
-      buildRfpStructurePrompt(content, contentType), 8192,
-    ),
-  ]);
+  logger.info("Starting parallel extraction", {
+    contentLength: content.length,
+    truncatedLength: truncated.length,
+    contentType,
+  });
+
+  const calls: ExtractCall[] = [
+    { name: "quickFields", prompt: buildQuickFieldsPrompt(truncated, contentType), maxTokens: 4096 },
+    { name: "requirements", prompt: buildRequirementsPrompt(content, contentType), maxTokens: 6144 },
+    { name: "rfpStructure", prompt: buildRfpStructurePrompt(content, contentType), maxTokens: 8192 },
+  ];
+
+  const [qfResult, reqResult, rfpResult] = await launchStaggeredCalls(calls, opts);
 
   const quickFields = fulfilled(qfResult);
   const requirements = fulfilled(reqResult);
   const rfpStructure = fulfilled(rfpResult);
-  const count = [quickFields, requirements, rfpStructure].filter(
-    Boolean,
-  ).length;
+  const count = [quickFields, requirements, rfpStructure].filter(Boolean).length;
 
   logExtractionOutcome(qfResult, reqResult, rfpResult, count);
 
   if (count === 0) {
+    await delay(FALLBACK_DELAY_MS);
     return runFallback(opts);
   }
 
@@ -112,25 +148,55 @@ export async function runParallelExtraction(opts: {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-async function extractWithParse(
-  generateFn: GenerateFn,
-  parseFn: ParseFn,
-  systemPrompt: string,
-  prompt: string,
-  maxTokens: number,
-): Promise<Record<string, unknown> | null> {
-  const raw = await generateFn(prompt, {
-    systemPrompt,
-    temperature: 0.3,
-    maxTokens,
-  });
-  return parseFn(raw);
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function extractWithParse(args: {
+  name: string;
+  generateFn: GenerateFn;
+  parseFn: ParseFn;
+  systemPrompt: string;
+  prompt: string;
+  maxTokens: number;
+}): Promise<Record<string, unknown> | null> {
+  let raw: string;
+  try {
+    raw = await args.generateFn(args.prompt, {
+      systemPrompt: args.systemPrompt,
+      temperature: 0.3,
+      maxTokens: args.maxTokens,
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.error(`Extractor "${args.name}" AI call failed`, {
+      error: msg.slice(0, 300),
+    });
+    throw err;
+  }
+
+  const parsed = args.parseFn(raw);
+  if (!parsed) {
+    logger.warn(`Extractor "${args.name}" returned unparseable response`, {
+      responseLength: raw.length,
+      responseSnippet: raw.slice(0, 200),
+    });
+  }
+  return parsed;
 }
 
 function fulfilled(
   r: PromiseSettledResult<Record<string, unknown> | null>,
 ): Record<string, unknown> | null {
   return r.status === "fulfilled" ? r.value : null;
+}
+
+function rejectionReason(r: PromiseSettledResult<unknown>): string {
+  if (r.status === "rejected") {
+    const err = r.reason;
+    return err instanceof Error ? err.message.slice(0, 150) : String(err);
+  }
+  return r.status;
 }
 
 function logExtractionOutcome(
@@ -143,23 +209,21 @@ function logExtractionOutcome(
     logger.info("Parallel extraction: all 3 extractors succeeded");
   } else if (count > 0) {
     logger.warn("Parallel extraction: partial success", {
-      quickFields: qf.status,
-      requirements: req.status,
-      rfpStructure: rfp.status,
+      quickFields: rejectionReason(qf),
+      requirements: rejectionReason(req),
+      rfpStructure: rejectionReason(rfp),
     });
   } else {
-    logger.warn("Parallel extraction: all 3 failed, attempting fallback");
+    logger.error("Parallel extraction: all 3 failed", undefined, {
+      quickFields: rejectionReason(qf),
+      requirements: rejectionReason(req),
+      rfpStructure: rejectionReason(rfp),
+    });
   }
 }
 
-async function runFallback(opts: {
-  content: string;
-  contentType: ContentType;
-  generateFn: GenerateFn;
-  parseFn: ParseFn;
-  systemPrompt: string;
-  fallbackBuilder: (c: string, ct: ContentType) => string;
-}): Promise<ExtractedIntake> {
+async function runFallback(opts: ExtractionOpts): Promise<ExtractedIntake> {
+  logger.info("Running single-call fallback extraction");
   const prompt = opts.fallbackBuilder(opts.content, opts.contentType);
   const raw = await opts.generateFn(prompt, {
     systemPrompt: opts.systemPrompt,
@@ -167,6 +231,13 @@ async function runFallback(opts: {
     maxTokens: 12288,
   });
   const parsed = opts.parseFn(raw);
-  if (!parsed) throw new Error("Failed to parse fallback extraction results");
+  if (!parsed) {
+    logger.error("Fallback extraction: unparseable response", undefined, {
+      responseLength: raw.length,
+      responseSnippet: raw.slice(0, 200),
+    });
+    throw new Error("Failed to parse fallback extraction results");
+  }
+  logger.info("Fallback extraction succeeded");
   return parsed as unknown as ExtractedIntake;
 }
