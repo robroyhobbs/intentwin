@@ -5,34 +5,6 @@ import { SCORING_FACTORS } from "@/lib/ai/bid-scoring";
 import type { CoachInsight, CreateFlowState } from "./create-types";
 import type { ReadinessItem } from "./shared/readiness-checklist";
 
-function buildStrengths(
-  ev: NonNullable<CreateFlowState["bidEvaluation"]>,
-): CoachInsight[] {
-  return SCORING_FACTORS.filter(
-    (f) => (ev.ai_scores[f.key]?.score ?? 0) >= 70,
-  ).map((f) => ({
-    id: `str-${f.key}`,
-    label: f.label,
-    value: `${ev.ai_scores[f.key].score}/100`,
-    detail: ev.ai_scores[f.key].rationale.slice(0, 100),
-    severity: "low" as const,
-  }));
-}
-
-function buildConcerns(
-  ev: NonNullable<CreateFlowState["bidEvaluation"]>,
-): CoachInsight[] {
-  return SCORING_FACTORS.filter(
-    (f) => (ev.ai_scores[f.key]?.score ?? 100) < 60,
-  ).map((f) => ({
-    id: `con-${f.key}`,
-    label: f.label,
-    value: `${ev.ai_scores[f.key].score}/100`,
-    detail: ev.ai_scores[f.key].rationale.slice(0, 100),
-    severity: "high" as const,
-  }));
-}
-
 function buildNextTimeTips(state: CreateFlowState): CoachInsight[] {
   const tips: CoachInsight[] = [];
   const ev = state.bidEvaluation;
@@ -109,40 +81,10 @@ function buildChecklistInsights(state: CreateFlowState): CoachInsight[] {
   return insights;
 }
 
-function buildEvalInsights(
-  ev: NonNullable<CreateFlowState["bidEvaluation"]>,
-): CoachInsight[] {
-  const insights: CoachInsight[] = [];
-  const strengths = buildStrengths(ev);
-  const concerns = buildConcerns(ev);
-  if (strengths.length > 0) {
-    insights.push({
-      id: "fin-strengths-header",
-      label: "Your Strengths",
-      value: `${strengths.length} strong areas`,
-      severity: "low",
-    });
-    insights.push(...strengths);
-  }
-  if (concerns.length > 0) {
-    insights.push({
-      id: "fin-concerns-header",
-      label: "Areas of Concern",
-      value: `${concerns.length} to watch`,
-      severity: "high",
-    });
-    insights.push(...concerns);
-  }
-  return insights;
-}
-
 export function buildFinalizeInsights(state: CreateFlowState): CoachInsight[] {
   const checklist = buildChecklistInsights(state);
-  const evalInsights = state.bidEvaluation
-    ? buildEvalInsights(state.bidEvaluation)
-    : [];
   const tips = buildNextTimeTips(state);
-  return [...checklist, ...evalInsights, ...tips];
+  return [...checklist, ...tips];
 }
 
 export function buildReadinessItems(state: CreateFlowState): ReadinessItem[] {
