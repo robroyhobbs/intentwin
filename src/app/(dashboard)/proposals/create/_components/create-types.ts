@@ -50,13 +50,26 @@ export interface CoachPrompt {
   importance: "critical" | "helpful" | "nice_to_have";
 }
 
+/** A specific capability gap identified from bid evaluation. */
+export interface GapItem {
+  id: string;
+  factor: string;
+  rationale: string;
+  score: number;
+}
+
+/** A specific strength identified from bid evaluation. */
+export interface StrengthItem {
+  id: string;
+  factor: string;
+  rationale: string;
+  score: number;
+}
+
 export interface CoachContent {
   whyItMatters: string;
-  signals: string[];
   riskFlags: RiskFlag[];
-  citations: { id: string; label: string }[];
-  actions: { label: string; actionType: string }[];
-  /** Detailed insights grouped by topic (factor rationales, field confidence, etc.). */
+  /** Detailed insights grouped by topic. */
   insights?: CoachInsight[];
   /** Gap-filling prompts suggesting what info the user should add. */
   prompts?: CoachPrompt[];
@@ -64,6 +77,12 @@ export interface CoachContent {
   nextStep?: string;
   /** Readiness checklist items (finalize phase only). */
   readinessItems?: ReadinessItem[];
+  /** Go/no-go verdict from bid evaluation (strategy + finalize). */
+  verdict?: "bid" | "evaluate" | "pass";
+  /** Specific capability gaps (strategy + finalize). */
+  gaps?: GapItem[];
+  /** Specific strengths (strategy + finalize). */
+  strengths?: StrengthItem[];
 }
 
 export type ExtractionStep = "uploading" | "processing" | "extracting";

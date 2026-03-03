@@ -6,6 +6,8 @@ import type {
   CoachInsight,
   CoachPrompt,
   CreateFlowState,
+  GapItem,
+  StrengthItem,
 } from "./create-types";
 import type { ExtractedIntake } from "@/types/intake";
 
@@ -94,24 +96,33 @@ export function buildIntakePrompts(data: ExtractedIntake): CoachPrompt[] {
     }));
 }
 
-// ── Strategy Insights ───────────────────────────────────────────────────────
-
-function buildFactorRationales(
+export function buildGapItems(
   ev: NonNullable<CreateFlowState["bidEvaluation"]>,
-): CoachInsight[] {
-  const insights: CoachInsight[] = [];
-  for (const f of SCORING_FACTORS) {
-    const fs = ev.ai_scores[f.key];
-    if (!fs) continue;
-    insights.push({
-      id: `rat-${f.key}`,
-      label: `${f.label} (${fs.score})`,
-      value: fs.rationale,
-      severity: fs.score < 40 ? "high" : fs.score < 70 ? "medium" : "low",
-    });
-  }
-  return insights;
+): GapItem[] {
+  return SCORING_FACTORS.filter(
+    (f) => (ev.ai_scores[f.key]?.score ?? 100) < 60,
+  ).map((f) => ({
+    id: `gap-${f.key}`,
+    factor: f.label,
+    rationale: ev.ai_scores[f.key]?.rationale ?? "",
+    score: ev.ai_scores[f.key]?.score ?? 0,
+  }));
 }
+
+export function buildStrengthItems(
+  ev: NonNullable<CreateFlowState["bidEvaluation"]>,
+): StrengthItem[] {
+  return SCORING_FACTORS.filter(
+    (f) => (ev.ai_scores[f.key]?.score ?? 0) >= 70,
+  ).map((f) => ({
+    id: `str-${f.key}`,
+    factor: f.label,
+    rationale: ev.ai_scores[f.key]?.rationale ?? "",
+    score: ev.ai_scores[f.key]?.score ?? 0,
+  }));
+}
+
+// ── Strategy Insights ───────────────────────────────────────────────────────
 
 function buildIntelInsights(
   intel: NonNullable<
@@ -162,9 +173,7 @@ function buildIntelInsights(
 export function buildStrategyInsights(state: CreateFlowState): CoachInsight[] {
   const ev = state.bidEvaluation;
   if (!ev) return [];
-  const rationales = buildFactorRationales(ev);
-  const intel = ev.intelligence ? buildIntelInsights(ev.intelligence) : [];
-  return [...rationales, ...intel];
+  return ev.intelligence ? buildIntelInsights(ev.intelligence) : [];
 }
 
 // ── Draft Insights ──────────────────────────────────────────────────────────

@@ -9,6 +9,8 @@ import {
   buildStrategyInsights,
   buildDraftInsights,
   buildFinalizeInsights,
+  buildGapItems,
+  buildStrengthItems,
 } from "./coach-insights";
 import { buildReadinessItems } from "./coach-insights-finalize";
 
@@ -71,26 +73,24 @@ function buildExtractionCompleteCoach(state: CreateFlowState): CoachContent {
   const data = state.extractedData!;
   const criticalGaps = data.gaps.filter((g) => g.importance === "critical");
 
-  const riskFlags: RiskFlag[] = criticalGaps.map((g) => ({
-    id: `gap-${g.field}`,
-    label: `Missing: ${g.field.replace(/_/g, " ")}`,
-    severity: "high" as const,
-  }));
+  const riskFlags: RiskFlag[] = [];
 
   const advisory =
     criticalGaps.length > 0
       ? "Extraction complete but some critical information is missing. Fill in the gaps below using the Buyer Goal field or re-upload a more complete document."
       : "Extraction looks good. Review the summary and add any context via the Buyer Goal field before moving to Strategy.";
 
+  const nextStep =
+    criticalGaps.length > 0
+      ? "Critical information missing — fill in gaps below"
+      : "Review extraction, then continue to Strategy";
+
   return {
     whyItMatters: advisory,
-    signals: [],
     riskFlags,
-    citations: [],
-    actions: [],
     insights: buildIntakeInsights(data),
     prompts: buildIntakePrompts(data),
-    nextStep: "Review the extraction and fill any gaps below",
+    nextStep,
   };
 }
 
@@ -106,35 +106,29 @@ function getStrategyCoach(state: CreateFlowState): CoachContent {
     };
   }
 
-  const score = state.bidEvaluation.weighted_total;
-  const insights = buildStrategyInsights(state);
+  const ev = state.bidEvaluation;
+  const gaps = buildGapItems(ev);
+  const strengths = buildStrengthItems(ev);
 
   let whyItMatters: string;
-  let riskFlags: RiskFlag[];
-
-  if (score < 40) {
+  if (ev.recommendation === "pass") {
     whyItMatters =
-      "This opportunity has weak alignment with your capabilities. Review the factor rationales below — consider passing, teaming with a partner, or identifying a unique differentiator before proceeding.";
-    riskFlags = [{ id: "low-score", label: "Low bid score", severity: "high" }];
-  } else if (score <= 70) {
+      "This opportunity has weak alignment with your capabilities. Review the gaps below — consider passing, teaming with a partner, or identifying a unique differentiator before proceeding.";
+  } else if (ev.recommendation === "evaluate") {
     whyItMatters =
-      "Moderate alignment — winnable with the right strategy. Review factor rationales below and select win themes that compensate for weaker areas.";
-    riskFlags = [
-      { id: "moderate-score", label: "Moderate alignment", severity: "medium" },
-    ];
+      "Some gaps exist but the opportunity is winnable with the right strategy. Review gaps and strengths below, then select win themes that compensate for weaker areas.";
   } else {
     whyItMatters =
-      "Strong fit. Focus on selecting win themes that emphasize your best differentiators. The factor rationales below show where you excel.";
-    riskFlags = [];
+      "Strong fit. Focus on selecting win themes that emphasize your best differentiators. Your strengths are shown below.";
   }
 
   return {
     whyItMatters,
-    signals: [],
-    riskFlags,
-    citations: [],
-    actions: [],
-    insights,
+    riskFlags: [],
+    insights: buildStrategyInsights(state),
+    verdict: ev.recommendation,
+    gaps,
+    strengths,
     nextStep: "Select win themes that emphasize your strengths",
   };
 }
@@ -188,10 +182,7 @@ function getDraftCoach(state: CreateFlowState): CoachContent {
 
   return {
     whyItMatters: advisory,
-    signals: [],
     riskFlags,
-    citations: [],
-    actions: [],
     insights,
     nextStep: draftNextStep,
   };
@@ -220,15 +211,17 @@ function getFinalizeCoach(state: CreateFlowState): CoachContent {
     nextStep = "Ready to export — download as DOCX or PDF";
   }
 
+  const ev = state.bidEvaluation;
+
   return {
     whyItMatters,
-    signals: [],
     riskFlags,
-    citations: [],
-    actions: [],
     insights,
     nextStep,
     readinessItems: buildReadinessItems(state),
+    verdict: ev?.recommendation,
+    gaps: ev ? buildGapItems(ev) : undefined,
+    strengths: ev ? buildStrengthItems(ev) : undefined,
   };
 }
 
@@ -283,9 +276,6 @@ function buildFinalizeSummary(state: CreateFlowState): string {
 function emptyCoach(): CoachContent {
   return {
     whyItMatters: "",
-    signals: [],
     riskFlags: [],
-    citations: [],
-    actions: [],
   };
 }
