@@ -387,7 +387,7 @@ ${buildEditorialStandards(solicitationType, ctx.audienceProfile, ctx.primaryBran
             () =>
               reject(
                 new Error(
-                  `AI generation timed out after 90s for section ${sectionType}`,
+                  `AI generation timed out after ${SECTION_TIMEOUT_MS / 1000}s for section ${sectionType}`,
                 ),
               ),
             SECTION_TIMEOUT_MS,

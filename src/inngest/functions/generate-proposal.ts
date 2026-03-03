@@ -34,12 +34,12 @@ const log = createLogger({ operation: "generate-proposal" });
 export const generateProposalFn = inngest.createFunction(
   {
     id: "generate-proposal",
-    // CRITICAL: retries must be 0 to prevent the deadly retry loop.
-    // When the function retries, build-context re-runs and DELETES all
-    // existing sections — including ones that already completed successfully.
-    // This causes the user to see sections appear, then vanish.
-    // Individual steps still get their own retries (default 3 per step).
-    retries: 0,
+    // In Inngest v3+, `retries` sets the max retry count PER STEP.
+    // Steps are memoized after success — build-context won't re-run on
+    // step retries. Only the failed step re-executes. 3 retries give
+    // each section 4 total attempts with exponential backoff, critical
+    // for surviving Gemini API rate limits during concurrent batches.
+    retries: 3,
     cancelOn: [
       {
         event: "proposal/generate.cancelled",
@@ -346,16 +346,16 @@ export const generateProposalFn = inngest.createFunction(
       }
     }
 
-    // Steps 3-N: Generate remaining sections in BATCHES of 3.
+    // Steps 3-N: Generate remaining sections in BATCHES of 2.
     // Firing all 10+ sections simultaneously overwhelms the Gemini API
-    // with concurrent requests, causing rate-limit failures. Batching
-    // keeps concurrent load manageable while still parallelizing within
-    // each batch. Inngest retries individual steps independently.
+    // with concurrent requests, causing rate-limit failures. Small batches
+    // keep concurrent load manageable. Failed sections get a sequential
+    // rescue pass afterward. Inngest retries individual steps (up to 3x).
     const remainingSections = sections.filter(
       (s) => s.sectionType !== "executive_summary",
     );
 
-    const BATCH_SIZE = 4;
+    const BATCH_SIZE = 2;
     const batches: (typeof remainingSections)[] = [];
     for (let i = 0; i < remainingSections.length; i += BATCH_SIZE) {
       batches.push(remainingSections.slice(i, i + BATCH_SIZE));
@@ -378,7 +378,7 @@ export const generateProposalFn = inngest.createFunction(
       const batch = batches[batchIdx];
 
       if (batchIdx > 0) {
-        await step.sleep(`batch-delay-${batchIdx}`, "1s");
+        await step.sleep(`batch-delay-${batchIdx}`, "3s");
       }
 
       log.info(`Processing batch ${batchIdx + 1}/${batches.length}`, {
@@ -452,11 +452,58 @@ export const generateProposalFn = inngest.createFunction(
       });
     });
 
-    // Step 12: Finalize proposal status
-    // CRITICAL: This step must NEVER throw. If all sections failed, we set
-    // status to DRAFT and return gracefully. Throwing here triggers Inngest
-    // retries which re-run build-context → delete sections → retry generation,
-    // creating the "sections appear then vanish" bug the user reported.
+    // Rescue pass: retry failed sections one-at-a-time (no contention).
+    // Sections that failed due to rate limits during batched generation
+    // have a high success rate when retried individually.
+    const failedSections = remainingSections.filter((s, i) => {
+      return remainingResults[i].status === "rejected";
+    });
+    if (execFailed && execSection) {
+      failedSections.unshift(execSection);
+    }
+
+    if (failedSections.length > 0) {
+      log.info("Starting rescue pass for failed sections", {
+        proposalId,
+        count: failedSections.length,
+        sections: failedSections.map((s) => s.sectionType),
+      });
+
+      for (const section of failedSections) {
+        await step.sleep(`rescue-delay-${section.sectionType}`, "2s");
+        try {
+          await step.run(`rescue-${section.sectionType}`, async () => {
+            const supabase = createAdminClient();
+            const { data } = await supabase
+              .from("proposal_sections")
+              .select("generation_status")
+              .eq("id", section.id)
+              .single();
+            if (data?.generation_status === GenerationStatus.COMPLETED) {
+              return { skipped: true };
+            }
+            return generateSingleSection(
+              section.id,
+              section.sectionType,
+              ctx,
+              differentiators,
+            );
+          });
+          // Update tracking map on rescue success
+          sectionResultMap.set(section.sectionType, { status: "fulfilled" });
+          log.info(`Rescue succeeded: ${section.sectionType}`, { proposalId });
+        } catch (err) {
+          log.warn(`Rescue failed: ${section.sectionType}`, {
+            proposalId,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }
+    }
+
+    // Finalize proposal status.
+    // This step must NEVER throw. If all sections failed, we set
+    // status to DRAFT and return gracefully.
     const result = await step.run("finalize", async () => {
       const supabase = createAdminClient();
       const finalizeLog = createLogger({ operation: "finalize", proposalId });
