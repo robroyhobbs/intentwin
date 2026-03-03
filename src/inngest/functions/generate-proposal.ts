@@ -355,7 +355,7 @@ export const generateProposalFn = inngest.createFunction(
       (s) => s.sectionType !== "executive_summary",
     );
 
-    const BATCH_SIZE = 3;
+    const BATCH_SIZE = 4;
     const batches: (typeof remainingSections)[] = [];
     for (let i = 0; i < remainingSections.length; i += BATCH_SIZE) {
       batches.push(remainingSections.slice(i, i + BATCH_SIZE));
@@ -378,7 +378,7 @@ export const generateProposalFn = inngest.createFunction(
       const batch = batches[batchIdx];
 
       if (batchIdx > 0) {
-        await step.sleep(`batch-delay-${batchIdx}`, "2s");
+        await step.sleep(`batch-delay-${batchIdx}`, "1s");
       }
 
       log.info(`Processing batch ${batchIdx + 1}/${batches.length}`, {

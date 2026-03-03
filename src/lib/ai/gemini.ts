@@ -117,17 +117,40 @@ export interface GenerateOptions {
   maxTokens?: number;
   temperature?: number;
   model?: string;
+  thinkingLevel?: "none" | "low" | "medium" | "high";
 }
 
 const FALLBACK_MODEL = "gemini-2.0-flash";
 
+/** Check whether an error is retriable (rate limit, overload, timeout, etc.) */
+function isRetryableError(msg: string): boolean {
+  const lower = msg.toLowerCase();
+  return (
+    lower.includes("503") ||
+    lower.includes("service unavailable") ||
+    lower.includes("overloaded") ||
+    lower.includes("high demand") ||
+    lower.includes("429") ||
+    lower.includes("rate limit") ||
+    lower.includes("quota") ||
+    lower.includes("unavailable") ||
+    lower.includes("timed out") ||
+    lower.includes("timeout")
+  );
+}
+
+/** Sleep for the given number of milliseconds. */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /**
- * Generates text using Google Gemini with automatic model fallback.
- * Tries the primary model first, then falls back to a stable model on retryable errors
- * (503, 429, model not found, etc.).
+ * Generates text using Google Gemini with exponential backoff and model fallback.
+ * Tries the primary model up to 2 times with backoff, then falls back to a stable
+ * model (also with retries) on retriable errors (429, 503, timeout, etc.).
  *
  * @param prompt - The user/content prompt to send to the model
- * @param options - Generation configuration (model, temperature, maxTokens, systemPrompt)
+ * @param options - Generation configuration (model, temperature, maxTokens, systemPrompt, thinkingLevel)
  * @returns The generated text response from Gemini
  * @throws {Error} When all model attempts fail with non-retryable errors
  *
@@ -142,78 +165,100 @@ export async function generateText(
   const primaryModel =
     options.model ||
     process.env.GEMINI_MODEL?.trim() ||
-    "gemini-3.1-pro-preview";
+    "gemini-3.1-flash-lite-preview";
 
   const modelsToTry = [primaryModel];
   if (primaryModel !== FALLBACK_MODEL) {
     modelsToTry.push(FALLBACK_MODEL);
   }
 
+  const MAX_RETRIES_PER_MODEL = 2;
+  const RETRY_DELAYS_MS = [1000, 2000];
   let lastError: Error | null = null;
 
-  for (const modelName of modelsToTry) {
-    try {
-      const model = genAI.getGenerativeModel(
-        {
-          model: modelName,
-          systemInstruction: options.systemPrompt || SYSTEM_PROMPT,
-          generationConfig: {
-            maxOutputTokens: options.maxTokens || 4096,
-            temperature: options.temperature ?? 0.7,
+  for (let modelIdx = 0; modelIdx < modelsToTry.length; modelIdx++) {
+    const modelName = modelsToTry[modelIdx];
+
+    // Add a short delay before switching to fallback model
+    if (modelIdx > 0) {
+      await sleep(500);
+    }
+
+    for (let attempt = 0; attempt < MAX_RETRIES_PER_MODEL; attempt++) {
+      try {
+        // Build generation config with optional thinking support
+        const genConfig: Record<string, unknown> = {
+          maxOutputTokens: options.maxTokens || 4096,
+          temperature: options.temperature ?? 0.7,
+        };
+
+        if (options.thinkingLevel && options.thinkingLevel !== "none") {
+          genConfig.thinkingConfig = {
+            thinkingLevel: options.thinkingLevel.toUpperCase(),
+          };
+        }
+
+        const model = genAI.getGenerativeModel(
+          {
+            model: modelName,
+            systemInstruction: options.systemPrompt || SYSTEM_PROMPT,
+            generationConfig:
+              genConfig as import("@google/generative-ai").GenerationConfig,
           },
-        },
-        heliconeOpts,
-      );
-
-      const result = await model.generateContent(prompt);
-      const response = result.response;
-
-      // Validate response before extracting text — Gemini can return
-      // blocked/empty responses that cause cryptic errors in .text()
-      const candidates = response.candidates;
-      if (!candidates?.length) {
-        const blockReason = response.promptFeedback?.blockReason;
-        throw new Error(
-          `AI_BLOCKED: No candidates returned (reason: ${blockReason || "unknown"})`,
+          heliconeOpts,
         );
-      }
-      const finishReason = candidates[0].finishReason;
-      if (
-        finishReason &&
-        finishReason !== "STOP" &&
-        finishReason !== "MAX_TOKENS"
-      ) {
-        throw new Error(`AI_BLOCKED: finishReason=${finishReason}`);
-      }
 
-      return response.text();
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error));
-      const msg = lastError.message.toLowerCase();
-      const isRetryable =
-        msg.includes("503") ||
-        msg.includes("service unavailable") ||
-        msg.includes("overloaded") ||
-        msg.includes("high demand") ||
-        msg.includes("not found") ||
-        msg.includes("model") ||
-        msg.includes("429") ||
-        msg.includes("rate limit") ||
-        msg.includes("quota") ||
-        msg.includes("ai_blocked") ||
-        msg.includes("safety") ||
-        msg.includes("blocked");
+        const result = await model.generateContent(prompt);
+        const response = result.response;
 
-      if (isRetryable && modelName !== FALLBACK_MODEL) {
-        logger.warn(
-          `[AI] ${modelName} failed (${lastError.message.slice(0, 100)}), falling back to ${FALLBACK_MODEL}`,
-        );
-        continue;
+        // Validate response before extracting text — Gemini can return
+        // blocked/empty responses that cause cryptic errors in .text()
+        const candidates = response.candidates;
+        if (!candidates?.length) {
+          const blockReason = response.promptFeedback?.blockReason;
+          throw new Error(
+            `AI_BLOCKED: No candidates returned (reason: ${blockReason || "unknown"})`,
+          );
+        }
+        const finishReason = candidates[0].finishReason;
+        if (
+          finishReason &&
+          finishReason !== "STOP" &&
+          finishReason !== "MAX_TOKENS"
+        ) {
+          throw new Error(`AI_BLOCKED: finishReason=${finishReason}`);
+        }
+
+        // Strip <think> tags from thinking-mode responses
+        let text = response.text();
+        text = text.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+        return text;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        const msg = lastError.message;
+
+        if (isRetryableError(msg) && attempt < MAX_RETRIES_PER_MODEL - 1) {
+          logger.warn(
+            `[AI] ${modelName} attempt ${attempt + 1} failed (${msg.slice(0, 100)}), retrying in ${RETRY_DELAYS_MS[attempt]}ms`,
+          );
+          await sleep(RETRY_DELAYS_MS[attempt]);
+          continue;
+        }
+
+        // If retriable and there's a fallback model, try it
+        if (isRetryableError(msg) && modelIdx < modelsToTry.length - 1) {
+          logger.warn(
+            `[AI] ${modelName} exhausted retries (${msg.slice(0, 100)}), falling back to ${modelsToTry[modelIdx + 1]}`,
+          );
+          break;
+        }
+
+        // Non-retriable or last model exhausted — throw
+        logger.error(`[AI] Generation failed on ${modelName}`, {
+          error: msg.slice(0, 200),
+        });
+        throw lastError;
       }
-      logger.error(`[AI] Generation failed on ${modelName}`, {
-        error: lastError.message.slice(0, 200),
-      });
-      throw lastError;
     }
   }
 

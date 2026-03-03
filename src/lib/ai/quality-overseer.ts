@@ -8,7 +8,10 @@
  */
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { GenerationStatus, QualityReviewStatus } from "@/lib/constants/statuses";
+import {
+  GenerationStatus,
+  QualityReviewStatus,
+} from "@/lib/constants/statuses";
 import { logger } from "@/lib/utils/logger";
 import { logQualityReviewMetric } from "@/lib/observability/metrics";
 import { parallelBatch, PIPELINE_CONCURRENCY } from "./pipeline/retrieval";
@@ -111,7 +114,7 @@ export interface QualityReviewResult {
 
 /** Returns the model label used for the initial "reviewing" status. */
 export function getReviewModelLabel(): string {
-  return process.env.GEMINI_MODEL || "gemini-3.1-pro-preview";
+  return process.env.GEMINI_MODEL || "gemini-3.1-flash-lite-preview";
 }
 
 /**
@@ -124,7 +127,8 @@ export async function runQualityReview(
   const reviewStartTime = performance.now();
   const supabase = createAdminClient();
   const runAt = new Date().toISOString();
-  const geminiModel = process.env.GEMINI_MODEL || "gemini-3.1-pro-preview";
+  const geminiModel =
+    process.env.GEMINI_MODEL || "gemini-3.1-flash-lite-preview";
 
   const result: QualityReviewResult = {
     status: QualityReviewStatus.REVIEWING,
@@ -193,10 +197,12 @@ export async function runQualityReview(
       (intakeData.client_name as string) ??
       null;
     const naicsCode = (intakeData.naics_code as string) ?? null;
-    const intelligence = await intelligenceClient.getProposalIntelligence({
-      agencyName,
-      naicsCode,
-    }).catch(() => null);
+    const intelligence = await intelligenceClient
+      .getProposalIntelligence({
+        agencyName,
+        naicsCode,
+      })
+      .catch(() => null);
 
     // Dynamic threshold: competition-aware quality bar
     const dynamicThreshold = getQualityThreshold(intelligence);
@@ -276,7 +282,8 @@ export async function runQualityReview(
           judge_reviews: [judgeResult],
         };
 
-        const isWeak = reviewStatus === "completed" && sectionScore < dynamicThreshold;
+        const isWeak =
+          reviewStatus === "completed" && sectionScore < dynamicThreshold;
 
         return { review, isWeak, sectionScore, feedback: scores.feedback };
       },
@@ -297,7 +304,10 @@ export async function runQualityReview(
           });
         }
       } else {
-        logger.error(`Review failed for section ${sections[i].id}`, settled.reason);
+        logger.error(
+          `Review failed for section ${sections[i].id}`,
+          settled.reason,
+        );
         hasFatalError = true;
       }
     }

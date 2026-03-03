@@ -372,16 +372,15 @@ ${buildEditorialStandards(solicitationType, ctx.audienceProfile, ctx.primaryBran
     });
 
     // Generate content with a timeout to prevent Gemini hangs.
-    // 90s is generous — most sections complete in 8-15s. The old 180s timeout
-    // combined with 3 retries meant a single failing section could burn tokens
-    // for 12 minutes before giving up.
-    const SECTION_TIMEOUT_MS = 90_000;
+    // 60s is generous for flash-lite — most sections complete in 3-8s.
+    const SECTION_TIMEOUT_MS = 60_000;
     let generatedContentRaw: string;
     try {
       generatedContentRaw = await Promise.race([
         generateText(prompt, {
           systemPrompt: ctx.systemPrompt,
           maxTokens: 8192,
+          thinkingLevel: "high",
         }),
         new Promise<never>((_, reject) =>
           setTimeout(
@@ -398,11 +397,11 @@ ${buildEditorialStandards(solicitationType, ctx.audienceProfile, ctx.primaryBran
     } catch (genErr) {
       const msg = genErr instanceof Error ? genErr.message : String(genErr);
       const msgLower = msg.toLowerCase();
-      // Timeouts and permanent AI errors should NOT retry — they just burn tokens.
+      // Permanent AI errors should NOT retry — they just burn tokens.
       // AI_BLOCKED comes from our own generateText() validation (safety filter,
       // empty response, etc.). These won't succeed on retry with the same prompt.
+      // NOTE: Timeouts ARE retriable — generateText() has built-in backoff.
       const isNonRetriable =
-        msgLower.includes("timed out") ||
         msgLower.includes("ai_blocked") ||
         msgLower.includes("safety") ||
         msgLower.includes("blocked") ||
@@ -418,9 +417,10 @@ ${buildEditorialStandards(solicitationType, ctx.audienceProfile, ctx.primaryBran
       rawContentLength: generatedContentRaw.length,
     });
 
-    // Strip out the Chain of Thought block before saving
+    // Strip out Chain of Thought / thinking blocks before saving
     let generatedContent = generatedContentRaw
       .replace(/<thought_process>[\s\S]*?<\/thought_process>/, "")
+      .replace(/<think>[\s\S]*?<\/think>/g, "")
       .trim();
     if (generatedContent.startsWith("```markdown")) {
       generatedContent = generatedContent

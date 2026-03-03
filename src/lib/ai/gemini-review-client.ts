@@ -28,14 +28,18 @@ export async function reviewWithGemini(prompt: string): Promise<{
   feedback: string;
 }> {
   const client = getClient();
-  const model = client.getGenerativeModel({
-    model: process.env.GEMINI_MODEL?.trim() || "gemini-3.1-pro-preview",
-    generationConfig: {
-      temperature: 0.3,
-      maxOutputTokens: 2048,
-      responseMimeType: "application/json",
+  const model = client.getGenerativeModel(
+    {
+      model:
+        process.env.GEMINI_MODEL?.trim() || "gemini-3.1-flash-lite-preview",
+      generationConfig: {
+        temperature: 0.3,
+        maxOutputTokens: 2048,
+        responseMimeType: "application/json",
+      },
     },
-  }, heliconeOpts);
+    heliconeOpts,
+  );
 
   // Race against a 45s timeout to prevent hanging
   const GEMINI_REVIEW_TIMEOUT_MS = 45_000;
@@ -43,7 +47,12 @@ export async function reviewWithGemini(prompt: string): Promise<{
     model.generateContent(prompt),
     new Promise<never>((_, reject) =>
       setTimeout(
-        () => reject(new Error(`Gemini review timed out after ${GEMINI_REVIEW_TIMEOUT_MS / 1000}s`)),
+        () =>
+          reject(
+            new Error(
+              `Gemini review timed out after ${GEMINI_REVIEW_TIMEOUT_MS / 1000}s`,
+            ),
+          ),
         GEMINI_REVIEW_TIMEOUT_MS,
       ),
     ),
@@ -60,7 +69,7 @@ export async function reviewWithGemini(prompt: string): Promise<{
   } catch (parseError) {
     const preview = content.length > 200 ? content.slice(-200) : content;
     throw new Error(
-      `Gemini returned invalid JSON (${content.length} chars, likely truncated). Tail: ${preview}`
+      `Gemini returned invalid JSON (${content.length} chars, likely truncated). Tail: ${preview}`,
     );
   }
 
