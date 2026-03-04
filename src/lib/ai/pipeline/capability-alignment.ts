@@ -63,14 +63,19 @@ export function computeCapabilityAlignment(
   const reasons: string[] = [];
   const sectionRisks = new Set<string>();
   const bidScore = bidEvaluation?.weighted_total ?? null;
+  const hasL1Data = l1Summary !== undefined;
   const evidenceCount = l1Summary?.evidenceCount ?? 0;
   const productCount = l1Summary?.productCount ?? 0;
 
   // Check bid score
   if (bidScore !== null && bidScore < LOW_BID_SCORE) {
-    reasons.push(`Bid score is ${Math.round(bidScore)}/100 — below the 50-point threshold`);
+    reasons.push(
+      `Bid score is ${Math.round(bidScore)}/100 — below the 50-point threshold`,
+    );
   } else if (bidScore !== null && bidScore < MODERATE_BID_SCORE) {
-    reasons.push(`Bid score is ${Math.round(bidScore)}/100 — moderate alignment`);
+    reasons.push(
+      `Bid score is ${Math.round(bidScore)}/100 — moderate alignment`,
+    );
   }
 
   // Check weak scoring factors
@@ -78,35 +83,42 @@ export function computeCapabilityAlignment(
     for (const factor of SCORING_FACTORS) {
       const score = bidEvaluation.ai_scores[factor.key]?.score ?? 100;
       if (score < WEAK_FACTOR_THRESHOLD) {
-        reasons.push(`${factor.label}: ${score}/100 — "${bidEvaluation.ai_scores[factor.key]?.rationale ?? "weak"}"`);
+        reasons.push(
+          `${factor.label}: ${score}/100 — "${bidEvaluation.ai_scores[factor.key]?.rationale ?? "weak"}"`,
+        );
       }
     }
   }
 
-  // Check L1 data availability
-  if (evidenceCount === 0) {
-    reasons.push("No case studies or evidence in your library");
-    for (const s of EVIDENCE_DEPENDENT_SECTIONS) sectionRisks.add(s);
-  } else if (evidenceCount < 2) {
-    reasons.push(`Only ${evidenceCount} case study available — most sections need 2+`);
-    sectionRisks.add("Case Studies & Past Performance");
+  // Check L1 data availability — only when l1Summary is explicitly provided
+  // (avoids false "no data" warnings when counts simply weren't passed)
+  if (hasL1Data) {
+    if (evidenceCount === 0) {
+      reasons.push("No case studies or evidence in your library");
+      for (const s of EVIDENCE_DEPENDENT_SECTIONS) sectionRisks.add(s);
+    } else if (evidenceCount < 2) {
+      reasons.push(
+        `Only ${evidenceCount} case study available — most sections need 2+`,
+      );
+      sectionRisks.add("Case Studies & Past Performance");
+    }
+
+    if (productCount === 0) {
+      reasons.push("No products or services defined in company context");
+      for (const s of PRODUCT_DEPENDENT_SECTIONS) sectionRisks.add(s);
+    }
   }
 
-  if (productCount === 0) {
-    reasons.push("No products or services defined in company context");
-    for (const s of PRODUCT_DEPENDENT_SECTIONS) sectionRisks.add(s);
-  }
-
-  // Determine level
+  // Determine level — L1 data checks only apply when l1Summary was provided
   let level: AlignmentLevel;
   const isLowBid = bidScore !== null && bidScore < LOW_BID_SCORE;
-  const noData = evidenceCount === 0 && productCount === 0;
+  const noData = hasL1Data && evidenceCount === 0 && productCount === 0;
 
   if (isLowBid || noData) {
     level = "low";
   } else if (
     (bidScore !== null && bidScore < MODERATE_BID_SCORE) ||
-    evidenceCount < 2
+    (hasL1Data && evidenceCount < 2)
   ) {
     level = "moderate";
   } else {

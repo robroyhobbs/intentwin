@@ -351,11 +351,17 @@ export function buildTaskSectionL1Context(l1Context: L1Context): string {
   const fullContext = buildL1ContextString(l1Context);
   if (!fullContext) return "";
 
+  // Inject L1 data availability metadata for grounding instructions (same as buildSectionSpecificL1Context)
+  const l1Meta = `<!-- L1_DATA: evidence=${l1Context.evidenceLibrary.length} products=${l1Context.productContexts.length} team=${(l1Context.teamMembers || []).length} company=${l1Context.companyContext.length} -->`;
+
   // Truncate to ~4K tokens if needed
-  if (fullContext.length <= CHAR_BUDGET) return fullContext;
+  const combined = `${l1Meta}\n${fullContext}`;
+  if (combined.length <= CHAR_BUDGET) return combined;
 
   return (
-    fullContext.slice(0, CHAR_BUDGET) +
+    l1Meta +
+    "\n" +
+    fullContext.slice(0, CHAR_BUDGET - l1Meta.length - 1) +
     "\n\n[L1 context truncated to fit token budget]"
   );
 }

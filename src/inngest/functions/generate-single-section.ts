@@ -214,17 +214,40 @@ export async function generateSingleSection(
     const solicitationType =
       (ctx.intakeData.solicitation_type as string) || "RFP";
 
+    // Compute effective section type early — needed for grounding + persuasion
+    const effectiveType = isTaskSection
+      ? "approach"
+      : isCustomSection
+        ? "approach"
+        : config!.type;
+
+    // Compute grounding level before basePrompt so it can be passed to buildEditorialStandards
+    const sectionL1ForGrounding = isTaskSection
+      ? buildTaskSectionL1Context(ctx.rawL1Context)
+      : buildSectionSpecificL1Context(
+          ctx.rawL1Context,
+          effectiveType,
+          solicitationType,
+        );
+    const l1Data = parseL1Metadata(sectionL1ForGrounding);
+    const groundingLevel = computeGroundingLevel(effectiveType, l1Data);
+    const companyName = (ctx.companyInfo?.name as string) || "Our Company";
+    const groundingBlock = buildGroundingInstructions(
+      effectiveType,
+      l1Data,
+      companyName,
+    );
+
     // Build prompt: task sections use buildTaskResponsePrompt, custom sections get a dynamic prompt, fixed sections use config.buildPrompt
     let basePrompt: string;
     if (isTaskSection && taskMeta) {
-      const taskL1Context = buildTaskSectionL1Context(ctx.rawL1Context);
       basePrompt = buildTaskResponsePrompt({
         taskNumber: taskMeta.task_number,
         taskTitle: taskMeta.title,
         taskDescription: taskMeta.description,
         intakeData: ctx.intakeData,
         analysis: ctx.enhancedAnalysis,
-        l1Context: taskL1Context,
+        l1Context: sectionL1ForGrounding,
         winStrategy: ctx.winStrategy,
         companyInfo: ctx.companyInfo,
         differentiators,
@@ -234,7 +257,6 @@ export async function generateSingleSection(
       });
     } else if (isCustomSection && customMeta) {
       // Custom sections from RFP analysis — build a dynamic prompt
-      const companyName = ctx.companyInfo?.name || "Our Company";
       const requirementsList =
         customMeta.rfp_requirements.length > 0
           ? customMeta.rfp_requirements
@@ -277,7 +299,7 @@ Write a thorough, evidence-backed response (400-600 words) for the "${customMeta
 
 IMPORTANT: Reference specific ${companyName} capabilities from the Company Context. Do not make generic claims.
 
-${buildEditorialStandards(solicitationType, ctx.audienceProfile, ctx.primaryBrandName, differentiators, ctx.intakeData.tone as string | undefined)}`;
+${buildEditorialStandards(solicitationType, ctx.audienceProfile, ctx.primaryBrandName, differentiators, ctx.intakeData.tone as string | undefined, groundingLevel)}`;
     } else {
       const sectionL1Context = buildSectionSpecificL1Context(
         ctx.rawL1Context,
@@ -293,14 +315,6 @@ ${buildEditorialStandards(solicitationType, ctx.audienceProfile, ctx.primaryBran
         sectionL1Context,
       );
     }
-
-    // For task sections, editorial standards + repetition limiter are already in the prompt
-    // For fixed/custom sections, add persuasion layers, industry context, and repetition limiter
-    const effectiveType = isTaskSection
-      ? "approach"
-      : isCustomSection
-        ? "approach"
-        : config!.type;
 
     // Build persuasion layers
     const persuasionFramework = getPersuasionPrompt(effectiveType);
@@ -343,23 +357,6 @@ ${buildEditorialStandards(solicitationType, ctx.audienceProfile, ctx.primaryBran
     const bidEvalBlock = buildBidEvalRiskBlock(
       ctx.bidEvaluation,
       isTaskSection ? "rfp_task" : sectionType,
-    );
-
-    // Grounding instructions — anti-hallucination guardrails based on L1 data availability
-    const sectionL1ForGrounding = isTaskSection
-      ? buildTaskSectionL1Context(ctx.rawL1Context)
-      : buildSectionSpecificL1Context(
-          ctx.rawL1Context,
-          effectiveType,
-          solicitationType,
-        );
-    const l1Data = parseL1Metadata(sectionL1ForGrounding);
-    const groundingLevel = computeGroundingLevel(effectiveType, l1Data);
-    const companyName = (ctx.companyInfo?.name as string) || "Our Company";
-    const groundingBlock = buildGroundingInstructions(
-      effectiveType,
-      l1Data,
-      companyName,
     );
 
     // Inject intelligence context from pipeline (Stream A: Deeper Pipeline)

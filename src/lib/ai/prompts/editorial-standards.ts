@@ -252,10 +252,17 @@ After the </thought_process> tag, write the final presentation-ready Markdown.
   // When grounding is low, replace the evidence fallback instruction to prevent soft hallucination
   let effectiveAntiFluff = ANTI_FLUFF_RULES;
   if (groundingLevel === "low") {
-    effectiveAntiFluff = effectiveAntiFluff.replace(
-      `- If specific evidence is not available in the Company Context, write a general but concrete statement WITHOUT placeholders: "Our team has delivered multiple large-scale cloud migrations for federal agencies, consistently reducing infrastructure costs by 25-40%"`,
-      `- If specific evidence is not available in the Company Context, use aspirational framing: "Our team would bring..." or "We are prepared to deliver..." — do NOT claim past delivery without evidence`,
-    );
+    const aspirationalRule = `- If specific evidence is not available in the Company Context, use aspirational framing: "Our team would bring..." or "We are prepared to deliver..." — do NOT claim past delivery without evidence`;
+    const originalRule = `- If specific evidence is not available in the Company Context, write a general but concrete statement WITHOUT placeholders: "Our team has delivered multiple large-scale cloud migrations for federal agencies, consistently reducing infrastructure costs by 25-40%"`;
+
+    if (effectiveAntiFluff.includes(originalRule)) {
+      effectiveAntiFluff = effectiveAntiFluff.replace(
+        originalRule,
+        aspirationalRule,
+      );
+    } else if (!effectiveAntiFluff.includes(aspirationalRule)) {
+      effectiveAntiFluff = `${effectiveAntiFluff}\n${aspirationalRule}`;
+    }
   }
 
   return `${FORMATTING_RULES}\n${effectiveAntiFluff}${typeRules}${toneRules}${audienceRules}${brandLock}${repetitionLimiter}\n${chainOfThought}`;

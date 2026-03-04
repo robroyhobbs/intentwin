@@ -79,6 +79,9 @@ export async function reviewWithGemini(prompt: string): Promise<{
     client_fit: Number(parsed.client_fit) || 0,
     evidence: Number(parsed.evidence) || 0,
     brand_voice: Number(parsed.brand_voice) || 0,
+    ...(parsed.grounding != null
+      ? { grounding: Number(parsed.grounding) || 0 }
+      : {}),
     feedback: String(parsed.feedback || ""),
   };
 }

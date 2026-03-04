@@ -1,13 +1,13 @@
 "use client";
 
 import { AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
-import type { JudgeInfoData } from "./types";
+import type { DimensionScores, JudgeInfoData } from "./types";
 
 // ============================================================
 // Constants
 // ============================================================
 
-export const DIMENSION_LABELS: Record<string, string> = {
+export const DIMENSION_LABELS: Record<keyof DimensionScores, string> = {
   content_quality: "Content Quality",
   client_fit: "Client Fit",
   evidence: "Evidence",
