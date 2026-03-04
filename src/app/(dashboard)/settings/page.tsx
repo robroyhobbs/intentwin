@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
@@ -79,7 +81,9 @@ export default function SettingsPage() {
       if (profile?.organization_id) {
         const { data: organization } = await supabase
           .from("organizations")
-          .select("id, name, slug, settings, plan_tier, plan_limits, usage_current_period, trial_ends_at, stripe_customer_id, stripe_subscription_id, billing_cycle_start, billing_cycle_end")
+          .select(
+            "id, name, slug, settings, plan_tier, plan_limits, usage_current_period, trial_ends_at, stripe_customer_id, stripe_subscription_id, billing_cycle_start, billing_cycle_end",
+          )
           .eq("id", profile.organization_id)
           .single();
 
@@ -282,16 +286,18 @@ export default function SettingsPage() {
                 Your Plan Includes
               </h2>
               <p className="text-sm text-[var(--foreground-muted)]">
-                {getPlanPrice(org?.plan_tier || "free")} — {getPlanDisplayName(org?.plan_tier || "free")}
+                {getPlanPrice(org?.plan_tier || "free")} —{" "}
+                {getPlanDisplayName(org?.plan_tier || "free")}
               </p>
             </div>
           </div>
           {/* Upgrade CTA for non-enterprise users */}
-          {org?.plan_tier && !["enterprise", "invite"].includes(org.plan_tier) && (
-            <Link href="/pricing" className="btn-primary text-sm">
-              Upgrade Plan
-            </Link>
-          )}
+          {org?.plan_tier &&
+            !["enterprise", "invite"].includes(org.plan_tier) && (
+              <Link href="/pricing" className="btn-primary text-sm">
+                Upgrade Plan
+              </Link>
+            )}
         </div>
         <ul className="grid md:grid-cols-2 gap-2">
           {(org?.plan_tier
