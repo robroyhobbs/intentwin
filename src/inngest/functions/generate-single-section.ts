@@ -10,6 +10,7 @@ import { NonRetriableError } from "inngest";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { GenerationStatus } from "@/lib/constants/statuses";
 import { generateText } from "@/lib/ai/gemini";
+import { generateKimiText } from "@/lib/ai/kimi";
 import {
   getPersuasionPrompt,
   getBestPracticesPrompt,
@@ -391,29 +392,73 @@ ${buildEditorialStandards(solicitationType, ctx.audienceProfile, ctx.primaryBran
       systemPromptLength: ctx.systemPrompt.length,
     });
 
-    // Generate content with a timeout to prevent Gemini hangs.
-    // 60s is generous for flash-lite — most sections complete in 3-8s.
+    // Generate content with timeout guard.
+    // Try Kimi first when configured, then fallback to Gemini primary.
     const SECTION_TIMEOUT_MS = 60_000;
     let generatedContentRaw: string;
+    const generateWithGemini = async () =>
+      generateText(prompt, {
+        systemPrompt: ctx.systemPrompt,
+        maxTokens: 8192,
+        thinkingLevel: "none",
+      });
     try {
-        generatedContentRaw = await Promise.race([
-          generateText(prompt, {
-            systemPrompt: ctx.systemPrompt,
-            maxTokens: 8192,
-            thinkingLevel: "none",
-          }),
-        new Promise<never>((_, reject) =>
-          setTimeout(
-            () =>
-              reject(
-                new Error(
-                  `AI generation timed out after ${SECTION_TIMEOUT_MS / 1000}s for section ${sectionType}`,
-                ),
+      if (process.env.KIMI_API_KEY?.trim()) {
+        try {
+          generatedContentRaw = await Promise.race([
+            generateKimiText(prompt, {
+              systemPrompt: ctx.systemPrompt,
+              maxTokens: 8192,
+            }),
+            new Promise<never>((_, reject) =>
+              setTimeout(
+                () =>
+                  reject(
+                    new Error(
+                      `AI generation timed out after ${SECTION_TIMEOUT_MS / 1000}s for section ${sectionType}`,
+                    ),
+                  ),
+                SECTION_TIMEOUT_MS,
               ),
-            SECTION_TIMEOUT_MS,
+            ),
+          ]);
+        } catch (kimiErr) {
+          log.warn("Kimi generation failed — falling back to Gemini", {
+            sectionType,
+            error:
+              kimiErr instanceof Error ? kimiErr.message : String(kimiErr),
+          });
+          generatedContentRaw = await Promise.race([
+            generateWithGemini(),
+            new Promise<never>((_, reject) =>
+              setTimeout(
+                () =>
+                  reject(
+                    new Error(
+                      `AI generation timed out after ${SECTION_TIMEOUT_MS / 1000}s for section ${sectionType}`,
+                    ),
+                  ),
+                SECTION_TIMEOUT_MS,
+              ),
+            ),
+          ]);
+        }
+      } else {
+        generatedContentRaw = await Promise.race([
+          generateWithGemini(),
+          new Promise<never>((_, reject) =>
+            setTimeout(
+              () =>
+                reject(
+                  new Error(
+                    `AI generation timed out after ${SECTION_TIMEOUT_MS / 1000}s for section ${sectionType}`,
+                  ),
+                ),
+              SECTION_TIMEOUT_MS,
+            ),
           ),
-        ),
-      ]);
+        ]);
+      }
     } catch (genErr) {
       const msg = genErr instanceof Error ? genErr.message : String(genErr);
       const msgLower = msg.toLowerCase();
