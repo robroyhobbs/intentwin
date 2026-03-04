@@ -154,12 +154,32 @@ export function WinThemeChips({
             key={theme.id}
             onClick={() => onToggle(theme.id)}
             className={cn(
-              "w-full rounded-lg border px-4 py-3 text-left text-sm font-medium text-pretty transition-colors",
+              "flex w-full items-center gap-3 rounded-lg border px-4 py-3 text-left text-sm font-medium text-pretty transition-colors",
               theme.confirmed
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-border bg-background/60 text-muted-foreground hover:bg-muted/50",
+                ? "border-primary bg-primary/15 text-foreground"
+                : "border-border bg-muted/30 text-muted-foreground hover:border-muted-foreground/40 hover:bg-muted/50",
             )}
           >
+            <span
+              className={cn(
+                "flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-colors",
+                theme.confirmed
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-muted-foreground/40 bg-transparent",
+              )}
+            >
+              {theme.confirmed && (
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path
+                    d="M2.5 6L5 8.5L9.5 3.5"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              )}
+            </span>
             {theme.label}
           </button>
         ))}
