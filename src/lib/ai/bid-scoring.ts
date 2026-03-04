@@ -248,10 +248,12 @@ Based on the above, score each of the 5 bid evaluation factors (0-100) with rati
   });
 
   let aiScores = parseScoresFromResponse(response);
-  if (isParseUnavailableScores(aiScores)) {
-    logger.warn("[bid-scoring] Initial response parse failed, retrying once");
+  if (hasScoreParseFailures(aiScores)) {
+    logger.warn("[bid-scoring] Initial response has parse failures, retrying", {
+      failedFactors: countScoreParseFailures(aiScores),
+    });
     const retryResponse = await generateText(
-      `${prompt}\n\nIMPORTANT: Return a single raw JSON object only. No markdown. No prose.`,
+      `${prompt}\n\nIMPORTANT: Return a single raw JSON object only. No markdown. No prose. Every factor MUST have a numeric "score" (0-100) and a "rationale" string.`,
       {
         systemPrompt: BID_SCORING_SYSTEM_PROMPT,
         temperature: 0,
@@ -622,12 +624,27 @@ function parseScoresFromResponse(
   return result as Record<FactorKey, FactorScore>;
 }
 
-function isParseUnavailableScores(
+const SCORE_FALLBACK_MARKERS = [
+  "ai response could not be parsed",
+  "could not be scored",
+  "insufficient data",
+];
+
+function isScoreFallback(item: FactorScore): boolean {
+  return (
+    item.score === 50 &&
+    SCORE_FALLBACK_MARKERS.some((m) => item.rationale.toLowerCase().includes(m))
+  );
+}
+
+function countScoreParseFailures(
+  scores: Record<FactorKey, FactorScore>,
+): number {
+  return SCORING_FACTORS.filter((f) => isScoreFallback(scores[f.key])).length;
+}
+
+function hasScoreParseFailures(
   scores: Record<FactorKey, FactorScore>,
 ): boolean {
-  return SCORING_FACTORS.every((factor) =>
-    scores[factor.key].rationale
-      .toLowerCase()
-      .includes("ai response could not be parsed"),
-  );
+  return countScoreParseFailures(scores) > 0;
 }
