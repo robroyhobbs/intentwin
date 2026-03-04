@@ -69,7 +69,7 @@ function PhaseItem(props: PhaseItemProps) {
           !reachable
             ? "cursor-not-allowed opacity-40"
             : "cursor-pointer hover:bg-[var(--background-tertiary)]"
-        } ${isActive ? "shadow-[0_0_12px_rgba(192,132,252,0.4)]" : ""}`}
+        } ${isActive ? "bg-accent/30" : ""}`}
       >
         <PhaseIcon phase={phaseKey} state={iconState} size="sm" />
         <span className={`text-sm font-medium transition-colors ${labelCls}`}>

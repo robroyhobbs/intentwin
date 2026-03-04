@@ -31,9 +31,9 @@ export function CreateShell() {
   useNavigationGuard();
 
   return (
-    <div className="flex h-full gap-0 -m-6">
+    <div className="-m-6 flex h-full flex-col bg-muted/20 lg:flex-row">
       {/* Main workspace */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-background">
         <PhaseStrip
           currentPhase={state.phase}
           completedPhases={state.completedPhases}
@@ -47,7 +47,7 @@ export function CreateShell() {
       </div>
 
       {/* Decision Coach panel */}
-      <aside className="w-[340px] border-l border-border bg-card overflow-auto p-6 shrink-0 hidden lg:block">
+      <aside className="max-h-[45dvh] w-full shrink-0 overflow-auto border-t border-border bg-card/95 p-4 lg:max-h-none lg:w-[360px] lg:border-l lg:border-t-0 lg:p-6">
         <DecisionCoach />
       </aside>
     </div>

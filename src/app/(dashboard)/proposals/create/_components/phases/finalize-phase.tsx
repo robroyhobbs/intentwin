@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect } from "react";
 import { useCreateFlow } from "../create-provider";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
 import type { Blocker, CreateFlowState } from "../create-types";
@@ -10,62 +10,11 @@ import { PhaseIcon } from "../shared/phase-icon";
 import { StatBlock } from "../shared/stat-block";
 import { ExportButtons } from "./finalize-export";
 import { logger } from "@/lib/utils/logger";
-
-// ── Blocker computation ─────────────────────────────────────────────────────
-
-function computeBlockers(state: CreateFlowState): Blocker[] {
-  const blockers: Blocker[] = [];
-
-  if (!state.extractedData) {
-    blockers.push({
-      id: "no-extraction",
-      label: "No RFP analyzed",
-      resolved: false,
-      phase: "intake",
-    });
-  }
-
-  if (!state.bidDecision) {
-    blockers.push({
-      id: "no-bid",
-      label: "No bid decision made",
-      resolved: false,
-      phase: "strategy",
-    });
-  }
-
-  if (!state.strategyConfirmed) {
-    blockers.push({
-      id: "no-strategy",
-      label: "Strategy not confirmed",
-      resolved: false,
-      phase: "strategy",
-    });
-  }
-
-  if (state.winThemes.filter((t) => t.confirmed).length === 0) {
-    blockers.push({
-      id: "no-themes",
-      label: "No win themes selected",
-      resolved: false,
-      phase: "strategy",
-    });
-  }
-
-  const unreviewed = state.sections.filter(
-    (s) => !s.reviewed && s.generationStatus === "complete",
-  );
-  if (unreviewed.length > 0) {
-    blockers.push({
-      id: "unreviewed",
-      label: `${unreviewed.length} section(s) not reviewed`,
-      resolved: false,
-      phase: "draft",
-    });
-  }
-
-  return blockers;
-}
+import {
+  computeFinalizeBlockers,
+  getSectionGateState,
+  isAutoResolvedBlocker,
+} from "./finalize-helpers";
 
 // ── Presentational sub-components ───────────────────────────────────────────
 
@@ -74,9 +23,9 @@ function FinalizeHeader() {
     <div className="flex items-center gap-3">
       <PhaseIcon phase="finalize" state="active" />
       <div>
-        <h2 className="text-xl font-bold">Finalize Proposal</h2>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Review blockers, approve the final package, and export.
+        <h2 className="text-xl font-bold text-balance">Final Review &amp; Export</h2>
+        <p className="mt-0.5 text-sm text-muted-foreground text-pretty">
+          Fix blockers, approve your package, then export your final file.
         </p>
       </div>
     </div>
@@ -155,7 +104,11 @@ function BlockerChecklist({
         <BlockerItem
           key={blocker.id}
           blocker={blocker}
-          onResolve={() => onResolve(blocker.id)}
+          onResolve={
+            isAutoResolvedBlocker(blocker.id)
+              ? undefined
+              : () => onResolve(blocker.id)
+          }
         />
       ))}
     </div>
@@ -201,7 +154,7 @@ function ApproveButton({
       disabled={disabled}
       className="w-full rounded-lg bg-primary px-5 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
     >
-      Approve Final Package
+      Approve and Unlock Export
     </button>
   );
 }
@@ -211,20 +164,27 @@ function ApproveButton({
 export function FinalizePhase() {
   const { state, dispatch } = useCreateFlow();
   const authFetch = useAuthFetch();
-  const computedRef = useRef(false);
+  const sectionGate = getSectionGateState(state);
 
-  // Auto-compute blockers on mount
+  // Keep blockers in sync with state so gating is reliable.
   useEffect(() => {
-    if (computedRef.current) return;
-    computedRef.current = true;
-    const blockers = computeBlockers(state);
+    const blockers = computeFinalizeBlockers(state);
     dispatch({ type: "SET_BLOCKERS", blockers });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- intentional: compute once on mount
+  }, [
+    dispatch,
+    state.extractedData,
+    state.bidDecision,
+    state.strategyConfirmed,
+    state.winThemes,
+    state.sections,
+  ]);
 
   const hasUnresolved = state.blockers.some((b) => !b.resolved);
+  const approvalBlocked = hasUnresolved || sectionGate.hasBlockingSectionIssues;
 
   const handleResolve = useCallback(
     (blockerId: string) => {
+      if (isAutoResolvedBlocker(blockerId)) return;
       dispatch({ type: "RESOLVE_BLOCKER", blockerId });
     },
     [dispatch],
@@ -248,14 +208,19 @@ export function FinalizePhase() {
       <FinalizeHeader />
       <ProposalSummary state={state} />
       <BlockerChecklist blockers={state.blockers} onResolve={handleResolve} />
+      {!state.finalApproved && approvalBlocked && sectionGate.message && (
+        <p role="alert" className="text-xs text-destructive text-pretty">
+          {sectionGate.message}
+        </p>
+      )}
       <ApproveButton
-        disabled={hasUnresolved}
+        disabled={approvalBlocked}
         approved={state.finalApproved}
         onApprove={handleApprove}
       />
       <ExportButtons
         proposalId={state.proposalId}
-        enabled={state.finalApproved}
+        enabled={state.finalApproved && !approvalBlocked}
         exportedUrl={state.exportedUrl}
         onExported={handleExported}
         fetchFn={authFetch}

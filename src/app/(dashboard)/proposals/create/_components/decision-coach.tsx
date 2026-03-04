@@ -18,7 +18,14 @@ import { StrengthCard } from "./shared/strength-card";
 import { IntelStats } from "./shared/intel-stats";
 import { ReadinessChecklist } from "./shared/readiness-checklist";
 import type { BidIntelligenceContext } from "@/lib/ai/bid-scoring";
-import type { CoachContent, CoachInsight, CoachPrompt } from "./create-types";
+import type {
+  CoachContent,
+  CoachInsight,
+  CoachPrompt,
+  CreateFlowState,
+  CreatePhase,
+} from "./create-types";
+import { cn } from "@/lib/utils/cn";
 
 // ── Collapsible wrapper ─────────────────────────────────────────────────────
 
@@ -40,7 +47,7 @@ function CollapsibleSection({
         onClick={toggle}
         className="flex items-center justify-between w-full group"
       >
-        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+        <h4 className="text-xs font-semibold text-muted-foreground uppercase">
           {title}
         </h4>
         <svg
@@ -85,7 +92,7 @@ function AdvisorySection({ text }: { text: string }) {
   if (!text) return null;
   return (
     <div className="rounded-lg bg-[var(--accent-subtle)] border border-[var(--accent-muted)] p-3">
-      <p className="text-sm text-foreground/80 leading-relaxed">{text}</p>
+      <p className="text-sm text-foreground/80 leading-relaxed text-pretty">{text}</p>
     </div>
   );
 }
@@ -127,7 +134,7 @@ function InsightRow({ insight }: { insight: CoachInsight }) {
           <span className="text-xs font-medium text-foreground truncate">
             {insight.label}
           </span>
-          <span className="text-xs text-muted-foreground shrink-0">
+          <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
             {insight.value}
           </span>
         </div>
@@ -178,24 +185,132 @@ function PromptsSection({ prompts }: { prompts: CoachPrompt[] }) {
   if (prompts.length === 0) return null;
   return (
     <div className="space-y-2">
-      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+      <h4 className="text-xs font-semibold text-muted-foreground uppercase">
         What&apos;s Missing
       </h4>
       {prompts.map((p) => (
         <div
           key={p.id}
-          className={`rounded-lg p-3 ${IMPORTANCE_COLORS[p.importance]}`}
+          className={cn("rounded-lg p-3", IMPORTANCE_COLORS[p.importance])}
         >
           <span
-            className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${IMPORTANCE_PILLS[p.importance]}`}
+            className={cn(
+              "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold",
+              IMPORTANCE_PILLS[p.importance],
+            )}
           >
             {IMPORTANCE_LABELS[p.importance]}
           </span>
-          <p className="text-sm text-foreground/80 leading-relaxed mt-1.5">
+          <p className="mt-1.5 text-sm text-foreground/80 leading-relaxed text-pretty">
             {p.question}
           </p>
         </div>
       ))}
+    </div>
+  );
+}
+
+interface QuickAction {
+  id: string;
+  label: string;
+  type: "goto" | "apply-prompts" | "review-all";
+  phase?: CreatePhase;
+}
+
+function hasSectionGenerationIssues(state: CreateFlowState): boolean {
+  return (
+    state.sections.length === 0 ||
+    state.sections.some(
+      (s) => s.generationStatus === "failed" || s.generationStatus === "pending" || s.generationStatus === "generating",
+    )
+  );
+}
+
+function buildQuickActions(
+  state: CreateFlowState,
+  content: CoachContent,
+): QuickAction[] {
+  const actions: QuickAction[] = [];
+
+  if (state.phase === "intake" && (content.prompts?.length ?? 0) > 0) {
+    actions.push({
+      id: "apply-prompts",
+      label: "Add missing questions to Buyer Goal",
+      type: "apply-prompts",
+    });
+  }
+
+  if (state.phase === "draft") {
+    const unreviewed = state.sections.filter(
+      (s) => s.generationStatus === "complete" && !s.reviewed,
+    ).length;
+    if (unreviewed > 0) {
+      actions.push({
+        id: "review-all",
+        label: `Mark ${unreviewed} section(s) as reviewed`,
+        type: "review-all",
+      });
+    }
+  }
+
+  if (state.phase === "finalize") {
+    const unresolved = state.blockers.filter((b) => !b.resolved);
+    const phases = new Set(unresolved.map((b) => b.phase));
+
+    if (phases.has("intake")) {
+      actions.push({
+        id: "goto-intake",
+        label: "Go to Intake and fix missing details",
+        type: "goto",
+        phase: "intake",
+      });
+    }
+    if (phases.has("strategy")) {
+      actions.push({
+        id: "goto-strategy",
+        label: "Go to Strategy and confirm your plan",
+        type: "goto",
+        phase: "strategy",
+      });
+    }
+    if (phases.has("draft") || hasSectionGenerationIssues(state)) {
+      actions.push({
+        id: "goto-draft",
+        label: "Go to Draft and resolve section issues",
+        type: "goto",
+        phase: "draft",
+      });
+    }
+  }
+
+  return actions;
+}
+
+function QuickActions({
+  actions,
+  onAction,
+}: {
+  actions: QuickAction[];
+  onAction: (action: QuickAction) => void;
+}) {
+  if (actions.length === 0) return null;
+  return (
+    <div className="space-y-2">
+      <h4 className="text-xs font-semibold text-muted-foreground uppercase">
+        Quick Actions
+      </h4>
+      <div className="space-y-2">
+        {actions.map((action) => (
+          <button
+            key={action.id}
+            type="button"
+            onClick={() => onAction(action)}
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-left text-sm font-medium text-foreground transition-colors hover:bg-accent"
+          >
+            {action.label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -253,14 +368,46 @@ function BidAnalysis({
 // ── Main Component ──────────────────────────────────────────────────────────
 
 export function DecisionCoach() {
-  const { state } = useCreateFlow();
+  const { state, dispatch } = useCreateFlow();
   const content = useMemo(() => getCoachContent(state), [state]);
+  const quickActions = useMemo(() => buildQuickActions(state, content), [state, content]);
   const isFinalize = state.phase === "finalize";
+  const handleAction = useCallback(
+    (action: QuickAction) => {
+      if (action.type === "goto" && action.phase) {
+        dispatch({ type: "SET_PHASE", phase: action.phase });
+        return;
+      }
+
+      if (action.type === "review-all") {
+        dispatch({ type: "REVIEW_ALL_SECTIONS" });
+        return;
+      }
+
+      if (action.type === "apply-prompts") {
+        const promptText = (content.prompts ?? [])
+          .map((prompt) => `- ${prompt.question}`)
+          .join("\n");
+        if (!promptText) return;
+
+        const nextGoal = state.buyerGoal.trim()
+          ? `${state.buyerGoal.trim()}\n${promptText}`
+          : promptText;
+
+        dispatch({ type: "SET_BUYER_GOAL", goal: nextGoal });
+        if (state.phase !== "intake") {
+          dispatch({ type: "SET_PHASE", phase: "intake" });
+        }
+      }
+    },
+    [content.prompts, dispatch, state.buyerGoal, state.phase],
+  );
 
   return (
     <div className="space-y-6 animate-fade-in-up">
       <CoachHeader isFinalize={isFinalize} />
       {content.nextStep && <NextStepCard text={content.nextStep} />}
+      <QuickActions actions={quickActions} onAction={handleAction} />
       <AdvisorySection text={content.whyItMatters} />
       {content.verdict && (
         <BidAnalysis

@@ -8,6 +8,7 @@ import {
 } from "./strategy-helpers";
 import { PhaseIcon } from "../shared/phase-icon";
 import { ScoreBar } from "../shared/score-bar";
+import { cn } from "@/lib/utils/cn";
 
 // ── Loading spinner ─────────────────────────────────────────────────────────
 
@@ -52,9 +53,9 @@ export function StrategyHeader() {
     <div className="flex items-center gap-3">
       <PhaseIcon phase="strategy" state="active" />
       <div>
-        <h2 className="text-xl font-bold">Bid Strategy</h2>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          AI-scored bid evaluation — review factors and select win themes.
+        <h2 className="text-xl font-bold text-balance">Opportunity Fit Check</h2>
+        <p className="mt-0.5 text-sm text-muted-foreground text-pretty">
+          Review your fit score, then choose the themes you want in the draft.
         </p>
       </div>
     </div>
@@ -71,24 +72,22 @@ export function ScoreCard({ evaluation }: { evaluation: BidEvaluation }) {
   return (
     <div className="rounded-xl border border-border bg-card p-6 space-y-5">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold">Bid Score</h3>
-        <span
-          className={`text-xs font-medium px-2.5 py-1 rounded-full ${badge.className}`}
-        >
+        <h3 className="text-sm font-semibold">Opportunity Fit Score</h3>
+        <span className={cn("rounded-full px-2.5 py-1 text-xs font-medium", badge.className)}>
           {badge.label}
         </span>
       </div>
 
-      <div className={`rounded-lg border p-4 text-center ${totalBg}`}>
-        <div className={`stat-value ${totalColor}`}>
+      <div className={cn("rounded-lg border p-4 text-center", totalBg)}>
+        <div className={cn("stat-value tabular-nums", totalColor)}>
           {Math.round(evaluation.weighted_total)}
         </div>
-        <div className="stat-label mt-1">Weighted Score / 100</div>
+        <div className="mt-1 text-xs text-muted-foreground">Fit score out of 100</div>
       </div>
 
       <div className="space-y-2">
-        <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-          Scoring Factors
+        <h4 className="text-xs font-medium text-muted-foreground uppercase">
+          How this score was calculated
         </h4>
         {SCORING_FACTORS.map((factor) => {
           const factorScore = evaluation.ai_scores[factor.key];
@@ -120,13 +119,13 @@ export function BidDecisionButtons({
         onClick={onProceed}
         className="flex-1 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
       >
-        Proceed -- Pursue this opportunity
+        Continue with this opportunity
       </button>
       <button
         onClick={onSkip}
         className="flex-1 rounded-lg border border-border bg-background px-5 py-2.5 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
       >
-        Skip -- Pass on this one
+        Pass for now
       </button>
     </div>
   );
@@ -145,8 +144,8 @@ export function WinThemeChips({
     <div className="rounded-xl border border-border bg-card p-6 space-y-4">
       <div>
         <h3 className="text-sm font-semibold">Win Themes</h3>
-        <p className="text-xs text-muted-foreground mt-1">
-          Toggle themes to include or exclude from your proposal strategy.
+        <p className="mt-1 text-xs text-muted-foreground text-pretty">
+          Select the themes you want your proposal to emphasize.
         </p>
       </div>
       <div className="flex flex-wrap gap-2">
@@ -154,11 +153,12 @@ export function WinThemeChips({
           <button
             key={theme.id}
             onClick={() => onToggle(theme.id)}
-            className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-all ${
+            className={cn(
+              "rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
               theme.confirmed
-                ? "bg-primary text-primary-foreground shadow-sm border border-[var(--success)]"
-                : "bg-muted text-muted-foreground border border-dashed border-[var(--border)] opacity-80 hover:opacity-100"
-            }`}
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border border-dashed bg-muted text-muted-foreground hover:bg-muted/70",
+            )}
           >
             {theme.label}
           </button>
@@ -184,7 +184,7 @@ export function ConfirmStrategyButton({
         disabled={disabled}
         className="rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        Confirm Strategy
+        Use Selected Themes
       </button>
     </div>
   );

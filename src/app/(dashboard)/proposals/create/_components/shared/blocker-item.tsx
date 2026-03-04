@@ -75,6 +75,7 @@ export interface BlockerItemProps {
 
 export function BlockerItem({ blocker, onResolve }: BlockerItemProps) {
   const { dispatch } = useCreateFlow();
+  const canToggle = typeof onResolve === "function";
 
   const navigateToPhase = () => {
     dispatch({ type: "SET_PHASE", phase: blocker.phase });
@@ -85,7 +86,8 @@ export function BlockerItem({ blocker, onResolve }: BlockerItemProps) {
       <button
         type="button"
         onClick={onResolve}
-        className="shrink-0 cursor-pointer"
+        disabled={!canToggle}
+        className={`shrink-0 ${canToggle ? "cursor-pointer" : "cursor-not-allowed opacity-50"}`}
         aria-label={blocker.resolved ? "Mark unresolved" : "Mark resolved"}
       >
         {blocker.resolved ? <CheckboxChecked /> : <CheckboxEmpty />}
