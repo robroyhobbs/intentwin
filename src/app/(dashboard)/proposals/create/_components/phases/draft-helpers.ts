@@ -241,6 +241,7 @@ export async function runDraftFlow(
           generationStatus:
             result.status === "completed" ? "complete" : "failed",
           content: result.content ?? "",
+          generationError: result.error,
         },
       });
 
@@ -332,6 +333,7 @@ export async function resumeDraftFlow(
           generationStatus:
             result.status === "completed" ? "complete" : "failed",
           content: result.content ?? "",
+          generationError: result.error,
         },
       });
 

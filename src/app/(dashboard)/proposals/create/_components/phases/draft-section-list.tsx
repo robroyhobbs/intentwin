@@ -41,7 +41,12 @@ function StatusPill({ status }: { status: string }) {
 // ── Compact section row ─────────────────────────────────────────────────────
 
 interface SectionRowProps {
-  section: { id: string; title: string; generationStatus: string };
+  section: {
+    id: string;
+    title: string;
+    generationStatus: string;
+    generationError?: string;
+  };
   index: number;
 }
 
@@ -49,20 +54,27 @@ function CompactSectionRow({ section, index }: SectionRowProps) {
   return (
     <div
       className={cn(
-        "flex items-center gap-3 px-4 py-3",
+        "px-4 py-3",
         index > 0 ? "border-t border-border/60" : "",
         section.generationStatus === "generating"
           ? "bg-primary/5"
           : "bg-transparent",
       )}
     >
-      <span className="flex size-6 items-center justify-center rounded-md bg-background/60 text-xs text-muted-foreground tabular-nums shrink-0">
-        {index + 1}
-      </span>
-      <span className="flex-1 truncate text-sm font-medium">
-        {section.title}
-      </span>
-      <StatusPill status={section.generationStatus} />
+      <div className="flex items-center gap-3">
+        <span className="flex size-6 items-center justify-center rounded-md bg-background/60 text-xs text-muted-foreground tabular-nums shrink-0">
+          {index + 1}
+        </span>
+        <span className="flex-1 truncate text-sm font-medium">
+          {section.title}
+        </span>
+        <StatusPill status={section.generationStatus} />
+      </div>
+      {section.generationStatus === "failed" && section.generationError && (
+        <p className="mt-1 ml-9 text-xs text-destructive/80 line-clamp-2">
+          {section.generationError}
+        </p>
+      )}
     </div>
   );
 }

@@ -17,6 +17,7 @@ export interface SectionDraft {
   title: string;
   content: string;
   generationStatus: "pending" | "generating" | "complete" | "failed";
+  generationError?: string;
   reviewed: boolean;
   order: number;
   groundingLevel?: "high" | "medium" | "low";
