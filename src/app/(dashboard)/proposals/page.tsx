@@ -117,7 +117,7 @@ export default async function ProposalsPage({
           </div>
 
           <Link
-            href="/proposals/new?reset"
+            href="/proposals/create"
             className="btn-primary inline-flex items-center gap-2 px-5 py-2.5"
           >
             <Sparkles className="h-4 w-4" />
@@ -265,7 +265,7 @@ export default async function ProposalsPage({
           </p>
           <div className="relative z-10 flex flex-col sm:flex-row gap-4 items-center justify-center">
             <Link
-              href="/proposals/new?reset"
+              href="/proposals/create"
               className="bg-white text-black font-semibold rounded-lg hover:bg-zinc-200 transition-all text-sm px-6 py-3 shadow-[0_0_20px_rgba(192,132,252,0.3)] hover:shadow-[0_0_30px_rgba(192,132,252,0.5)] flex items-center gap-2"
             >
               <Sparkles className="h-4 w-4 text-purple-600" />

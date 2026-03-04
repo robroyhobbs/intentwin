@@ -1,12 +1,5 @@
-"use client";
-
-import { WizardProvider } from "./_components/wizard-provider";
-import { WizardShell } from "./_components/wizard-shell";
+import { redirect } from "next/navigation";
 
 export default function NewProposalPage() {
-  return (
-    <WizardProvider>
-      <WizardShell />
-    </WizardProvider>
-  );
+  redirect("/proposals/create");
 }

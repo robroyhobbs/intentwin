@@ -8,6 +8,7 @@ import { StrategyPhase } from "./phases/strategy-phase";
 import { DraftPhase } from "./phases/draft-phase";
 import { FinalizePhase } from "./phases/finalize-phase";
 import { DecisionCoach } from "./decision-coach";
+import { PhaseErrorBoundary } from "./shared/phase-error-boundary";
 
 function useNavigationGuard() {
   const { state } = useCreateFlow();
@@ -39,10 +40,12 @@ export function CreateShell() {
           completedPhases={state.completedPhases}
         />
         <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
-          {state.phase === "intake" && <IntakePhase />}
-          {state.phase === "strategy" && <StrategyPhase />}
-          {state.phase === "draft" && <DraftPhase />}
-          {state.phase === "finalize" && <FinalizePhase />}
+          <PhaseErrorBoundary>
+            {state.phase === "intake" && <IntakePhase />}
+            {state.phase === "strategy" && <StrategyPhase />}
+            {state.phase === "draft" && <DraftPhase />}
+            {state.phase === "finalize" && <FinalizePhase />}
+          </PhaseErrorBoundary>
         </div>
       </div>
 

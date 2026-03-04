@@ -8,13 +8,13 @@ import { fetchBidEvaluation, fetchWinStrategy } from "./strategy-helpers";
 import { isParseFallbackBidEvaluation } from "../bid-evaluation-helpers";
 import {
   SpinnerOverlay,
-  ErrorBanner,
   StrategyHeader,
   ScoreCard,
   BidDecisionButtons,
   WinThemeChips,
   ConfirmStrategyButton,
 } from "./strategy-ui";
+import { ErrorBanner } from "../shared/error-banner";
 
 // ── Custom hook: auto-fetch bid evaluation ──────────────────────────────────
 
@@ -50,16 +50,16 @@ function useBidScoring(
       setIsScoring(true);
       setError(null);
 
-        fetchBidEvaluation(data, dispatch, authFetch)
-          .catch((err: unknown) => {
-            const msg = err instanceof Error ? err.message : "Scoring failed";
-            setError(msg);
-          })
-          .finally(() => {
-            setIsScoring(false);
-            inflightRef.current = false;
-          });
-      });
+      fetchBidEvaluation(data, dispatch, authFetch)
+        .catch((err: unknown) => {
+          const msg = err instanceof Error ? err.message : "Scoring failed";
+          setError(msg);
+        })
+        .finally(() => {
+          setIsScoring(false);
+          inflightRef.current = false;
+        });
+    });
   }, [state.bidEvaluation, state.extractedData, dispatch, authFetch]);
 
   const retry = useCallback(() => {

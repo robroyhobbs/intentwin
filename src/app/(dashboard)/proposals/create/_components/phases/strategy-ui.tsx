@@ -24,31 +24,6 @@ export function SpinnerOverlay({ label }: { label: string }) {
   );
 }
 
-// ── Error banner ────────────────────────────────────────────────────────────
-
-export function ErrorBanner({
-  message,
-  onRetry,
-}: {
-  message: string;
-  onRetry: () => void;
-}) {
-  return (
-    <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-start gap-3">
-      <span className="text-destructive text-lg leading-none mt-0.5">!</span>
-      <div className="flex-1">
-        <p className="text-sm text-destructive">{message}</p>
-        <button
-          onClick={onRetry}
-          className="mt-2 text-xs font-medium text-primary hover:underline"
-        >
-          Try again
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // ── Header ──────────────────────────────────────────────────────────────────
 
 export function StrategyHeader() {
@@ -56,7 +31,9 @@ export function StrategyHeader() {
     <div className="flex items-center gap-3">
       <PhaseIcon phase="strategy" state="active" />
       <div>
-        <h2 className="text-xl font-bold text-balance">Opportunity Fit Check</h2>
+        <h2 className="text-xl font-bold text-balance">
+          Opportunity Fit Check
+        </h2>
         <p className="mt-0.5 text-sm text-muted-foreground text-pretty">
           Review your fit score, then choose the themes you want in the draft.
         </p>
@@ -77,7 +54,12 @@ export function ScoreCard({ evaluation }: { evaluation: BidEvaluation }) {
     <div className="rounded-xl border border-border bg-card p-6 space-y-5">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold">Opportunity Fit Score</h3>
-        <span className={cn("rounded-full px-2.5 py-1 text-xs font-medium", badge.className)}>
+        <span
+          className={cn(
+            "rounded-full px-2.5 py-1 text-xs font-medium",
+            badge.className,
+          )}
+        >
           {badge.label}
         </span>
       </div>
@@ -92,7 +74,12 @@ export function ScoreCard({ evaluation }: { evaluation: BidEvaluation }) {
               Weighted score out of 100
             </p>
           </div>
-          <p className={cn("text-4xl font-semibold leading-none tabular-nums", totalColor)}>
+          <p
+            className={cn(
+              "text-4xl font-semibold leading-none tabular-nums",
+              totalColor,
+            )}
+          >
             {totalScore}
           </p>
         </div>

@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { useCreateFlow } from "../create-provider";
 import { StepIndicator } from "../shared/step-indicator";
 import { StatBlock } from "../shared/stat-block";
+import { ErrorBanner } from "../shared/error-banner";
 import {
   uploadAndExtract,
   fetchUrlAndExtract,
@@ -28,37 +29,6 @@ function IntakeHeader() {
         Upload your RFP or paste a URL — we extract requirements, criteria, and
         gaps automatically.
       </p>
-    </div>
-  );
-}
-
-function ErrorBanner({
-  message,
-  onRetry,
-}: {
-  message: string;
-  onRetry: () => void;
-}) {
-  return (
-    <div
-      role="alert"
-      className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-start gap-3"
-    >
-      <span
-        className="text-destructive text-lg leading-none mt-0.5"
-        aria-hidden="true"
-      >
-        !
-      </span>
-      <div className="flex-1">
-        <p className="text-sm text-destructive">{message}</p>
-        <button
-          onClick={onRetry}
-          className="mt-2 text-xs font-medium text-primary hover:underline"
-        >
-          Try again
-        </button>
-      </div>
     </div>
   );
 }
@@ -98,11 +68,11 @@ function ExtractionSummary({
           <StatBlock label="Budget" value={summary.budgetRange} color="muted" />
         </div>
         <div className="rounded-lg border border-border/70 bg-background/40 p-3">
-        <StatBlock
-          label="Critical Gaps"
-          value={String(summary.criticalGaps)}
-          color={summary.criticalGaps > 0 ? "danger" : "success"}
-        />
+          <StatBlock
+            label="Critical Gaps"
+            value={String(summary.criticalGaps)}
+            color={summary.criticalGaps > 0 ? "danger" : "success"}
+          />
         </div>
       </div>
     </div>

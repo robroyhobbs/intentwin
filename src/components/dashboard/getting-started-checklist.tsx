@@ -42,7 +42,9 @@ export function GettingStartedChecklist() {
 
   async function checkProgress() {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       const { data: profile } = await supabase
@@ -69,9 +71,12 @@ export function GettingStartedChecklist() {
       }
 
       // Check various completion states
-      const hasCompanyName = !!org?.name && org.name !== `${user.email?.split("@")[0]}'s Organization`;
+      const hasCompanyName =
+        !!org?.name &&
+        org.name !== `${user.email?.split("@")[0]}'s Organization`;
       const hasDescription = !!org?.settings?.description;
-      const hasDifferentiators = (org?.settings?.differentiators?.length || 0) > 0;
+      const hasDifferentiators =
+        (org?.settings?.differentiators?.length || 0) > 0;
 
       // Check for documents
       const { count: docCount } = await supabase
@@ -114,7 +119,7 @@ export function GettingStartedChecklist() {
           id: "proposal",
           title: "Create your first proposal",
           description: "Generate your first proposal",
-          href: "/proposals/new",
+          href: "/proposals/create",
           icon: <FileText className="h-4 w-4" />,
           isComplete: (proposalCount || 0) > 0,
         },
@@ -123,7 +128,7 @@ export function GettingStartedChecklist() {
       setItems(checklistItems);
 
       // Auto-dismiss if all complete
-      const allComplete = checklistItems.every(item => item.isComplete);
+      const allComplete = checklistItems.every((item) => item.isComplete);
       if (allComplete) {
         // Mark as dismissed so it doesn't show again
         await supabase
@@ -173,7 +178,7 @@ export function GettingStartedChecklist() {
 
   if (loading || dismissed) return null;
 
-  const completedCount = items.filter(item => item.isComplete).length;
+  const completedCount = items.filter((item) => item.isComplete).length;
   const progress = items.length > 0 ? (completedCount / items.length) * 100 : 0;
 
   if (completedCount === items.length) return null;
@@ -190,7 +195,9 @@ export function GettingStartedChecklist() {
             <Rocket className="h-5 w-5 text-[var(--accent)]" />
           </div>
           <div>
-            <h3 className="font-semibold text-[var(--foreground)]">Getting Started</h3>
+            <h3 className="font-semibold text-[var(--foreground)]">
+              Getting Started
+            </h3>
             <p className="text-sm text-[var(--foreground-muted)]">
               {completedCount} of {items.length} tasks complete
             </p>
@@ -230,27 +237,37 @@ export function GettingStartedChecklist() {
               key={item.id}
               href={item.href}
               className={`flex items-center gap-4 px-5 py-4 hover:bg-[var(--background-secondary)] transition-colors ${
-                index < items.length - 1 ? "border-b border-[var(--border)]" : ""
+                index < items.length - 1
+                  ? "border-b border-[var(--border)]"
+                  : ""
               }`}
             >
-              <div className={`flex-shrink-0 ${item.isComplete ? "text-[var(--success)]" : "text-[var(--foreground-muted)]"}`}>
+              <div
+                className={`flex-shrink-0 ${item.isComplete ? "text-[var(--success)]" : "text-[var(--foreground-muted)]"}`}
+              >
                 {item.isComplete ? (
                   <CheckCircle2 className="h-5 w-5" />
                 ) : (
                   <Circle className="h-5 w-5" />
                 )}
               </div>
-              <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                item.isComplete
-                  ? "bg-[var(--success-subtle)] text-[var(--success)]"
-                  : "bg-[var(--background-secondary)] text-[var(--foreground-muted)]"
-              }`}>
+              <div
+                className={`flex h-9 w-9 items-center justify-center rounded-lg ${
+                  item.isComplete
+                    ? "bg-[var(--success-subtle)] text-[var(--success)]"
+                    : "bg-[var(--background-secondary)] text-[var(--foreground-muted)]"
+                }`}
+              >
                 {item.icon}
               </div>
               <div className="flex-1 min-w-0">
-                <p className={`font-medium ${
-                  item.isComplete ? "text-[var(--foreground-muted)] line-through" : "text-[var(--foreground)]"
-                }`}>
+                <p
+                  className={`font-medium ${
+                    item.isComplete
+                      ? "text-[var(--foreground-muted)] line-through"
+                      : "text-[var(--foreground)]"
+                  }`}
+                >
                   {item.title}
                 </p>
                 <p className="text-sm text-[var(--foreground-muted)] truncate">

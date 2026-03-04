@@ -166,7 +166,7 @@ export default function OnboardingPage() {
         }
       }
 
-      router.push("/proposals/new");
+      router.push("/proposals/create");
     } catch (error) {
       logger.error("Failed to save onboarding data", error);
       toast.error("Failed to save your profile. Please try again.");

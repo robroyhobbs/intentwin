@@ -280,7 +280,17 @@ export async function regenerateSection(
   sectionId: string,
   dispatch: Dispatch<CreateAction>,
   fetchFn: FetchFn,
+  sections?: SectionDraft[],
 ): Promise<void> {
+  // Guard: skip if any section is currently generating
+  if (sections?.some((s) => s.generationStatus === "generating")) {
+    logger.info("Regeneration skipped — a section is already generating", {
+      proposalId,
+      sectionId,
+    });
+    return;
+  }
+
   dispatch({
     type: "UPDATE_SECTION",
     sectionId,

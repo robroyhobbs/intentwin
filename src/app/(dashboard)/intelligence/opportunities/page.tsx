@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Briefcase, Search, ChevronLeft, ChevronRight, Filter } from "lucide-react";
+import {
+  Briefcase,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+} from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useIntelligence } from "../_components/use-intelligence";
@@ -10,7 +16,10 @@ import { NotConfigured } from "../_components/not-configured-view";
 import { SourceAttribution } from "../_components/source-attribution";
 import { OpportunityDetailPanel } from "./_components/opportunity-detail-panel";
 import { OpportunityRow } from "./_components/opportunity-row";
-import type { OpportunitySearchResponse, OpportunityRecord } from "../_components/types";
+import type {
+  OpportunitySearchResponse,
+  OpportunityRecord,
+} from "../_components/types";
 
 const PAGE_SIZE = 20;
 
@@ -51,9 +60,12 @@ export default function OpportunitySearchPage() {
   const [status, setStatus] = useState(searchParams.get("status") ?? "");
   const [naicsCode, setNaicsCode] = useState(searchParams.get("naics") ?? "");
   const [source, setSource] = useState(searchParams.get("source") ?? "");
-  const [setAsideType, setSetAsideType] = useState(searchParams.get("set_aside") ?? "");
+  const [setAsideType, setSetAsideType] = useState(
+    searchParams.get("set_aside") ?? "",
+  );
   const [offset, setOffset] = useState(0);
-  const [selectedOpportunity, setSelectedOpportunity] = useState<OpportunityRecord | null>(null);
+  const [selectedOpportunity, setSelectedOpportunity] =
+    useState<OpportunityRecord | null>(null);
 
   // Debounce text inputs so we don't fire a request on every keystroke
   const debouncedKeyword = useDebounce(keyword);
@@ -84,12 +96,23 @@ export default function OpportunitySearchPage() {
     if (source) p.source = source;
     if (setAsideType) p.set_aside_type = setAsideType;
     return p;
-  }, [debouncedKeyword, debouncedAgency, debouncedCity, debouncedState, status, debouncedNaics, source, setAsideType, offset]);
+  }, [
+    debouncedKeyword,
+    debouncedAgency,
+    debouncedCity,
+    debouncedState,
+    status,
+    debouncedNaics,
+    source,
+    setAsideType,
+    offset,
+  ]);
 
-  const { data, loading, error, configured } = useIntelligence<OpportunitySearchResponse>(
-    "/api/v1/opportunities/search",
-    params,
-  );
+  const { data, loading, error, configured } =
+    useIntelligence<OpportunitySearchResponse>(
+      "/api/v1/opportunities/search",
+      params,
+    );
 
   function handleStartProposal(opp: OpportunityRecord) {
     sessionStorage.setItem(
@@ -106,7 +129,7 @@ export default function OpportunitySearchPage() {
         },
       }),
     );
-    router.push("/proposals/new");
+    router.push("/proposals/create");
   }
 
   if (loading && offset === 0) {
@@ -146,218 +169,225 @@ export default function OpportunitySearchPage() {
             Opportunity Search Coming Soon
           </h3>
           <p className="text-xs text-[var(--foreground-muted)] max-w-md mx-auto">
-            Live opportunity search across government procurement portals is under development.
-            In the meantime, use the <span className="font-medium text-[var(--accent)]">Awards</span> and <span className="font-medium text-[var(--accent)]">Agencies</span> tabs to research past performance data.
+            Live opportunity search across government procurement portals is
+            under development. In the meantime, use the{" "}
+            <span className="font-medium text-[var(--accent)]">Awards</span> and{" "}
+            <span className="font-medium text-[var(--accent)]">Agencies</span>{" "}
+            tabs to research past performance data.
           </p>
         </div>
       )}
 
-      {!error && <>
-      {/* Filters */}
-      <div className="flex flex-wrap items-end gap-4">
-        <div className="flex-1 min-w-[200px]">
-          <label className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide block mb-1.5">
-            <Search className="h-3 w-3 inline mr-1" />
-            Keyword
-          </label>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--foreground-subtle)]" />
-            <input
-              type="text"
-              placeholder="Search titles and descriptions..."
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm"
+      {!error && (
+        <>
+          {/* Filters */}
+          <div className="flex flex-wrap items-end gap-4">
+            <div className="flex-1 min-w-[200px]">
+              <label className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide block mb-1.5">
+                <Search className="h-3 w-3 inline mr-1" />
+                Keyword
+              </label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--foreground-subtle)]" />
+                <input
+                  type="text"
+                  placeholder="Search titles and descriptions..."
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm"
+                />
+              </div>
+            </div>
+            <div className="flex-1 min-w-[160px]">
+              <label className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide block mb-1.5">
+                Agency
+              </label>
+              <input
+                type="text"
+                placeholder="e.g., Department of..."
+                value={agency}
+                onChange={(e) => setAgency(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl text-sm"
+              />
+            </div>
+            <div className="w-32">
+              <label className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide block mb-1.5">
+                City
+              </label>
+              <input
+                type="text"
+                placeholder="e.g., NYC"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl text-sm"
+              />
+            </div>
+            <div className="w-24">
+              <label className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide block mb-1.5">
+                State
+              </label>
+              <input
+                type="text"
+                placeholder="e.g., NY"
+                value={state}
+                onChange={(e) => setState(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl text-sm"
+              />
+            </div>
+            <div className="w-40">
+              <label className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide block mb-1.5">
+                Source
+              </label>
+              <select
+                value={source}
+                onChange={(e) => setSource(e.target.value)}
+                className="w-full py-2.5 rounded-xl text-sm"
+              >
+                {SOURCE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="w-36">
+              <label className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide block mb-1.5">
+                Status
+              </label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                className="w-full py-2.5 rounded-xl text-sm"
+              >
+                {STATUS_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="w-40">
+              <label className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide block mb-1.5">
+                Set-Aside
+              </label>
+              <select
+                value={setAsideType}
+                onChange={(e) => setSetAsideType(e.target.value)}
+                className="w-full py-2.5 rounded-xl text-sm"
+              >
+                {SET_ASIDE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="w-28">
+              <label className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide block mb-1.5">
+                NAICS
+              </label>
+              <input
+                type="text"
+                placeholder="e.g., 541512"
+                value={naicsCode}
+                onChange={(e) => setNaicsCode(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Results count + pagination */}
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-[var(--foreground-muted)]">
+              {total.toLocaleString()} opportunities found
+            </p>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
+                  disabled={offset === 0}
+                  className="btn-ghost p-1.5 disabled:opacity-30"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <span className="text-xs text-[var(--foreground-muted)]">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  onClick={() => setOffset(offset + PAGE_SIZE)}
+                  disabled={offset + PAGE_SIZE >= total}
+                  className="btn-ghost p-1.5 disabled:opacity-30"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Table */}
+          {opportunities.length > 0 && (
+            <div className="divide-y divide-[var(--border)] rounded-xl border border-[var(--border)] bg-[var(--card-bg)] overflow-hidden">
+              <div className="grid grid-cols-12 gap-2 px-5 py-3 text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide bg-[var(--background-tertiary)]">
+                <span className="col-span-3">Title</span>
+                <span className="col-span-2">Agency</span>
+                <span className="col-span-1">City</span>
+                <span className="col-span-1">State</span>
+                <span className="col-span-1 text-right">Est. Value</span>
+                <span className="col-span-1">NAICS</span>
+                <span className="col-span-1">Status</span>
+                <span className="col-span-2 text-right">Deadline</span>
+              </div>
+              {opportunities.map((opp) => (
+                <OpportunityRow
+                  key={opp.id}
+                  opportunity={opp}
+                  onClick={() => setSelectedOpportunity(opp)}
+                />
+              ))}
+            </div>
+          )}
+
+          {opportunities.length === 0 && !loading && (
+            <div className="text-center py-12">
+              <Filter className="h-8 w-8 text-[var(--foreground-subtle)] mx-auto mb-3" />
+              <p className="text-sm text-[var(--foreground-muted)]">
+                No opportunities match your filters
+              </p>
+              <p className="text-xs text-[var(--foreground-subtle)] mt-1">
+                Try adjusting your search criteria or clearing filters
+              </p>
+            </div>
+          )}
+
+          {loading && offset > 0 && (
+            <div className="text-center py-4">
+              <p className="text-sm text-[var(--foreground-muted)] animate-pulse">
+                Loading...
+              </p>
+            </div>
+          )}
+
+          <SourceAttribution />
+
+          {/* Detail slide-out */}
+          {selectedOpportunity && (
+            <OpportunityDetailPanel
+              opportunity={selectedOpportunity}
+              onClose={() => setSelectedOpportunity(null)}
+              onStartProposal={handleStartProposal}
+              onAgencyClick={(name) => {
+                setSelectedOpportunity(null);
+                setAgency(name);
+                setOffset(0);
+              }}
+              onNaicsClick={(code) => {
+                setSelectedOpportunity(null);
+                router.push(`/intelligence/naics/${code}`);
+              }}
             />
-          </div>
-        </div>
-        <div className="flex-1 min-w-[160px]">
-          <label className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide block mb-1.5">
-            Agency
-          </label>
-          <input
-            type="text"
-            placeholder="e.g., Department of..."
-            value={agency}
-            onChange={(e) => setAgency(e.target.value)}
-            className="w-full px-4 py-2.5 rounded-xl text-sm"
-          />
-        </div>
-        <div className="w-32">
-          <label className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide block mb-1.5">
-            City
-          </label>
-          <input
-            type="text"
-            placeholder="e.g., NYC"
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-            className="w-full px-4 py-2.5 rounded-xl text-sm"
-          />
-        </div>
-        <div className="w-24">
-          <label className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide block mb-1.5">
-            State
-          </label>
-          <input
-            type="text"
-            placeholder="e.g., NY"
-            value={state}
-            onChange={(e) => setState(e.target.value)}
-            className="w-full px-4 py-2.5 rounded-xl text-sm"
-          />
-        </div>
-        <div className="w-40">
-          <label className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide block mb-1.5">
-            Source
-          </label>
-          <select
-            value={source}
-            onChange={(e) => setSource(e.target.value)}
-            className="w-full py-2.5 rounded-xl text-sm"
-          >
-            {SOURCE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="w-36">
-          <label className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide block mb-1.5">
-            Status
-          </label>
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            className="w-full py-2.5 rounded-xl text-sm"
-          >
-            {STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="w-40">
-          <label className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide block mb-1.5">
-            Set-Aside
-          </label>
-          <select
-            value={setAsideType}
-            onChange={(e) => setSetAsideType(e.target.value)}
-            className="w-full py-2.5 rounded-xl text-sm"
-          >
-            {SET_ASIDE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="w-28">
-          <label className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide block mb-1.5">
-            NAICS
-          </label>
-          <input
-            type="text"
-            placeholder="e.g., 541512"
-            value={naicsCode}
-            onChange={(e) => setNaicsCode(e.target.value)}
-            className="w-full px-4 py-2.5 rounded-xl text-sm"
-          />
-        </div>
-      </div>
-
-      {/* Results count + pagination */}
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-[var(--foreground-muted)]">
-          {total.toLocaleString()} opportunities found
-        </p>
-        {totalPages > 1 && (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
-              disabled={offset === 0}
-              className="btn-ghost p-1.5 disabled:opacity-30"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <span className="text-xs text-[var(--foreground-muted)]">
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              onClick={() => setOffset(offset + PAGE_SIZE)}
-              disabled={offset + PAGE_SIZE >= total}
-              className="btn-ghost p-1.5 disabled:opacity-30"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Table */}
-      {opportunities.length > 0 && (
-        <div className="divide-y divide-[var(--border)] rounded-xl border border-[var(--border)] bg-[var(--card-bg)] overflow-hidden">
-          <div className="grid grid-cols-12 gap-2 px-5 py-3 text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide bg-[var(--background-tertiary)]">
-            <span className="col-span-3">Title</span>
-            <span className="col-span-2">Agency</span>
-            <span className="col-span-1">City</span>
-            <span className="col-span-1">State</span>
-            <span className="col-span-1 text-right">Est. Value</span>
-            <span className="col-span-1">NAICS</span>
-            <span className="col-span-1">Status</span>
-            <span className="col-span-2 text-right">Deadline</span>
-          </div>
-          {opportunities.map((opp) => (
-            <OpportunityRow
-              key={opp.id}
-              opportunity={opp}
-              onClick={() => setSelectedOpportunity(opp)}
-            />
-          ))}
-        </div>
+          )}
+        </>
       )}
-
-      {opportunities.length === 0 && !loading && (
-        <div className="text-center py-12">
-          <Filter className="h-8 w-8 text-[var(--foreground-subtle)] mx-auto mb-3" />
-          <p className="text-sm text-[var(--foreground-muted)]">
-            No opportunities match your filters
-          </p>
-          <p className="text-xs text-[var(--foreground-subtle)] mt-1">
-            Try adjusting your search criteria or clearing filters
-          </p>
-        </div>
-      )}
-
-      {loading && offset > 0 && (
-        <div className="text-center py-4">
-          <p className="text-sm text-[var(--foreground-muted)] animate-pulse">Loading...</p>
-        </div>
-      )}
-
-      <SourceAttribution />
-
-      {/* Detail slide-out */}
-      {selectedOpportunity && (
-        <OpportunityDetailPanel
-          opportunity={selectedOpportunity}
-          onClose={() => setSelectedOpportunity(null)}
-          onStartProposal={handleStartProposal}
-          onAgencyClick={(name) => {
-            setSelectedOpportunity(null);
-            setAgency(name);
-            setOffset(0);
-          }}
-          onNaicsClick={(code) => {
-            setSelectedOpportunity(null);
-            router.push(`/intelligence/naics/${code}`);
-          }}
-        />
-      )}
-      </>}
     </div>
   );
 }
