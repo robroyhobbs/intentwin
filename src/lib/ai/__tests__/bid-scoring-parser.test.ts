@@ -113,12 +113,12 @@ describe("extractJsonFromResponse — Edge Cases", () => {
     expect(result).toBeNull();
   });
 
-  it("returns null for truncated code block", () => {
+  it("recovers a valid nested object from truncated code block content", () => {
     const response = "```json\n" + JSON.stringify(VALID_SCORES).slice(0, 100);
     // No closing ```, and truncated JSON
     const result = extractJsonFromResponse(response);
-    // Strategy 2 (brace matching) should try but still fail on truncated content
-    expect(result).toBeNull();
+    expect(result).not.toBeNull();
+    expect(result).toEqual(VALID_SCORES.requirement_match);
   });
 });
 

@@ -20,6 +20,13 @@ describe("extractJsonFromResponse", () => {
     expect(result).toEqual({ key: "value" });
   });
 
+  it("extracts valid JSON object when earlier braces are non-JSON text", () => {
+    const input =
+      'notes {not-json} trailing text {"key":"value","count":2} done';
+    const result = extractJsonFromResponse(input);
+    expect(result).toEqual({ key: "value", count: 2 });
+  });
+
   it("parses raw JSON string directly", () => {
     const input = '{ "name": "test", "count": 42 }';
     const result = extractJsonFromResponse(input);
@@ -79,6 +86,18 @@ describe("extractJsonFromResponse", () => {
 
   it("extracts fenced JSON from a JSON-encoded response string", () => {
     const input = JSON.stringify('```json\n{ "key": "value" }\n```');
+    const result = extractJsonFromResponse(input);
+    expect(result).toEqual({ key: "value" });
+  });
+
+  it("extracts first object from raw JSON array responses", () => {
+    const input = '[{"key":"value"},{"other":"x"}]';
+    const result = extractJsonFromResponse(input);
+    expect(result).toEqual({ key: "value" });
+  });
+
+  it("extracts first object from JSON-encoded array responses", () => {
+    const input = JSON.stringify('[{"key":"value"},{"other":"x"}]');
     const result = extractJsonFromResponse(input);
     expect(result).toEqual({ key: "value" });
   });
