@@ -1,3 +1,12 @@
+/**
+ * @deprecated Generation is now client-orchestrated via API routes:
+ *   - POST /api/proposals/[id]/generate/setup
+ *   - POST /api/proposals/[id]/generate/section
+ *   - POST /api/proposals/[id]/generate/finalize
+ *
+ * This Inngest function is no longer triggered. Kept for reference only.
+ * generateSingleSection has moved to src/lib/ai/pipeline/generate-single-section.ts.
+ */
 import { inngest } from "../client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { GenerationStatus, ProposalStatus } from "@/lib/constants/statuses";
@@ -7,13 +16,34 @@ import { createPipelineMetrics } from "@/lib/observability/metrics";
 import { buildSectionList } from "@/lib/ai/pipeline/section-configs";
 import { buildPipelineContext } from "@/lib/ai/pipeline/context";
 import { extractDifferentiators } from "@/lib/ai/pipeline/differentiators";
-import { generateSingleSection } from "./generate-single-section";
+import {
+  generateSingleSection,
+  GenerationNonRetriableError,
+} from "./generate-single-section";
+import { NonRetriableError } from "inngest";
 import type {
   PipelineContext,
   RfpTaskStructure,
 } from "@/lib/ai/pipeline/types";
 
 const log = createLogger({ operation: "generate-proposal" });
+
+/**
+ * Wrap generateSingleSection to convert GenerationNonRetriableError
+ * into Inngest's NonRetriableError so step retries are skipped.
+ */
+async function generateSectionWithInngestErrors(
+  ...args: Parameters<typeof generateSingleSection>
+) {
+  try {
+    return await generateSingleSection(...args);
+  } catch (err) {
+    if (err instanceof GenerationNonRetriableError) {
+      throw new NonRetriableError(err.message, { cause: err });
+    }
+    throw err;
+  }
+}
 
 /**
  * Inngest function: Generate a full proposal.
@@ -347,7 +377,7 @@ export const generateProposalFn = inngest.createFunction(
               sectionId: execSection.id,
               proposalId,
             });
-            const result = await generateSingleSection(
+            const result = await generateSectionWithInngestErrors(
               execSection.id,
               execSection.sectionType,
               ctx,
@@ -432,7 +462,7 @@ export const generateProposalFn = inngest.createFunction(
               sectionId: section.id,
               stepId,
             });
-            const result = await generateSingleSection(
+            const result = await generateSectionWithInngestErrors(
               section.id,
               section.sectionType,
               ctx,
@@ -506,23 +536,26 @@ export const generateProposalFn = inngest.createFunction(
       for (const section of failedSections) {
         await step.sleep(`rescue-delay-${section.id}`, "2s");
         try {
-          await step.run(`rescue-${section.sectionType}-${section.id}`, async () => {
-            const supabase = createAdminClient();
-            const { data } = await supabase
-              .from("proposal_sections")
-              .select("generation_status")
-              .eq("id", section.id)
-              .single();
-            if (data?.generation_status === GenerationStatus.COMPLETED) {
-              return { skipped: true };
-            }
-            return generateSingleSection(
-              section.id,
-              section.sectionType,
-              ctx,
-              differentiators,
-            );
-          });
+          await step.run(
+            `rescue-${section.sectionType}-${section.id}`,
+            async () => {
+              const supabase = createAdminClient();
+              const { data } = await supabase
+                .from("proposal_sections")
+                .select("generation_status")
+                .eq("id", section.id)
+                .single();
+              if (data?.generation_status === GenerationStatus.COMPLETED) {
+                return { skipped: true };
+              }
+              return generateSectionWithInngestErrors(
+                section.id,
+                section.sectionType,
+                ctx,
+                differentiators,
+              );
+            },
+          );
           // Update tracking map on rescue success
           sectionResultMap.set(section.id, { status: "fulfilled" });
           log.info(`Rescue succeeded: ${section.sectionType}`, { proposalId });
