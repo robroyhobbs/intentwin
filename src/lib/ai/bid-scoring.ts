@@ -348,7 +348,7 @@ Based on the above, score each of the 5 bid evaluation factors (0-100) with rati
 
   // Parse structured response, retrying once if the model output is unparseable.
   let aiScores = parseScoresFromResponse(response);
-  if (isParseUnavailableScores(aiScores)) {
+  if (hasScoreParseFailures(aiScores)) {
     logger.warn("[bid-scoring] Proposal scoring parse failed, retrying once", {
       proposalId,
     });
