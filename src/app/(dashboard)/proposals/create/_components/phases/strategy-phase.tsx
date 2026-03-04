@@ -5,6 +5,7 @@ import { useCreateFlow } from "../create-provider";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
 import { logger } from "@/lib/utils/logger";
 import { fetchBidEvaluation, fetchWinStrategy } from "./strategy-helpers";
+import { isParseFallbackBidEvaluation } from "../bid-evaluation-helpers";
 import {
   SpinnerOverlay,
   ErrorBanner,
@@ -24,11 +25,22 @@ function useBidScoring(
   const [isScoring, setIsScoring] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inflightRef = useRef(false);
+  const recoveryAttemptedRef = useRef(false);
 
   useEffect(() => {
     if (inflightRef.current) return;
-    if (state.bidEvaluation !== null) return;
     if (!state.extractedData) return;
+
+    const needsInitialScore = state.bidEvaluation === null;
+    const needsRecoveryScore =
+      state.bidEvaluation !== null &&
+      isParseFallbackBidEvaluation(state.bidEvaluation) &&
+      !recoveryAttemptedRef.current;
+    if (!needsInitialScore && !needsRecoveryScore) return;
+
+    if (needsRecoveryScore) {
+      recoveryAttemptedRef.current = true;
+    }
 
     inflightRef.current = true;
     const data = state.extractedData;
@@ -38,14 +50,16 @@ function useBidScoring(
       setIsScoring(true);
       setError(null);
 
-      fetchBidEvaluation(data, dispatch, authFetch)
-        .catch((err: unknown) => {
-          const msg = err instanceof Error ? err.message : "Scoring failed";
-          setError(msg);
-          inflightRef.current = false;
-        })
-        .finally(() => setIsScoring(false));
-    });
+        fetchBidEvaluation(data, dispatch, authFetch)
+          .catch((err: unknown) => {
+            const msg = err instanceof Error ? err.message : "Scoring failed";
+            setError(msg);
+          })
+          .finally(() => {
+            setIsScoring(false);
+            inflightRef.current = false;
+          });
+      });
   }, [state.bidEvaluation, state.extractedData, dispatch, authFetch]);
 
   const retry = useCallback(() => {
@@ -59,7 +73,10 @@ function useBidScoring(
         const msg = err instanceof Error ? err.message : "Scoring failed";
         setError(msg);
       })
-      .finally(() => setIsScoring(false));
+      .finally(() => {
+        setIsScoring(false);
+        inflightRef.current = false;
+      });
   }, [state.extractedData, dispatch, authFetch]);
 
   return { isScoring, error, retry };

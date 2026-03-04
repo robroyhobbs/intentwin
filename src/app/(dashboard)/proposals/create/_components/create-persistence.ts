@@ -1,6 +1,7 @@
 import type { CreateFlowState, CreatePhase } from "./create-types";
 import { initialState } from "./create-reducer";
 import { logger } from "@/lib/utils/logger";
+import { isParseFallbackBidEvaluation } from "./bid-evaluation-helpers";
 
 const STORAGE_KEY = "intentwin:create-flow";
 
@@ -35,11 +36,17 @@ export function loadState(): CreateFlowState | null {
     if (!raw) return null;
 
     const parsed = JSON.parse(raw) as SerializedState;
+    const shouldRescoreBidEval = isParseFallbackBidEvaluation(
+      parsed.bidEvaluation,
+    );
 
     // Rehydrate Set from array
     const restored: CreateFlowState = {
       ...initialState,
       ...parsed,
+      ...(shouldRescoreBidEval
+        ? { bidEvaluation: null, bidDecision: null, winThemes: [] }
+        : {}),
       completedPhases: new Set(parsed.completedPhases ?? []),
       files: [],
       // Never resume mid-extraction — let user retry
