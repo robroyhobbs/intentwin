@@ -17,16 +17,30 @@ export const MODEL_DEFAULTS = {
   fallback: "gemini-2.0-flash",
 } as const;
 
+/** Strip literal escape sequences (e.g. trailing \n) that env var UIs sometimes inject. */
+function cleanEnvModel(value: string | undefined): string {
+  return value?.replace(/\\n/g, "").trim() || "";
+}
+
 /** Runtime model resolution — reads env vars at call time for testability. */
 export function getModel(key: keyof typeof MODEL_DEFAULTS): string {
   switch (key) {
     case "primary":
-      return process.env.GEMINI_MODEL?.trim() || MODEL_DEFAULTS.primary;
+      return cleanEnvModel(process.env.GEMINI_MODEL) || MODEL_DEFAULTS.primary;
     case "review":
       return (
-        process.env.GEMINI_REVIEW_MODEL?.trim() ||
-        process.env.GEMINI_MODEL?.trim() ||
+        cleanEnvModel(process.env.GEMINI_REVIEW_MODEL) ||
+        cleanEnvModel(process.env.GEMINI_MODEL) ||
         MODEL_DEFAULTS.review
+      );
+    case "scoring":
+      return (
+        cleanEnvModel(process.env.GEMINI_SCORING_MODEL) ||
+        MODEL_DEFAULTS.scoring
+      );
+    case "image":
+      return (
+        cleanEnvModel(process.env.GEMINI_IMAGE_MODEL) || MODEL_DEFAULTS.image
       );
     default:
       return MODEL_DEFAULTS[key];

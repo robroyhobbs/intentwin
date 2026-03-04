@@ -5,7 +5,7 @@ import { unauthorized, badRequest, ok, serverError } from "@/lib/api/response";
 import { logger } from "@/lib/utils/logger";
 
 /** AI scoring call + L1 context fetch */
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 /**
  * POST /api/intake/bid-evaluation

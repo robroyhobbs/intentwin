@@ -2,7 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { logger } from "@/lib/utils/logger";
 import { extractJsonFromResponse } from "@/lib/utils/extract-json";
 import { generateText } from "./gemini";
-import { MODELS } from "./models";
+import { getModel } from "./models";
 import {
   intelligenceClient,
   buildIntelligenceContext,
@@ -76,7 +76,7 @@ function getRecommendation(weightedTotal: number): "bid" | "evaluate" | "pass" {
 }
 
 /** Model used for bid-eval scoring — gemini-2.5-flash for reliable structured JSON. */
-const BID_SCORING_MODEL = MODELS.scoring;
+const BID_SCORING_MODEL = getModel("scoring");
 
 const BID_SCORING_SYSTEM_PROMPT = `You are a SKEPTICAL bid/no-bid evaluation analyst for a professional services firm. Your job is to rigorously assess whether an RFP opportunity is worth pursuing based ONLY on documented, verified evidence.
 
@@ -347,10 +347,9 @@ Based on the above, score each of the 5 bid evaluation factors (0-100) with rati
   // Parse structured response, retrying once if the model output is unparseable.
   let aiScores = parseScoresFromResponse(response);
   if (isParseUnavailableScores(aiScores)) {
-    logger.warn(
-      "[bid-scoring] Proposal scoring parse failed, retrying once",
-      { proposalId },
-    );
+    logger.warn("[bid-scoring] Proposal scoring parse failed, retrying once", {
+      proposalId,
+    });
     const retryResponse = await generateText(
       `${prompt}\n\nIMPORTANT: Return a single raw JSON object only. No markdown. No prose.`,
       {
