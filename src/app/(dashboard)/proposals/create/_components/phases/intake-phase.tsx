@@ -26,8 +26,8 @@ function IntakeHeader() {
     <div className="flex items-center gap-3">
       <PhaseIcon phase="intake" state="active" />
       <div>
-        <h2 className="text-xl font-bold">Upload RFP Documents</h2>
-        <p className="text-sm text-muted-foreground mt-0.5">
+        <h2 className="text-xl font-bold text-balance">Upload RFP Documents</h2>
+        <p className="mt-0.5 text-sm text-muted-foreground text-pretty">
           Upload your RFP or paste a URL — we extract requirements, criteria,
           and gaps automatically.
         </p>
@@ -77,19 +77,37 @@ function ExtractionSummary({
   return (
     <div className="card p-6">
       <h3 className="text-sm font-semibold mb-4">Extraction Summary</h3>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
-        <StatBlock label="Client" value={summary.clientName} />
-        <StatBlock label="Type" value={summary.solicitationType} />
-        <StatBlock
-          label="Requirements"
-          value={String(summary.requirementsCount)}
-        />
-        <StatBlock label="Budget" value={summary.budgetRange} />
+      <div className="mb-4 rounded-lg border border-border/70 bg-background/40 p-4">
+        <p className="stat-label">Client</p>
+        <p className="mt-1 text-base font-semibold text-foreground text-pretty line-clamp-3">
+          {summary.clientName}
+        </p>
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="rounded-lg border border-border/70 bg-background/40 p-3">
+          <StatBlock
+            label="Type"
+            value={summary.solicitationType}
+            color="muted"
+          />
+        </div>
+        <div className="rounded-lg border border-border/70 bg-background/40 p-3">
+          <StatBlock
+            label="Requirements"
+            value={String(summary.requirementsCount)}
+            color="muted"
+          />
+        </div>
+        <div className="rounded-lg border border-border/70 bg-background/40 p-3">
+          <StatBlock label="Budget" value={summary.budgetRange} color="muted" />
+        </div>
+        <div className="rounded-lg border border-border/70 bg-background/40 p-3">
         <StatBlock
           label="Critical Gaps"
           value={String(summary.criticalGaps)}
           color={summary.criticalGaps > 0 ? "danger" : "success"}
         />
+        </div>
       </div>
     </div>
   );
@@ -164,7 +182,7 @@ function IntakeSuccessView({ onContinue }: { onContinue: () => void }) {
       <div className="flex justify-end">
         <button
           onClick={onContinue}
-          className="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-all shadow-[var(--shadow-glow)] hover:shadow-[var(--shadow-glow-intense)]"
+          className="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 shadow-sm"
         >
           Continue to Strategy
         </button>

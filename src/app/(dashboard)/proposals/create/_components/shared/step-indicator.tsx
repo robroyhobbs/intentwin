@@ -2,6 +2,7 @@
 
 import type { ExtractionStep } from "../create-types";
 import { WaitLoader } from "./wait-loader";
+import { cn } from "@/lib/utils/cn";
 
 const EXTRACTION_STEPS: { key: ExtractionStep; label: string }[] = [
   { key: "uploading", label: "Uploading documents" },
@@ -33,7 +34,8 @@ export function StepIndicator({
   current: ExtractionStep | null;
 }) {
   const activeIdx = EXTRACTION_STEPS.findIndex((s) => s.key === current);
-  const activeLabel = EXTRACTION_STEPS[activeIdx]?.label ?? "Preparing extraction";
+  const activeLabel =
+    EXTRACTION_STEPS[activeIdx]?.label ?? "Preparing extraction";
 
   return (
     <div className="rounded-xl border border-border bg-card p-6">
@@ -42,35 +44,42 @@ export function StepIndicator({
         detail="We are parsing your files and preparing a high-quality summary."
         className="mb-5"
       />
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2">
         {EXTRACTION_STEPS.map((step, idx) => {
           const isDone = idx < activeIdx;
           const isActive = idx === activeIdx;
 
           return (
-            <div key={step.key} className="flex items-center gap-3">
-              {isDone ? (
-                <div className="flex size-6 items-center justify-center rounded-full bg-primary text-primary-foreground shrink-0">
-                  <CheckIcon />
-                </div>
-              ) : isActive ? (
-                <div className="relative size-6 shrink-0">
-                  <div className="absolute inset-0 rounded-full border-2 border-primary/20" />
-                  <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-primary motion-safe:animate-spin motion-reduce:animate-none" />
-                </div>
-              ) : (
-                <div className="size-6 rounded-full border-2 border-muted shrink-0" />
+            <div
+              key={step.key}
+              className={cn(
+                "flex items-center gap-3 rounded-lg border px-3 py-2",
+                isActive
+                  ? "border-primary/40 bg-primary/5"
+                  : "border-border/60 bg-background/40",
               )}
+            >
+              <div className="flex size-6 items-center justify-center shrink-0">
+                {isDone ? (
+                  <div className="flex size-5 items-center justify-center rounded-md bg-primary/15 text-primary">
+                    <CheckIcon />
+                  </div>
+                ) : isActive ? (
+                  <div className="relative size-5">
+                    <div className="absolute inset-0 rounded-full border border-primary/30" />
+                    <div className="absolute inset-[6px] rounded-full bg-primary motion-safe:animate-pulse motion-reduce:animate-none" />
+                  </div>
+                ) : (
+                  <div className="size-2 rounded-full bg-muted-foreground/40" />
+                )}
+              </div>
               <span
-                className={
-                  isActive
-                    ? "text-sm font-medium"
-                    : isDone
-                      ? "text-sm text-muted-foreground"
-                      : "text-sm text-muted-foreground"
-                }
+                className={cn(
+                  "text-sm",
+                  isActive ? "font-medium text-foreground" : "text-muted-foreground",
+                )}
               >
-                {step.label} {isActive ? "..." : ""}
+                {step.label}
               </span>
             </div>
           );
