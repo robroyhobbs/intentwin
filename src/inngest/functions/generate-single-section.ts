@@ -10,7 +10,13 @@ import { NonRetriableError } from "inngest";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { GenerationStatus } from "@/lib/constants/statuses";
 import { generateText } from "@/lib/ai/gemini";
-import { generateKimiText } from "@/lib/ai/kimi";
+import {
+  canUseKimi,
+  generateKimiText,
+  getKimiCircuitState,
+  recordKimiFailure,
+  recordKimiSuccess,
+} from "@/lib/ai/kimi";
 import {
   getPersuasionPrompt,
   getBestPracticesPrompt,
@@ -396,6 +402,8 @@ ${buildEditorialStandards(solicitationType, ctx.audienceProfile, ctx.primaryBran
     // Try Kimi first when configured, then fallback to Gemini primary.
     const SECTION_TIMEOUT_MS = 60_000;
     let generatedContentRaw: string;
+    let generationProvider: "kimi" | "gemini" = "gemini";
+    let providerFallbackReason: string | null = null;
     const generateWithGemini = async () =>
       generateText(prompt, {
         systemPrompt: ctx.systemPrompt,
@@ -403,7 +411,7 @@ ${buildEditorialStandards(solicitationType, ctx.audienceProfile, ctx.primaryBran
         thinkingLevel: "none",
       });
     try {
-      if (process.env.KIMI_API_KEY?.trim()) {
+      if (canUseKimi()) {
         try {
           generatedContentRaw = await Promise.race([
             generateKimiText(prompt, {
@@ -422,11 +430,19 @@ ${buildEditorialStandards(solicitationType, ctx.audienceProfile, ctx.primaryBran
               ),
             ),
           ]);
+          generationProvider = "kimi";
+          recordKimiSuccess();
         } catch (kimiErr) {
+          const kimiFailure = recordKimiFailure(kimiErr);
+          providerFallbackReason =
+            kimiErr instanceof Error ? kimiErr.message : String(kimiErr);
           log.warn("Kimi generation failed — falling back to Gemini", {
             sectionType,
             error:
               kimiErr instanceof Error ? kimiErr.message : String(kimiErr),
+            circuitOpened: kimiFailure.opened,
+            permanent: kimiFailure.permanent,
+            disabledUntil: kimiFailure.disabledUntil,
           });
           generatedContentRaw = await Promise.race([
             generateWithGemini(),
@@ -442,8 +458,18 @@ ${buildEditorialStandards(solicitationType, ctx.audienceProfile, ctx.primaryBran
               ),
             ),
           ]);
+          generationProvider = "gemini";
         }
       } else {
+        const kimiCircuit = getKimiCircuitState();
+        if (process.env.KIMI_API_KEY?.trim() && kimiCircuit.isOpen) {
+          log.info("Skipping Kimi due to open provider circuit", {
+            sectionType,
+            disabledUntil: kimiCircuit.disabledUntil,
+            lastReason: kimiCircuit.lastReason,
+            consecutiveFailures: kimiCircuit.consecutiveFailures,
+          });
+        }
         generatedContentRaw = await Promise.race([
           generateWithGemini(),
           new Promise<never>((_, reject) =>
@@ -480,6 +506,7 @@ ${buildEditorialStandards(solicitationType, ctx.audienceProfile, ctx.primaryBran
     log.info("AI generation completed", {
       sectionType,
       rawContentLength: generatedContentRaw.length,
+      provider: generationProvider,
     });
 
     // Strip out Chain of Thought / thinking blocks before saving
@@ -526,7 +553,14 @@ ${buildEditorialStandards(solicitationType, ctx.audienceProfile, ctx.primaryBran
       string,
       unknown
     >;
-    const mergedMeta = { ...existingMeta, grounding_level: groundingLevel };
+    const mergedMeta: Record<string, unknown> = {
+      ...existingMeta,
+      grounding_level: groundingLevel,
+      generation_provider: generationProvider,
+    };
+    if (providerFallbackReason) {
+      mergedMeta.provider_fallback_reason = providerFallbackReason.slice(0, 300);
+    }
 
     // Update section with content + grounding metadata
     await supabase
