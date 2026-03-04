@@ -19,20 +19,12 @@ function CheckIcon() {
       stroke="currentColor"
       strokeWidth={3}
     >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M5 13l4 4L19 7"
-      />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
     </svg>
   );
 }
 
-export function StepIndicator({
-  current,
-}: {
-  current: ExtractionStep | null;
-}) {
+export function StepIndicator({ current }: { current: ExtractionStep | null }) {
   const activeIdx = EXTRACTION_STEPS.findIndex((s) => s.key === current);
   const activeLabel =
     EXTRACTION_STEPS[activeIdx]?.label ?? "Preparing extraction";
@@ -61,22 +53,24 @@ export function StepIndicator({
             >
               <div className="flex size-6 items-center justify-center shrink-0">
                 {isDone ? (
-                  <div className="flex size-5 items-center justify-center rounded-md bg-primary/15 text-primary">
+                  <div className="flex size-5 items-center justify-center rounded-md bg-primary/20 text-primary">
                     <CheckIcon />
                   </div>
                 ) : isActive ? (
                   <div className="relative size-5">
-                    <div className="absolute inset-0 rounded-full border border-primary/30" />
-                    <div className="absolute inset-[6px] rounded-full bg-primary motion-safe:animate-pulse motion-reduce:animate-none" />
+                    <div className="absolute inset-0 rounded-full border-2 border-primary/50" />
+                    <div className="absolute inset-[5px] rounded-full bg-primary motion-safe:animate-pulse motion-reduce:animate-none" />
                   </div>
                 ) : (
-                  <div className="size-2 rounded-full bg-muted-foreground/40" />
+                  <div className="size-2.5 rounded-full bg-muted-foreground/50" />
                 )}
               </div>
               <span
                 className={cn(
                   "text-sm",
-                  isActive ? "font-medium text-foreground" : "text-muted-foreground",
+                  isActive
+                    ? "font-medium text-foreground"
+                    : "text-muted-foreground",
                 )}
               >
                 {step.label}

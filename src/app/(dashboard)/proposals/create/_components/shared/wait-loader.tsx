@@ -18,12 +18,14 @@ export function WaitLoader({ label, detail, className }: WaitLoaderProps) {
       )}
     >
       <div className="relative size-9 shrink-0">
-        <div className="absolute inset-0 rounded-full border-2 border-primary/20" />
+        <div className="absolute inset-0 rounded-full border-2 border-primary/40" />
         <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-primary motion-safe:animate-spin motion-reduce:animate-none" />
-        <div className="absolute inset-[6px] rounded-full bg-primary/10 motion-safe:animate-pulse motion-reduce:animate-none" />
+        <div className="absolute inset-[5px] rounded-full bg-primary/25 motion-safe:animate-pulse motion-reduce:animate-none" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-foreground text-pretty">{label}</p>
+        <p className="text-sm font-medium text-foreground text-pretty">
+          {label}
+        </p>
         {detail && (
           <p className="mt-0.5 text-xs text-muted-foreground text-pretty">
             {detail}
