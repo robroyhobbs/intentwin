@@ -5,6 +5,7 @@ export interface DimensionScores {
   client_fit: number;
   evidence: number;
   brand_voice: number;
+  grounding?: number;
 }
 
 export interface JudgeReviewData {
@@ -45,7 +46,10 @@ export interface RemediationEntry {
 }
 
 export interface QualityReviewData {
-  status: typeof QualityReviewStatus.REVIEWING | typeof QualityReviewStatus.COMPLETED | typeof QualityReviewStatus.FAILED;
+  status:
+    | typeof QualityReviewStatus.REVIEWING
+    | typeof QualityReviewStatus.COMPLETED
+    | typeof QualityReviewStatus.FAILED;
   run_at: string;
   trigger: "auto_post_generation" | "manual";
   model: string;

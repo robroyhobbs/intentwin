@@ -19,6 +19,7 @@ export interface SectionDraft {
   generationStatus: "pending" | "generating" | "complete" | "failed";
   reviewed: boolean;
   order: number;
+  groundingLevel?: "high" | "medium" | "low";
 }
 
 export interface Blocker {

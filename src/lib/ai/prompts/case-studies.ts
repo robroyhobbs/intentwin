@@ -13,22 +13,32 @@ export function buildCaseStudiesPrompt(
   evidenceCount?: number,
 ): string {
   const companyName = companyInfo?.name || "Our Company";
-  const industry = (intakeData.client_industry as string) || "the target industry";
-  const scope = (intakeData.scope_description as string) || "the requested scope";
+  const industry =
+    (intakeData.client_industry as string) || "the target industry";
+  const scope =
+    (intakeData.scope_description as string) || "the requested scope";
 
   // Evidence count can come from explicit parameter OR from L1 context metadata
+  // Check old format first, then new format for backward compatibility
   const l1EvidenceMatch = l1Context?.match(/<!-- L1_EVIDENCE_COUNT: (\d+) -->/);
-  const safeEvidenceCount = evidenceCount ?? (l1EvidenceMatch ? parseInt(l1EvidenceMatch[1], 10) : 0);
+  const l1DataMatch = l1Context?.match(/<!-- L1_DATA: evidence=(\d+)/);
+  const safeEvidenceCount =
+    evidenceCount ??
+    (l1EvidenceMatch ? parseInt(l1EvidenceMatch[1], 10) : null) ??
+    (l1DataMatch ? parseInt(l1DataMatch[1], 10) : 0);
 
   // Build the evidence enforcement block based on actual data availability
-  const evidenceEnforcement = safeEvidenceCount < 2
-    ? `
+  const evidenceEnforcement =
+    safeEvidenceCount < 2
+      ? `
 ## EVIDENCE ENFORCEMENT — INSUFFICIENT DATA
 
 You have ${safeEvidenceCount} verified case stud${safeEvidenceCount === 1 ? "y" : "ies"} available. This is below the minimum threshold of 2.
 
 **MANDATORY BEHAVIOR when evidence is insufficient:**
-${safeEvidenceCount === 0 ? `- Do NOT write any case study narratives. Instead, output ONLY the following placeholder block for each missing case study:
+${
+  safeEvidenceCount === 0
+    ? `- Do NOT write any case study narratives. Instead, output ONLY the following placeholder block for each missing case study:
 
 \`\`\`
 [CASE STUDY NEEDED: ${industry} | ${scope}]
@@ -37,7 +47,8 @@ Required evidence: Client name, engagement scope, team size, measurable outcomes
 Upload at: Settings > Evidence Library > Add Case Study
 \`\`\`
 
-- Write the Experience Overview and Summary sections normally, but explicitly state that detailed case studies will be provided upon request or after evidence upload.` : `- Present the 1 available case study using the format below.
+- Write the Experience Overview and Summary sections normally, but explicitly state that detailed case studies will be provided upon request or after evidence upload.`
+    : `- Present the 1 available case study using the format below.
 - For any additional case studies, output the following placeholder:
 
 \`\`\`
@@ -47,11 +58,12 @@ Required evidence: Client name, engagement scope, team size, measurable outcomes
 Upload at: Settings > Evidence Library > Add Case Study
 \`\`\`
 
-- Do NOT fabricate a second or third case study to fill space.`}
+- Do NOT fabricate a second or third case study to fill space.`
+}
 
 This is a HARD RULE — violating it produces a non-compliant proposal.
 `
-    : `
+      : `
 ## EVIDENCE STATUS — ${safeEvidenceCount} VERIFIED CASE STUDIES AVAILABLE
 
 Use ONLY the verified evidence provided below. Do not supplement with invented examples.

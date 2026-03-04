@@ -42,6 +42,7 @@ export interface JudgeResult {
     client_fit: number;
     evidence: number;
     brand_voice: number;
+    grounding?: number;
   };
   score: number;
   feedback: string;
@@ -68,6 +69,7 @@ export interface CouncilSectionReview {
     client_fit: number;
     evidence: number;
     brand_voice: number;
+    grounding?: number;
   };
   feedback: string;
   judge_reviews: JudgeResult[];
@@ -83,6 +85,7 @@ export interface SectionReview {
     client_fit: number;
     evidence: number;
     brand_voice: number;
+    grounding?: number;
   };
   feedback: string;
 }
@@ -261,6 +264,9 @@ export async function runQualityReview(
             client_fit: scores.client_fit,
             evidence: scores.evidence,
             brand_voice: scores.brand_voice,
+            ...(scores.grounding !== undefined && {
+              grounding: scores.grounding,
+            }),
           },
           score: sectionScore,
           feedback: scores.feedback,
@@ -277,6 +283,9 @@ export async function runQualityReview(
             client_fit: scores.client_fit,
             evidence: scores.evidence,
             brand_voice: scores.brand_voice,
+            ...(scores.grounding !== undefined && {
+              grounding: scores.grounding,
+            }),
           },
           feedback: scores.feedback,
           judge_reviews: [judgeResult],
@@ -391,6 +400,9 @@ export async function runQualityReview(
             client_fit: newScores.client_fit,
             evidence: newScores.evidence,
             brand_voice: newScores.brand_voice,
+            ...(newScores.grounding !== undefined && {
+              grounding: newScores.grounding,
+            }),
           };
           existingReview.feedback = newScores.feedback;
         }
@@ -539,6 +551,9 @@ export async function getQualityFeedbackForSection(
     lines.push(`  - Client Fit: ${sectionReview.dimensions.client_fit}/10`);
     lines.push(`  - Evidence: ${sectionReview.dimensions.evidence}/10`);
     lines.push(`  - Brand Voice: ${sectionReview.dimensions.brand_voice}/10`);
+    if (sectionReview.dimensions.grounding !== undefined) {
+      lines.push(`  - Grounding: ${sectionReview.dimensions.grounding}/10`);
+    }
     lines.push("");
 
     // Include per-judge feedback if available (CouncilSectionReview — supports old multi-judge data too)

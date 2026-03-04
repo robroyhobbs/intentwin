@@ -1,5 +1,10 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { OutcomeContract, ProductContext, EvidenceLibraryEntry, TeamMember } from "@/types/idd";
+import type {
+  OutcomeContract,
+  ProductContext,
+  EvidenceLibraryEntry,
+  TeamMember,
+} from "@/types/idd";
 import type { L1Context } from "./types";
 import { fetchL1ContextFromDb, clearL1DbCache } from "./fetch-l1-context";
 
@@ -29,7 +34,9 @@ export const VAGUE_CAPABILITY_TERMS = [
  * Returns an array of internal SPECIFICITY WARNING strings.
  * These are pipeline metadata — never exposed in generated content.
  */
-export function checkCapabilitySpecificity(products: ProductContext[]): string[] {
+export function checkCapabilitySpecificity(
+  products: ProductContext[],
+): string[] {
   const warnings: string[] = [];
 
   for (const product of products) {
@@ -122,18 +129,20 @@ export function buildOutcomeContractContext(
 
 /** Build L1 context string for prompts */
 
-/** 
+/**
  * Filter the global L1 Context down to only what's strictly necessary for a specific section.
  * This prevents the "Lost in the Middle" LLM syndrome and saves tokens.
  */
 export function buildSectionSpecificL1Context(
   l1Context: L1Context,
   sectionType: string,
-  solicitationType: string = "RFP"
+  solicitationType: string = "RFP",
 ): string {
   // Always include Brand Guidelines for tone
-  const brandContext = l1Context.companyContext.filter(c => c.category === "brand");
-  
+  const brandContext = l1Context.companyContext.filter(
+    (c) => c.category === "brand",
+  );
+
   let relevantEvidence: EvidenceLibraryEntry[] = [];
   let relevantProducts: ProductContext[] = [];
   let relevantCompany = [...brandContext];
@@ -149,14 +158,16 @@ export function buildSectionSpecificL1Context(
     // Only fetch certs and methodology + team members for team section
     relevantCompany = [
       ...brandContext,
-      ...l1Context.companyContext.filter(c => c.category === "certifications" || c.category === "values")
+      ...l1Context.companyContext.filter(
+        (c) => c.category === "certifications" || c.category === "values",
+      ),
     ];
   } else if (sectionType === "pricing") {
     // Fetch legal/pricing terms AND product pricing models so the pricing section
     // can reference the company's actual pricing structures (fixed-fee, T&M, etc.)
     relevantCompany = [
       ...brandContext,
-      ...l1Context.companyContext.filter(c => c.category === "legal")
+      ...l1Context.companyContext.filter((c) => c.category === "legal"),
     ];
     relevantProducts = l1Context.productContexts;
   } else {
@@ -166,9 +177,8 @@ export function buildSectionSpecificL1Context(
   }
 
   // Include team members only in the team section
-  const relevantTeamMembers = sectionType === "team"
-    ? (l1Context.teamMembers || [])
-    : [];
+  const relevantTeamMembers =
+    sectionType === "team" ? l1Context.teamMembers || [] : [];
 
   const l1String = buildL1ContextString({
     companyContext: relevantCompany,
@@ -177,13 +187,15 @@ export function buildSectionSpecificL1Context(
     teamMembers: relevantTeamMembers,
   });
 
-  // Prepend evidence count metadata for sections that need it (case_studies, team)
-  // This allows prompt functions to detect evidence availability without signature changes
+  // Always inject L1 data availability metadata for grounding instructions
+  const l1Meta = `<!-- L1_DATA: evidence=${relevantEvidence.length} products=${relevantProducts.length} team=${relevantTeamMembers.length} company=${relevantCompany.length} -->`;
+
+  // Also inject old-format evidence count for backward compat (case_studies parser)
   if (evidenceCountForSection !== undefined) {
-    return `<!-- L1_EVIDENCE_COUNT: ${evidenceCountForSection} -->\n${l1String}`;
+    return `<!-- L1_EVIDENCE_COUNT: ${evidenceCountForSection} -->\n${l1Meta}\n${l1String}`;
   }
 
-  return l1String;
+  return `${l1Meta}\n${l1String}`;
 }
 
 export function buildL1ContextString(l1Context: L1Context): string {
@@ -214,13 +226,18 @@ export function buildL1ContextString(l1Context: L1Context): string {
     const prodStr = l1Context.productContexts
       .map((p) => {
         const caps = Array.isArray(p.capabilities)
-          ? p.capabilities.map((c: { name: string; description?: string }) =>
-              c.description ? `  - ${c.name}: ${c.description}` : `  - ${c.name}`
-            ).join("\n")
+          ? p.capabilities
+              .map((c: { name: string; description?: string }) =>
+                c.description
+                  ? `  - ${c.name}: ${c.description}`
+                  : `  - ${c.name}`,
+              )
+              .join("\n")
           : "";
-        const pricing = Array.isArray(p.pricing_models) && p.pricing_models.length > 0
-          ? `\n  Pricing: ${p.pricing_models.map((pm: { model: string; best_for?: string }) => `${pm.model}${pm.best_for ? ` (best for: ${pm.best_for})` : ""}`).join("; ")}`
-          : "";
+        const pricing =
+          Array.isArray(p.pricing_models) && p.pricing_models.length > 0
+            ? `\n  Pricing: ${p.pricing_models.map((pm: { model: string; best_for?: string }) => `${pm.model}${pm.best_for ? ` (best for: ${pm.best_for})` : ""}`).join("; ")}`
+            : "";
         const constraints = p.constraints?.not_suitable_for?.length
           ? `\n  Not suitable for: ${p.constraints.not_suitable_for.join(", ")}`
           : "";
@@ -241,42 +258,49 @@ export function buildL1ContextString(l1Context: L1Context): string {
               )
               .join(", ")
           : "";
-        const outcomes = Array.isArray(e.outcomes_demonstrated) && e.outcomes_demonstrated.length > 0
-          ? `\n  Outcomes: ${e.outcomes_demonstrated.map((o: { outcome: string; description?: string }) => o.description || o.outcome).join("; ")}`
-          : "";
+        const outcomes =
+          Array.isArray(e.outcomes_demonstrated) &&
+          e.outcomes_demonstrated.length > 0
+            ? `\n  Outcomes: ${e.outcomes_demonstrated.map((o: { outcome: string; description?: string }) => o.description || o.outcome).join("; ")}`
+            : "";
         // Include full_content for top 3 entries to give the LLM concrete material
-        const detail = idx < 3 && e.full_content
-          ? `\n  Detail: ${e.full_content.slice(0, 500)}`
-          : "";
+        const detail =
+          idx < 3 && e.full_content
+            ? `\n  Detail: ${e.full_content.slice(0, 500)}`
+            : "";
         return `### ${e.title} (${e.evidence_type})${e.client_industry ? ` [${e.client_industry}]` : ""}\n${e.summary}${metrics ? `\nMetrics: ${metrics}` : ""}${outcomes}${detail}`;
       })
       .join("\n\n");
-    sections.push(`## Verified Evidence — CITE THESE IN YOUR RESPONSE\n${evidenceStr}`);
+    sections.push(
+      `## Verified Evidence — CITE THESE IN YOUR RESPONSE\n${evidenceStr}`,
+    );
   }
 
   // Team Members (named personnel for proposals)
   if (l1Context.teamMembers && l1Context.teamMembers.length > 0) {
     const teamStr = l1Context.teamMembers
       .map((tm) => {
-        const certs = Array.isArray(tm.certifications) && tm.certifications.length > 0
-          ? `\n  Certifications: ${tm.certifications.join(", ")}`
-          : "";
-        const skills = Array.isArray(tm.skills) && tm.skills.length > 0
-          ? `\n  Skills: ${tm.skills.join(", ")}`
-          : "";
+        const certs =
+          Array.isArray(tm.certifications) && tm.certifications.length > 0
+            ? `\n  Certifications: ${tm.certifications.join(", ")}`
+            : "";
+        const skills =
+          Array.isArray(tm.skills) && tm.skills.length > 0
+            ? `\n  Skills: ${tm.skills.join(", ")}`
+            : "";
         const clearance = tm.clearance_level
           ? `\n  Clearance: ${tm.clearance_level}`
           : "";
         const experience = tm.years_experience
           ? `\n  Experience: ${tm.years_experience} years`
           : "";
-        const bio = tm.bio
-          ? `\n  Bio: ${tm.bio.slice(0, 300)}`
-          : "";
+        const bio = tm.bio ? `\n  Bio: ${tm.bio.slice(0, 300)}` : "";
         return `### ${tm.name} — ${tm.role}${tm.title ? ` (${tm.title})` : ""}${certs}${skills}${clearance}${experience}${bio}`;
       })
       .join("\n\n");
-    sections.push(`## Team Members — USE THESE REAL PEOPLE IN THE PROPOSAL\n${teamStr}`);
+    sections.push(
+      `## Team Members — USE THESE REAL PEOPLE IN THE PROPOSAL\n${teamStr}`,
+    );
   }
 
   // Legal constraints
@@ -287,7 +311,9 @@ export function buildL1ContextString(l1Context: L1Context): string {
   }
 
   // Specificity warnings — internal metadata to improve generation quality
-  const specificityWarnings = checkCapabilitySpecificity(l1Context.productContexts);
+  const specificityWarnings = checkCapabilitySpecificity(
+    l1Context.productContexts,
+  );
   if (specificityWarnings.length > 0) {
     sections.push(
       `## Specificity Guidance (Internal — Do Not Include in Output)\n${specificityWarnings.map((w) => `- ${w}`).join("\n")}`,
@@ -328,7 +354,10 @@ export function buildTaskSectionL1Context(l1Context: L1Context): string {
   // Truncate to ~4K tokens if needed
   if (fullContext.length <= CHAR_BUDGET) return fullContext;
 
-  return fullContext.slice(0, CHAR_BUDGET) + "\n\n[L1 context truncated to fit token budget]";
+  return (
+    fullContext.slice(0, CHAR_BUDGET) +
+    "\n\n[L1 context truncated to fit token budget]"
+  );
 }
 
 /**
@@ -350,15 +379,10 @@ export function extractCompetitiveObjections(
 
   const competitive = intakeData.competitive_landscape as string | undefined;
   if (competitive?.trim()) {
-    objections.push(
-      `Competitive context: ${competitive.trim().slice(0, 200)}`,
-    );
+    objections.push(`Competitive context: ${competitive.trim().slice(0, 200)}`);
   }
 
-  const concerns = intakeData.client_concerns as
-    | string
-    | string[]
-    | undefined;
+  const concerns = intakeData.client_concerns as string | string[] | undefined;
   if (Array.isArray(concerns)) {
     for (const c of concerns.slice(0, 3)) {
       if (typeof c === "string" && c.trim()) {
@@ -371,6 +395,3 @@ export function extractCompetitiveObjections(
 
   return objections;
 }
-
-
-

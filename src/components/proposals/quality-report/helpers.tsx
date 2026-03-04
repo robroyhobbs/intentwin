@@ -1,21 +1,18 @@
 "use client";
 
-import {
-  AlertTriangle,
-  CheckCircle2,
-  XCircle,
-} from "lucide-react";
-import type { DimensionScores, JudgeInfoData } from "./types";
+import { AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
+import type { JudgeInfoData } from "./types";
 
 // ============================================================
 // Constants
 // ============================================================
 
-export const DIMENSION_LABELS: Record<keyof DimensionScores, string> = {
+export const DIMENSION_LABELS: Record<string, string> = {
   content_quality: "Content Quality",
   client_fit: "Client Fit",
   evidence: "Evidence",
   brand_voice: "Brand Voice",
+  grounding: "Grounding",
 };
 
 export const JUDGE_ICONS: Record<string, string> = {
@@ -119,8 +116,7 @@ export function JudgeCard({
     );
   }
 
-  const passColor =
-    judge.pass ? "var(--success)" : "var(--warning, #f59e0b)";
+  const passColor = judge.pass ? "var(--success)" : "var(--warning, #f59e0b)";
 
   return (
     <div className="flex-1 min-w-[120px] border border-[var(--border)] rounded-lg p-3 bg-[var(--card-bg)]">

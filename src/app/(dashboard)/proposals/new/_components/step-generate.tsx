@@ -34,6 +34,8 @@ import {
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
 import { useWizard } from "./wizard-provider";
 import type { SectionProgress } from "@/lib/proposal-core/wizard-state";
+import { computeCapabilityAlignment } from "@/lib/ai/pipeline/capability-alignment";
+import { CapabilityWarningGate } from "@/components/capability-warning-gate";
 
 // ────────────────────────────────────────────────────────
 // Constants
@@ -49,7 +51,13 @@ const MIN_PROGRESS_DISPLAY_MS = 3000; // Show progress for at least 3s before re
 // Types
 // ────────────────────────────────────────────────────────
 
-type GenerationPhase = "creating" | "triggering" | "generating" | "complete" | "failed" | "timeout";
+type GenerationPhase =
+  | "creating"
+  | "triggering"
+  | "generating"
+  | "complete"
+  | "failed"
+  | "timeout";
 
 interface ApiSection {
   id: string;
@@ -80,18 +88,34 @@ function SectionStatusIcon({ status }: { status: string }) {
 function SectionStatusLabel({ status }: { status: string }) {
   switch (status) {
     case "completed":
-      return <span className="text-xs text-emerald-500 font-medium">Complete</span>;
+      return (
+        <span className="text-xs text-emerald-500 font-medium">Complete</span>
+      );
     case "generating":
     case "regenerating":
-      return <span className="text-xs text-[var(--accent)] font-medium">Generating...</span>;
+      return (
+        <span className="text-xs text-[var(--accent)] font-medium">
+          Generating...
+        </span>
+      );
     case "failed":
-      return <span className="text-xs text-[var(--danger)] font-medium">Failed</span>;
+      return (
+        <span className="text-xs text-[var(--danger)] font-medium">Failed</span>
+      );
     default:
-      return <span className="text-xs text-[var(--foreground-subtle)]">Pending</span>;
+      return (
+        <span className="text-xs text-[var(--foreground-subtle)]">Pending</span>
+      );
   }
 }
 
-function ProgressBar({ completed, total }: { completed: number; total: number }) {
+function ProgressBar({
+  completed,
+  total,
+}: {
+  completed: number;
+  total: number;
+}) {
   const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
 
   return (
@@ -100,7 +124,9 @@ function ProgressBar({ completed, total }: { completed: number; total: number })
         <span className="text-[var(--foreground-muted)]">
           {completed} of {total || "..."} sections complete
         </span>
-        <span className="font-semibold text-[var(--foreground)]">{percent}%</span>
+        <span className="font-semibold text-[var(--foreground)]">
+          {percent}%
+        </span>
       </div>
       <div className="h-2.5 rounded-full bg-[var(--background-tertiary)] overflow-hidden">
         <div
@@ -125,6 +151,11 @@ export function StepGenerate() {
   const [error, setError] = useState<string | null>(null);
   const [sections, setSections] = useState<ApiSection[]>([]);
   const [proposalId, setProposalId] = useState<string | null>(state.proposalId);
+  const [gateAcknowledged, setGateAcknowledged] = useState(false);
+
+  // Capability alignment gate
+  const alignment = computeCapabilityAlignment(state.bidEvaluation ?? null);
+  const needsGate = alignment.level !== "high" && !gateAcknowledged;
 
   // Refs for polling lifecycle
   const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -194,9 +225,14 @@ export function StepGenerate() {
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
         if (response.status === 403) {
-          throw new Error(data.error || "Plan limit reached. Please upgrade to create more proposals.");
+          throw new Error(
+            data.error ||
+              "Plan limit reached. Please upgrade to create more proposals.",
+          );
         }
-        throw new Error(data.error || `Failed to create proposal (${response.status})`);
+        throw new Error(
+          data.error || `Failed to create proposal (${response.status})`,
+        );
       }
 
       const data = await response.json();
@@ -207,7 +243,8 @@ export function StepGenerate() {
       dispatch({ type: "GENERATION_START", proposalId: id });
       return id;
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to create proposal";
+      const message =
+        err instanceof Error ? err.message : "Failed to create proposal";
       setError(message);
       setPhase("failed");
       return null;
@@ -215,36 +252,44 @@ export function StepGenerate() {
   }, [authFetch, dispatch, state]);
 
   // ── Step 2: Trigger generation ──
-  const triggerGeneration = useCallback(async (id: string): Promise<boolean> => {
-    setPhase("triggering");
+  const triggerGeneration = useCallback(
+    async (id: string): Promise<boolean> => {
+      setPhase("triggering");
 
-    try {
-      const response = await authFetch(`/api/proposals/${id}/generate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
+      try {
+        const response = await authFetch(`/api/proposals/${id}/generate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
 
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        if (response.status === 409) {
-          // Already generating — this is fine, continue to polling
-          return true;
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          if (response.status === 409) {
+            // Already generating — this is fine, continue to polling
+            return true;
+          }
+          throw new Error(
+            data.error || `Failed to start generation (${response.status})`,
+          );
         }
-        throw new Error(data.error || `Failed to start generation (${response.status})`);
-      }
 
-      return true;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to trigger generation";
-      setError(message);
-      setPhase("failed");
-      return false;
-    }
-  }, [authFetch]);
+        return true;
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Failed to trigger generation";
+        setError(message);
+        setPhase("failed");
+        return false;
+      }
+    },
+    [authFetch],
+  );
 
   // ── Step 3: Poll for progress ──
   // Use a ref to break the circular dependency between pollProgress and schedulePoll
-  const pollProgressRef = useRef<((id: string) => Promise<void>) | undefined>(undefined);
+  const pollProgressRef = useRef<((id: string) => Promise<void>) | undefined>(
+    undefined,
+  );
 
   const schedulePoll = useCallback((id: string) => {
     if (!mountedRef.current) return;
@@ -253,79 +298,98 @@ export function StepGenerate() {
       POLL_MAX_INTERVAL,
     );
     pollCountRef.current++;
-    pollTimerRef.current = setTimeout(() => pollProgressRef.current?.(id), interval);
+    pollTimerRef.current = setTimeout(
+      () => pollProgressRef.current?.(id),
+      interval,
+    );
   }, []);
 
-  const pollProgress = useCallback(async (id: string) => {
-    if (!mountedRef.current) return;
-
-    // Check timeout
-    if (Date.now() - startTimeRef.current > POLL_TIMEOUT) {
-      setPhase("timeout");
-      dispatch({ type: "GENERATION_FAIL" });
-      return;
-    }
-
-    try {
-      const response = await authFetch(`/api/proposals/${id}`);
+  const pollProgress = useCallback(
+    async (id: string) => {
       if (!mountedRef.current) return;
 
-      if (!response.ok) {
-        // Retry on poll failure (network issues)
-        schedulePoll(id);
+      // Check timeout
+      if (Date.now() - startTimeRef.current > POLL_TIMEOUT) {
+        setPhase("timeout");
+        dispatch({ type: "GENERATION_FAIL" });
         return;
       }
 
-      const data = await response.json();
-      if (!mountedRef.current) return;
+      try {
+        const response = await authFetch(`/api/proposals/${id}`);
+        if (!mountedRef.current) return;
 
-      const apiSections: ApiSection[] = data.sections || [];
-      const proposalStatus: string = data.proposal?.status || "";
-
-      setSections(apiSections);
-
-      // Map to wizard's SectionProgress format
-      const sectionProgress: SectionProgress[] = apiSections.map((s: ApiSection) => ({
-        type: s.section_type,
-        title: s.title,
-        status: (s.generation_status === "completed" || s.generation_status === "failed" || s.generation_status === "generating")
-          ? s.generation_status as "completed" | "failed" | "generating"
-          : "pending" as const,
-      }));
-      dispatch({ type: "SECTION_STATUS_UPDATE", sections: sectionProgress });
-
-      const completedCount = apiSections.filter((s: ApiSection) => s.generation_status === "completed").length;
-      const failedCount = apiSections.filter((s: ApiSection) => s.generation_status === "failed").length;
-      const totalCount = apiSections.length;
-
-      // Track when we first show progress
-      if (totalCount > 0 && !progressShownAtRef.current) {
-        progressShownAtRef.current = Date.now();
-      }
-
-      // Check if generation is complete
-      if (proposalStatus !== "generating" && totalCount > 0 && (completedCount + failedCount) === totalCount) {
-        if (failedCount === totalCount) {
-          // All sections failed
-          setPhase("failed");
-          setError("All sections failed to generate. Please try again.");
-          dispatch({ type: "GENERATION_FAIL" });
-        } else {
-          // Generation complete (possibly with some failed sections)
-          setPhase("complete");
-          dispatch({ type: "GENERATION_COMPLETE" });
+        if (!response.ok) {
+          // Retry on poll failure (network issues)
+          schedulePoll(id);
+          return;
         }
-        return;
-      }
 
-      // Continue polling
-      setPhase("generating");
-      schedulePoll(id);
-    } catch {
-      // Network error — retry
-      if (mountedRef.current) schedulePoll(id);
-    }
-  }, [authFetch, dispatch, schedulePoll]);
+        const data = await response.json();
+        if (!mountedRef.current) return;
+
+        const apiSections: ApiSection[] = data.sections || [];
+        const proposalStatus: string = data.proposal?.status || "";
+
+        setSections(apiSections);
+
+        // Map to wizard's SectionProgress format
+        const sectionProgress: SectionProgress[] = apiSections.map(
+          (s: ApiSection) => ({
+            type: s.section_type,
+            title: s.title,
+            status:
+              s.generation_status === "completed" ||
+              s.generation_status === "failed" ||
+              s.generation_status === "generating"
+                ? (s.generation_status as "completed" | "failed" | "generating")
+                : ("pending" as const),
+          }),
+        );
+        dispatch({ type: "SECTION_STATUS_UPDATE", sections: sectionProgress });
+
+        const completedCount = apiSections.filter(
+          (s: ApiSection) => s.generation_status === "completed",
+        ).length;
+        const failedCount = apiSections.filter(
+          (s: ApiSection) => s.generation_status === "failed",
+        ).length;
+        const totalCount = apiSections.length;
+
+        // Track when we first show progress
+        if (totalCount > 0 && !progressShownAtRef.current) {
+          progressShownAtRef.current = Date.now();
+        }
+
+        // Check if generation is complete
+        if (
+          proposalStatus !== "generating" &&
+          totalCount > 0 &&
+          completedCount + failedCount === totalCount
+        ) {
+          if (failedCount === totalCount) {
+            // All sections failed
+            setPhase("failed");
+            setError("All sections failed to generate. Please try again.");
+            dispatch({ type: "GENERATION_FAIL" });
+          } else {
+            // Generation complete (possibly with some failed sections)
+            setPhase("complete");
+            dispatch({ type: "GENERATION_COMPLETE" });
+          }
+          return;
+        }
+
+        // Continue polling
+        setPhase("generating");
+        schedulePoll(id);
+      } catch {
+        // Network error — retry
+        if (mountedRef.current) schedulePoll(id);
+      }
+    },
+    [authFetch, dispatch, schedulePoll],
+  );
 
   // Keep the ref in sync with the latest pollProgress
   pollProgressRef.current = pollProgress;
@@ -356,8 +420,9 @@ export function StepGenerate() {
     pollProgress(id);
   }, [createProposal, triggerGeneration, pollProgress]);
 
-  // ── Auto-start on mount ──
+  // ── Auto-start on mount (respects capability gate) ──
   useEffect(() => {
+    if (needsGate) return; // Wait for user acknowledgment
     // Only start if we don't already have a proposalId (idempotent)
     if (!state.proposalId && !generationStartedRef.current) {
       startGeneration();
@@ -368,17 +433,22 @@ export function StepGenerate() {
       pollProgress(state.proposalId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [needsGate]);
 
   // ── Visibility API: refetch when tab becomes visible ──
   useEffect(() => {
     const handleVisibility = () => {
-      if (document.visibilityState === "visible" && proposalId && phase === "generating") {
+      if (
+        document.visibilityState === "visible" &&
+        proposalId &&
+        phase === "generating"
+      ) {
         pollProgress(proposalId);
       }
     };
     document.addEventListener("visibilitychange", handleVisibility);
-    return () => document.removeEventListener("visibilitychange", handleVisibility);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibility);
   }, [proposalId, phase, pollProgress]);
 
   // ── Retry handler ──
@@ -427,12 +497,36 @@ export function StepGenerate() {
   };
 
   // ── Derived state ──
-  const completedCount = sections.filter((s) => s.generation_status === "completed").length;
-  const failedCount = sections.filter((s) => s.generation_status === "failed").length;
+  const completedCount = sections.filter(
+    (s) => s.generation_status === "completed",
+  ).length;
+  const failedCount = sections.filter(
+    (s) => s.generation_status === "failed",
+  ).length;
   const totalCount = sections.length;
   const hasPartialFailure = failedCount > 0 && completedCount > 0;
 
   // ── Render ──
+  if (needsGate) {
+    return (
+      <div className="space-y-8 max-w-lg mx-auto">
+        <div className="text-center">
+          <h2 className="text-xl font-bold text-[var(--foreground)]">
+            Before We Generate
+          </h2>
+          <p className="text-sm text-[var(--foreground-muted)] mt-1">
+            Please review the capability assessment below.
+          </p>
+        </div>
+        <CapabilityWarningGate
+          alignment={alignment}
+          onAcknowledge={() => setGateAcknowledged(true)}
+          onCancel={() => dispatch({ type: "SET_STEP", step: 4 })}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -442,8 +536,12 @@ export function StepGenerate() {
             <div className="mx-auto mb-4 h-16 w-16 rounded-2xl bg-gradient-to-br from-[var(--accent)] to-[var(--accent-hover)] flex items-center justify-center shadow-lg animate-pulse">
               <FileText className="h-8 w-8 text-white" />
             </div>
-            <h2 className="text-xl font-bold text-[var(--foreground)]">Creating Proposal</h2>
-            <p className="text-sm text-[var(--foreground-muted)] mt-1">Setting up your proposal structure...</p>
+            <h2 className="text-xl font-bold text-[var(--foreground)]">
+              Creating Proposal
+            </h2>
+            <p className="text-sm text-[var(--foreground-muted)] mt-1">
+              Setting up your proposal structure...
+            </p>
           </>
         )}
 
@@ -452,8 +550,12 @@ export function StepGenerate() {
             <div className="mx-auto mb-4 h-16 w-16 rounded-2xl bg-gradient-to-br from-[var(--accent)] to-[var(--accent-hover)] flex items-center justify-center shadow-lg animate-pulse">
               <Sparkles className="h-8 w-8 text-white" />
             </div>
-            <h2 className="text-xl font-bold text-[var(--foreground)]">Starting Generation</h2>
-            <p className="text-sm text-[var(--foreground-muted)] mt-1">Initializing AI pipeline...</p>
+            <h2 className="text-xl font-bold text-[var(--foreground)]">
+              Starting Generation
+            </h2>
+            <p className="text-sm text-[var(--foreground-muted)] mt-1">
+              Initializing AI pipeline...
+            </p>
           </>
         )}
 
@@ -462,7 +564,9 @@ export function StepGenerate() {
             <div className="mx-auto mb-4 h-16 w-16 rounded-2xl bg-gradient-to-br from-[var(--accent)] to-emerald-500 flex items-center justify-center shadow-lg">
               <Loader2 className="h-8 w-8 text-white animate-spin" />
             </div>
-            <h2 className="text-xl font-bold text-[var(--foreground)]">Generating Proposal</h2>
+            <h2 className="text-xl font-bold text-[var(--foreground)]">
+              Generating Proposal
+            </h2>
             <p className="text-sm text-[var(--foreground-muted)] mt-1">
               {totalCount === 0
                 ? "Building pipeline context and creating section structure..."
@@ -477,7 +581,9 @@ export function StepGenerate() {
               <CheckCircle2 className="h-8 w-8 text-white" />
             </div>
             <h2 className="text-xl font-bold text-[var(--foreground)]">
-              {hasPartialFailure ? "Proposal Partially Generated" : "Proposal Ready"}
+              {hasPartialFailure
+                ? "Proposal Partially Generated"
+                : "Proposal Ready"}
             </h2>
             <p className="text-sm text-[var(--foreground-muted)] mt-1">
               {hasPartialFailure
@@ -492,8 +598,12 @@ export function StepGenerate() {
             <div className="mx-auto mb-4 h-16 w-16 rounded-2xl bg-gradient-to-br from-[var(--danger)] to-red-600 flex items-center justify-center shadow-lg">
               <XCircle className="h-8 w-8 text-white" />
             </div>
-            <h2 className="text-xl font-bold text-[var(--foreground)]">Generation Failed</h2>
-            <p className="text-sm text-[var(--foreground-muted)] mt-1">{error || "Something went wrong."}</p>
+            <h2 className="text-xl font-bold text-[var(--foreground)]">
+              Generation Failed
+            </h2>
+            <p className="text-sm text-[var(--foreground-muted)] mt-1">
+              {error || "Something went wrong."}
+            </p>
           </>
         )}
 
@@ -502,9 +612,12 @@ export function StepGenerate() {
             <div className="mx-auto mb-4 h-16 w-16 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg">
               <AlertTriangle className="h-8 w-8 text-white" />
             </div>
-            <h2 className="text-xl font-bold text-[var(--foreground)]">Generation Timed Out</h2>
+            <h2 className="text-xl font-bold text-[var(--foreground)]">
+              Generation Timed Out
+            </h2>
             <p className="text-sm text-[var(--foreground-muted)] mt-1">
-              The generation is taking longer than expected. Your proposal may still be processing.
+              The generation is taking longer than expected. Your proposal may
+              still be processing.
             </p>
           </>
         )}
@@ -518,7 +631,9 @@ export function StepGenerate() {
       )}
 
       {/* Loading spinner for pre-section phase */}
-      {(phase === "creating" || phase === "triggering" || (phase === "generating" && totalCount === 0)) && (
+      {(phase === "creating" ||
+        phase === "triggering" ||
+        (phase === "generating" && totalCount === 0)) && (
         <div className="flex justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-[var(--accent)]" />
         </div>
@@ -542,7 +657,9 @@ export function StepGenerate() {
                 }`}
               >
                 <SectionStatusIcon status={section.generation_status} />
-                <span className="flex-1 text-sm text-[var(--foreground)]">{section.title}</span>
+                <span className="flex-1 text-sm text-[var(--foreground)]">
+                  {section.title}
+                </span>
                 <SectionStatusLabel status={section.generation_status} />
               </div>
             ))}

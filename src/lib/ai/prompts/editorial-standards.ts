@@ -123,13 +123,17 @@ This is a hard rule with ZERO exceptions. Every bracket in your output is a fail
 
 /** Audience profile for tone modulation */
 export interface AudienceProfile {
-  tech_level?: string;   // "non_technical" | "moderate" | "highly_technical"
-  evaluator?: string;    // "county_board" | "procurement_office" | "engineering_team"
-  size?: string;         // "small_municipality" | "mid_market" | "enterprise"
+  tech_level?: string; // "non_technical" | "moderate" | "highly_technical"
+  evaluator?: string; // "county_board" | "procurement_office" | "engineering_team"
+  size?: string; // "small_municipality" | "mid_market" | "enterprise"
 }
 
 /** Valid tone selections from the wizard */
-export type ProposalTone = "professional" | "conversational" | "technical" | "executive";
+export type ProposalTone =
+  | "professional"
+  | "conversational"
+  | "technical"
+  | "executive";
 
 /**
  * Builds the complete editorial standards block to append to any section prompt.
@@ -144,15 +148,19 @@ export function buildEditorialStandards(
   primaryBrandName?: string,
   priorDifferentiators?: string[],
   tone?: ProposalTone | string,
+  groundingLevel?: "high" | "medium" | "low",
 ): string {
   const audience = audienceProfile as AudienceProfile | null | undefined;
   let typeRules = "";
   if (solicitationType === "RFQ") {
-    typeRules = "\n\n## SOLICITATION TONE: RFQ (Request for Quote)\nThis is an RFQ. Do NOT include visionary fluff, long narratives, or high-level strategic posturing. Keep everything bottom-line upfront, highly technical, and strictly focused on pricing, SLAs, and exact deliverables. Cut word counts by 40% compared to a normal proposal.";
+    typeRules =
+      "\n\n## SOLICITATION TONE: RFQ (Request for Quote)\nThis is an RFQ. Do NOT include visionary fluff, long narratives, or high-level strategic posturing. Keep everything bottom-line upfront, highly technical, and strictly focused on pricing, SLAs, and exact deliverables. Cut word counts by 40% compared to a normal proposal.";
   } else if (solicitationType === "RFI") {
-    typeRules = "\n\n## SOLICITATION TONE: RFI (Request for Information)\nThis is an RFI. The client is researching options. Heavily emphasize case studies, high-level capabilities, industry vision, and differentiators. Do not make hard commitments on pricing or exact timelines unless explicitly requested.";
+    typeRules =
+      "\n\n## SOLICITATION TONE: RFI (Request for Information)\nThis is an RFI. The client is researching options. Heavily emphasize case studies, high-level capabilities, industry vision, and differentiators. Do not make hard commitments on pricing or exact timelines unless explicitly requested.";
   } else if (solicitationType === "SOW") {
-    typeRules = "\n\n## SOLICITATION TONE: SOW (Statement of Work)\nThis is a Statement of Work. Use highly contractual, precise language. Focus entirely on scope, deliverables, acceptance criteria, assumptions, and milestones. Remove marketing fluff.";
+    typeRules =
+      "\n\n## SOLICITATION TONE: SOW (Statement of Work)\nThis is a Statement of Work. Use highly contractual, precise language. Focus entirely on scope, deliverables, acceptance criteria, assumptions, and milestones. Remove marketing fluff.";
   }
 
   // Audience calibration — modulate tone based on evaluator profile
@@ -241,5 +249,14 @@ Example:
 After the </thought_process> tag, write the final presentation-ready Markdown.
 `;
 
-  return `${FORMATTING_RULES}\n${ANTI_FLUFF_RULES}${typeRules}${toneRules}${audienceRules}${brandLock}${repetitionLimiter}\n${chainOfThought}`;
+  // When grounding is low, replace the evidence fallback instruction to prevent soft hallucination
+  let effectiveAntiFluff = ANTI_FLUFF_RULES;
+  if (groundingLevel === "low") {
+    effectiveAntiFluff = effectiveAntiFluff.replace(
+      `- If specific evidence is not available in the Company Context, write a general but concrete statement WITHOUT placeholders: "Our team has delivered multiple large-scale cloud migrations for federal agencies, consistently reducing infrastructure costs by 25-40%"`,
+      `- If specific evidence is not available in the Company Context, use aspirational framing: "Our team would bring..." or "We are prepared to deliver..." — do NOT claim past delivery without evidence`,
+    );
+  }
+
+  return `${FORMATTING_RULES}\n${effectiveAntiFluff}${typeRules}${toneRules}${audienceRules}${brandLock}${repetitionLimiter}\n${chainOfThought}`;
 }

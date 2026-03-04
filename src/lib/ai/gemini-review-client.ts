@@ -25,6 +25,7 @@ export async function reviewWithGemini(prompt: string): Promise<{
   client_fit: number;
   evidence: number;
   brand_voice: number;
+  grounding?: number;
   feedback: string;
 }> {
   const client = getClient();
