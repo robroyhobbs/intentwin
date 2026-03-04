@@ -74,8 +74,9 @@ function getRecommendation(weightedTotal: number): "bid" | "evaluate" | "pass" {
   return "pass";
 }
 
-/** Model used for bid-eval scoring — needs stronger reasoning than generation */
-const BID_SCORING_MODEL = "gemini-2.5-flash";
+/** Model used for bid-eval scoring — gemini-2.0-flash is more reliable for structured JSON output.
+ * gemini-2.5-flash has known JSON truncation/parsing issues. */
+const BID_SCORING_MODEL = "gemini-2.0-flash";
 
 const BID_SCORING_SYSTEM_PROMPT = `You are a SKEPTICAL bid/no-bid evaluation analyst for a professional services firm. Your job is to rigorously assess whether an RFP opportunity is worth pursuing based ONLY on documented, verified evidence.
 
@@ -241,6 +242,7 @@ Based on the above, score each of the 5 bid evaluation factors (0-100) with rati
     temperature: 0,
     maxTokens: 4096,
     model: BID_SCORING_MODEL,
+    jsonMode: true,
   });
 
   logger.info("[bid-scoring] Gemini response received", {
@@ -321,12 +323,13 @@ ${l1Summary}
 
 Based on the above, score each of the 5 bid evaluation factors (0-100) with rationale.`;
 
-  // Call LLM for scoring (uses stronger model for accuracy)
+  // Call LLM for scoring with JSON mode for reliable structured output
   const response = await generateText(prompt, {
     systemPrompt: BID_SCORING_SYSTEM_PROMPT,
     temperature: 0,
     maxTokens: 4096,
     model: BID_SCORING_MODEL,
+    jsonMode: true,
   });
 
   // Parse structured response

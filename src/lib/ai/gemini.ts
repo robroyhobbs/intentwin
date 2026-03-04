@@ -118,6 +118,8 @@ export interface GenerateOptions {
   temperature?: number;
   model?: string;
   thinkingLevel?: "none" | "low" | "medium" | "high";
+  /** Force JSON output via responseMimeType — ensures valid JSON from Gemini */
+  jsonMode?: boolean;
 }
 
 const FALLBACK_MODEL = "gemini-2.0-flash";
@@ -191,6 +193,10 @@ export async function generateText(
           maxOutputTokens: options.maxTokens || 4096,
           temperature: options.temperature ?? 0.7,
         };
+
+        if (options.jsonMode) {
+          genConfig.responseMimeType = "application/json";
+        }
 
         if (options.thinkingLevel && options.thinkingLevel !== "none") {
           genConfig.thinkingConfig = {

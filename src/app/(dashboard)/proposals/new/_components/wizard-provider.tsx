@@ -65,7 +65,11 @@ export function WizardProvider({ children }: WizardProviderProps) {
   // ── Auto-save: debounced write to sessionStorage ──
   useEffect(() => {
     // Don't save if on step 4 (generating) or if just initialized
-    if (state.generationStatus === "generating" || state.generationStatus === "complete") return;
+    if (
+      state.generationStatus === "generating" ||
+      state.generationStatus === "complete"
+    )
+      return;
 
     const timer = setTimeout(() => {
       saveWizardDraft(state);
@@ -75,7 +79,17 @@ export function WizardProvider({ children }: WizardProviderProps) {
   }, [state]);
 
   // ── Draft restoration check on mount ──
+  // If URL has ?reset, clear any saved draft and start fresh
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("reset")) {
+      clearWizardDraft();
+      // Remove ?reset from URL without reload
+      const url = new URL(window.location.href);
+      url.searchParams.delete("reset");
+      window.history.replaceState({}, "", url.pathname);
+      return;
+    }
     const draft = loadWizardDraft();
     if (draft && draft.clientName) {
       dispatch({ type: "RESTORE_DRAFT", state: draft as Partial<WizardState> });
@@ -100,7 +114,11 @@ export function WizardProvider({ children }: WizardProviderProps) {
   }, [state.currentStep]);
 
   // ── Beforeunload warning when there's data ──
-  const hasData = state.clientName || state.extractedData || state.pastedContent || state.files.length > 0;
+  const hasData =
+    state.clientName ||
+    state.extractedData ||
+    state.pastedContent ||
+    state.files.length > 0;
   useEffect(() => {
     if (!hasData) return;
 
@@ -114,8 +132,8 @@ export function WizardProvider({ children }: WizardProviderProps) {
 
   // ── Clear draft on successful generation ──
   const clearDraft = useCallback(() => {
-      clearWizardDraft();
-    }, []);
+    clearWizardDraft();
+  }, []);
 
   useEffect(() => {
     if (state.generationStatus === "complete") {

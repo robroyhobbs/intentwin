@@ -37,7 +37,11 @@ export default async function ProposalsPage({
 
   if (tab !== "all") {
     if (tab === ProposalStatus.DRAFT) {
-      query = query.in("status", [ProposalStatus.DRAFT, ProposalStatus.INTAKE, ProposalStatus.GENERATING]);
+      query = query.in("status", [
+        ProposalStatus.DRAFT,
+        ProposalStatus.INTAKE,
+        ProposalStatus.GENERATING,
+      ]);
     } else {
       query = query.eq("status", tab);
     }
@@ -46,20 +50,45 @@ export default async function ProposalsPage({
   const { data: proposals } = await query;
 
   // Count by status for tab badges — lightweight head-only counts (no row data fetched)
-  const [totalResult, draftResult, intakeResult, generatingResult, reviewResult, exportedResult] = await Promise.all([
+  const [
+    totalResult,
+    draftResult,
+    intakeResult,
+    generatingResult,
+    reviewResult,
+    exportedResult,
+  ] = await Promise.all([
     supabase.from("proposals").select("id", { count: "exact", head: true }),
-    supabase.from("proposals").select("id", { count: "exact", head: true }).eq("status", ProposalStatus.DRAFT),
-    supabase.from("proposals").select("id", { count: "exact", head: true }).eq("status", ProposalStatus.INTAKE),
-    supabase.from("proposals").select("id", { count: "exact", head: true }).eq("status", ProposalStatus.GENERATING),
-    supabase.from("proposals").select("id", { count: "exact", head: true }).eq("status", ProposalStatus.REVIEW),
-    supabase.from("proposals").select("id", { count: "exact", head: true }).eq("status", ProposalStatus.EXPORTED),
+    supabase
+      .from("proposals")
+      .select("id", { count: "exact", head: true })
+      .eq("status", ProposalStatus.DRAFT),
+    supabase
+      .from("proposals")
+      .select("id", { count: "exact", head: true })
+      .eq("status", ProposalStatus.INTAKE),
+    supabase
+      .from("proposals")
+      .select("id", { count: "exact", head: true })
+      .eq("status", ProposalStatus.GENERATING),
+    supabase
+      .from("proposals")
+      .select("id", { count: "exact", head: true })
+      .eq("status", ProposalStatus.REVIEW),
+    supabase
+      .from("proposals")
+      .select("id", { count: "exact", head: true })
+      .eq("status", ProposalStatus.EXPORTED),
   ]);
 
   const totalCount = totalResult.count ?? 0;
   const reviewCount = reviewResult.count ?? 0;
   const exportedCount = exportedResult.count ?? 0;
   // "Draft" tab groups DRAFT + INTAKE + GENERATING
-  const draftGroupCount = (draftResult.count ?? 0) + (intakeResult.count ?? 0) + (generatingResult.count ?? 0);
+  const draftGroupCount =
+    (draftResult.count ?? 0) +
+    (intakeResult.count ?? 0) +
+    (generatingResult.count ?? 0);
 
   const statusCounts: Record<string, number> = {
     all: totalCount,
@@ -88,7 +117,7 @@ export default async function ProposalsPage({
           </div>
 
           <Link
-            href="/proposals/new"
+            href="/proposals/new?reset"
             className="btn-primary inline-flex items-center gap-2 px-5 py-2.5"
           >
             <Sparkles className="h-4 w-4" />
@@ -188,20 +217,36 @@ export default async function ProposalsPage({
       </div>
 
       {/* Content */}
-            {!proposals || proposals.length === 0 ? (
+      {!proposals || proposals.length === 0 ? (
         <div className="relative rounded-2xl border border-[var(--border)] bg-[#09090b] p-16 text-center overflow-hidden flex flex-col items-center justify-center">
           {/* Subtle glowing background orb */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-500/10 rounded-full blur-[100px] pointer-events-none"></div>
-          
+
           <div className="relative z-10 mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-[#18181b] border border-[#27272a] shadow-[0_0_30px_rgba(192,132,252,0.15)] mb-6">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="url(#gradient_file)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="40"
+              height="40"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="url(#gradient_file)"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
               <polyline points="14 2 14 8 20 8"></polyline>
               <line x1="16" y1="13" x2="8" y2="13"></line>
               <line x1="16" y1="17" x2="8" y2="17"></line>
               <polyline points="10 9 9 9 8 9"></polyline>
               <defs>
-                <linearGradient id="gradient_file" x1="4" y1="2" x2="20" y2="22" gradientUnits="userSpaceOnUse">
+                <linearGradient
+                  id="gradient_file"
+                  x1="4"
+                  y1="2"
+                  x2="20"
+                  y2="22"
+                  gradientUnits="userSpaceOnUse"
+                >
                   <stop stopColor="#818CF8" />
                   <stop offset="1" stopColor="#C084FC" />
                 </linearGradient>
@@ -209,14 +254,18 @@ export default async function ProposalsPage({
             </svg>
           </div>
           <h3 className="relative z-10 text-2xl font-bold text-white tracking-tight mb-3">
-            {tab === "all" ? "Engineer your first proposal" : `No ${tab} proposals`}
+            {tab === "all"
+              ? "Engineer your first proposal"
+              : `No ${tab} proposals`}
           </h3>
           <p className="relative z-10 text-base text-zinc-400 max-w-lg mx-auto mb-10 leading-relaxed font-light">
-            Skip the blank page. Define your win strategy, upload an RFP, and let the 6-layer Intent framework generate a fully compliant, highly persuasive first draft in minutes.
+            Skip the blank page. Define your win strategy, upload an RFP, and
+            let the 6-layer Intent framework generate a fully compliant, highly
+            persuasive first draft in minutes.
           </p>
           <div className="relative z-10 flex flex-col sm:flex-row gap-4 items-center justify-center">
             <Link
-              href="/proposals/new"
+              href="/proposals/new?reset"
               className="bg-white text-black font-semibold rounded-lg hover:bg-zinc-200 transition-all text-sm px-6 py-3 shadow-[0_0_20px_rgba(192,132,252,0.3)] hover:shadow-[0_0_30px_rgba(192,132,252,0.5)] flex items-center gap-2"
             >
               <Sparkles className="h-4 w-4 text-purple-600" />
@@ -240,8 +289,9 @@ export default async function ProposalsPage({
               | undefined;
             const sectionCount = sections?.length || 0;
             const completedSections =
-              sections?.filter((s) => s.generation_status === GenerationStatus.COMPLETED)
-                .length || 0;
+              sections?.filter(
+                (s) => s.generation_status === GenerationStatus.COMPLETED,
+              ).length || 0;
             return (
               <div
                 key={proposal.id}

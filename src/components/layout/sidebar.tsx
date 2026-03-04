@@ -28,7 +28,7 @@ const navGroups = [
     label: "Proposals",
     items: [
       { name: "Dashboard", href: "/proposals", icon: LayoutDashboard },
-      { name: "New Proposal", href: "/proposals/new", icon: PlusCircle },
+      { name: "New Proposal", href: "/proposals/new?reset", icon: PlusCircle },
       { name: "Analytics", href: "/analytics", icon: BarChart3 },
     ],
   },
