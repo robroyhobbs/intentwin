@@ -9,37 +9,64 @@
  * @module utils/extract-json
  */
 
-/**
- * Attempt to extract a JSON object from an AI response string.
- * Returns the parsed object or null if no valid JSON found.
- */
-export function extractJsonFromResponse(response: string): Record<string, unknown> | null {
+function parseObject(candidate: string): Record<string, unknown> | null {
+  try {
+    const parsed = JSON.parse(candidate) as unknown;
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>;
+    }
+  } catch {
+    // Ignore parse errors and continue strategy cascade
+  }
+  return null;
+}
+
+function extractWithStrategies(response: string): Record<string, unknown> | null {
   // Strategy 1: Markdown code block
   const codeBlockMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (codeBlockMatch) {
-    try {
-      return JSON.parse(codeBlockMatch[1].trim());
-    } catch {
-      // Code block found but content isn't valid JSON — continue to other strategies
-    }
+    const fromCodeBlock = parseObject(codeBlockMatch[1].trim());
+    if (fromCodeBlock) return fromCodeBlock;
   }
 
   // Strategy 2: Find the outermost { ... } in the response
   const firstBrace = response.indexOf("{");
   const lastBrace = response.lastIndexOf("}");
   if (firstBrace !== -1 && lastBrace > firstBrace) {
-    try {
-      return JSON.parse(response.slice(firstBrace, lastBrace + 1));
-    } catch {
-      // Braces found but not valid JSON — continue
-    }
+    const fromBraces = parseObject(response.slice(firstBrace, lastBrace + 1));
+    if (fromBraces) return fromBraces;
   }
 
   // Strategy 3: Try parsing the entire response as-is (raw JSON, no wrapper)
+  const fromRaw = parseObject(response.trim());
+  if (fromRaw) return fromRaw;
+
+  return null;
+}
+
+/**
+ * Attempt to extract a JSON object from an AI response string.
+ * Returns the parsed object or null if no valid JSON found.
+ */
+export function extractJsonFromResponse(response: string): Record<string, unknown> | null {
+  const trimmed = response.trim();
+  if (!trimmed) return null;
+
+  const direct = extractWithStrategies(trimmed);
+  if (direct) return direct;
+
+  // Strategy 4: Some models return a JSON-encoded string containing JSON.
+  // Decode once, then run the same extraction strategies again.
   try {
-    return JSON.parse(response.trim());
+    const decoded = JSON.parse(trimmed) as unknown;
+    if (typeof decoded === "string") {
+      return extractWithStrategies(decoded);
+    }
+    if (decoded && typeof decoded === "object" && !Array.isArray(decoded)) {
+      return decoded as Record<string, unknown>;
+    }
   } catch {
-    // Nothing worked
+    // Not a JSON-encoded string/object
   }
 
   return null;

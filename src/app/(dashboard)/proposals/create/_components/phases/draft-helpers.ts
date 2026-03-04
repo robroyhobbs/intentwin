@@ -186,15 +186,8 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/** Mark non-terminal sections as failed and return mapped list. */
-function finalizeSections(sections: ApiSection[]): SectionDraft[] {
-  return sections
-    .map((s) =>
-      s.generation_status === "generating" || s.generation_status === "pending"
-        ? { ...s, generation_status: "failed" as const }
-        : s,
-    )
-    .map(mapApiSection);
+function mapSections(sections: ApiSection[]): SectionDraft[] {
+  return sections.map(mapApiSection);
 }
 
 function handlePollTimeout(
@@ -204,7 +197,7 @@ function handlePollTimeout(
 ): void {
   const completed = sections.filter((s) => s.generation_status === "completed");
   if (completed.length > 0) {
-    dispatch({ type: "SET_SECTIONS", sections: finalizeSections(sections) });
+    dispatch({ type: "SET_SECTIONS", sections: mapSections(sections) });
     dispatch({ type: "GENERATION_COMPLETE" });
     logger.warn("Generation timed out with partial success", {
       proposalId,
@@ -250,10 +243,18 @@ export async function pollSections(
     const proposalDone =
       data.proposal.status === "review" || data.proposal.status === "draft";
 
+    // Proposal status can flip before every section row is visibly terminal.
+    // Keep polling until sections settle to avoid false client-side failures.
+    if (proposalDone && !allTerminal(data.sections)) {
+      await delay(interval);
+      interval = Math.min(interval * POLL_BACKOFF, POLL_MAX_MS);
+      continue;
+    }
+
     if (proposalDone || allTerminal(data.sections)) {
       dispatch({
         type: "SET_SECTIONS",
-        sections: finalizeSections(data.sections),
+        sections: mapSections(data.sections),
       });
       dispatch({ type: "GENERATION_COMPLETE" });
       logger.info("Generation complete", {

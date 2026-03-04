@@ -87,9 +87,8 @@ You will receive:
 
 Score each of the 5 factors on a 0-100 scale with a brief rationale (2-3 sentences each).
 
-IMPORTANT: Return ONLY a JSON object in this exact format, wrapped in a markdown code block:
+IMPORTANT: Return ONLY a JSON object in this exact format (raw JSON, no markdown code fences):
 
-\`\`\`json
 {
   "requirement_match": { "score": 75, "rationale": "Brief explanation..." },
   "past_performance": { "score": 60, "rationale": "Brief explanation..." },
@@ -97,7 +96,6 @@ IMPORTANT: Return ONLY a JSON object in this exact format, wrapped in a markdown
   "timeline_feasibility": { "score": 70, "rationale": "Brief explanation..." },
   "strategic_value": { "score": 55, "rationale": "Brief explanation..." }
 }
-\`\`\`
 
 ## Scoring Rubric (follow exactly)
 

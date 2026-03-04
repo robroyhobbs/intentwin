@@ -71,6 +71,18 @@ describe("extractJsonFromResponse", () => {
     expect(result).toEqual({ fallback: true });
   });
 
+  it("extracts object from a JSON-encoded response string", () => {
+    const input = JSON.stringify('{ "key": "value" }');
+    const result = extractJsonFromResponse(input);
+    expect(result).toEqual({ key: "value" });
+  });
+
+  it("extracts fenced JSON from a JSON-encoded response string", () => {
+    const input = JSON.stringify('```json\n{ "key": "value" }\n```');
+    const result = extractJsonFromResponse(input);
+    expect(result).toEqual({ key: "value" });
+  });
+
   it("handles JSON with special characters in values", () => {
     const input = '{ "message": "Hello \\"world\\"", "path": "a/b/c" }';
     const result = extractJsonFromResponse(input);

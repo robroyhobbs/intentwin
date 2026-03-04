@@ -66,13 +66,33 @@ export const generateProposalFn = inngest.createFunction(
       // Check if any sections completed (partial success)
       const { data: sections } = await supabase
         .from("proposal_sections")
-        .select("generation_status")
+        .select("id, generation_status")
         .eq("proposal_id", proposalId);
+
+      const nonTerminalSectionIds =
+        sections
+          ?.filter(
+            (s) =>
+              s.generation_status === GenerationStatus.PENDING ||
+              s.generation_status === GenerationStatus.GENERATING,
+          )
+          .map((s) => s.id) ?? [];
+
+      if (nonTerminalSectionIds.length > 0) {
+        await supabase
+          .from("proposal_sections")
+          .update({
+            generation_status: GenerationStatus.FAILED,
+            generation_error: `Generation interrupted: ${event.data.error?.message || "Function failed before completion"}`,
+          })
+          .in("id", nonTerminalSectionIds);
+      }
 
       const completedCount =
         sections?.filter(
           (s) => s.generation_status === GenerationStatus.COMPLETED,
         ).length ?? 0;
+      const totalCount = sections?.length ?? 0;
 
       if (completedCount > 0) {
         // Partial success — move to review with warning
@@ -81,12 +101,12 @@ export const generateProposalFn = inngest.createFunction(
           .update({
             status: ProposalStatus.REVIEW,
             generation_completed_at: new Date().toISOString(),
-            generation_error: `Generation partially failed: ${completedCount} of ${sections?.length ?? 0} sections completed. Some sections failed permanently. You can regenerate failed sections individually.`,
+            generation_error: `Generation partially failed: ${completedCount} of ${totalCount} sections completed. Some sections failed permanently. You can regenerate failed sections individually.`,
           })
           .eq("id", proposalId);
         failLog.info("Partial success — moved to review", {
           completedCount,
-          total: sections?.length,
+          total: totalCount,
         });
       } else {
         // Total failure — revert to draft
@@ -405,10 +425,7 @@ export const generateProposalFn = inngest.createFunction(
 
       const batchResults = await Promise.allSettled(
         batch.map((section) => {
-          const stepId =
-            section.sectionType === "rfp_task"
-              ? `section-rfp_task-${section.title.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 50)}`
-              : `section-${section.sectionType}`;
+          const stepId = `section-${section.sectionType}-${section.id}`;
           return step.run(stepId, async () => {
             log.info(`Generating section: ${section.sectionType}`, {
               proposalId,
@@ -448,20 +465,20 @@ export const generateProposalFn = inngest.createFunction(
     });
 
     // Combine results for tracking: exec summary (if it ran) + remaining
-    // Build a map of sectionType -> result for the return value
+    // Build a map of sectionId -> result for the return value
     const sectionResultMap = new Map<
       string,
       { status: string; error?: string }
     >();
     if (execSection) {
-      sectionResultMap.set("executive_summary", {
+      sectionResultMap.set(execSection.id, {
         status: execFailed ? "rejected" : "fulfilled",
         ...(execFailed ? { error: "Executive summary generation failed" } : {}),
       });
     }
     remainingResults.forEach((r, i) => {
-      const sectionType = remainingSections[i].sectionType;
-      sectionResultMap.set(sectionType, {
+      const sectionId = remainingSections[i].id;
+      sectionResultMap.set(sectionId, {
         status: r.status,
         ...(r.status === "rejected"
           ? { error: (r as PromiseRejectedResult).reason?.message || "Unknown" }
@@ -487,9 +504,9 @@ export const generateProposalFn = inngest.createFunction(
       });
 
       for (const section of failedSections) {
-        await step.sleep(`rescue-delay-${section.sectionType}`, "2s");
+        await step.sleep(`rescue-delay-${section.id}`, "2s");
         try {
-          await step.run(`rescue-${section.sectionType}`, async () => {
+          await step.run(`rescue-${section.sectionType}-${section.id}`, async () => {
             const supabase = createAdminClient();
             const { data } = await supabase
               .from("proposal_sections")
@@ -507,7 +524,7 @@ export const generateProposalFn = inngest.createFunction(
             );
           });
           // Update tracking map on rescue success
-          sectionResultMap.set(section.sectionType, { status: "fulfilled" });
+          sectionResultMap.set(section.id, { status: "fulfilled" });
           log.info(`Rescue succeeded: ${section.sectionType}`, { proposalId });
         } catch (err) {
           log.warn(`Rescue failed: ${section.sectionType}`, {
@@ -526,7 +543,7 @@ export const generateProposalFn = inngest.createFunction(
       const finalizeLog = createLogger({ operation: "finalize", proposalId });
 
       // Count outcomes from DB (source of truth)
-      const { data: finalSections, error: fetchError } = await supabase
+      let { data: finalSections, error: fetchError } = await supabase
         .from("proposal_sections")
         .select("id, section_type, generation_status, generation_error")
         .eq("proposal_id", proposalId);
@@ -537,6 +554,37 @@ export const generateProposalFn = inngest.createFunction(
         });
       }
 
+      const nonTerminalSections =
+        finalSections?.filter(
+          (s) =>
+            s.generation_status === GenerationStatus.PENDING ||
+            s.generation_status === GenerationStatus.GENERATING,
+        ) ?? [];
+
+      if (nonTerminalSections.length > 0) {
+        const nonTerminalIds = nonTerminalSections.map((s) => s.id);
+        await supabase
+          .from("proposal_sections")
+          .update({
+            generation_status: GenerationStatus.FAILED,
+            generation_error:
+              "Generation did not complete for this section. Please regenerate.",
+          })
+          .in("id", nonTerminalIds);
+
+        finalSections =
+          finalSections?.map((s) =>
+            nonTerminalIds.includes(s.id)
+              ? {
+                  ...s,
+                  generation_status: GenerationStatus.FAILED,
+                  generation_error:
+                    "Generation did not complete for this section. Please regenerate.",
+                }
+              : s,
+          ) ?? finalSections;
+      }
+
       const completedCount =
         finalSections?.filter(
           (s) => s.generation_status === GenerationStatus.COMPLETED,
@@ -545,17 +593,13 @@ export const generateProposalFn = inngest.createFunction(
         finalSections?.filter(
           (s) => s.generation_status === GenerationStatus.FAILED,
         ).length ?? 0;
-      const pendingCount =
-        finalSections?.filter(
-          (s) => s.generation_status === GenerationStatus.PENDING,
-        ).length ?? 0;
       const totalCount = finalSections?.length ?? 0;
 
       finalizeLog.info("Section generation results", {
         total: totalCount,
         completed: completedCount,
         failed: failedCount,
-        pending: pendingCount,
+        normalizedFromNonTerminal: nonTerminalSections.length,
         failedSections: finalSections
           ?.filter((s) => s.generation_status === GenerationStatus.FAILED)
           .map((s) => ({ type: s.section_type, error: s.generation_error })),
@@ -652,7 +696,7 @@ export const generateProposalFn = inngest.createFunction(
       failed: result.failedCount,
       allFailed: result.allFailed,
       sectionResults: sections.map((s) => {
-        const r = sectionResultMap.get(s.sectionType);
+        const r = sectionResultMap.get(s.id);
         return {
           section: s.sectionType,
           status: r?.status || "unknown",
