@@ -2,11 +2,12 @@ import { NextRequest } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getUserContext } from "@/lib/supabase/auth-api";
 import { unauthorized, badRequest, ok, serverError } from "@/lib/api/response";
+import { MODELS } from "@/lib/ai/models";
 
 /** AI image generation can be slow */
 export const maxDuration = 120;
 
-const IMAGE_MODEL = "gemini-3.1-flash-image-preview";
+const IMAGE_MODEL = MODELS.image;
 
 export async function POST(request: NextRequest) {
   try {

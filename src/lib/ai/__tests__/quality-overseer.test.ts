@@ -195,6 +195,7 @@ describe("Quality Overseer (Gemini)", () => {
     vi.clearAllMocks();
     vi.stubEnv("GEMINI_API_KEY", "test-gemini-key");
     vi.stubEnv("GEMINI_MODEL", "gemini-test-model");
+    vi.stubEnv("GEMINI_REVIEW_MODEL", "gemini-test-model");
   });
 
   // ============================================================

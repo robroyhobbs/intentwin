@@ -113,7 +113,23 @@ export const generateProposalFn = inngest.createFunction(
       const supabase = createAdminClient();
 
       stepLog.info("Building pipeline context...");
-      const ctx = await buildPipelineContext(supabase, proposalId);
+      let ctx: Awaited<ReturnType<typeof buildPipelineContext>>;
+      try {
+        ctx = await buildPipelineContext(supabase, proposalId);
+      } catch (ctxErr) {
+        stepLog.error("buildPipelineContext failed — reverting to DRAFT", {
+          error: ctxErr instanceof Error ? ctxErr.message : String(ctxErr),
+        });
+        await supabase
+          .from("proposals")
+          .update({
+            status: ProposalStatus.DRAFT,
+            generation_error: `Pipeline context build failed: ${ctxErr instanceof Error ? ctxErr.message : String(ctxErr)}`,
+            generation_completed_at: new Date().toISOString(),
+          })
+          .eq("id", proposalId);
+        throw ctxErr;
+      }
       stepLog.info("Pipeline context built successfully", {
         organizationId: ctx.organizationId,
         hasWinStrategy: !!ctx.winStrategy,
@@ -381,8 +397,9 @@ export const generateProposalFn = inngest.createFunction(
         await step.sleep(`batch-delay-${batchIdx}`, "3s");
       }
 
-      log.info(`Processing batch ${batchIdx + 1}/${batches.length}`, {
+      log.info(`Batch ${batchIdx + 1}/${batches.length} starting`, {
         proposalId,
+        timestamp: new Date().toISOString(),
         sections: batch.map((s) => s.sectionType),
       });
 

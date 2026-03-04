@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { geminiHeliconeOptions } from "@/lib/observability/helicone";
+import { getModel } from "./models";
 
 let geminiClient: GoogleGenerativeAI | null = null;
 
@@ -31,8 +32,7 @@ export async function reviewWithGemini(prompt: string): Promise<{
   const client = getClient();
   const model = client.getGenerativeModel(
     {
-      model:
-        process.env.GEMINI_MODEL?.trim() || "gemini-3.1-flash-lite-preview",
+      model: getModel("review"),
       generationConfig: {
         temperature: 0.3,
         maxOutputTokens: 2048,

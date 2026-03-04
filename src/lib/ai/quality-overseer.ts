@@ -16,6 +16,7 @@ import { logger } from "@/lib/utils/logger";
 import { logQualityReviewMetric } from "@/lib/observability/metrics";
 import { parallelBatch, PIPELINE_CONCURRENCY } from "./pipeline/retrieval";
 import { reviewWithGemini } from "./gemini-review-client";
+import { getModel } from "./models";
 import {
   buildQualityReviewPrompt,
   calculateSectionScore,
@@ -117,7 +118,7 @@ export interface QualityReviewResult {
 
 /** Returns the model label used for the initial "reviewing" status. */
 export function getReviewModelLabel(): string {
-  return process.env.GEMINI_MODEL || "gemini-3.1-flash-lite-preview";
+  return getModel("review");
 }
 
 /**
@@ -130,8 +131,7 @@ export async function runQualityReview(
   const reviewStartTime = performance.now();
   const supabase = createAdminClient();
   const runAt = new Date().toISOString();
-  const geminiModel =
-    process.env.GEMINI_MODEL || "gemini-3.1-flash-lite-preview";
+  const geminiModel = getModel("review");
 
   const result: QualityReviewResult = {
     status: QualityReviewStatus.REVIEWING,

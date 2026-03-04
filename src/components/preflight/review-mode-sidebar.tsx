@@ -48,17 +48,21 @@ const PLACEHOLDER_PATTERNS = [
  */
 function extractPlaceholders(sections: Section[]): PlaceholderItem[] {
   const items: PlaceholderItem[] = [];
+  const seen = new Set<string>();
 
   for (const section of sections) {
     const content = section.edited_content || section.generated_content || "";
 
     for (const pattern of PLACEHOLDER_PATTERNS) {
-      // Reset regex lastIndex for global patterns
       pattern.lastIndex = 0;
       let match;
       while ((match = pattern.exec(content)) !== null) {
+        // Deduplicate: multiple patterns can match the same text at the same position
+        const id = `${section.id}-${match.index}-${match[0]}`;
+        if (seen.has(id)) continue;
+        seen.add(id);
         items.push({
-          id: `${section.id}-${match.index}-${match[0]}`,
+          id,
           text: match[0],
           sectionId: section.id,
           sectionTitle: section.title,
@@ -78,6 +82,7 @@ function extractPlaceholders(sections: Section[]): PlaceholderItem[] {
  */
 function markResolvedPlaceholders(sections: Section[]): PlaceholderItem[] {
   const items: PlaceholderItem[] = [];
+  const seen = new Set<string>();
 
   for (const section of sections) {
     const generatedContent = section.generated_content || "";
@@ -90,13 +95,16 @@ function markResolvedPlaceholders(sections: Section[]): PlaceholderItem[] {
       // Find all placeholders in generated content
       while ((match = pattern.exec(generatedContent)) !== null) {
         const placeholderText = match[0];
+        const id = `${section.id}-${match.index}-${placeholderText}`;
+        if (seen.has(id)) continue;
+        seen.add(id);
         // Check if it was removed in the edited version
         const resolved = editedContent
           ? !editedContent.includes(placeholderText)
           : false;
 
         items.push({
-          id: `${section.id}-${match.index}-${placeholderText}`,
+          id,
           text: placeholderText,
           sectionId: section.id,
           sectionTitle: section.title,
@@ -109,20 +117,24 @@ function markResolvedPlaceholders(sections: Section[]): PlaceholderItem[] {
         pattern.lastIndex = 0;
         while ((match = pattern.exec(editedContent)) !== null) {
           const placeholderText = match[0];
+          const id = `${section.id}-edited-${match.index}-${placeholderText}`;
+          if (seen.has(id)) continue;
           // Skip if this placeholder text was already found in generated_content for this section
           if (
-            !items.some(
+            items.some(
               (i) => i.sectionId === section.id && i.text === placeholderText,
             )
           ) {
-            items.push({
-              id: `${section.id}-edited-${match.index}-${placeholderText}`,
-              text: placeholderText,
-              sectionId: section.id,
-              sectionTitle: section.title,
-              resolved: false,
-            });
+            continue;
           }
+          seen.add(id);
+          items.push({
+            id,
+            text: placeholderText,
+            sectionId: section.id,
+            sectionTitle: section.title,
+            resolved: false,
+          });
         }
       }
     }

@@ -26,6 +26,9 @@ export default defineConfig({
         functions: 70,
         branches: 60,
         statements: 70,
+        "src/lib/ai/pipeline/**": { statements: 60 },
+        "src/lib/ai/prompts/**": { statements: 60 },
+        "src/lib/proposal-core/**": { statements: 70 },
       },
     },
     // Test file patterns

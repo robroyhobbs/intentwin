@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { logger } from "@/lib/utils/logger";
 import { extractJsonFromResponse } from "@/lib/utils/extract-json";
 import { generateText } from "./gemini";
+import { MODELS } from "./models";
 import {
   intelligenceClient,
   buildIntelligenceContext,
@@ -74,9 +75,8 @@ function getRecommendation(weightedTotal: number): "bid" | "evaluate" | "pass" {
   return "pass";
 }
 
-/** Model used for bid-eval scoring — gemini-2.0-flash is more reliable for structured JSON output.
- * gemini-2.5-flash has known JSON truncation/parsing issues. */
-const BID_SCORING_MODEL = "gemini-2.0-flash";
+/** Model used for bid-eval scoring — gemini-2.5-flash for reliable structured JSON. */
+const BID_SCORING_MODEL = MODELS.scoring;
 
 const BID_SCORING_SYSTEM_PROMPT = `You are a SKEPTICAL bid/no-bid evaluation analyst for a professional services firm. Your job is to rigorously assess whether an RFP opportunity is worth pursuing based ONLY on documented, verified evidence.
 

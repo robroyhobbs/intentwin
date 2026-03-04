@@ -4,6 +4,7 @@ import type { WinStrategyData } from "@/types/outcomes";
 import type { BrandVoice } from "./persuasion";
 import { buildBrandVoiceSystemPrompt } from "./persuasion";
 import { geminiHeliconeOptions } from "@/lib/observability/helicone";
+import { MODELS, getModel } from "./models";
 
 let client: GoogleGenerativeAI | null = null;
 
@@ -122,7 +123,7 @@ export interface GenerateOptions {
   jsonMode?: boolean;
 }
 
-const FALLBACK_MODEL = "gemini-2.0-flash";
+const FALLBACK_MODEL = MODELS.fallback;
 
 /** Check whether an error is retriable (rate limit, overload, timeout, etc.) */
 function isRetryableError(msg: string): boolean {
@@ -164,10 +165,7 @@ export async function generateText(
   options: GenerateOptions = {},
 ): Promise<string> {
   const genAI = getClient();
-  const primaryModel =
-    options.model ||
-    process.env.GEMINI_MODEL?.trim() ||
-    "gemini-3.1-flash-lite-preview";
+  const primaryModel = options.model || getModel("primary");
 
   const modelsToTry = [primaryModel];
   if (primaryModel !== FALLBACK_MODEL) {

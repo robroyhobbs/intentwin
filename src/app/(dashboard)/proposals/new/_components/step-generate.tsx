@@ -46,6 +46,8 @@ const POLL_MAX_INTERVAL = 10000; // 10 seconds
 const POLL_BACKOFF_FACTOR = 1.5;
 const POLL_TIMEOUT = 10 * 60 * 1000; // 10 minutes
 const MIN_PROGRESS_DISPLAY_MS = 3000; // Show progress for at least 3s before redirect
+const SOFT_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes — show "taking longer" warning
+const SOFT_TIMEOUT_CHECK_INTERVAL = 30_000; // Check every 30 seconds
 
 // ────────────────────────────────────────────────────────
 // Types
@@ -152,6 +154,7 @@ export function StepGenerate() {
   const [sections, setSections] = useState<ApiSection[]>([]);
   const [proposalId, setProposalId] = useState<string | null>(state.proposalId);
   const [gateAcknowledged, setGateAcknowledged] = useState(false);
+  const [softTimeoutReached, setSoftTimeoutReached] = useState(false);
 
   // Capability alignment gate
   const alignment = computeCapabilityAlignment(state.bidEvaluation ?? null);
@@ -165,6 +168,8 @@ export function StepGenerate() {
   const progressShownAtRef = useRef<number | null>(null);
   const viewDelayTimerRef = useRef<NodeJS.Timeout | null>(null);
   const mountedRef = useRef(true);
+  const lastStatusChangeRef = useRef(Date.now());
+  const softTimeoutTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Cleanup polling and timers on unmount
   useEffect(() => {
@@ -176,6 +181,9 @@ export function StepGenerate() {
       }
       if (viewDelayTimerRef.current) {
         clearTimeout(viewDelayTimerRef.current);
+      }
+      if (softTimeoutTimerRef.current) {
+        clearInterval(softTimeoutTimerRef.current);
       }
     };
   }, []);
@@ -361,6 +369,17 @@ export function StepGenerate() {
           progressShownAtRef.current = Date.now();
         }
 
+        // Track status changes for soft timeout
+        const hasStatusChange = apiSections.some(
+          (s: ApiSection) =>
+            s.generation_status === "completed" ||
+            s.generation_status === "failed",
+        );
+        if (hasStatusChange) {
+          lastStatusChangeRef.current = Date.now();
+          setSoftTimeoutReached(false);
+        }
+
         // Check if generation is complete
         if (
           proposalStatus !== "generating" &&
@@ -451,6 +470,24 @@ export function StepGenerate() {
       document.removeEventListener("visibilitychange", handleVisibility);
   }, [proposalId, phase, pollProgress]);
 
+  // ── Soft timeout: warn after 3 min with no section status changes ──
+  useEffect(() => {
+    if (phase !== "generating") {
+      if (softTimeoutTimerRef.current)
+        clearInterval(softTimeoutTimerRef.current);
+      return;
+    }
+    softTimeoutTimerRef.current = setInterval(() => {
+      if (Date.now() - lastStatusChangeRef.current > SOFT_TIMEOUT_MS) {
+        setSoftTimeoutReached(true);
+      }
+    }, SOFT_TIMEOUT_CHECK_INTERVAL);
+    return () => {
+      if (softTimeoutTimerRef.current)
+        clearInterval(softTimeoutTimerRef.current);
+    };
+  }, [phase]);
+
   // ── Retry handler ──
   // If we already have a proposalId, only re-trigger generation (don't create a duplicate).
   // If creation itself failed (no proposalId), restart from scratch.
@@ -521,7 +558,7 @@ export function StepGenerate() {
         <CapabilityWarningGate
           alignment={alignment}
           onAcknowledge={() => setGateAcknowledged(true)}
-          onCancel={() => dispatch({ type: "SET_STEP", step: 4 })}
+          onCancel={() => dispatch({ type: "SET_STEP", step: 3 })}
         />
       </div>
     );
@@ -664,6 +701,29 @@ export function StepGenerate() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Soft timeout warning */}
+      {softTimeoutReached && phase === "generating" && proposalId && (
+        <div className="max-w-md mx-auto rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 text-center space-y-3">
+          <div className="flex items-center justify-center gap-2 text-amber-600">
+            <AlertTriangle className="h-4 w-4" />
+            <span className="text-sm font-medium">
+              Generation is taking longer than expected
+            </span>
+          </div>
+          <button
+            onClick={() => {
+              setSoftTimeoutReached(false);
+              lastStatusChangeRef.current = Date.now();
+              pollProgress(proposalId);
+            }}
+            className="inline-flex items-center gap-2 rounded-lg bg-amber-500/10 px-4 py-2 text-sm font-medium text-amber-700 hover:bg-amber-500/20 transition-colors"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            Check Status
+          </button>
         </div>
       )}
 

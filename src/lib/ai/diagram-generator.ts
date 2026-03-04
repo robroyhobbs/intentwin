@@ -1,8 +1,9 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createLogger } from "@/lib/utils/logger";
 import { geminiHeliconeOptions } from "@/lib/observability/helicone";
+import { MODELS } from "./models";
 
-const IMAGE_MODEL = "gemini-3.1-flash-image-preview";
+const IMAGE_MODEL = MODELS.image;
 
 const log = createLogger({ operation: "diagramGenerator" });
 
@@ -15,7 +16,11 @@ const DIAGRAM_CONFIGS: Record<
   string,
   {
     label: string;
-    buildPrompt: (sectionContent: string, companyName: string, clientName: string) => string;
+    buildPrompt: (
+      sectionContent: string,
+      companyName: string,
+      clientName: string,
+    ) => string;
   }
 > = {
   team: {

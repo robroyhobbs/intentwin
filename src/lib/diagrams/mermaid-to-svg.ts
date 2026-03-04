@@ -6,8 +6,9 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { logger } from "@/lib/utils/logger";
 import { geminiHeliconeOptions } from "@/lib/observability/helicone";
+import { MODELS } from "@/lib/ai/models";
 
-const IMAGE_MODEL = "gemini-3.1-flash-image-preview";
+const IMAGE_MODEL = MODELS.image;
 
 /**
  * Converts mermaid code to an image via Gemini image generation.
@@ -43,14 +44,19 @@ ${mermaidCode}`;
 
       const result = await model.generateContent(prompt);
       const parts = result.response.candidates?.[0]?.content?.parts;
-      const imagePart = parts?.find((p: { inlineData?: unknown }) => p.inlineData);
+      const imagePart = parts?.find(
+        (p: { inlineData?: unknown }) => p.inlineData,
+      );
 
       if (imagePart?.inlineData) {
         const { mimeType, data } = imagePart.inlineData;
         return { type: "image", data: `data:${mimeType};base64,${data}` };
       }
     } catch (err) {
-      logger.warn("Gemini diagram generation failed, falling back to mermaid.ink", { detail: err });
+      logger.warn(
+        "Gemini diagram generation failed, falling back to mermaid.ink",
+        { detail: err },
+      );
     }
   }
 
@@ -68,7 +74,9 @@ ${mermaidCode}`;
       return { type: "svg", data: svg };
     }
 
-    logger.error(`Mermaid.ink returned ${response.status} for diagram`, { detail: mermaidCode.slice(0, 80) });
+    logger.error(`Mermaid.ink returned ${response.status} for diagram`, {
+      detail: mermaidCode.slice(0, 80),
+    });
   } catch (error) {
     logger.error("Mermaid.ink fallback also failed", error);
   }
@@ -83,7 +91,10 @@ ${mermaidCode}`;
 export async function batchMermaidToImages(
   mermaidBlocks: string[],
 ): Promise<Map<string, { type: "svg" | "image"; data: string } | null>> {
-  const results = new Map<string, { type: "svg" | "image"; data: string } | null>();
+  const results = new Map<
+    string,
+    { type: "svg" | "image"; data: string } | null
+  >();
   // Process sequentially to avoid Gemini rate limits
   for (const code of mermaidBlocks) {
     const result = await mermaidToImage(code);
@@ -91,5 +102,3 @@ export async function batchMermaidToImages(
   }
   return results;
 }
-
-
