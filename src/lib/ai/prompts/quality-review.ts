@@ -20,6 +20,7 @@ export interface QualityScores {
   client_fit: number;
   evidence: number;
   brand_voice: number;
+  grounding?: number;
   feedback: string;
 }
 
@@ -83,16 +84,22 @@ const MAX_CONTENT_LENGTH = 30000;
 // ============================================================
 
 /**
- * Calculate section average score from 4 dimension scores.
+ * Calculate section average score from dimension scores.
+ * Uses dynamic denominator for backward compat (4 or 5 dimensions).
  * Rounds to 1 decimal place.
  */
 export function calculateSectionScore(scores: QualityScores): number {
-  const sum =
+  let sum =
     scores.content_quality +
     scores.client_fit +
     scores.evidence +
     scores.brand_voice;
-  return Math.round((sum / 4) * 10) / 10;
+  let count = 4;
+  if (scores.grounding !== undefined) {
+    sum += scores.grounding;
+    count = 5;
+  }
+  return Math.round((sum / count) * 10) / 10;
 }
 
 // ============================================================
@@ -173,6 +180,8 @@ ${winStrategy.differentiators.map((d) => `- ${d}`).join("\n")}
 
 4. **brand_voice** — Does it match the expected tone and terminology? ${brandVoice ? "Check against the Brand Voice Settings above." : "Use a professional, confident consulting tone."} Score 9-10 for consistent, on-brand writing.
 
+5. **grounding** — Are factual claims backed by data from the Company Context (L1)? Score 9-10 when every claim traces to provided evidence. Score low if specific claims (metrics, client names, case studies) appear fabricated or are not in the Company Context. General/aspirational framing ("Our team would bring...") is acceptable — only fabricated specifics should score low.
+
 ## Instructions
 
 Return a JSON object with exactly these fields:
@@ -180,6 +189,7 @@ Return a JSON object with exactly these fields:
 - client_fit: integer 1-10
 - evidence: integer 1-10
 - brand_voice: integer 1-10
+- grounding: integer 1-10
 - feedback: string with 1-3 sentences of actionable improvement suggestions. Be specific about what to add, remove, or change. Do not repeat the rubric.
 
 Be a tough but fair reviewer. Enterprise proposals must be exceptional to win.

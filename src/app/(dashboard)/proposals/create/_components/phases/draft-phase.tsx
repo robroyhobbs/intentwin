@@ -6,6 +6,8 @@ import { useAuthFetch } from "@/hooks/use-auth-fetch";
 import { SectionCard } from "../shared/section-card";
 import { PhaseIcon } from "../shared/phase-icon";
 import { runDraftFlow, regenerateSection } from "./draft-helpers";
+import { computeCapabilityAlignment } from "@/lib/ai/pipeline/capability-alignment";
+import { CapabilityWarningGate } from "@/components/capability-warning-gate";
 
 // ── Small presentational pieces ─────────────────────────────────────────────
 
@@ -230,6 +232,11 @@ function useDraftFlow() {
   const authFetch = useAuthFetch();
   const mountedRef = useRef(true);
   const startedRef = useRef(false);
+  const [gateAcknowledged, setGateAcknowledged] = useState(false);
+
+  // Compute capability alignment for the warning gate
+  const alignment = computeCapabilityAlignment(state.bidEvaluation);
+  const needsGate = alignment.level !== "high" && !gateAcknowledged;
 
   useEffect(() => {
     mountedRef.current = true;
@@ -239,12 +246,17 @@ function useDraftFlow() {
   }, []);
 
   useEffect(() => {
+    if (needsGate) return; // Wait for user acknowledgment
     if (state.proposalId !== null) return;
     if (state.generationStatus !== "idle") return;
     if (startedRef.current) return;
     startedRef.current = true;
     void runDraftFlow(state, dispatch, mountedRef, authFetch);
-  }, [state, dispatch, authFetch]);
+  }, [state, dispatch, authFetch, needsGate]);
+
+  const handleAcknowledgeGate = useCallback(() => {
+    setGateAcknowledged(true);
+  }, []);
 
   const handleRetry = useCallback(() => {
     startedRef.current = true;
@@ -258,19 +270,42 @@ function useDraftFlow() {
     (s) => s.generationStatus === "failed",
   ).length;
 
-  return { state, completed, failed, handleRetry };
+  return {
+    state,
+    completed,
+    failed,
+    handleRetry,
+    needsGate,
+    alignment,
+    handleAcknowledgeGate,
+  };
 }
 
 // ── Main component ──────────────────────────────────────────────────────────
 
 export function DraftPhase() {
-  const { state, completed, failed, handleRetry } = useDraftFlow();
+  const {
+    state,
+    completed,
+    failed,
+    handleRetry,
+    needsGate,
+    alignment,
+    handleAcknowledgeGate,
+  } = useDraftFlow();
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <DraftHeader />
 
-      {state.generationStatus === "idle" && (
+      {needsGate && (
+        <CapabilityWarningGate
+          alignment={alignment}
+          onAcknowledge={handleAcknowledgeGate}
+        />
+      )}
+
+      {!needsGate && state.generationStatus === "idle" && (
         <SpinnerBanner label="Setting up your proposal..." />
       )}
 

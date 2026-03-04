@@ -70,6 +70,22 @@ interface CardHeaderProps {
   onToggle: () => void;
 }
 
+function GroundingBadge({ level }: { level?: "high" | "medium" | "low" }) {
+  if (!level || level === "high") return null;
+  if (level === "low") {
+    return (
+      <span className="inline-flex items-center rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-medium text-red-600 ring-1 ring-inset ring-red-500/20">
+        Low grounding
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-600 ring-1 ring-inset ring-amber-500/20">
+      Partial grounding
+    </span>
+  );
+}
+
 function CardHeader({ section, expanded, onToggle }: CardHeaderProps) {
   return (
     <button
@@ -79,9 +95,10 @@ function CardHeader({ section, expanded, onToggle }: CardHeaderProps) {
     >
       <StatusIndicator status={section.generationStatus} />
       <div className="flex-1 min-w-0">
-        <span className="text-sm font-medium truncate block">
-          {section.title}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium truncate">{section.title}</span>
+          <GroundingBadge level={section.groundingLevel} />
+        </div>
         <span className="text-xs text-muted-foreground">
           {statusLabel(section.generationStatus)}
           {section.reviewed && " - Reviewed"}

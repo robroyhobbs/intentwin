@@ -26,6 +26,11 @@ import {
   buildTaskSectionL1Context,
 } from "@/lib/ai/pipeline/context";
 import { buildEditorialStandards } from "@/lib/ai/prompts/editorial-standards";
+import {
+  parseL1Metadata,
+  computeGroundingLevel,
+  buildGroundingInstructions,
+} from "@/lib/ai/prompts/grounding-instructions";
 import { retrieveContext } from "@/lib/ai/pipeline/retrieval";
 import {
   shouldGenerateDiagram,
@@ -340,6 +345,23 @@ ${buildEditorialStandards(solicitationType, ctx.audienceProfile, ctx.primaryBran
       isTaskSection ? "rfp_task" : sectionType,
     );
 
+    // Grounding instructions — anti-hallucination guardrails based on L1 data availability
+    const sectionL1ForGrounding = isTaskSection
+      ? buildTaskSectionL1Context(ctx.rawL1Context)
+      : buildSectionSpecificL1Context(
+          ctx.rawL1Context,
+          effectiveType,
+          solicitationType,
+        );
+    const l1Data = parseL1Metadata(sectionL1ForGrounding);
+    const groundingLevel = computeGroundingLevel(effectiveType, l1Data);
+    const companyName = (ctx.companyInfo?.name as string) || "Our Company";
+    const groundingBlock = buildGroundingInstructions(
+      effectiveType,
+      l1Data,
+      companyName,
+    );
+
     // Inject intelligence context from pipeline (Stream A: Deeper Pipeline)
     // Agency context goes into ALL sections; pricing context only for pricing/cost sections
     const agencyBlock = ctx.agencyContext
@@ -353,6 +375,7 @@ ${buildEditorialStandards(solicitationType, ctx.audienceProfile, ctx.primaryBran
 
     const prompt = [
       basePrompt,
+      groundingBlock ? `\n\n---\n\n${groundingBlock}` : "",
       agencyBlock,
       pricingBlock,
       industryContext ? `\n\n---\n\n${industryContext}` : "",
@@ -456,7 +479,14 @@ ${buildEditorialStandards(solicitationType, ctx.audienceProfile, ctx.primaryBran
       );
     }
 
-    // Update section with content
+    // Build merged metadata — preserve existing task/custom metadata, add grounding_level
+    const existingMeta = (taskMeta ?? customMeta ?? {}) as Record<
+      string,
+      unknown
+    >;
+    const mergedMeta = { ...existingMeta, grounding_level: groundingLevel };
+
+    // Update section with content + grounding metadata
     await supabase
       .from("proposal_sections")
       .update({
@@ -464,6 +494,7 @@ ${buildEditorialStandards(solicitationType, ctx.audienceProfile, ctx.primaryBran
         generation_status: GenerationStatus.COMPLETED,
         generation_prompt: prompt.slice(0, 2000),
         retrieved_context_ids: chunkIds,
+        metadata: mergedMeta,
       })
       .eq("id", sectionId);
 
@@ -475,7 +506,6 @@ ${buildEditorialStandards(solicitationType, ctx.audienceProfile, ctx.primaryBran
       shouldGenerateDiagram(config!.type)
     ) {
       try {
-        const companyName = (ctx.companyInfo?.name as string) || "Our Company";
         const clientName =
           (ctx.intakeData?.client_name as string) || "the Client";
         const diagramImage = await generateDiagram(

@@ -28,6 +28,7 @@ interface ApiSection {
   generated_content: string | null;
   generation_status: "pending" | "generating" | "completed" | "failed";
   section_order: number;
+  metadata?: { grounding_level?: "high" | "medium" | "low" } | null;
 }
 
 interface ProposalPollResponse {
@@ -53,6 +54,9 @@ function mapGenerationStatus(
 }
 
 function mapApiSection(s: ApiSection): SectionDraft {
+  const meta = s.metadata as {
+    grounding_level?: "high" | "medium" | "low";
+  } | null;
   return {
     id: s.id,
     sectionType: s.section_type,
@@ -61,6 +65,7 @@ function mapApiSection(s: ApiSection): SectionDraft {
     generationStatus: mapGenerationStatus(s.generation_status),
     reviewed: false,
     order: s.section_order,
+    groundingLevel: meta?.grounding_level,
   };
 }
 

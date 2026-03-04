@@ -13,6 +13,7 @@ import {
   buildStrengthItems,
 } from "./coach-insights";
 import { buildReadinessItems } from "./coach-insights-finalize";
+import { computeCapabilityAlignment } from "@/lib/ai/pipeline/capability-alignment";
 
 // ── Public API ──────────────────────────────────────────────────────────────
 
@@ -144,17 +145,35 @@ function getDraftCoach(state: CreateFlowState): CoachContent {
     (s) => s.generationStatus === "complete" && !s.reviewed,
   ).length;
 
+  // Capability alignment risk flag
+  const alignment = computeCapabilityAlignment(state.bidEvaluation);
+
   if (state.generationStatus === "generating") {
+    const genRisks: RiskFlag[] = [];
+    if (alignment.level === "low") {
+      genRisks.push({
+        id: "low-alignment",
+        label: "Low capability alignment — sections may use general framing",
+        severity: "high",
+      });
+    }
     return {
       ...emptyCoach(),
       whyItMatters:
         "Sections are being generated using your RFP analysis and win themes. Review each one as it completes — you can regenerate any section that needs improvement.",
+      riskFlags: genRisks,
       insights,
       nextStep: "Review each section as it generates",
     };
   }
 
   const riskFlags: RiskFlag[] = [];
+  if (alignment.level === "low")
+    riskFlags.push({
+      id: "low-alignment",
+      label: "Low capability alignment — review sections for general framing",
+      severity: "high",
+    });
   if (failed > 0)
     riskFlags.push({
       id: "gen-failed",
@@ -167,6 +186,34 @@ function getDraftCoach(state: CreateFlowState): CoachContent {
       label: `${unreviewed} unreviewed`,
       severity: "medium",
     });
+
+  // Count sections with low/medium grounding after generation
+  const lowGroundingSections = state.sections.filter(
+    (s) => s.groundingLevel === "low",
+  ).length;
+  const medGroundingSections = state.sections.filter(
+    (s) => s.groundingLevel === "medium",
+  ).length;
+  if (lowGroundingSections > 0) {
+    insights.push({
+      id: "grounding-low",
+      label: "Low Grounding Sections",
+      value: `${lowGroundingSections} section(s)`,
+      detail:
+        "These sections used aspirational framing due to insufficient evidence. Review carefully.",
+      severity: "high",
+    });
+  }
+  if (medGroundingSections > 0) {
+    insights.push({
+      id: "grounding-medium",
+      label: "Partial Grounding Sections",
+      value: `${medGroundingSections} section(s)`,
+      detail:
+        "These sections have some evidence gaps and used hedged language.",
+      severity: "medium",
+    });
+  }
 
   const advisory =
     failed > 0
