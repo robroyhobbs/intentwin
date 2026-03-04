@@ -175,10 +175,21 @@ export const POST = withProposalRoute(
     }
 
     // ── Store pipeline context for per-section calls ──────────────────
-    await supabase
+    const { error: metaError } = await supabase
       .from("proposals")
       .update({ generation_metadata: ctx })
       .eq("id", id);
+
+    if (metaError) {
+      log.error("Failed to store generation_metadata", {
+        error: metaError.message,
+        code: metaError.code,
+        hint: metaError.hint,
+      });
+      return serverError(
+        `Failed to store pipeline context: ${metaError.message}`,
+      );
+    }
 
     log.info("Setup complete", {
       sectionCount: insertedSections.length,
