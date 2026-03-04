@@ -9,14 +9,17 @@ import {
 import { PhaseIcon } from "../shared/phase-icon";
 import { ScoreBar } from "../shared/score-bar";
 import { cn } from "@/lib/utils/cn";
+import { WaitLoader } from "../shared/wait-loader";
 
 // ── Loading spinner ─────────────────────────────────────────────────────────
 
 export function SpinnerOverlay({ label }: { label: string }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-border bg-card p-12 animate-fade-in">
-      <div className="h-10 w-10 animate-spin rounded-full border-3 border-[var(--accent)]/20 border-t-[var(--accent)]" />
-      <p className="text-sm text-muted-foreground">{label}</p>
+    <div className="animate-fade-in">
+      <WaitLoader
+        label={label}
+        detail="We are scoring fit, risks, and strengths before drafting."
+      />
     </div>
   );
 }

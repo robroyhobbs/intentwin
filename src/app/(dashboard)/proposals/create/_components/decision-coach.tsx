@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, type CSSProperties } from "react";
 import {
   Sparkles,
   Clipboard,
@@ -92,7 +92,50 @@ function AdvisorySection({ text }: { text: string }) {
   if (!text) return null;
   return (
     <div className="rounded-lg bg-[var(--accent-subtle)] border border-[var(--accent-muted)] p-3">
-      <p className="text-sm text-foreground/80 leading-relaxed text-pretty">{text}</p>
+      <ExpandableText
+        text={text}
+        lines={3}
+        className="text-sm text-foreground/80 leading-relaxed text-pretty"
+      />
+    </div>
+  );
+}
+
+function ExpandableText({
+  text,
+  lines = 2,
+  className,
+}: {
+  text: string;
+  lines?: number;
+  className?: string;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const canExpand = text.length > 150;
+  const clampedStyle: CSSProperties | undefined =
+    canExpand && !expanded
+      ? {
+          display: "-webkit-box",
+          WebkitLineClamp: lines,
+          WebkitBoxOrient: "vertical",
+          overflow: "hidden",
+        }
+      : undefined;
+
+  return (
+    <div>
+      <p className={className} style={clampedStyle}>
+        {text}
+      </p>
+      {canExpand && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-1 text-xs font-medium text-primary hover:underline"
+        >
+          {expanded ? "Show less" : "Read more"}
+        </button>
+      )}
     </div>
   );
 }
@@ -139,9 +182,11 @@ function InsightRow({ insight }: { insight: CoachInsight }) {
           </span>
         </div>
         {insight.detail && (
-          <p className="text-xs text-muted-foreground/70 leading-snug mt-0.5">
-            {insight.detail}
-          </p>
+          <ExpandableText
+            text={insight.detail}
+            lines={2}
+            className="mt-0.5 text-xs text-muted-foreground/70 leading-snug text-pretty"
+          />
         )}
       </div>
     </div>
@@ -201,9 +246,13 @@ function PromptsSection({ prompts }: { prompts: CoachPrompt[] }) {
           >
             {IMPORTANCE_LABELS[p.importance]}
           </span>
-          <p className="mt-1.5 text-sm text-foreground/80 leading-relaxed text-pretty">
-            {p.question}
-          </p>
+          <div className="mt-1.5">
+            <ExpandableText
+              text={p.question}
+              lines={2}
+              className="text-sm text-foreground/80 leading-relaxed text-pretty"
+            />
+          </div>
         </div>
       ))}
     </div>
@@ -329,7 +378,7 @@ function BidAnalysis({
       {content.verdict && <VerdictCard verdict={content.verdict} />}
       {content.gaps && content.gaps.length > 0 && (
         <div className="space-y-2">
-          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase">
             Gaps to Address
           </h4>
           {content.gaps.map((g) => (
@@ -344,7 +393,7 @@ function BidAnalysis({
       )}
       {content.strengths && content.strengths.length > 0 && (
         <div className="space-y-2">
-          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase">
             Your Strengths
           </h4>
           {content.strengths.map((s) => (
@@ -404,7 +453,7 @@ export function DecisionCoach() {
   );
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
+    <div className="space-y-4 animate-fade-in-up">
       <CoachHeader isFinalize={isFinalize} />
       {content.nextStep && <NextStepCard text={content.nextStep} />}
       <QuickActions actions={quickActions} onAction={handleAction} />

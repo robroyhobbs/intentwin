@@ -1,6 +1,7 @@
 "use client";
 
 import type { ExtractionStep } from "../create-types";
+import { WaitLoader } from "./wait-loader";
 
 const EXTRACTION_STEPS: { key: ExtractionStep; label: string }[] = [
   { key: "uploading", label: "Uploading documents" },
@@ -32,10 +33,16 @@ export function StepIndicator({
   current: ExtractionStep | null;
 }) {
   const activeIdx = EXTRACTION_STEPS.findIndex((s) => s.key === current);
+  const activeLabel = EXTRACTION_STEPS[activeIdx]?.label ?? "Preparing extraction";
 
   return (
-    <div className="rounded-xl border border-border bg-card p-8">
-      <div className="flex flex-col gap-4">
+    <div className="rounded-xl border border-border bg-card p-6">
+      <WaitLoader
+        label={activeLabel}
+        detail="We are parsing your files and preparing a high-quality summary."
+        className="mb-5"
+      />
+      <div className="flex flex-col gap-3">
         {EXTRACTION_STEPS.map((step, idx) => {
           const isDone = idx < activeIdx;
           const isActive = idx === activeIdx;
@@ -43,25 +50,27 @@ export function StepIndicator({
           return (
             <div key={step.key} className="flex items-center gap-3">
               {isDone ? (
-                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground shrink-0">
+                <div className="flex size-6 items-center justify-center rounded-full bg-primary text-primary-foreground shrink-0">
                   <CheckIcon />
                 </div>
               ) : isActive ? (
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent shrink-0" />
+                <div className="relative size-6 shrink-0">
+                  <div className="absolute inset-0 rounded-full border-2 border-primary/20" />
+                  <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-primary motion-safe:animate-spin motion-reduce:animate-none" />
+                </div>
               ) : (
-                <div className="h-6 w-6 rounded-full border-2 border-muted shrink-0" />
+                <div className="size-6 rounded-full border-2 border-muted shrink-0" />
               )}
               <span
                 className={
                   isActive
                     ? "text-sm font-medium"
                     : isDone
-                      ? "text-sm text-muted-foreground line-through"
+                      ? "text-sm text-muted-foreground"
                       : "text-sm text-muted-foreground"
                 }
               >
-                {step.label}
-                {isActive && "..."}
+                {step.label} {isActive ? "..." : ""}
               </span>
             </div>
           );

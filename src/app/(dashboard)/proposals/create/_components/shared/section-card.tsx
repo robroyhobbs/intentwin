@@ -137,10 +137,12 @@ function CardBody({ section, onMarkReviewed, onRegenerate }: CardBodyProps) {
       )}
 
       {section.content && (
-        <ProposalContentRenderer
-          content={section.content}
-          className="text-sm text-foreground/90 leading-relaxed"
-        />
+        <div className="max-h-72 overflow-auto rounded-md border border-border/60 p-3">
+          <ProposalContentRenderer
+            content={section.content}
+            className="text-sm text-foreground/90 leading-relaxed"
+          />
+        </div>
       )}
 
       <div className="flex items-center gap-2 pt-2 border-t border-border">
@@ -196,7 +198,7 @@ export function SectionCard({
 
   return (
     <div
-      className={`rounded-lg border border-border bg-card overflow-hidden hover-glow ${borderClass}`}
+      className={`overflow-hidden rounded-lg border border-border bg-card ${borderClass}`}
     >
       <CardHeader section={section} expanded={expanded} onToggle={toggle} />
       {expanded && (

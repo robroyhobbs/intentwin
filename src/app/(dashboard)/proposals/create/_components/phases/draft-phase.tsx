@@ -8,6 +8,7 @@ import { PhaseIcon } from "../shared/phase-icon";
 import { runDraftFlow, regenerateSection } from "./draft-helpers";
 import { computeCapabilityAlignment } from "@/lib/ai/pipeline/capability-alignment";
 import { CapabilityWarningGate } from "@/components/capability-warning-gate";
+import { WaitLoader } from "../shared/wait-loader";
 
 // ── Small presentational pieces ─────────────────────────────────────────────
 
@@ -16,8 +17,8 @@ function DraftHeader() {
     <div className="flex items-center gap-3">
       <PhaseIcon phase="draft" state="active" />
       <div>
-        <h2 className="text-xl font-bold">Proposal Draft</h2>
-        <p className="text-sm text-muted-foreground mt-0.5">
+        <h2 className="text-xl font-bold text-balance">Proposal Draft</h2>
+        <p className="mt-0.5 text-sm text-muted-foreground text-pretty">
           Sections generate from your RFP analysis and win themes. Review each
           as it completes.
         </p>
@@ -28,10 +29,10 @@ function DraftHeader() {
 
 function SpinnerBanner({ label }: { label: string }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-6">
-      <div className="h-8 w-8 animate-spin rounded-full border-3 border-[var(--accent)]/20 border-t-[var(--accent)] shrink-0" />
-      <p className="text-sm text-muted-foreground">{label}</p>
-    </div>
+    <WaitLoader
+      label={label}
+      detail="Draft sections are being assembled with your selected strategy."
+    />
   );
 }
 
@@ -134,7 +135,7 @@ function ProgressSummary({
       </div>
       <div className="h-3 bg-muted rounded-full overflow-hidden">
         <div
-          className={`h-full bg-primary rounded-full transition-all duration-500 shadow-[0_0_8px_var(--accent)] ${isGenerating ? "animate-glow-pulse" : ""}`}
+          className={`h-full rounded-full bg-primary transition-all duration-500 ${isGenerating ? "motion-safe:animate-pulse motion-reduce:animate-none" : ""}`}
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -144,7 +145,36 @@ function ProgressSummary({
 
 // ── Section list ────────────────────────────────────────────────────────────
 
-function SectionList() {
+function StatusPill({ status }: { status: string }) {
+  if (status === "complete") {
+    return (
+      <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-600">
+        Complete
+      </span>
+    );
+  }
+  if (status === "failed") {
+    return (
+      <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">
+        Failed
+      </span>
+    );
+  }
+  if (status === "generating") {
+    return (
+      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+        Generating
+      </span>
+    );
+  }
+  return (
+    <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+      Pending
+    </span>
+  );
+}
+
+function SectionList({ compact }: { compact: boolean }) {
   const { state, dispatch } = useCreateFlow();
   const authFetch = useAuthFetch();
   const sorted = [...state.sections].sort((a, b) => a.order - b.order);
@@ -166,6 +196,22 @@ function SectionList() {
 
   if (sorted.length === 0) return null;
 
+  if (compact) {
+    return (
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        {sorted.map((section, idx) => (
+          <div
+            key={section.id}
+            className={`flex items-center gap-3 px-4 py-3 ${idx > 0 ? "border-t border-border" : ""}`}
+          >
+            <span className="flex-1 truncate text-sm">{section.title}</span>
+            <StatusPill status={section.generationStatus} />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3">
       {sorted.map((section) => (
@@ -174,10 +220,7 @@ function SectionList() {
           section={section}
           onMarkReviewed={handleMarkReviewed}
           onRegenerate={state.proposalId ? handleRegenerate : undefined}
-          defaultExpanded={
-            state.generationStatus === "complete" &&
-            section.generationStatus === "complete"
-          }
+          defaultExpanded={false}
         />
       ))}
     </div>
@@ -295,7 +338,7 @@ export function DraftPhase() {
   } = useDraftFlow();
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-2xl mx-auto space-y-6">
       <DraftHeader />
 
       {needsGate && (
@@ -323,7 +366,7 @@ export function DraftPhase() {
         />
       )}
 
-      <SectionList />
+      <SectionList compact={state.generationStatus === "generating"} />
 
       {state.generationStatus === "complete" && failed > 0 && (
         <RetryFailedButton />
