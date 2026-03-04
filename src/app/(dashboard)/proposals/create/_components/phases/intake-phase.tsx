@@ -3,7 +3,6 @@
 import { useCallback, useState } from "react";
 import { useCreateFlow } from "../create-provider";
 import { StepIndicator } from "../shared/step-indicator";
-import { PhaseIcon } from "../shared/phase-icon";
 import { StatBlock } from "../shared/stat-block";
 import {
   uploadAndExtract,
@@ -23,15 +22,12 @@ import { logger } from "@/lib/utils/logger";
 
 function IntakeHeader() {
   return (
-    <div className="flex items-center gap-3">
-      <PhaseIcon phase="intake" state="active" />
-      <div>
-        <h2 className="text-xl font-bold text-balance">Upload RFP Documents</h2>
-        <p className="mt-0.5 text-sm text-muted-foreground text-pretty">
-          Upload your RFP or paste a URL — we extract requirements, criteria,
-          and gaps automatically.
-        </p>
-      </div>
+    <div>
+      <h2 className="text-2xl font-bold text-balance">Upload RFP Documents</h2>
+      <p className="mt-1 text-sm text-muted-foreground text-pretty">
+        Upload your RFP or paste a URL — we extract requirements, criteria, and
+        gaps automatically.
+      </p>
     </div>
   );
 }

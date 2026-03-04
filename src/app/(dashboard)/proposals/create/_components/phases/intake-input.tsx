@@ -2,13 +2,14 @@
 
 import { useCallback, useRef, useState } from "react";
 import { filterValidFiles } from "./intake-helpers";
+import { cn } from "@/lib/utils/cn";
 
 // ── Small helpers ────────────────────────────────────────────────────────────
 
 function UploadIcon() {
   return (
     <svg
-      className="h-10 w-10 text-muted-foreground"
+      className="size-8 text-muted-foreground"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -46,26 +47,28 @@ export function InputModeTabs({
   onSwitch: (m: InputMode) => void;
 }) {
   return (
-    <div className="flex gap-1 rounded-lg bg-muted p-1">
+    <div className="grid grid-cols-2 gap-1 rounded-xl border border-border bg-card p-1.5">
       <button
         type="button"
         onClick={() => onSwitch("upload")}
-        className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+        className={cn(
+          "rounded-lg px-3 py-2 text-sm font-medium transition-colors",
           mode === "upload"
-            ? "bg-background text-foreground shadow-sm"
-            : "text-muted-foreground hover:text-foreground"
-        }`}
+            ? "bg-primary text-primary-foreground"
+            : "text-muted-foreground hover:text-foreground hover:bg-background/60",
+        )}
       >
         Upload Files
       </button>
       <button
         type="button"
         onClick={() => onSwitch("url")}
-        className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+        className={cn(
+          "rounded-lg px-3 py-2 text-sm font-medium transition-colors",
           mode === "url"
-            ? "bg-background text-foreground shadow-sm"
-            : "text-muted-foreground hover:text-foreground"
-        }`}
+            ? "bg-primary text-primary-foreground"
+            : "text-muted-foreground hover:text-foreground hover:bg-background/60",
+        )}
       >
         Paste URL
       </button>
@@ -89,9 +92,12 @@ export function DropZone({ onFiles }: { onFiles: (files: File[]) => void }) {
     [onFiles],
   );
 
-  const border = dragOver
-    ? "border-[var(--accent)] bg-[var(--accent-subtle)] shadow-[var(--shadow-glow)]"
-    : "border-border hover:border-[var(--accent)]/50";
+  const dropZoneClasses = cn(
+    "flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border p-12 transition-colors",
+    dragOver
+      ? "border-primary bg-primary/5"
+      : "border-border bg-card hover:border-primary/40",
+  );
 
   return (
     <div
@@ -108,13 +114,15 @@ export function DropZone({ onFiles }: { onFiles: (files: File[]) => void }) {
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") openPicker();
       }}
-      className={`flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-12 cursor-pointer transition-colors ${border}`}
+      className={dropZoneClasses}
     >
-      <UploadIcon />
-      <p className="text-sm font-medium">
+      <div className="flex size-14 items-center justify-center rounded-xl bg-background/70">
+        <UploadIcon />
+      </div>
+      <p className="text-lg font-medium text-balance text-center">
         Drag and drop your RFP files here, or click to browse
       </p>
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground text-pretty text-center">
         Supported: PDF, DOCX, TXT, XLSX
       </p>
       <input
@@ -136,10 +144,10 @@ export function UrlInput({ onSubmit }: { onSubmit: (url: string) => void }) {
   const isValid = /^https?:\/\/.+/.test(url.trim());
 
   return (
-    <div className="rounded-xl border-2 border-dashed border-border p-8 space-y-4">
+    <div className="rounded-2xl border border-border bg-card p-8 space-y-4">
       <div className="text-center space-y-2">
-        <p className="text-sm font-medium">Paste a solicitation URL</p>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-sm font-medium text-balance">Paste a solicitation URL</p>
+        <p className="text-xs text-muted-foreground text-pretty">
           Works with SAM.gov, agency portals, and any public solicitation page
         </p>
       </div>
