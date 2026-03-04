@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
@@ -181,8 +183,8 @@ export default function BrandVoiceSettingsPage() {
           <div>
             <p className="text-sm text-[var(--foreground)]">
               <strong>Why this matters:</strong> Brand voice settings shape
-              every proposal section. Tone controls how your proposals read,
-              and terminology constraints are enforced during generation.
+              every proposal section. Tone controls how your proposals read, and
+              terminology constraints are enforced during generation.
             </p>
           </div>
         </div>

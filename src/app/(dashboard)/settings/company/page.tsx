@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
@@ -93,7 +95,9 @@ export default function CompanySettingsPage() {
         // Load organization
         const { data: organization } = await supabase
           .from("organizations")
-          .select("id, name, slug, settings, plan_tier, plan_limits, usage_current_period, trial_ends_at")
+          .select(
+            "id, name, slug, settings, plan_tier, plan_limits, usage_current_period, trial_ends_at",
+          )
           .eq("id", profile.organization_id)
           .single();
 
@@ -113,7 +117,9 @@ export default function CompanySettingsPage() {
         // Load company contexts
         const { data: contextData } = await supabase
           .from("company_context")
-          .select("id, category, key, title, content, is_locked, last_verified_at")
+          .select(
+            "id, category, key, title, content, is_locked, last_verified_at",
+          )
           .eq("organization_id", profile.organization_id)
           .order("category", { ascending: true });
 
@@ -257,7 +263,11 @@ export default function CompanySettingsPage() {
     }
   }
 
-  async function handleEditCertification(id: string, title: string, content: string) {
+  async function handleEditCertification(
+    id: string,
+    title: string,
+    content: string,
+  ) {
     setSaving(true);
     try {
       const key = title.toLowerCase().replace(/[^a-z0-9]/g, "_");
