@@ -380,7 +380,7 @@ export async function generateSingleSection(
     }
 
     // Update section with content + grounding metadata
-    await supabase
+    const { error: updateError } = await supabase
       .from("proposal_sections")
       .update({
         generated_content: generatedContent,
@@ -390,6 +390,17 @@ export async function generateSingleSection(
         metadata: mergedMeta,
       })
       .eq("id", sectionId);
+
+    if (updateError) {
+      log.error("Failed to save section content to DB", {
+        sectionId,
+        error: updateError.message,
+        code: updateError.code,
+      });
+      throw new Error(
+        `Section generated but DB write failed: ${updateError.message}`,
+      );
+    }
 
     // Generate diagram image for applicable sections (non-blocking)
     if (
