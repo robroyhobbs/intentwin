@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
+
+export const dynamic = "force-dynamic";
 import LandingContent from "./(public)/landing/LandingContent";
 import { getJsonLd } from "./(public)/landing/json-ld";
 import "@/styles/public.css";
-
 
 export const metadata: Metadata = {
   title: "IntentBid - AI Proposal Intelligence Platform | Win More Deals",
