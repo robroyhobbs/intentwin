@@ -71,6 +71,7 @@ export function ScoreCard({ evaluation }: { evaluation: BidEvaluation }) {
   const badge = getRecommendationBadge(evaluation.recommendation);
   const totalColor = getScoreColor(evaluation.weighted_total);
   const totalBg = getScoreBgColor(evaluation.weighted_total);
+  const totalScore = Math.round(evaluation.weighted_total);
 
   return (
     <div className="rounded-xl border border-border bg-card p-6 space-y-5">
@@ -81,11 +82,20 @@ export function ScoreCard({ evaluation }: { evaluation: BidEvaluation }) {
         </span>
       </div>
 
-      <div className={cn("rounded-lg border p-4 text-center", totalBg)}>
-        <div className={cn("stat-value tabular-nums", totalColor)}>
-          {Math.round(evaluation.weighted_total)}
+      <div className={cn("rounded-lg border p-4", totalBg)}>
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <p className="text-xs font-medium uppercase text-muted-foreground">
+              Overall fit score
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Weighted score out of 100
+            </p>
+          </div>
+          <p className={cn("text-4xl font-semibold leading-none tabular-nums", totalColor)}>
+            {totalScore}
+          </p>
         </div>
-        <div className="mt-1 text-xs text-muted-foreground">Fit score out of 100</div>
       </div>
 
       <div className="space-y-2">
@@ -151,16 +161,16 @@ export function WinThemeChips({
           Select the themes you want your proposal to emphasize.
         </p>
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="space-y-2">
         {themes.map((theme) => (
           <button
             key={theme.id}
             onClick={() => onToggle(theme.id)}
             className={cn(
-              "rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
+              "w-full rounded-lg border px-4 py-3 text-left text-sm font-medium text-pretty transition-colors",
               theme.confirmed
                 ? "border-primary bg-primary text-primary-foreground"
-                : "border-border border-dashed bg-muted text-muted-foreground hover:bg-muted/70",
+                : "border-border bg-background/60 text-muted-foreground hover:bg-muted/50",
             )}
           >
             {theme.label}
@@ -185,7 +195,7 @@ export function ConfirmStrategyButton({
       <button
         onClick={onClick}
         disabled={disabled}
-        className="rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:cursor-not-allowed disabled:bg-primary/40 disabled:text-primary-foreground/80"
       >
         Use Selected Themes
       </button>

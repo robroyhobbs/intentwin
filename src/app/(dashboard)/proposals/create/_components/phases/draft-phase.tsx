@@ -9,6 +9,7 @@ import { runDraftFlow, regenerateSection } from "./draft-helpers";
 import { computeCapabilityAlignment } from "@/lib/ai/pipeline/capability-alignment";
 import { CapabilityWarningGate } from "@/components/capability-warning-gate";
 import { WaitLoader } from "../shared/wait-loader";
+import { cn } from "@/lib/utils/cn";
 
 // ── Small presentational pieces ─────────────────────────────────────────────
 
@@ -118,26 +119,45 @@ function ProgressSummary({
   isGenerating: boolean;
 }) {
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+  const remaining = Math.max(0, total - completed - failed);
 
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
-      <div className="flex items-center justify-between text-sm mb-2">
-        <span className="font-medium">Generation Progress</span>
-        <div className="flex items-center gap-2">
+    <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium">Generation Progress</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {completed}/{total} sections completed
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="text-xl font-semibold tabular-nums">{pct}%</p>
           {isGenerating && <ElapsedTime />}
-          <span className="text-muted-foreground">
-            {completed}/{total} sections
-            {failed > 0 && (
-              <span className="text-destructive ml-1">({failed} failed)</span>
-            )}
-          </span>
         </div>
       </div>
-      <div className="h-3 bg-muted rounded-full overflow-hidden">
+      <div className="h-2 rounded-full bg-muted overflow-hidden">
         <div
-          className={`h-full rounded-full bg-primary transition-all duration-500 ${isGenerating ? "motion-safe:animate-pulse motion-reduce:animate-none" : ""}`}
+          className={cn(
+            "h-full rounded-full bg-primary transition-all duration-500",
+            isGenerating
+              ? "motion-safe:animate-pulse motion-reduce:animate-none"
+              : "",
+          )}
           style={{ width: `${pct}%` }}
         />
+      </div>
+      <div className="flex flex-wrap items-center gap-2 text-xs">
+        <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-emerald-300 tabular-nums">
+          {completed} complete
+        </span>
+        <span className="rounded-full border border-border bg-background/60 px-2 py-0.5 text-muted-foreground tabular-nums">
+          {remaining} remaining
+        </span>
+        {failed > 0 && (
+          <span className="rounded-full border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-destructive tabular-nums">
+            {failed} failed
+          </span>
+        )}
       </div>
     </div>
   );
@@ -199,12 +219,25 @@ function SectionList({ compact }: { compact: boolean }) {
   if (compact) {
     return (
       <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="flex items-center justify-between border-b border-border/70 bg-background/40 px-4 py-2 text-[11px] uppercase text-muted-foreground">
+          <span>Section</span>
+          <span>Status</span>
+        </div>
         {sorted.map((section, idx) => (
           <div
             key={section.id}
-            className={`flex items-center gap-3 px-4 py-3 ${idx > 0 ? "border-t border-border" : ""}`}
+            className={cn(
+              "flex items-center gap-3 px-4 py-3",
+              idx > 0 ? "border-t border-border/60" : "",
+              section.generationStatus === "generating"
+                ? "bg-primary/5"
+                : "bg-transparent",
+            )}
           >
-            <span className="flex-1 truncate text-sm">{section.title}</span>
+            <span className="flex size-6 items-center justify-center rounded-md bg-background/60 text-xs text-muted-foreground tabular-nums shrink-0">
+              {idx + 1}
+            </span>
+            <span className="flex-1 truncate text-sm font-medium">{section.title}</span>
             <StatusPill status={section.generationStatus} />
           </div>
         ))}

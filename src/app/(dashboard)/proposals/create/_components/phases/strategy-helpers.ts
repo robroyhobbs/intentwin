@@ -150,15 +150,15 @@ export async function fetchWinStrategy(
 // ── Score color helpers ─────────────────────────────────────────────────────
 
 export function getScoreColor(score: number): string {
-  if (score > 70) return "text-emerald-600";
-  if (score >= 40) return "text-amber-600";
-  return "text-red-600";
+  if (score > 70) return "text-emerald-400";
+  if (score >= 40) return "text-amber-300";
+  return "text-red-400";
 }
 
 export function getScoreBgColor(score: number): string {
-  if (score > 70) return "bg-emerald-50 border-emerald-200";
-  if (score >= 40) return "bg-amber-50 border-amber-200";
-  return "bg-red-50 border-red-200";
+  if (score > 70) return "bg-emerald-500/10 border-emerald-500/30";
+  if (score >= 40) return "bg-amber-500/10 border-amber-500/30";
+  return "bg-red-500/10 border-red-500/30";
 }
 
 export function getRecommendationBadge(rec: string): {
@@ -169,17 +169,18 @@ export function getRecommendationBadge(rec: string): {
     case "bid":
       return {
         label: "Bid",
-        className: "bg-emerald-100 text-emerald-800 border border-emerald-200",
+        className:
+          "border border-emerald-500/30 bg-emerald-500/15 text-emerald-300",
       };
     case "evaluate":
       return {
         label: "Evaluate",
-        className: "bg-amber-100 text-amber-800 border border-amber-200",
+        className: "border border-amber-500/30 bg-amber-500/15 text-amber-200",
       };
     default:
       return {
         label: "Pass",
-        className: "bg-red-100 text-red-800 border border-red-200",
+        className: "border border-red-500/30 bg-red-500/15 text-red-300",
       };
   }
 }
