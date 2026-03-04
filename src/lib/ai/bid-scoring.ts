@@ -247,7 +247,21 @@ Based on the above, score each of the 5 bid evaluation factors (0-100) with rati
     responseLength: response.length,
   });
 
-  const aiScores = parseScoresFromResponse(response);
+  let aiScores = parseScoresFromResponse(response);
+  if (isParseUnavailableScores(aiScores)) {
+    logger.warn("[bid-scoring] Initial response parse failed, retrying once");
+    const retryResponse = await generateText(
+      `${prompt}\n\nIMPORTANT: Return a single raw JSON object only. No markdown. No prose.`,
+      {
+        systemPrompt: BID_SCORING_SYSTEM_PROMPT,
+        temperature: 0,
+        maxTokens: 4096,
+        model: BID_SCORING_MODEL,
+        jsonMode: true,
+      },
+    );
+    aiScores = parseScoresFromResponse(retryResponse);
+  }
   const weightedTotal = computeWeightedTotal(aiScores);
   const recommendation = getRecommendation(weightedTotal);
 
@@ -330,8 +344,25 @@ Based on the above, score each of the 5 bid evaluation factors (0-100) with rati
     jsonMode: true,
   });
 
-  // Parse structured response
-  const aiScores = parseScoresFromResponse(response);
+  // Parse structured response, retrying once if the model output is unparseable.
+  let aiScores = parseScoresFromResponse(response);
+  if (isParseUnavailableScores(aiScores)) {
+    logger.warn(
+      "[bid-scoring] Proposal scoring parse failed, retrying once",
+      { proposalId },
+    );
+    const retryResponse = await generateText(
+      `${prompt}\n\nIMPORTANT: Return a single raw JSON object only. No markdown. No prose.`,
+      {
+        systemPrompt: BID_SCORING_SYSTEM_PROMPT,
+        temperature: 0,
+        maxTokens: 4096,
+        model: BID_SCORING_MODEL,
+        jsonMode: true,
+      },
+    );
+    aiScores = parseScoresFromResponse(retryResponse);
+  }
 
   const weightedTotal = computeWeightedTotal(aiScores);
   const recommendation = getRecommendation(weightedTotal);
@@ -590,4 +621,14 @@ function parseScoresFromResponse(
   }
 
   return result as Record<FactorKey, FactorScore>;
+}
+
+function isParseUnavailableScores(
+  scores: Record<FactorKey, FactorScore>,
+): boolean {
+  return SCORING_FACTORS.every((factor) =>
+    scores[factor.key].rationale
+      .toLowerCase()
+      .includes("ai response could not be parsed"),
+  );
 }

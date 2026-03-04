@@ -396,12 +396,12 @@ ${buildEditorialStandards(solicitationType, ctx.audienceProfile, ctx.primaryBran
     const SECTION_TIMEOUT_MS = 60_000;
     let generatedContentRaw: string;
     try {
-      generatedContentRaw = await Promise.race([
-        generateText(prompt, {
-          systemPrompt: ctx.systemPrompt,
-          maxTokens: 8192,
-          thinkingLevel: "high",
-        }),
+        generatedContentRaw = await Promise.race([
+          generateText(prompt, {
+            systemPrompt: ctx.systemPrompt,
+            maxTokens: 8192,
+            thinkingLevel: "none",
+          }),
         new Promise<never>((_, reject) =>
           setTimeout(
             () =>
