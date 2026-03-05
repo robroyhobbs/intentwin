@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCreateFlow } from "../create-provider";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
 import { PhaseIcon } from "../shared/phase-icon";
-import { runDraftFlow } from "./draft-helpers";
+import { runDraftFlow, resumeDraftFlow } from "./draft-helpers";
 import { computeCapabilityAlignment } from "@/lib/ai/pipeline/capability-alignment";
 import { CapabilityWarningGate } from "@/components/capability-warning-gate";
 import { WaitLoader } from "../shared/wait-loader";
@@ -63,9 +63,18 @@ function useDraftFlow() {
 
   useEffect(() => {
     if (needsGate) return;
+    if (startedRef.current) return;
+
+    // Resume interrupted generation (e.g., browser refresh mid-flow)
+    if (state.proposalId !== null && state.generationStatus === "generating") {
+      startedRef.current = true;
+      void resumeDraftFlow(state.proposalId, dispatch, mountedRef, authFetch);
+      return;
+    }
+
+    // Normal start — only when idle and no existing proposal
     if (state.proposalId !== null) return;
     if (state.generationStatus !== "idle") return;
-    if (startedRef.current) return;
     startedRef.current = true;
     void runDraftFlow(state, dispatch, mountedRef, authFetch);
   }, [state, dispatch, authFetch, needsGate]);

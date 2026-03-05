@@ -3,13 +3,14 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import {
-  Loader2,
-  Sparkles,
-} from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
-import { ProposalStatus, GenerationStatus, ReviewStatus } from "@/lib/constants/statuses";
+import {
+  ProposalStatus,
+  GenerationStatus,
+  ReviewStatus,
+} from "@/lib/constants/statuses";
 import { SectionNavSidebar } from "@/components/ui/section-nav-sidebar";
 import { SkeletonSection } from "@/components/ui/skeleton";
 import { DealOutcomeSetter } from "@/components/ui/deal-outcome-setter";
@@ -18,6 +19,7 @@ import { exportAnnotationsAsMarkdown } from "@/lib/review/export-annotations";
 import { extractPlaceholders } from "@/components/preflight/review-mode-sidebar";
 import type { PreflightResult } from "@/lib/ai/pipeline/preflight";
 import { logger } from "@/lib/utils/logger";
+import { orchestrateGeneration } from "@/lib/ai/pipeline/client-orchestrate";
 
 import type { Proposal, Section } from "./_components/types";
 import { ProposalTopBar } from "./_components/proposal-top-bar";
@@ -27,35 +29,59 @@ import { SectionContentPane } from "./_components/section-content-pane";
 // Dynamic imports for heavy components that are only shown conditionally
 // (tab-based rendering). This reduces the initial page bundle by ~250-350KB.
 const ReviewCommentsPanel = dynamic(
-  () => import("@/components/review/review-comments-panel").then((m) => m.ReviewCommentsPanel),
+  () =>
+    import("@/components/review/review-comments-panel").then(
+      (m) => m.ReviewCommentsPanel,
+    ),
   { ssr: false },
 );
 const ReviewSummaryBar = dynamic(
-  () => import("@/components/review/review-summary-bar").then((m) => m.ReviewSummaryBar),
+  () =>
+    import("@/components/review/review-summary-bar").then(
+      (m) => m.ReviewSummaryBar,
+    ),
   { ssr: false },
 );
 const VersionHistory = dynamic(
-  () => import("@/components/proposals/version-history").then((m) => m.VersionHistory),
+  () =>
+    import("@/components/proposals/version-history").then(
+      (m) => m.VersionHistory,
+    ),
   { ssr: false },
 );
 const QualityReport = dynamic(
-  () => import("@/components/proposals/quality-report").then((m) => m.QualityReport),
+  () =>
+    import("@/components/proposals/quality-report").then(
+      (m) => m.QualityReport,
+    ),
   { ssr: false },
 );
 const ComplianceBoard = dynamic(
-  () => import("@/components/compliance/compliance-board").then((m) => m.ComplianceBoard),
+  () =>
+    import("@/components/compliance/compliance-board").then(
+      (m) => m.ComplianceBoard,
+    ),
   { ssr: false },
 );
 const StageReviewDashboard = dynamic(
-  () => import("@/components/review-workflow/stage-review-dashboard").then((m) => m.StageReviewDashboard),
+  () =>
+    import("@/components/review-workflow/stage-review-dashboard").then(
+      (m) => m.StageReviewDashboard,
+    ),
   { ssr: false },
 );
 const ReviewModeSidebar = dynamic(
-  () => import("@/components/preflight/review-mode-sidebar").then((m) => m.ReviewModeSidebar),
+  () =>
+    import("@/components/preflight/review-mode-sidebar").then(
+      (m) => m.ReviewModeSidebar,
+    ),
   { ssr: false },
 );
 const ReadinessReport = dynamic(
-  () => import("@/components/preflight/readiness-report").then((m) => m.ReadinessReport),
+  () =>
+    import("@/components/preflight/readiness-report").then(
+      (m) => m.ReadinessReport,
+    ),
   { ssr: false },
 );
 
@@ -149,7 +175,7 @@ export default function ProposalPage() {
     } catch {
       // Reviews are optional
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- authFetch returns new ref each render
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- authFetch returns new ref each render
   }, [id]);
 
   const fetchPreflight = useCallback(async () => {
@@ -170,7 +196,7 @@ export default function ProposalPage() {
     } finally {
       setPreflightLoading(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   useEffect(() => {
@@ -189,21 +215,29 @@ export default function ProposalPage() {
   }, [fetchProposal]);
 
   useEffect(() => {
-    if (proposal?.status === ProposalStatus.REVIEW || proposal?.status === ProposalStatus.EXPORTED) {
+    if (
+      proposal?.status === ProposalStatus.REVIEW ||
+      proposal?.status === ProposalStatus.EXPORTED
+    ) {
       fetchReviews();
     }
   }, [proposal?.status, fetchReviews]);
 
   // Fetch preflight when proposal is ready to generate (draft, no sections)
   useEffect(() => {
-    if (proposal && sections.length === 0 && proposal.status !== ProposalStatus.GENERATING) {
+    if (
+      proposal &&
+      sections.length === 0 &&
+      proposal.status !== ProposalStatus.GENERATING
+    ) {
       fetchPreflight();
     }
   }, [proposal, sections.length, fetchPreflight]);
 
   // Auto-show placeholder panel when generation completes (review mode)
   const proposalInReview =
-    proposal?.status === ProposalStatus.REVIEW || proposal?.status === ProposalStatus.EXPORTED;
+    proposal?.status === ProposalStatus.REVIEW ||
+    proposal?.status === ProposalStatus.EXPORTED;
   useEffect(() => {
     if (proposalInReview && sections.length > 0 && !showPlaceholderPanel) {
       const hasPlaceholders = extractPlaceholders(sections).length > 0;
@@ -211,7 +245,7 @@ export default function ProposalPage() {
         setShowPlaceholderPanel(true);
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [proposalInReview, sections]);
 
   // Poll during generation with exponential backoff and 10-minute timeout
@@ -240,7 +274,10 @@ export default function ProposalPage() {
 
       if (!stopped) {
         // Exponential backoff: 2s, 3s, 4.5s, 6.75s, 10s (capped)
-        const delay = Math.min(MIN_INTERVAL * Math.pow(1.5, pollCount), MAX_INTERVAL);
+        const delay = Math.min(
+          MIN_INTERVAL * Math.pow(1.5, pollCount),
+          MAX_INTERVAL,
+        );
         setTimeout(poll, delay);
       }
     };
@@ -256,15 +293,28 @@ export default function ProposalPage() {
   async function handleGenerate() {
     setGenerating(true);
     try {
-      const response = await authFetch(`/api/proposals/${id}/generate`, {
+      const response = await authFetch(`/api/proposals/${id}/generate/setup`, {
         method: "POST",
       });
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Generation failed");
+        const data = await response.json().catch(() => ({}));
+        throw new Error(
+          (data as Record<string, string>).error ||
+            `Generation setup failed (${response.status})`,
+        );
       }
+      const setupData = await response.json();
+      const setupSections = (setupData.sections ?? []) as Array<{
+        id: string;
+        sectionType: string;
+        title: string;
+      }>;
       toast.success("Proposal generation started");
-      setProposal((prev) => (prev ? { ...prev, status: ProposalStatus.GENERATING } : null));
+      setProposal((prev) =>
+        prev ? { ...prev, status: ProposalStatus.GENERATING } : null,
+      );
+      // Fire-and-forget: generate sections in background; polling handles UI
+      void orchestrateGeneration(id, setupSections, authFetch);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Generation failed");
     } finally {
@@ -323,7 +373,10 @@ export default function ProposalPage() {
           const section = data.sections?.find(
             (s: Section) => s.id === sectionId,
           );
-          if (section && section.generation_status !== GenerationStatus.GENERATING) {
+          if (
+            section &&
+            section.generation_status !== GenerationStatus.GENERATING
+          ) {
             setRegeneratingSection(null);
             if (regenIntervalRef.current) {
               clearInterval(regenIntervalRef.current);
@@ -382,7 +435,10 @@ export default function ProposalPage() {
       await authFetch(`/api/proposals/${id}/reviews`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ review_id: reviewId, status: ReviewStatus.RESOLVED }),
+        body: JSON.stringify({
+          review_id: reviewId,
+          status: ReviewStatus.RESOLVED,
+        }),
       });
       fetchReviews();
     } catch {
@@ -395,7 +451,10 @@ export default function ProposalPage() {
       await authFetch(`/api/proposals/${id}/reviews`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ review_id: reviewId, status: ReviewStatus.DISMISSED }),
+        body: JSON.stringify({
+          review_id: reviewId,
+          status: ReviewStatus.DISMISSED,
+        }),
       });
       fetchReviews();
     } catch {
@@ -421,11 +480,14 @@ export default function ProposalPage() {
 
   const currentSection = sections.find((s) => s.id === activeSection);
   const isReviewMode =
-    proposal?.status === ProposalStatus.REVIEW || proposal?.status === ProposalStatus.EXPORTED;
+    proposal?.status === ProposalStatus.REVIEW ||
+    proposal?.status === ProposalStatus.EXPORTED;
   const sectionReviews = currentSection
     ? reviews.filter((r) => r.section_id === currentSection.id || !r.section_id)
     : reviews;
-  const openSectionReviews = sectionReviews.filter((r) => r.status === ReviewStatus.OPEN);
+  const openSectionReviews = sectionReviews.filter(
+    (r) => r.status === ReviewStatus.OPEN,
+  );
 
   if (loading) {
     return (
@@ -625,8 +687,8 @@ export default function ProposalPage() {
             Preparing generation...
           </h3>
           <p className="mt-2 text-sm text-[var(--foreground-muted)] max-w-md text-center">
-            Building pipeline context and creating section structure.
-            This may take 30-60 seconds.
+            Building pipeline context and creating section structure. This may
+            take 30-60 seconds.
           </p>
         </div>
       ) : (
@@ -638,8 +700,8 @@ export default function ProposalPage() {
             Ready to generate
           </h3>
           <p className="mt-2 text-sm text-[var(--foreground-muted)] max-w-md text-center">
-            Your proposal is configured. Click Generate to create all
-            sections based on your intent and company context.
+            Your proposal is configured. Click Generate to create all sections
+            based on your intent and company context.
           </p>
 
           {/* Show generation error if previous attempt failed */}

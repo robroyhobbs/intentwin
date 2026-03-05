@@ -31,7 +31,7 @@ import {
 } from "@/lib/api/response";
 import { apiError } from "@/lib/api/response";
 
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 export const POST = withProposalRoute(
   async (_request, { id }, context, proposal) => {

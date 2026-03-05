@@ -36,6 +36,7 @@ import { useWizard } from "./wizard-provider";
 import type { SectionProgress } from "@/lib/proposal-core/wizard-state";
 import { computeCapabilityAlignment } from "@/lib/ai/pipeline/capability-alignment";
 import { CapabilityWarningGate } from "@/components/capability-warning-gate";
+import { orchestrateGeneration } from "@/lib/ai/pipeline/client-orchestrate";
 
 // ────────────────────────────────────────────────────────
 // Constants
@@ -259,28 +260,37 @@ export function StepGenerate() {
     }
   }, [authFetch, dispatch, state]);
 
-  // ── Step 2: Trigger generation ──
+  // ── Step 2: Trigger generation (client-orchestrated) ──
   const triggerGeneration = useCallback(
     async (id: string): Promise<boolean> => {
       setPhase("triggering");
 
       try {
-        const response = await authFetch(`/api/proposals/${id}/generate`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-        });
+        const response = await authFetch(
+          `/api/proposals/${id}/generate/setup`,
+          { method: "POST" },
+        );
 
         if (!response.ok) {
           const data = await response.json().catch(() => ({}));
           if (response.status === 409) {
-            // Already generating — this is fine, continue to polling
+            // Already generating — continue to polling
             return true;
           }
           throw new Error(
-            data.error || `Failed to start generation (${response.status})`,
+            (data as Record<string, string>).error ||
+              `Failed to start generation (${response.status})`,
           );
         }
 
+        const setupData = await response.json();
+        const setupSections = (setupData.sections ?? []) as Array<{
+          id: string;
+          sectionType: string;
+          title: string;
+        }>;
+        // Fire-and-forget: generate sections in background; polling handles UI
+        void orchestrateGeneration(id, setupSections, authFetch);
         return true;
       } catch (err) {
         const message =

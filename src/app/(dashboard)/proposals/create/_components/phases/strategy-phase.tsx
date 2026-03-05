@@ -89,7 +89,25 @@ function useWinStrategy(
 ) {
   const { state, dispatch } = useCreateFlow();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const inflightRef = useRef(false);
+
+  const generate = useCallback(() => {
+    if (!state.extractedData) return;
+    inflightRef.current = true;
+    setIsGenerating(true);
+    setError(null);
+
+    fetchWinStrategy(state.extractedData, dispatch, authFetch)
+      .catch((err: unknown) => {
+        const msg =
+          err instanceof Error ? err.message : "Theme generation failed";
+        logger.warn("Win strategy generation failed", { error: msg });
+        setError(msg);
+        inflightRef.current = false;
+      })
+      .finally(() => setIsGenerating(false));
+  }, [state.extractedData, dispatch, authFetch]);
 
   useEffect(() => {
     if (inflightRef.current) return;
@@ -97,35 +115,33 @@ function useWinStrategy(
     if (state.winThemes.length > 0) return;
     if (!state.extractedData) return;
 
-    inflightRef.current = true;
-    const data = state.extractedData;
-
-    queueMicrotask(() => {
-      setIsGenerating(true);
-
-      fetchWinStrategy(data, dispatch, authFetch)
-        .catch((err: unknown) => {
-          const msg =
-            err instanceof Error ? err.message : "Theme generation failed";
-          logger.warn("Win strategy generation failed", { error: msg });
-          inflightRef.current = false;
-        })
-        .finally(() => setIsGenerating(false));
-    });
+    queueMicrotask(generate);
   }, [
     state.bidEvaluation,
     state.winThemes.length,
     state.extractedData,
-    dispatch,
-    authFetch,
+    generate,
   ]);
 
-  return { isGenerating };
+  const retry = useCallback(() => {
+    inflightRef.current = false;
+    queueMicrotask(generate);
+  }, [generate]);
+
+  return { isGenerating, error, retry };
 }
 
 // ── Scored view (after evaluation completes) ────────────────────────────────
 
-function ScoredView({ isGenerating }: { isGenerating: boolean }) {
+function ScoredView({
+  isGenerating,
+  strategyError,
+  onRetryStrategy,
+}: {
+  isGenerating: boolean;
+  strategyError: string | null;
+  onRetryStrategy: () => void;
+}) {
   const { state, dispatch } = useCreateFlow();
 
   const handleProceed = useCallback(() => {
@@ -159,6 +175,13 @@ function ScoredView({ isGenerating }: { isGenerating: boolean }) {
       {state.bidDecision !== null && (
         <>
           {isGenerating && <SpinnerOverlay label="Generating win themes..." />}
+          {!isGenerating && strategyError && (
+            <ErrorBanner
+              message={strategyError}
+              onRetry={onRetryStrategy}
+              retryLabel="Retry theme generation"
+            />
+          )}
           {state.winThemes.length > 0 && (
             <WinThemeChips themes={state.winThemes} onToggle={handleToggle} />
           )}
@@ -178,7 +201,11 @@ export function StrategyPhase() {
   const { state } = useCreateFlow();
   const authFetch = useAuthFetch();
   const { isScoring, error, retry } = useBidScoring(authFetch);
-  const { isGenerating } = useWinStrategy(authFetch);
+  const {
+    isGenerating,
+    error: strategyError,
+    retry: retryStrategy,
+  } = useWinStrategy(authFetch);
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -193,7 +220,11 @@ export function StrategyPhase() {
         </p>
       )}
       {!isScoring && !error && state.bidEvaluation && (
-        <ScoredView isGenerating={isGenerating} />
+        <ScoredView
+          isGenerating={isGenerating}
+          strategyError={strategyError}
+          onRetryStrategy={retryStrategy}
+        />
       )}
     </div>
   );

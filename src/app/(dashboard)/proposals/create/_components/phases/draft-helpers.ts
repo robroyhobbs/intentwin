@@ -263,9 +263,13 @@ export async function runDraftFlow(
 
     // Step 4: Finalize
     if (!mountedRef.current) return;
-    await fetchFn(`/api/proposals/${proposalId}/generate/finalize`, {
-      method: "POST",
-    });
+    const finalizeRes = await fetchFn(
+      `/api/proposals/${proposalId}/generate/finalize`,
+      { method: "POST" },
+    );
+    if (!finalizeRes.ok) {
+      logger.warn("Finalize returned non-OK", { status: finalizeRes.status });
+    }
 
     dispatch({ type: "GENERATION_COMPLETE" });
 
@@ -357,9 +361,15 @@ export async function resumeDraftFlow(
     }
 
     if (!mountedRef.current) return;
-    await fetchFn(`/api/proposals/${proposalId}/generate/finalize`, {
-      method: "POST",
-    });
+    const finalizeRes = await fetchFn(
+      `/api/proposals/${proposalId}/generate/finalize`,
+      { method: "POST" },
+    );
+    if (!finalizeRes.ok) {
+      logger.warn("Resume finalize returned non-OK", {
+        status: finalizeRes.status,
+      });
+    }
 
     dispatch({ type: "GENERATION_COMPLETE" });
     logger.info("Resume draft flow complete", { proposalId });

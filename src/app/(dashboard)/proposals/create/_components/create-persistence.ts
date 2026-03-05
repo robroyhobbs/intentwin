@@ -52,12 +52,9 @@ export function loadState(): CreateFlowState | null {
       // Never resume mid-extraction — let user retry
       isExtracting: false,
       extractionStep: null,
-      // Never resume mid-generation — polling won't auto-restart.
-      // Show "failed" so the user sees the retry button instead of a stuck spinner.
-      generationStatus:
-        parsed.generationStatus === "generating"
-          ? "failed"
-          : parsed.generationStatus,
+      // Keep "generating" status so draft-phase can detect and resume.
+      // resumeDraftFlow() handles the restart; setup endpoint is idempotent.
+      generationStatus: parsed.generationStatus,
     };
 
     return restored;

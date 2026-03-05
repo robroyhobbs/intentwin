@@ -43,7 +43,7 @@ export const API_LIMIT: RateLimitConfig = {
  */
 export const AI_GENERATION_LIMIT: RateLimitConfig = {
   windowMs: HOUR,
-  maxRequests: 30,
+  maxRequests: 120,
   keyPrefix: "rl:ai-gen",
 };
 
@@ -109,10 +109,22 @@ export const ROUTE_LIMITS: Array<{
   { pattern: /^\/api\/waitlist/, config: PUBLIC_LIMIT, keyByIp: true },
 
   // AI generation — expensive
-  { pattern: /^\/api\/proposals\/[^/]+\/generate/, config: AI_GENERATION_LIMIT },
-  { pattern: /^\/api\/proposals\/[^/]+\/quality-review/, config: AI_GENERATION_LIMIT },
-  { pattern: /^\/api\/proposals\/[^/]+\/sections\/[^/]+\/regenerate/, config: AI_GENERATION_LIMIT },
-  { pattern: /^\/api\/proposals\/[^/]+\/auto-fix/, config: AI_GENERATION_LIMIT },
+  {
+    pattern: /^\/api\/proposals\/[^/]+\/generate/,
+    config: AI_GENERATION_LIMIT,
+  },
+  {
+    pattern: /^\/api\/proposals\/[^/]+\/quality-review/,
+    config: AI_GENERATION_LIMIT,
+  },
+  {
+    pattern: /^\/api\/proposals\/[^/]+\/sections\/[^/]+\/regenerate/,
+    config: AI_GENERATION_LIMIT,
+  },
+  {
+    pattern: /^\/api\/proposals\/[^/]+\/auto-fix/,
+    config: AI_GENERATION_LIMIT,
+  },
   { pattern: /^\/api\/intake\//, config: AI_GENERATION_LIMIT },
   { pattern: /^\/api\/diagrams\/generate/, config: AI_GENERATION_LIMIT },
   { pattern: /^\/api\/evidence\/extract/, config: AI_GENERATION_LIMIT },
@@ -125,7 +137,10 @@ export const ROUTE_LIMITS: Array<{
   { pattern: /^\/api\/proposals\/[^/]+\/export/, config: EXPORT_LIMIT },
 
   // Stripe webhooks — no rate limit (Stripe handles its own retry logic)
-  { pattern: /^\/api\/stripe\/webhook/, config: { windowMs: MINUTE, maxRequests: 1000, keyPrefix: "rl:webhook" } },
+  {
+    pattern: /^\/api\/stripe\/webhook/,
+    config: { windowMs: MINUTE, maxRequests: 1000, keyPrefix: "rl:webhook" },
+  },
 
   // Cron jobs — authenticated by CRON_SECRET, generous limit
   { pattern: /^\/api\/cron\//, config: HEALTH_LIMIT, keyByIp: true },
@@ -137,9 +152,10 @@ export const ROUTE_LIMITS: Array<{
 /**
  * Get the rate limit config for a given URL path.
  */
-export function getRouteLimit(
-  pathname: string,
-): { config: RateLimitConfig; keyByIp: boolean } {
+export function getRouteLimit(pathname: string): {
+  config: RateLimitConfig;
+  keyByIp: boolean;
+} {
   for (const route of ROUTE_LIMITS) {
     if (route.pattern.test(pathname)) {
       return { config: route.config, keyByIp: route.keyByIp ?? false };
