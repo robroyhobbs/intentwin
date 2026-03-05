@@ -37,15 +37,6 @@ export interface InngestEvents {
     };
   };
 
-  /** Trigger single section regeneration */
-  "section/regenerate.requested": {
-    data: {
-      proposalId: string;
-      sectionId: string;
-      qualityFeedback?: string | null;
-    };
-  };
-
   /** Trigger document processing (parse + embed) */
   "document/process.requested": {
     data: {

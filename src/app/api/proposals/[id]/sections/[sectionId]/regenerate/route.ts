@@ -1,10 +1,13 @@
 /**
  * POST /api/proposals/[id]/sections/[sectionId]/regenerate
  *
- * Regenerates a single proposal section using the stored pipeline context.
- * Calls generateSingleSection directly (no Inngest dependency).
+ * Regenerates a single proposal section. Returns immediately with "generating"
+ * status, then uses Next.js after() to run the actual generation in the
+ * background (within the same function execution). The client polls for
+ * completion via the proposal detail endpoint.
  */
 
+import { after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateSingleSection } from "@/lib/ai/pipeline/generate-single-section";
 import { getQualityFeedbackForSection } from "@/lib/ai/quality-overseer";
@@ -28,13 +31,13 @@ export const POST = withProposalRoute(
     } | null;
     if (qualityReview?.status === QualityReviewStatus.REVIEWING) {
       return conflict(
-        "Cannot regenerate sections while a quality review is in progress. Please wait for the review to complete.",
+        "Cannot regenerate sections while a quality review is in progress.",
       );
     }
 
     const supabase = createAdminClient();
 
-    // Read pipeline context from generation_metadata
+    // Validate pipeline context exists
     const { data: proposalData, error: fetchError } = await supabase
       .from("proposals")
       .select("generation_metadata")
@@ -50,17 +53,7 @@ export const POST = withProposalRoute(
       );
     }
 
-    const ctx = reconstructContext(
-      proposalData.generation_metadata as unknown as PipelineContext,
-    );
-
-    // Fetch quality feedback (non-blocking — null if unavailable)
-    const qualityFeedback = await getQualityFeedbackForSection(
-      id,
-      sectionId,
-    ).catch(() => null);
-
-    // Look up section type from DB
+    // Validate section exists and belongs to this proposal
     const { data: section, error: sectionErr } = await supabase
       .from("proposal_sections")
       .select("section_type")
@@ -72,50 +65,62 @@ export const POST = withProposalRoute(
       return serverError("Section not found");
     }
 
-    // Mark section as regenerating
+    // Mark section as generating in DB
     await supabase
       .from("proposal_sections")
-      .update({ generation_status: GenerationStatus.GENERATING })
+      .update({
+        generation_status: GenerationStatus.GENERATING,
+        generation_error: null,
+      })
       .eq("id", sectionId);
 
-    log.info("Regenerating section", {
-      sectionType: section.section_type,
-      hasQualityFeedback: !!qualityFeedback,
+    // Schedule the actual generation to run AFTER the response is sent.
+    // This lets us return immediately while the work continues in the
+    // background (within the same Vercel function execution, up to maxDuration).
+    const ctx = reconstructContext(
+      proposalData.generation_metadata as unknown as PipelineContext,
+    );
+    const sectionType = section.section_type;
+
+    after(async () => {
+      const bgLog = createLogger({
+        operation: "regenerate-section-bg",
+        proposalId: id,
+      });
+
+      try {
+        bgLog.info("Starting background regeneration", { sectionId, sectionType });
+
+        await generateSingleSection(sectionId, sectionType, ctx);
+
+        bgLog.info("Background regeneration completed", { sectionId });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Unknown error";
+        bgLog.error("Background regeneration failed", { sectionId, error: msg });
+
+        await createAdminClient()
+          .from("proposal_sections")
+          .update({
+            generation_status: GenerationStatus.FAILED,
+            generation_error: msg,
+          })
+          .eq("id", sectionId);
+      }
     });
 
-    try {
-      const result = await generateSingleSection(
-        sectionId,
-        section.section_type,
-        ctx,
-      );
+    // Fetch quality feedback info for the response message
+    const qualityFeedback = await getQualityFeedbackForSection(
+      id,
+      sectionId,
+    ).catch(() => null);
 
-      return ok({
-        status: GenerationStatus.COMPLETED,
-        sectionId,
-        content: result.generatedContent ?? "",
-        message: qualityFeedback
-          ? "Section regenerated with quality feedback."
-          : "Section regenerated successfully.",
-      });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Unknown error";
-      log.error("Section regeneration failed", { sectionId, error: msg });
-
-      await supabase
-        .from("proposal_sections")
-        .update({
-          generation_status: GenerationStatus.FAILED,
-          generation_error: msg,
-        })
-        .eq("id", sectionId);
-
-      return ok({
-        status: GenerationStatus.FAILED,
-        sectionId,
-        error: msg,
-      });
-    }
+    return ok({
+      status: GenerationStatus.GENERATING,
+      sectionId,
+      message: qualityFeedback
+        ? "Section regeneration started with quality feedback."
+        : "Section regeneration started.",
+    });
   },
   { requireFullProposal: true },
 );

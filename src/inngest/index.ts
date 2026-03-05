@@ -8,16 +8,14 @@
 import { generateProposalFn } from "./functions/generate-proposal";
 import { qualityReviewFn } from "./functions/quality-review";
 import { complianceAssessmentFn } from "./functions/compliance-assessment";
-import { regenerateSectionFn } from "./functions/regenerate-section";
 import { processDocumentFn } from "./functions/process-document";
 import { nurtureCronFn } from "./functions/nurture-cron";
 
 /** All Inngest functions to register with the serve endpoint */
 export const functions = [
-  generateProposalFn,
+  generateProposalFn, // @deprecated — legacy wizard only
   qualityReviewFn,
   complianceAssessmentFn,
-  regenerateSectionFn,
   processDocumentFn,
   nurtureCronFn,
 ];

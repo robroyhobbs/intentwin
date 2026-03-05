@@ -144,19 +144,13 @@ export async function regenerateSection(
       );
     }
 
-    const result = await res.json();
-    logger.info("Section regeneration complete", { proposalId, sectionId });
-
-    // Update UI with the regenerated content
-    dispatch({
-      type: "UPDATE_SECTION",
+    logger.info("Regeneration triggered, polling for completion", {
+      proposalId,
       sectionId,
-      updates: {
-        generationStatus:
-          result.data?.status === "completed" ? "complete" : "failed",
-        content: result.data?.content ?? "",
-      },
     });
+
+    // API returns immediately; poll DB for completion via section endpoint
+    await pollSectionStatus(proposalId, sectionId, dispatch, fetchFn);
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Regeneration failed";
     logger.error("Section regeneration error", err, { sectionId });
@@ -384,6 +378,56 @@ function orderSections(sections: SetupSection[]) {
   const execIndex = execSection ? 0 : -1;
 
   return { orderedSections, execIndex };
+}
+
+const POLL_INTERVAL_MS = 3_000;
+const MAX_POLL_ATTEMPTS = 25; // ~75s max wait
+
+async function pollSectionStatus(
+  proposalId: string,
+  sectionId: string,
+  dispatch: Dispatch<CreateAction>,
+  fetchFn: FetchFn,
+): Promise<void> {
+  for (let i = 0; i < MAX_POLL_ATTEMPTS; i++) {
+    await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+    try {
+      const res = await fetchFn(`/api/proposals/${proposalId}`);
+      if (!res.ok) continue;
+      const data = await res.json();
+      const sec = (data.sections as Array<Record<string, string>>)?.find(
+        (s) => s.id === sectionId,
+      );
+      if (!sec) continue;
+      if (sec.generation_status === "completed") {
+        dispatch({
+          type: "UPDATE_SECTION",
+          sectionId,
+          updates: {
+            generationStatus: "complete",
+            content: sec.generated_content ?? "",
+          },
+        });
+        return;
+      }
+      if (sec.generation_status === "failed") {
+        dispatch({
+          type: "UPDATE_SECTION",
+          sectionId,
+          updates: { generationStatus: "failed" },
+        });
+        return;
+      }
+    } catch {
+      /* retry */
+    }
+  }
+  // Timed out
+  dispatch({
+    type: "UPDATE_SECTION",
+    sectionId,
+    updates: { generationStatus: "failed" },
+  });
 }
 
 async function generateOneSection(
