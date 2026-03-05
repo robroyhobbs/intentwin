@@ -379,7 +379,7 @@ export async function generateSingleSection(
         generatedContentRaw.fallbackReason.slice(0, 300);
     }
 
-    // Update section with content + grounding metadata
+    // Update section with generated content (essential fields only — must succeed)
     const { error: updateError } = await supabase
       .from("proposal_sections")
       .update({
@@ -387,7 +387,6 @@ export async function generateSingleSection(
         generation_status: GenerationStatus.COMPLETED,
         generation_prompt: prompt.slice(0, 2000),
         retrieved_context_ids: chunkIds,
-        metadata: mergedMeta,
       })
       .eq("id", sectionId);
 
@@ -401,6 +400,20 @@ export async function generateSingleSection(
         `Section generated but DB write failed: ${updateError.message}`,
       );
     }
+
+    // Save grounding metadata separately — non-blocking so it doesn't kill the section
+    supabase
+      .from("proposal_sections")
+      .update({ metadata: mergedMeta })
+      .eq("id", sectionId)
+      .then(({ error: metaErr }) => {
+        if (metaErr) {
+          log.warn("Failed to save section metadata (non-blocking)", {
+            sectionId,
+            error: metaErr.message,
+          });
+        }
+      });
 
     // Generate diagram image for applicable sections (non-blocking)
     if (

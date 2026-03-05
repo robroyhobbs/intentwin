@@ -566,18 +566,55 @@ function buildL1Summary(l1Context: L1Context): string {
  * Extract JSON from an AI response using multiple strategies.
  * Returns null if no valid JSON can be found.
  */
+/** Unwrap score data from common model response envelopes */
+function unwrapScoreData(
+  parsed: Record<string, unknown>,
+): Record<string, unknown> {
+  // Check if scores are at top level (expected format)
+  if (
+    parsed.requirement_match &&
+    typeof parsed.requirement_match === "object"
+  ) {
+    return parsed;
+  }
+  // Try common wrapper keys the model might use
+  for (const key of [
+    "scores",
+    "factors",
+    "evaluation",
+    "bid_evaluation",
+    "results",
+  ]) {
+    const nested = parsed[key];
+    if (nested && typeof nested === "object" && !Array.isArray(nested)) {
+      const obj = nested as Record<string, unknown>;
+      if (obj.requirement_match && typeof obj.requirement_match === "object") {
+        return obj;
+      }
+    }
+  }
+  // Last resort: search all top-level object values for one containing factor keys
+  for (const val of Object.values(parsed)) {
+    if (val && typeof val === "object" && !Array.isArray(val)) {
+      const obj = val as Record<string, unknown>;
+      if (obj.requirement_match && typeof obj.requirement_match === "object") {
+        return obj;
+      }
+    }
+  }
+  return parsed;
+}
+
 function parseScoresFromResponse(
   response: string,
 ): Record<FactorKey, FactorScore> {
   const parsed = extractJsonFromResponse(response);
 
   if (!parsed) {
-    logger.error("Failed to parse bid scoring response after all strategies", {
+    logger.error("[bid-scoring] JSON extraction returned null", {
       responseLength: response.length,
-      first200: response.slice(0, 200),
-      last200: response.slice(-200),
+      first500: response.slice(0, 500),
     });
-    // Return neutral scores as fallback
     const defaults: Record<string, FactorScore> = {};
     for (const factor of SCORING_FACTORS) {
       defaults[factor.key] = {
@@ -588,10 +625,22 @@ function parseScoresFromResponse(
     return defaults as Record<FactorKey, FactorScore>;
   }
 
+  // Log parsed JSON structure for debugging
+  logger.info("[bid-scoring] Parsed JSON keys", {
+    topLevelKeys: Object.keys(parsed),
+    hasNestedScores: !!parsed.scores,
+    sampleKey: Object.keys(parsed)[0],
+    sampleValue: JSON.stringify(parsed[Object.keys(parsed)[0]])?.slice(0, 200),
+  });
+
+  // Handle model returning scores nested under various wrapper keys
+  const scoreData = unwrapScoreData(parsed);
+
   // Validate and clamp scores
   const result: Record<string, FactorScore> = {};
+  let failedFactors = 0;
   for (const factor of SCORING_FACTORS) {
-    const raw = parsed[factor.key] as
+    const raw = scoreData[factor.key] as
       | { score?: unknown; rationale?: unknown }
       | undefined;
     // Accept score as number or numeric string
@@ -614,11 +663,26 @@ function parseScoresFromResponse(
             : "No rationale provided.",
       };
     } else {
+      failedFactors++;
+      logger.warn("[bid-scoring] Factor parse failed", {
+        factor: factor.key,
+        rawExists: !!raw,
+        rawScoreType: typeof rawScore,
+        rawScoreValue: String(rawScore)?.slice(0, 100),
+      });
       result[factor.key] = {
         score: 50,
         rationale: "Factor could not be scored — insufficient data.",
       };
     }
+  }
+
+  if (failedFactors > 0) {
+    logger.warn("[bid-scoring] Score parse summary", {
+      failedFactors,
+      totalFactors: SCORING_FACTORS.length,
+      responseFirst500: response.slice(0, 500),
+    });
   }
 
   return result as Record<FactorKey, FactorScore>;
