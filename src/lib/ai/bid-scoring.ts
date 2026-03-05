@@ -508,9 +508,11 @@ function buildRfpSummary(requirements: Record<string, unknown>): string {
       `**Technical Environment:** ${requirements.technical_environment}`,
     );
 
-  // Include source text as fallback context when structured fields are sparse
-  if (sections.length < 3 && requirements.source_text) {
-    const sourceText = String(requirements.source_text).slice(0, 3000);
+  // Always include source text for additional context — use more when
+  // structured fields are sparse, less when they're plentiful.
+  if (requirements.source_text) {
+    const limit = sections.length < 3 ? 8000 : 3000;
+    const sourceText = String(requirements.source_text).slice(0, limit);
     sections.push(`**Source Content:**\n${sourceText}`);
   }
 

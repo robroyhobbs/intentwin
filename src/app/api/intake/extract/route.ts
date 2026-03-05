@@ -252,7 +252,7 @@ export async function POST(request: NextRequest) {
       }));
     }
     if (content) {
-      extracted.source_text = content.substring(0, 1000);
+      extracted.source_text = content.substring(0, 10_000);
     }
 
     const assumptions = parseAssumptions(assumptionsResponseRaw);
