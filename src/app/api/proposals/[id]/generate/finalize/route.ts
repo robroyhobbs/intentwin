@@ -16,66 +16,63 @@ import { ok, serverError, withProposalRoute } from "@/lib/api/response";
 
 export const maxDuration = 30;
 
-export const POST = withProposalRoute(
-  async (_request, { id }, _context) => {
-    const log = createLogger({
-      operation: "generate-finalize",
-      proposalId: id,
+export const POST = withProposalRoute(async (_request, { id }, _context) => {
+  const log = createLogger({
+    operation: "generate-finalize",
+    proposalId: id,
+  });
+  const supabase = createAdminClient();
+
+  // Count outcomes from DB (source of truth)
+  const { data: sections, error: fetchError } = await supabase
+    .from("proposal_sections")
+    .select("id, section_type, generation_status, generation_error")
+    .eq("proposal_id", id);
+
+  if (fetchError) {
+    log.error("Failed to fetch section statuses", {
+      error: fetchError.message,
     });
-    const supabase = createAdminClient();
+    return serverError("Failed to finalize proposal");
+  }
 
-    // Count outcomes from DB (source of truth)
-    const { data: sections, error: fetchError } = await supabase
-      .from("proposal_sections")
-      .select("id, section_type, generation_status, generation_error")
-      .eq("proposal_id", id);
-
-    if (fetchError) {
-      log.error("Failed to fetch section statuses", {
-        error: fetchError.message,
-      });
-      return serverError("Failed to finalize proposal");
-    }
-
-    // Mark non-terminal sections as failed
-    const nonTerminalIds = markNonTerminal(sections);
-    if (nonTerminalIds.length > 0) {
-      await supabase
-        .from("proposal_sections")
-        .update({
-          generation_status: GenerationStatus.FAILED,
-          generation_error:
-            "Generation did not complete for this section. Please regenerate.",
-        })
-        .in("id", nonTerminalIds);
-    }
-
-    const { completedCount, failedCount, finalStatus, generationError } =
-      computeOutcome(sections, nonTerminalIds);
-
-    log.info("Section generation results", {
-      total: sections?.length ?? 0,
-      completed: completedCount,
-      failed: failedCount,
-    });
-
-    // Update proposal status and clear generation_metadata
+  // Mark non-terminal sections as failed
+  const nonTerminalIds = markNonTerminal(sections);
+  if (nonTerminalIds.length > 0) {
     await supabase
-      .from("proposals")
+      .from("proposal_sections")
       .update({
-        status: finalStatus,
-        generation_completed_at: new Date().toISOString(),
-        generation_error: generationError,
-        generation_metadata: null,
+        generation_status: GenerationStatus.FAILED,
+        generation_error:
+          "Generation did not complete for this section. Please regenerate.",
       })
-      .eq("id", id);
+      .in("id", nonTerminalIds);
+  }
 
-    // Version snapshot + quality/compliance triggers (non-blocking)
-    await runPostGeneration(id, completedCount, failedCount, log);
+  const { completedCount, failedCount, finalStatus, generationError } =
+    computeOutcome(sections, nonTerminalIds);
 
-    return ok({ completedCount, failedCount, status: finalStatus });
-  },
-);
+  log.info("Section generation results", {
+    total: sections?.length ?? 0,
+    completed: completedCount,
+    failed: failedCount,
+  });
+
+  // Update proposal status — keep generation_metadata for section regeneration
+  await supabase
+    .from("proposals")
+    .update({
+      status: finalStatus,
+      generation_completed_at: new Date().toISOString(),
+      generation_error: generationError,
+    })
+    .eq("id", id);
+
+  // Version snapshot + quality/compliance triggers (non-blocking)
+  await runPostGeneration(id, completedCount, failedCount, log);
+
+  return ok({ completedCount, failedCount, status: finalStatus });
+});
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -103,13 +100,11 @@ function computeOutcome(
   nonTerminalIds: string[],
 ) {
   const completedCount =
-    sections?.filter(
-      (s) => s.generation_status === GenerationStatus.COMPLETED,
-    ).length ?? 0;
+    sections?.filter((s) => s.generation_status === GenerationStatus.COMPLETED)
+      .length ?? 0;
   const failedCount =
-    (sections?.filter(
-      (s) => s.generation_status === GenerationStatus.FAILED,
-    ).length ?? 0) + nonTerminalIds.length;
+    (sections?.filter((s) => s.generation_status === GenerationStatus.FAILED)
+      .length ?? 0) + nonTerminalIds.length;
   const totalCount = sections?.length ?? 0;
 
   const finalStatus =
@@ -142,9 +137,7 @@ async function runPostGeneration(
     } catch (versionErr) {
       log.warn("Version snapshot failed", {
         error:
-          versionErr instanceof Error
-            ? versionErr.message
-            : String(versionErr),
+          versionErr instanceof Error ? versionErr.message : String(versionErr),
       });
     }
 
@@ -162,9 +155,7 @@ async function runPostGeneration(
     } catch (triggerErr) {
       log.warn("Failed to trigger quality/compliance", {
         error:
-          triggerErr instanceof Error
-            ? triggerErr.message
-            : String(triggerErr),
+          triggerErr instanceof Error ? triggerErr.message : String(triggerErr),
       });
     }
   }

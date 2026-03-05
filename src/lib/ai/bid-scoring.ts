@@ -249,8 +249,9 @@ Based on the above, score each of the 5 bid evaluation factors (0-100) with rati
 
   let aiScores = parseScoresFromResponse(response);
   if (hasScoreParseFailures(aiScores)) {
+    const firstFailCount = countScoreParseFailures(aiScores);
     logger.warn("[bid-scoring] Initial response has parse failures, retrying", {
-      failedFactors: countScoreParseFailures(aiScores),
+      failedFactors: firstFailCount,
     });
     const retryResponse = await generateText(
       `${prompt}\n\nIMPORTANT: Return a single raw JSON object only. No markdown. No prose. Every factor MUST have a numeric "score" (0-100) and a "rationale" string.`,
@@ -262,7 +263,9 @@ Based on the above, score each of the 5 bid evaluation factors (0-100) with rati
         jsonMode: true,
       },
     );
-    aiScores = parseScoresFromResponse(retryResponse);
+    const retryScores = parseScoresFromResponse(retryResponse);
+    // Merge: use retry scores only for factors that failed in the first parse
+    aiScores = mergeScores(aiScores, retryScores);
   }
   const weightedTotal = computeWeightedTotal(aiScores);
   const recommendation = getRecommendation(weightedTotal);
@@ -353,7 +356,7 @@ Based on the above, score each of the 5 bid evaluation factors (0-100) with rati
       proposalId,
     });
     const retryResponse = await generateText(
-      `${prompt}\n\nIMPORTANT: Return a single raw JSON object only. No markdown. No prose.`,
+      `${prompt}\n\nIMPORTANT: Return a single raw JSON object only. No markdown. No prose. Every factor MUST have a numeric "score" (0-100) and a "rationale" string.`,
       {
         systemPrompt: BID_SCORING_SYSTEM_PROMPT,
         temperature: 0,
@@ -362,7 +365,8 @@ Based on the above, score each of the 5 bid evaluation factors (0-100) with rati
         jsonMode: true,
       },
     );
-    aiScores = parseScoresFromResponse(retryResponse);
+    const retryScores = parseScoresFromResponse(retryResponse);
+    aiScores = mergeScores(aiScores, retryScores);
   }
 
   const weightedTotal = computeWeightedTotal(aiScores);
@@ -711,4 +715,21 @@ function hasScoreParseFailures(
   scores: Record<FactorKey, FactorScore>,
 ): boolean {
   return countScoreParseFailures(scores) > 0;
+}
+
+/** Merge retry scores into first-attempt scores, only replacing factors that had fallback values. */
+function mergeScores(
+  first: Record<FactorKey, FactorScore>,
+  retry: Record<FactorKey, FactorScore>,
+): Record<FactorKey, FactorScore> {
+  const merged = { ...first };
+  for (const factor of SCORING_FACTORS) {
+    if (
+      isScoreFallback(first[factor.key]) &&
+      !isScoreFallback(retry[factor.key])
+    ) {
+      merged[factor.key] = retry[factor.key];
+    }
+  }
+  return merged as Record<FactorKey, FactorScore>;
 }

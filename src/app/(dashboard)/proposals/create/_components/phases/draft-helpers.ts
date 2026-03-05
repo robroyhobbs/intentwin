@@ -144,7 +144,19 @@ export async function regenerateSection(
       );
     }
 
-    logger.info("Section regeneration triggered", { proposalId, sectionId });
+    const result = await res.json();
+    logger.info("Section regeneration complete", { proposalId, sectionId });
+
+    // Update UI with the regenerated content
+    dispatch({
+      type: "UPDATE_SECTION",
+      sectionId,
+      updates: {
+        generationStatus:
+          result.data?.status === "completed" ? "complete" : "failed",
+        content: result.data?.content ?? "",
+      },
+    });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Regeneration failed";
     logger.error("Section regeneration error", err, { sectionId });
