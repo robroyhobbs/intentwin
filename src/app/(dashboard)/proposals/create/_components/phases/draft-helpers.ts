@@ -23,6 +23,7 @@ interface SetupSection {
 interface SetupResponse {
   sections: SetupSection[];
   sectionCount: number;
+  warnings?: string[];
 }
 
 interface SectionResult {
@@ -213,7 +214,13 @@ export async function runDraftFlow(
       { method: "POST" },
     );
     if (!setupRes.ok) throw new Error(await extractError(setupRes));
-    const { sections } = (await setupRes.json()) as SetupResponse;
+    const setupData = (await setupRes.json()) as SetupResponse;
+    const { sections } = setupData;
+    if (setupData.warnings?.length) {
+      logger.warn("Pipeline setup warnings", {
+        warnings: setupData.warnings,
+      });
+    }
     if (!mountedRef.current) return;
 
     if (!sections || sections.length === 0) {

@@ -14,11 +14,19 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createLogger } from "@/lib/utils/logger";
 import { TtlCache } from "@/lib/utils/ttl-cache";
-import type { CompanyContext, ProductContext, EvidenceLibraryEntry, TeamMember } from "@/types/idd";
+import type {
+  CompanyContext,
+  ProductContext,
+  EvidenceLibraryEntry,
+  TeamMember,
+} from "@/types/idd";
 import type { L1Context } from "./types";
 
 // L1 context changes rarely (admin-only updates). Cache for 5 minutes per instance.
-const l1DbCache = new TtlCache<L1Context>({ ttlMs: 5 * 60 * 1000, maxSize: 50 });
+const l1DbCache = new TtlCache<L1Context>({
+  ttlMs: 5 * 60 * 1000,
+  maxSize: 50,
+});
 
 /** Clear the L1 DB cache (used in tests) */
 export function clearL1DbCache(): void {
@@ -45,29 +53,41 @@ export async function fetchL1ContextFromDb(
     // Fetch company context (brand, values, certifications, legal)
     let companyQuery = supabase
       .from("company_context")
-      .select("id, category, key, title, content, metadata, is_locked, lock_reason, last_verified_at, verified_by")
+      .select(
+        "id, category, key, title, content, metadata, is_locked, lock_reason, last_verified_at, verified_by",
+      )
       .order("category");
     if (organizationId) {
       companyQuery = companyQuery.eq("organization_id", organizationId);
     }
-    const { data: companyContext } = await companyQuery;
+    const { data: companyContext, error: companyErr } = await companyQuery;
+    if (companyErr) {
+      throw new Error(`Company context query failed: ${companyErr.message}`);
+    }
 
     // Fetch relevant product contexts
     let productQuery = supabase
       .from("product_contexts")
-      .select("id, product_name, service_line, description, capabilities, specifications, pricing_models, constraints, supported_outcomes, is_locked, lock_reason");
+      .select(
+        "id, product_name, service_line, description, capabilities, specifications, pricing_models, constraints, supported_outcomes, is_locked, lock_reason",
+      );
     if (organizationId) {
       productQuery = productQuery.eq("organization_id", organizationId);
     }
     if (serviceLine) {
       productQuery = productQuery.eq("service_line", serviceLine);
     }
-    const { data: productContexts } = await productQuery;
+    const { data: productContexts, error: productErr } = await productQuery;
+    if (productErr) {
+      throw new Error(`Product context query failed: ${productErr.message}`);
+    }
 
     // Fetch relevant evidence (case studies, metrics) — verified only
     let evidenceQuery = supabase
       .from("evidence_library")
-      .select("id, evidence_type, title, summary, full_content, client_industry, service_line, client_size, outcomes_demonstrated, metrics, is_verified, verified_by, verified_at, verification_notes")
+      .select(
+        "id, evidence_type, title, summary, full_content, client_industry, service_line, client_size, outcomes_demonstrated, metrics, is_verified, verified_by, verified_at, verification_notes",
+      )
       .eq("is_verified", true);
     if (organizationId) {
       evidenceQuery = evidenceQuery.eq("organization_id", organizationId);
@@ -80,22 +100,30 @@ export async function fetchL1ContextFromDb(
         `client_industry.eq.${industry},client_industry.is.null`,
       );
     }
-    const { data: evidenceLibrary } = await evidenceQuery
+    const { data: evidenceLibrary, error: evidenceErr } = await evidenceQuery
       .order("is_verified", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(10);
+    if (evidenceErr) {
+      throw new Error(`Evidence library query failed: ${evidenceErr.message}`);
+    }
 
     // Fetch team members (named personnel for proposal generation)
     let teamMembersQuery = supabase
       .from("team_members")
-      .select("id, name, role, title, skills, certifications, clearance_level, years_experience, project_history, bio, is_verified, verified_by, verified_at");
+      .select(
+        "id, name, role, title, skills, certifications, clearance_level, years_experience, project_history, bio, is_verified, verified_by, verified_at",
+      );
     if (organizationId) {
       teamMembersQuery = teamMembersQuery.eq("organization_id", organizationId);
     }
-    const { data: teamMembers } = await teamMembersQuery
+    const { data: teamMembers, error: teamErr } = await teamMembersQuery
       .order("is_verified", { ascending: false })
       .order("name")
       .limit(50);
+    if (teamErr) {
+      throw new Error(`Team members query failed: ${teamErr.message}`);
+    }
 
     const result: L1Context = {
       companyContext: (companyContext || []) as CompanyContext[],
@@ -109,11 +137,6 @@ export async function fetchL1ContextFromDb(
   } catch (error) {
     const log = createLogger({ operation: "fetchL1ContextFromDb" });
     log.error("Error fetching L1 context from DB", error);
-    return {
-      companyContext: [],
-      productContexts: [],
-      evidenceLibrary: [],
-      teamMembers: [],
-    };
+    throw error;
   }
 }

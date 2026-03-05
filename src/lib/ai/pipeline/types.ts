@@ -116,7 +116,9 @@ export interface PipelineContext {
   companyInfo: CompanyInfo;
   brandVoice: BrandVoice | null;
   primaryBrandName: string | undefined;
-  audienceProfile: { tech_level?: string; evaluator?: string; size?: string } | undefined;
+  audienceProfile:
+    | { tech_level?: string; evaluator?: string; size?: string }
+    | undefined;
   systemPrompt: string;
   enhancedAnalysis: string;
   l1ContextString: string;
@@ -132,4 +134,6 @@ export interface PipelineContext {
   agencyContext: string;
   /** Pricing benchmark suggestions for cost/pricing sections (empty string if no intelligence) */
   pricingContext: string;
+  /** Pipeline warnings about degraded quality (e.g. analysis timeout, empty L1) */
+  warnings?: string[];
 }

@@ -206,6 +206,7 @@ export const POST = withProposalRoute(
       })),
       sectionCount: insertedSections.length,
       preflight: preflight ?? undefined,
+      ...(ctx.warnings?.length ? { warnings: ctx.warnings } : {}),
     });
   },
   { requireFullProposal: true },

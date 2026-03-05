@@ -85,6 +85,16 @@ export function ScoreCard({ evaluation }: { evaluation: BidEvaluation }) {
         </div>
       </div>
 
+      {evaluation.warnings && evaluation.warnings.length > 0 && (
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 space-y-1">
+          {evaluation.warnings.map((w, i) => (
+            <p key={i} className="text-xs text-amber-200">
+              {w}
+            </p>
+          ))}
+        </div>
+      )}
+
       <div className="space-y-2">
         <h4 className="text-xs font-medium text-muted-foreground uppercase">
           How this score was calculated

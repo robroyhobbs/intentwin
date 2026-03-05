@@ -515,7 +515,7 @@ describe("POST /api/proposals/[id]/generate/finalize", () => {
     expect(body.status).toBe("draft");
   });
 
-  it("marks non-terminal sections as failed", async () => {
+  it("handles mixed completed and failed sections", async () => {
     mockSupabase = setupMockSupabase({
       proposal_sections: {
         data: [
@@ -528,8 +528,8 @@ describe("POST /api/proposals/[id]/generate/finalize", () => {
           {
             id: "s2",
             section_type: "technical_approach",
-            generation_status: "pending",
-            generation_error: null,
+            generation_status: "failed",
+            generation_error: "Timed out",
           },
         ],
       },

@@ -14,7 +14,11 @@ import { createProposalVersion } from "@/lib/versioning/create-version";
 import { createLogger } from "@/lib/utils/logger";
 import { ok, serverError, withProposalRoute } from "@/lib/api/response";
 
-export const maxDuration = 30;
+export const maxDuration = 60;
+
+/** Max time to wait for in-flight sections to reach terminal state */
+const SETTLE_TIMEOUT_MS = 30_000;
+const SETTLE_POLL_MS = 2_000;
 
 export const POST = withProposalRoute(async (_request, { id }, _context) => {
   const log = createLogger({
@@ -23,28 +27,26 @@ export const POST = withProposalRoute(async (_request, { id }, _context) => {
   });
   const supabase = createAdminClient();
 
-  // Count outcomes from DB (source of truth)
-  const { data: sections, error: fetchError } = await supabase
-    .from("proposal_sections")
-    .select("id, section_type, generation_status, generation_error")
-    .eq("proposal_id", id);
-
-  if (fetchError) {
-    log.error("Failed to fetch section statuses", {
-      error: fetchError.message,
-    });
+  // Wait for all sections to reach terminal state before finalizing.
+  // This prevents the race condition where finalize marks still-generating
+  // sections as FAILED because the client called us too early.
+  const sections = await waitForTerminalState(supabase, id, log);
+  if (!sections) {
     return serverError("Failed to finalize proposal");
   }
 
-  // Mark non-terminal sections as failed
+  // Mark any remaining non-terminal sections as failed (only after timeout)
   const nonTerminalIds = markNonTerminal(sections);
   if (nonTerminalIds.length > 0) {
+    log.warn("Marking timed-out sections as failed", {
+      count: nonTerminalIds.length,
+    });
     await supabase
       .from("proposal_sections")
       .update({
         generation_status: GenerationStatus.FAILED,
         generation_error:
-          "Generation did not complete for this section. Please regenerate.",
+          "Generation did not complete within the time limit. Please regenerate.",
       })
       .in("id", nonTerminalIds);
   }
@@ -82,6 +84,72 @@ type SectionRow = {
   generation_status: string;
   generation_error: string | null;
 };
+
+const TERMINAL_STATES: Set<string> = new Set([
+  GenerationStatus.COMPLETED,
+  GenerationStatus.FAILED,
+]);
+
+function allTerminal(sections: SectionRow[]): boolean {
+  return sections.every((s) => TERMINAL_STATES.has(s.generation_status));
+}
+
+async function waitForTerminalState(
+  supabase: ReturnType<typeof createAdminClient>,
+  proposalId: string,
+  log: ReturnType<typeof createLogger>,
+): Promise<SectionRow[] | null> {
+  const deadline = Date.now() + SETTLE_TIMEOUT_MS;
+
+  while (Date.now() < deadline) {
+    const { data: sections, error } = await supabase
+      .from("proposal_sections")
+      .select("id, section_type, generation_status, generation_error")
+      .eq("proposal_id", proposalId);
+
+    if (error) {
+      log.error("Failed to fetch section statuses", {
+        error: error.message,
+      });
+      return null;
+    }
+
+    if (!sections || sections.length === 0) {
+      log.warn("No sections found for proposal");
+      return sections ?? [];
+    }
+
+    if (allTerminal(sections)) {
+      return sections;
+    }
+
+    const pending = sections.filter(
+      (s) => !TERMINAL_STATES.has(s.generation_status),
+    );
+    log.info("Waiting for sections to settle", {
+      pending: pending.length,
+      total: sections.length,
+    });
+
+    await new Promise((r) => setTimeout(r, SETTLE_POLL_MS));
+  }
+
+  // Timeout — fetch final state and let caller handle non-terminal sections
+  log.warn("Settle timeout reached, proceeding with current state");
+  const { data: finalSections, error: finalErr } = await supabase
+    .from("proposal_sections")
+    .select("id, section_type, generation_status, generation_error")
+    .eq("proposal_id", proposalId);
+
+  if (finalErr) {
+    log.error("Failed to fetch sections after timeout", {
+      error: finalErr.message,
+    });
+    return null;
+  }
+
+  return finalSections ?? [];
+}
 
 function markNonTerminal(sections: SectionRow[] | null): string[] {
   return (

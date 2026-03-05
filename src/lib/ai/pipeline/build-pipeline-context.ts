@@ -24,7 +24,11 @@ import type { OutcomeContract, CompanyInfo } from "@/types/idd";
 import type { BrandVoice } from "../persuasion";
 import type { PipelineContext } from "./types";
 import type { BidEvaluation } from "../bid-scoring";
-import { fetchL1Context, buildL1ContextString, buildOutcomeContractContext } from "./context";
+import {
+  fetchL1Context,
+  buildL1ContextString,
+  buildOutcomeContractContext,
+} from "./context";
 
 /** Build the shared pipeline context for a proposal.
  * Fetches proposal data, org info, L1 context, static sources, and runs analysis. */
@@ -35,7 +39,9 @@ export async function buildPipelineContext(
   // Fetch proposal with organization
   const { data: proposal, error: fetchError } = await supabase
     .from("proposals")
-    .select("id, organization_id, title, status, intake_data, win_strategy_data, outcome_contract, rfp_extracted_requirements, bid_evaluation, organizations(name, settings)")
+    .select(
+      "id, organization_id, title, status, intake_data, win_strategy_data, outcome_contract, rfp_extracted_requirements, bid_evaluation, organizations(name, settings)",
+    )
     .eq("id", proposalId)
     .single();
 
@@ -67,7 +73,8 @@ export async function buildPipelineContext(
     : null;
 
   // Brand name lock — consistent naming across all sections
-  const primaryBrandName = (orgData?.settings?.primary_brand_name as string) || undefined;
+  const primaryBrandName =
+    (orgData?.settings?.primary_brand_name as string) || undefined;
 
   // Inject brand name into intakeData so prompt builders can pass it to editorial standards
   // Uses underscore prefix to indicate it's a synthetic pipeline field, not user-entered data
@@ -82,7 +89,13 @@ export async function buildPipelineContext(
     | undefined;
   // Handle both flat and nested (ExtractedIntake) formats
   const audienceProfile = rawAudience
-    ? ("value" in rawAudience && rawAudience.value ? rawAudience.value : rawAudience as { tech_level?: string; evaluator?: string; size?: string })
+    ? "value" in rawAudience && rawAudience.value
+      ? rawAudience.value
+      : (rawAudience as {
+          tech_level?: string;
+          evaluator?: string;
+          size?: string;
+        })
     : undefined;
 
   // Build organization-aware system prompt with brand voice
@@ -120,6 +133,8 @@ export async function buildPipelineContext(
     organizationId: proposal.organization_id,
   });
 
+  const pipelineWarnings: string[] = [];
+
   const l1Counts = {
     companyContextCount: l1Context.companyContext.length,
     productContextCount: l1Context.productContexts.length,
@@ -132,7 +147,13 @@ export async function buildPipelineContext(
     l1Counts.productContextCount === 0 &&
     l1Counts.evidenceCount === 0
   ) {
-    ctxLog.warn("L1 context is EMPTY — proposal will generate without company grounding data. Add company context, products, and evidence in Settings.", l1Counts);
+    pipelineWarnings.push(
+      "No company context found — proposal will generate without company grounding. Add company info in Settings.",
+    );
+    ctxLog.warn(
+      "L1 context is EMPTY — proposal will generate without company grounding data. Add company context, products, and evidence in Settings.",
+      l1Counts,
+    );
   } else {
     ctxLog.info("L1 context loaded", l1Counts);
   }
@@ -157,7 +178,10 @@ export async function buildPipelineContext(
     } catch (sourceError) {
       // Non-critical — static sources are supplementary demo content
       ctxLog.warn("Failed to load static sources", {
-        error: sourceError instanceof Error ? sourceError.message : String(sourceError),
+        error:
+          sourceError instanceof Error
+            ? sourceError.message
+            : String(sourceError),
       });
     }
   }
@@ -181,19 +205,30 @@ export async function buildPipelineContext(
         winStrategy,
       ),
       new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Strategic analysis timed out after 90s")), 90_000)
+        setTimeout(
+          () => reject(new Error("Strategic analysis timed out after 90s")),
+          90_000,
+        ),
       ),
     ]);
-    ctxLog.info("Strategic analysis completed", { analysisLength: analysis.length });
+    ctxLog.info("Strategic analysis completed", {
+      analysisLength: analysis.length,
+    });
   } catch (analysisError) {
     // If strategic analysis fails, use a minimal fallback rather than killing the whole pipeline
     ctxLog.error("Strategic analysis FAILED — using minimal fallback", {
-      error: analysisError instanceof Error ? analysisError.message : String(analysisError),
+      error:
+        analysisError instanceof Error
+          ? analysisError.message
+          : String(analysisError),
     });
     analysis = `Strategic analysis unavailable. Generate sections based on intake data directly.
 Key themes: ${(intakeData.key_themes as string) || "Not specified"}
 Client: ${(intakeData.client_name as string) || "Not specified"}
 Industry: ${(intakeData.client_industry as string) || "Not specified"}`;
+    pipelineWarnings.push(
+      "Strategic analysis failed — sections will be generated with reduced context",
+    );
   }
 
   // Build competitive landscape context if available
@@ -209,12 +244,23 @@ Industry: ${(intakeData.client_industry as string) || "Not specified"}`;
   );
 
   // Build evaluation criteria context from RFP analysis (if available)
-  const rfpAnalysis = intakeData.rfp_analysis as { evaluation_criteria?: Array<{ name: string; weight: string | null; description: string; mapped_sections: string[] }>; page_limit?: string } | null;
+  const rfpAnalysis = intakeData.rfp_analysis as {
+    evaluation_criteria?: Array<{
+      name: string;
+      weight: string | null;
+      description: string;
+      mapped_sections: string[];
+    }>;
+    page_limit?: string;
+  } | null;
   let evalCriteriaContext = "";
   if (rfpAnalysis?.evaluation_criteria?.length) {
-    const criteriaLines = rfpAnalysis.evaluation_criteria.map(c =>
-      `- **${c.name}**${c.weight ? ` (${c.weight})` : ""}: ${c.description}`
-    ).join("\n");
+    const criteriaLines = rfpAnalysis.evaluation_criteria
+      .map(
+        (c) =>
+          `- **${c.name}**${c.weight ? ` (${c.weight})` : ""}: ${c.description}`,
+      )
+      .join("\n");
     evalCriteriaContext = `\n\n## EVALUATION CRITERIA (from RFP)
 The proposal will be scored on these criteria. Address each one directly:
 ${criteriaLines}
@@ -229,8 +275,8 @@ ${rfpAnalysis.page_limit ? `\nPage limit: ${rfpAnalysis.page_limit}` : ""}`;
     companyContextCount: l1Counts.companyContextCount,
     productContextCount: l1Counts.productContextCount,
     evidenceCount: l1Counts.evidenceCount,
-    evidenceIds: l1Context.evidenceLibrary.map(e => e.id),
-    productIds: l1Context.productContexts.map(p => p.id),
+    evidenceIds: l1Context.evidenceLibrary.map((e) => e.id),
+    productIds: l1Context.productContexts.map((p) => p.id),
     l1StringLength: l1ContextString.length,
     staticSourcesIncluded: staticSourcesContext.length > 0,
     fetchedAt: new Date().toISOString(),
@@ -242,7 +288,9 @@ ${rfpAnalysis.page_limit ? `\nPage limit: ${rfpAnalysis.page_limit}` : ""}`;
     .eq("id", proposalId)
     .then(({ error: l1Err }) => {
       if (l1Err) {
-        ctxLog.warn("Failed to store L1 summary on proposal", { error: l1Err.message });
+        ctxLog.warn("Failed to store L1 summary on proposal", {
+          error: l1Err.message,
+        });
       }
     });
 
@@ -267,6 +315,7 @@ ${rfpAnalysis.page_limit ? `\nPage limit: ${rfpAnalysis.page_limit}` : ""}`;
     bidEvaluation,
     agencyContext,
     pricingContext,
+    ...(pipelineWarnings.length > 0 ? { warnings: pipelineWarnings } : {}),
   };
 }
 

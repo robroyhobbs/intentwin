@@ -50,6 +50,8 @@ export interface BidEvaluation {
   scored_at: string;
   decided_at?: string;
   intelligence?: BidIntelligenceContext;
+  /** Warnings about degraded data quality (e.g. intelligence service down) */
+  warnings?: string[];
 }
 
 function computeWeightedTotal(
@@ -173,8 +175,9 @@ export async function scoreFromRequirements(
     industry,
   });
 
-  const [l1Context, agencyProfile, pricingRates, winProbability] =
-    await Promise.all([
+  // Use allSettled so one service failure doesn't kill the entire scoring
+  const [l1Result, agencyResult, pricingResult, winProbResult] =
+    await Promise.allSettled([
       fetchL1ContextFromDb(supabase, serviceLine, industry, organizationId),
       agencyName
         ? intelligenceClient.getAgencyProfile(agencyName)
@@ -199,6 +202,61 @@ export async function scoreFromRequirements(
       }),
     ]);
 
+  const l1Context =
+    l1Result.status === "fulfilled"
+      ? l1Result.value
+      : {
+          companyContext: [],
+          productContexts: [],
+          evidenceLibrary: [],
+          teamMembers: [],
+        };
+  const agencyProfile =
+    agencyResult.status === "fulfilled" ? agencyResult.value : null;
+  const pricingRates =
+    pricingResult.status === "fulfilled" ? pricingResult.value : null;
+  const winProbability =
+    winProbResult.status === "fulfilled" ? winProbResult.value : null;
+
+  const fetchWarnings: string[] = [];
+  if (l1Result.status === "rejected") {
+    fetchWarnings.push("Company context unavailable — scoring without L1 data");
+    logger.error("[bid-scoring] L1 context fetch failed", {
+      error:
+        l1Result.reason instanceof Error
+          ? l1Result.reason.message
+          : String(l1Result.reason),
+    });
+  }
+  if (agencyResult.status === "rejected") {
+    fetchWarnings.push("Agency intelligence unavailable");
+    logger.warn("[bid-scoring] Agency profile fetch failed", {
+      error:
+        agencyResult.reason instanceof Error
+          ? agencyResult.reason.message
+          : String(agencyResult.reason),
+    });
+  }
+  if (pricingResult.status === "rejected") {
+    fetchWarnings.push("Pricing intelligence unavailable");
+    logger.warn("[bid-scoring] Pricing fetch failed");
+  }
+  if (winProbResult.status === "rejected") {
+    fetchWarnings.push("Win probability data unavailable");
+    logger.warn("[bid-scoring] Win probability fetch failed");
+  }
+
+  // Warn when L1 context is empty (org has no company data configured)
+  const l1Empty =
+    l1Context.companyContext.length === 0 &&
+    l1Context.productContexts.length === 0 &&
+    l1Context.evidenceLibrary.length === 0;
+  if (l1Empty && l1Result.status === "fulfilled") {
+    fetchWarnings.push(
+      "No company context found — scores will be lower. Add company info, capabilities, and case studies in Settings.",
+    );
+  }
+
   logger.info("[bid-scoring] Parallel fetch complete", {
     l1CompanyCount: l1Context.companyContext.length,
     l1ProductCount: l1Context.productContexts.length,
@@ -206,6 +264,7 @@ export async function scoreFromRequirements(
     hasAgencyProfile: !!agencyProfile,
     hasPricingRates: !!pricingRates,
     hasWinProbability: !!winProbability,
+    warnings: fetchWarnings,
   });
 
   const rfpSummary = buildRfpSummary(rfpRequirements);
@@ -283,12 +342,21 @@ Based on the above, score each of the 5 bid evaluation factors (0-100) with rati
     win_probability: winProbability,
   };
 
+  // Add warning if scores have remaining parse fallbacks
+  if (hasScoreParseFailures(aiScores)) {
+    const count = countScoreParseFailures(aiScores);
+    fetchWarnings.push(
+      `${count} of 5 scoring factors could not be evaluated — results are approximate`,
+    );
+  }
+
   return {
     ai_scores: aiScores,
     weighted_total: weightedTotal,
     recommendation,
     scored_at: new Date().toISOString(),
     intelligence,
+    ...(fetchWarnings.length > 0 ? { warnings: fetchWarnings } : {}),
   };
 }
 
