@@ -83,6 +83,21 @@ export const POST = withProposalRoute(
       });
     }
 
+    // ── Token limit check (before claim to avoid stuck GENERATING) ────
+    const tokenCheck = await checkPlanLimit(
+      context.organizationId,
+      "ai_tokens_per_month",
+    );
+    if (!tokenCheck.allowed) {
+      return apiError({
+        message:
+          tokenCheck.message ||
+          "AI token limit reached. Upgrade your plan to continue.",
+        status: 429,
+        code: "TOKEN_LIMIT_REACHED",
+      });
+    }
+
     // ── Orphan recovery: reset stale generating proposals ────────────
     // If a client disconnects mid-generation, the proposal gets stuck.
     // Reset proposals stuck in "generating" for >15 minutes.
@@ -122,21 +137,6 @@ export const POST = withProposalRoute(
       return conflict("Proposal is already being generated");
     }
 
-    // ── Token limit check ─────────────────────────────────────────────
-    const tokenCheck = await checkPlanLimit(
-      context.organizationId,
-      "ai_tokens_per_month",
-    );
-    if (!tokenCheck.allowed) {
-      return apiError({
-        message:
-          tokenCheck.message ||
-          "AI token limit reached. Upgrade your plan to continue.",
-        status: 429,
-        code: "TOKEN_LIMIT_REACHED",
-      });
-    }
-
     // ── Build pipeline context ────────────────────────────────────────
     const supabase = createAdminClient();
     let ctx;
@@ -168,9 +168,16 @@ export const POST = withProposalRoute(
       .select("id, section_type, title");
 
     if (sectionError || !insertedSections) {
-      log.error("Failed to create section rows", {
+      log.error("Failed to create section rows — reverting to DRAFT", {
         error: sectionError?.message,
       });
+      await supabase
+        .from("proposals")
+        .update({
+          status: ProposalStatus.DRAFT,
+          generation_error: `Section creation failed: ${sectionError?.message ?? "unknown"}`,
+        })
+        .eq("id", id);
       return serverError("Failed to create sections");
     }
 
@@ -181,11 +188,18 @@ export const POST = withProposalRoute(
       .eq("id", id);
 
     if (metaError) {
-      log.error("Failed to store generation_metadata", {
+      log.error("Failed to store generation_metadata — reverting to DRAFT", {
         error: metaError.message,
         code: metaError.code,
         hint: metaError.hint,
       });
+      await supabase
+        .from("proposals")
+        .update({
+          status: ProposalStatus.DRAFT,
+          generation_error: `Pipeline context storage failed: ${metaError.message}`,
+        })
+        .eq("id", id);
       return serverError(
         `Failed to store pipeline context: ${metaError.message}`,
       );

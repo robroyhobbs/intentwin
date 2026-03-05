@@ -11,30 +11,58 @@ describe("buildEditorialStandards", () => {
 
   describe("groundingLevel='low'", () => {
     it("includes aspirational framing language", () => {
-      const result = buildEditorialStandards("RFP", null, undefined, undefined, undefined, "low");
+      const result = buildEditorialStandards(
+        "RFP",
+        null,
+        undefined,
+        undefined,
+        undefined,
+        "low",
+      );
       expect(result).toContain("aspirational framing");
       expect(result).toContain("Our team would bring");
     });
 
     it("removes the default general-but-concrete evidence fallback", () => {
-      const result = buildEditorialStandards("RFP", null, undefined, undefined, undefined, "low");
+      const result = buildEditorialStandards(
+        "RFP",
+        null,
+        undefined,
+        undefined,
+        undefined,
+        "low",
+      );
       // The default fallback text should be replaced
       expect(result).not.toContain(
-        "write a general but concrete statement WITHOUT placeholders"
+        "write a general but concrete statement WITHOUT placeholders",
       );
     });
   });
 
   describe("groundingLevel='high'", () => {
     it("does not include aspirational framing language", () => {
-      const result = buildEditorialStandards("RFP", null, undefined, undefined, undefined, "high");
+      const result = buildEditorialStandards(
+        "RFP",
+        null,
+        undefined,
+        undefined,
+        undefined,
+        "high",
+      );
       expect(result).not.toContain("aspirational framing");
     });
 
     it("keeps the default evidence fallback", () => {
-      const result = buildEditorialStandards("RFP", null, undefined, undefined, undefined, "high");
+      const result = buildEditorialStandards(
+        "RFP",
+        null,
+        undefined,
+        undefined,
+        undefined,
+        "high",
+      );
       expect(result).toContain(
-        "write a general but concrete statement WITHOUT placeholders"
+        "write a general but concrete statement WITHOUT placeholders",
       );
     });
   });
@@ -48,21 +76,35 @@ describe("buildEditorialStandards", () => {
     it("keeps the default evidence fallback", () => {
       const result = buildEditorialStandards("RFP");
       expect(result).toContain(
-        "write a general but concrete statement WITHOUT placeholders"
+        "write a general but concrete statement WITHOUT placeholders",
       );
     });
   });
 
   describe("groundingLevel='medium'", () => {
     it("does not include aspirational framing language (medium uses default)", () => {
-      const result = buildEditorialStandards("RFP", null, undefined, undefined, undefined, "medium");
+      const result = buildEditorialStandards(
+        "RFP",
+        null,
+        undefined,
+        undefined,
+        undefined,
+        "medium",
+      );
       expect(result).not.toContain("aspirational framing");
     });
 
     it("keeps the default evidence fallback", () => {
-      const result = buildEditorialStandards("RFP", null, undefined, undefined, undefined, "medium");
+      const result = buildEditorialStandards(
+        "RFP",
+        null,
+        undefined,
+        undefined,
+        undefined,
+        "medium",
+      );
       expect(result).toContain(
-        "write a general but concrete statement WITHOUT placeholders"
+        "write a general but concrete statement WITHOUT placeholders",
       );
     });
   });
@@ -72,23 +114,37 @@ describe("buildEditorialStandards", () => {
   describe("core sections", () => {
     it("includes formatting rules regardless of grounding level", () => {
       for (const level of ["high", "medium", "low", undefined] as const) {
-        const result = buildEditorialStandards("RFP", null, undefined, undefined, undefined, level);
+        const result = buildEditorialStandards(
+          "RFP",
+          null,
+          undefined,
+          undefined,
+          undefined,
+          level,
+        );
         expect(result).toContain("OUTPUT FORMAT RULES (MANDATORY)");
       }
     });
 
     it("includes anti-fluff rules regardless of grounding level", () => {
       for (const level of ["high", "medium", "low", undefined] as const) {
-        const result = buildEditorialStandards("RFP", null, undefined, undefined, undefined, level);
+        const result = buildEditorialStandards(
+          "RFP",
+          null,
+          undefined,
+          undefined,
+          undefined,
+          level,
+        );
         expect(result).toContain("WRITING QUALITY RULES (MANDATORY)");
         expect(result).toContain("BANNED PHRASES");
       }
     });
 
-    it("includes chain of thought block", () => {
+    it("includes internal planning guidance", () => {
       const result = buildEditorialStandards("RFP");
-      expect(result).toContain("MANDATORY OUTLINING (CHAIN OF THOUGHT)");
-      expect(result).toContain("<thought_process>");
+      expect(result).toContain("INTERNAL PLANNING");
+      expect(result).not.toContain("<thought_process>");
     });
   });
 
@@ -159,24 +215,48 @@ describe("buildEditorialStandards", () => {
 
   describe("tone", () => {
     it("adds conversational tone rules", () => {
-      const result = buildEditorialStandards("RFP", null, undefined, undefined, "conversational");
+      const result = buildEditorialStandards(
+        "RFP",
+        null,
+        undefined,
+        undefined,
+        "conversational",
+      );
       expect(result).toContain("WRITING TONE: CONVERSATIONAL");
       expect(result).toContain("contractions");
     });
 
     it("adds technical tone rules", () => {
-      const result = buildEditorialStandards("RFP", null, undefined, undefined, "technical");
+      const result = buildEditorialStandards(
+        "RFP",
+        null,
+        undefined,
+        undefined,
+        "technical",
+      );
       expect(result).toContain("WRITING TONE: TECHNICAL");
     });
 
     it("adds executive tone rules", () => {
-      const result = buildEditorialStandards("RFP", null, undefined, undefined, "executive");
+      const result = buildEditorialStandards(
+        "RFP",
+        null,
+        undefined,
+        undefined,
+        "executive",
+      );
       expect(result).toContain("WRITING TONE: EXECUTIVE");
       expect(result).toContain("C-suite");
     });
 
     it("adds no tone rules for professional (default)", () => {
-      const result = buildEditorialStandards("RFP", null, undefined, undefined, "professional");
+      const result = buildEditorialStandards(
+        "RFP",
+        null,
+        undefined,
+        undefined,
+        "professional",
+      );
       expect(result).not.toContain("WRITING TONE:");
     });
   });

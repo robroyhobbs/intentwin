@@ -332,9 +332,9 @@ export async function generateSingleSection(
       provider: generatedContentRaw.provider,
     });
 
-    // Strip out Chain of Thought / thinking blocks before saving
+    // Strip out any thinking/planning blocks the model may emit
     let generatedContent = generatedContentRaw.content
-      .replace(/<thought_process>[\s\S]*?<\/thought_process>/, "")
+      .replace(/<thought_process>[\s\S]*?<\/thought_process>/g, "")
       .replace(/<think>[\s\S]*?<\/think>/g, "")
       .trim();
     if (generatedContent.startsWith("```markdown")) {
@@ -721,17 +721,40 @@ async function generateWithProviders(
   } catch (genErr) {
     const msg = genErr instanceof Error ? genErr.message : String(genErr);
     const msgLower = msg.toLowerCase();
-    // Permanent AI errors should NOT retry — they just burn tokens.
-    const isNonRetriable =
+    const isTimeout = msgLower.includes("timed out");
+    const isBlocked =
       msgLower.includes("ai_blocked") ||
       msgLower.includes("safety") ||
       msgLower.includes("blocked") ||
       msgLower.includes("content filter");
-    if (isNonRetriable) {
-      throw new GenerationNonRetriableError(msg, { cause: genErr });
+
+    // Instead of failing the section entirely, return fallback content
+    // so the proposal can still reach Review status for manual editing.
+    if (isTimeout || isBlocked) {
+      const reason = isTimeout
+        ? "generation timed out"
+        : "content was blocked by safety filters";
+      log.warn(`Section ${sectionType} ${reason} — using fallback content`, {
+        sectionType,
+        error: msg,
+      });
+      const fallbackContent = buildFallbackContent(sectionType, reason);
+      return {
+        content: fallbackContent,
+        provider: "gemini",
+        fallbackReason: reason,
+      };
     }
     throw genErr;
   }
 
   return { content, provider, fallbackReason };
+}
+
+/** Build deterministic fallback content when AI generation fails. */
+function buildFallbackContent(sectionType: string, reason: string): string {
+  const title = sectionType
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return `## ${title}\n\n> **Note:** This section requires manual completion. AI ${reason}. Please write or paste your content for this section, then click Save.\n\n*This placeholder was inserted automatically so your proposal can proceed to Review status. Replace this text with your actual content.*`;
 }

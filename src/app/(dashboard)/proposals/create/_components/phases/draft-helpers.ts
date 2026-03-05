@@ -216,6 +216,10 @@ export async function runDraftFlow(
     const { sections } = (await setupRes.json()) as SetupResponse;
     if (!mountedRef.current) return;
 
+    if (!sections || sections.length === 0) {
+      throw new Error("Setup returned zero sections — cannot generate");
+    }
+
     // Dispatch initial section list (all pending)
     dispatch({ type: "SET_SECTIONS", sections: sections.map(mapSetupSection) });
 
@@ -304,6 +308,10 @@ export async function resumeDraftFlow(
     if (!setupRes.ok) throw new Error(await extractError(setupRes));
     const setupData = (await setupRes.json()) as SetupResponse;
     if (!mountedRef.current) return;
+
+    if (!setupData.sections || setupData.sections.length === 0) {
+      throw new Error("Setup returned zero sections — cannot resume");
+    }
 
     dispatch({
       type: "SET_SECTIONS",

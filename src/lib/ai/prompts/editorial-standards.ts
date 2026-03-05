@@ -232,21 +232,9 @@ DO NOT re-state these claims verbatim in this section. Instead:
 - If you must reference a differentiator, add new context: a different metric, a different client, a different angle`;
   }
 
-  const chainOfThought = `
-## MANDATORY OUTLINING (CHAIN OF THOUGHT)
-Before generating the final markdown for the section, you MUST output a <thought_process> block.
-Inside this block, map exactly how you will satisfy the persuasion framework (AIDA, PAS, etc.) using the provided Win Themes and Evidence. 
-Example:
-<thought_process>
-1. Identify primary Win Theme: Speed to market.
-2. Select L1 Evidence: Acme Corp 14-day deployment.
-3. Map to PAS Framework:
-   - Problem: ...
-   - Agitation: ...
-   - Solution: ...
-</thought_process>
-
-After the </thought_process> tag, write the final presentation-ready Markdown.
+  const planningGuidance = `
+## INTERNAL PLANNING
+Before writing, mentally plan how you will satisfy the persuasion framework (AIDA, PAS, etc.) using the provided Win Themes and Evidence. Identify the primary win theme, select the strongest L1 evidence, and map them to the framework. Then write the final presentation-ready Markdown directly — do NOT output any planning notes, XML tags, or intermediate steps in your response.
 `;
 
   // When grounding is low, replace the evidence fallback instruction to prevent soft hallucination
@@ -265,5 +253,5 @@ After the </thought_process> tag, write the final presentation-ready Markdown.
     }
   }
 
-  return `${FORMATTING_RULES}\n${effectiveAntiFluff}${typeRules}${toneRules}${audienceRules}${brandLock}${repetitionLimiter}\n${chainOfThought}`;
+  return `${FORMATTING_RULES}\n${effectiveAntiFluff}${typeRules}${toneRules}${audienceRules}${brandLock}${repetitionLimiter}\n${planningGuidance}`;
 }
