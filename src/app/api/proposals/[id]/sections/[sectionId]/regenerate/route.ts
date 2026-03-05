@@ -11,10 +11,18 @@ import { after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateSingleSection } from "@/lib/ai/pipeline/generate-single-section";
 import { getQualityFeedbackForSection } from "@/lib/ai/quality-overseer";
-import { GenerationStatus, QualityReviewStatus } from "@/lib/constants/statuses";
+import {
+  GenerationStatus,
+  QualityReviewStatus,
+} from "@/lib/constants/statuses";
 import type { PipelineContext } from "@/lib/ai/pipeline/types";
 import { createLogger } from "@/lib/utils/logger";
-import { conflict, ok, serverError, withProposalRoute } from "@/lib/api/response";
+import {
+  conflict,
+  ok,
+  serverError,
+  withProposalRoute,
+} from "@/lib/api/response";
 
 export const maxDuration = 60;
 
@@ -89,14 +97,26 @@ export const POST = withProposalRoute(
       });
 
       try {
-        bgLog.info("Starting background regeneration", { sectionId, sectionType });
+        bgLog.info("Starting background regeneration", {
+          sectionId,
+          sectionType,
+        });
 
         await generateSingleSection(sectionId, sectionType, ctx);
 
         bgLog.info("Background regeneration completed", { sectionId });
+
+        // Clear stale proposal-level generation_error after successful regen
+        await createAdminClient()
+          .from("proposals")
+          .update({ generation_error: null })
+          .eq("id", id);
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Unknown error";
-        bgLog.error("Background regeneration failed", { sectionId, error: msg });
+        bgLog.error("Background regeneration failed", {
+          sectionId,
+          error: msg,
+        });
 
         await createAdminClient()
           .from("proposal_sections")

@@ -14,10 +14,11 @@ export function RetryFailedButton() {
     (s) => s.generationStatus === "failed",
   );
 
-  const handleRetryAll = useCallback(() => {
+  const handleRetryAll = useCallback(async () => {
     if (!state.proposalId) return;
+    // Sequential to avoid 429 bursts from concurrent Gemini calls
     for (const section of failedSections) {
-      void regenerateSection(
+      await regenerateSection(
         state.proposalId,
         section.id,
         dispatch,
