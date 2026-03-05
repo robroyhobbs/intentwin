@@ -9,7 +9,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ProposalStatus } from "@/lib/constants/statuses";
 import { GenerationStatus } from "@/lib/constants/statuses";
-import { fetchL1Context } from "@/lib/ai/pipeline/context";
 import { buildPipelineContext } from "@/lib/ai/pipeline/context";
 import { buildSectionList } from "@/lib/ai/pipeline/section-configs";
 import {
@@ -46,41 +45,6 @@ export const POST = withProposalRoute(
       return forbidden(
         "AI proposal generation requires a Starter plan or above.",
       );
-    }
-
-    // ── Pre-flight readiness check (fail-open) ────────────────────────
-    let preflight: PreflightResult | null = null;
-    try {
-      const intakeData =
-        (proposal!.intake_data as Record<string, unknown>) || {};
-      const serviceLine = intakeData.service_line as string | undefined;
-      const industry = intakeData.client_industry as string | undefined;
-      const adminClient = createAdminClient();
-      const l1Context = await fetchL1Context(
-        adminClient,
-        serviceLine,
-        industry,
-        context.organizationId,
-      );
-      const requirements =
-        (proposal!.rfp_extracted_requirements as
-          | Record<string, unknown>[]
-          | null) ?? null;
-      const bidEvaluation =
-        (proposal!.bid_evaluation as BidEvaluation | null) ?? null;
-      preflight = runPreflightCheck(
-        l1Context,
-        intakeData,
-        requirements,
-        bidEvaluation,
-      );
-    } catch (preflightError) {
-      logger.warn("Preflight check failed (non-blocking)", {
-        error:
-          preflightError instanceof Error
-            ? preflightError.message
-            : String(preflightError),
-      });
     }
 
     // ── Token limit check (before claim to avoid stuck GENERATING) ────
@@ -155,6 +119,30 @@ export const POST = withProposalRoute(
         })
         .eq("id", id);
       return serverError("Failed to build generation context");
+    }
+
+    // ── Pre-flight readiness check (fail-open, uses context from above) ─
+    let preflight: PreflightResult | null = null;
+    try {
+      const requirements =
+        (proposal!.rfp_extracted_requirements as
+          | Record<string, unknown>[]
+          | null) ?? null;
+      const bidEvaluation =
+        (proposal!.bid_evaluation as BidEvaluation | null) ?? null;
+      preflight = runPreflightCheck(
+        ctx.rawL1Context,
+        ctx.intakeData,
+        requirements,
+        bidEvaluation,
+      );
+    } catch (preflightError) {
+      logger.warn("Preflight check failed (non-blocking)", {
+        error:
+          preflightError instanceof Error
+            ? preflightError.message
+            : String(preflightError),
+      });
     }
 
     // ── Delete existing sections + create new ones ────────────────────
