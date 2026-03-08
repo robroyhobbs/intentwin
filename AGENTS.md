@@ -129,6 +129,12 @@ All tables now have `organization_id` columns with RLS policies:
 
 <!-- Updated nightly by compound review -->
 
+### 2026-03-07 - SDK Migration Finalization, Model Availability, Env Var Cleanup
+
+- **Gemini model availability changes without notice — fallback models must be verified**: `gemini-2.0-flash` was set as the fallback model but became unavailable to new API keys. Replaced with `gemini-2.5-flash-lite` as the stable, high-quota equivalent. Pattern: pin fallback models to current "stable" tier, not previous-gen models — Google retires older models from new key provisioning without deprecation warnings
+- **SDK migration cleanup spans multiple commits — plan for a finalization pass**: The `@google/genai` migration (2026-03-06) required 3 follow-up commits: (1) fix fallback model availability, (2) remove `GEMINI_API_KEY` fallback after production verification, (3) update all documentation (README, AGENTS.md, `.env.example`) to remove stale env var references. Pattern: after a major SDK migration, schedule a dedicated cleanup pass to remove temporary backward-compat shims, update docs, and verify env vars — don't leave fallback code lingering
+- **Remove env var fallbacks promptly after production verification**: The `GEMINI_API_KEY` fallback was kept during migration for safety but needed explicit removal once `GOOGLE_API_KEY` was confirmed working in production. Stale fallbacks in code create confusion about which env var is canonical. Pattern: set a hard deadline (1-2 days) for removing env var fallbacks — if production works, delete the old var reference
+
 ### 2026-03-06 - Gemini SDK Migration (`@google/generative-ai` → `@google/genai`), Client Centralization
 
 - **New Gemini SDK (`@google/genai`) has a fundamentally different API surface**: Migrated from `GoogleGenerativeAI` to `GoogleGenAI`. Key differences: (1) `client.getGenerativeModel({model, generationConfig}).generateContent(prompt)` → `client.models.generateContent({model, contents, config})`, (2) response is returned directly (no `.response` wrapper), (3) `.text()` method → `.text` property, (4) `generationConfig` → `config`, (5) `systemInstruction` moves into `config`. Pattern: when migrating SDKs, map every API call site — the new SDK may flatten, rename, or restructure the entire call chain
