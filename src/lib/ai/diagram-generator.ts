@@ -1,7 +1,6 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createLogger } from "@/lib/utils/logger";
-import { geminiHeliconeOptions } from "@/lib/observability/helicone";
 import { MODELS } from "./models";
+import { getClient } from "./gemini";
 
 const IMAGE_MODEL = MODELS.image;
 
@@ -153,29 +152,17 @@ export async function generateDiagram(
   const config = DIAGRAM_CONFIGS[sectionType];
   if (!config) return null;
 
-  const apiKey = process.env.GEMINI_API_KEY?.trim();
-  if (!apiKey) {
-    log.warn("GEMINI_API_KEY not configured, skipping diagram generation");
-    return null;
-  }
-
   try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const heliconeOpts = geminiHeliconeOptions();
-    const model = genAI.getGenerativeModel(
-      {
-        model: IMAGE_MODEL,
-        generationConfig: {
-          // @ts-expect-error -- Gemini image generation uses responseModalities
-          responseModalities: ["image", "text"],
-        },
-      },
-      heliconeOpts,
-    );
-
+    const client = getClient();
     const prompt = config.buildPrompt(sectionContent, companyName, clientName);
-    const result = await model.generateContent(prompt);
-    const response = result.response;
+
+    const response = await client.models.generateContent({
+      model: IMAGE_MODEL,
+      contents: prompt,
+      config: {
+        responseModalities: ["IMAGE", "TEXT"],
+      },
+    });
 
     const parts = response.candidates?.[0]?.content?.parts;
     if (!parts) {
@@ -184,7 +171,7 @@ export async function generateDiagram(
     }
 
     for (const part of parts) {
-      if (part.inlineData) {
+      if (part.inlineData?.data) {
         const { mimeType, data } = part.inlineData;
         log.info(`Generated ${config.label} diagram`, {
           sectionType,

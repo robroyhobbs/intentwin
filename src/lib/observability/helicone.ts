@@ -9,7 +9,6 @@
  * When unset, all helpers return pass-through values (zero overhead).
  *
  * Supported providers:
- *   - Google Gemini (via baseUrl + customHeaders)
  *   - Voyage AI (via fetch URL + headers)
  */
 
@@ -33,24 +32,6 @@ function baseHeaders(): Record<string, string> {
   };
 }
 
-// ── Google Gemini ──
-
-/** Gemini SDK RequestOptions for Helicone proxy */
-export function geminiHeliconeOptions(): {
-  baseUrl?: string;
-  customHeaders?: Record<string, string>;
-} {
-  if (!isHeliconeEnabled()) return {};
-  return {
-    baseUrl: HELICONE_GATEWAY,
-    customHeaders: {
-      ...baseHeaders(),
-      "Helicone-Target-Url": "https://generativelanguage.googleapis.com",
-      "Helicone-Target-Provider": "Google",
-    },
-  };
-}
-
 // ── Voyage AI (raw fetch) ──
 
 /** Voyage API URL — proxied through Helicone when enabled */
@@ -68,4 +49,3 @@ export function voyageHeliconeHeaders(): Record<string, string> {
     "Helicone-Target-Provider": "VoyageAI",
   };
 }
-

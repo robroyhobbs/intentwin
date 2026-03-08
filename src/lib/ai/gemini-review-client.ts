@@ -1,21 +1,5 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { geminiHeliconeOptions } from "@/lib/observability/helicone";
 import { getModel } from "./models";
-
-let geminiClient: GoogleGenerativeAI | null = null;
-
-function getClient(): GoogleGenerativeAI {
-  if (!geminiClient) {
-    const apiKey = process.env.GEMINI_API_KEY?.trim();
-    if (!apiKey) {
-      throw new Error("GEMINI_API_KEY is not set");
-    }
-    geminiClient = new GoogleGenerativeAI(apiKey);
-  }
-  return geminiClient;
-}
-
-const heliconeOpts = geminiHeliconeOptions();
+import { getClient } from "./gemini";
 
 /**
  * Review a proposal section using Gemini.
@@ -30,22 +14,19 @@ export async function reviewWithGemini(prompt: string): Promise<{
   feedback: string;
 }> {
   const client = getClient();
-  const model = client.getGenerativeModel(
-    {
+
+  // Race against a 45s timeout to prevent hanging
+  const GEMINI_REVIEW_TIMEOUT_MS = 45_000;
+  const response = await Promise.race([
+    client.models.generateContent({
       model: getModel("review"),
-      generationConfig: {
+      contents: prompt,
+      config: {
         temperature: 0.3,
         maxOutputTokens: 2048,
         responseMimeType: "application/json",
       },
-    },
-    heliconeOpts,
-  );
-
-  // Race against a 45s timeout to prevent hanging
-  const GEMINI_REVIEW_TIMEOUT_MS = 45_000;
-  const result = await Promise.race([
-    model.generateContent(prompt),
+    }),
     new Promise<never>((_, reject) =>
       setTimeout(
         () =>
@@ -58,7 +39,7 @@ export async function reviewWithGemini(prompt: string): Promise<{
       ),
     ),
   ]);
-  const content = result.response.text();
+  const content = response.text;
 
   if (!content) {
     throw new Error("Gemini returned empty response");

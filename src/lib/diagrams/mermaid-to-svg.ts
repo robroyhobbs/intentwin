@@ -3,10 +3,9 @@
  * Uses Gemini image generation, with mermaid.ink SVG as fallback.
  */
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { logger } from "@/lib/utils/logger";
-import { geminiHeliconeOptions } from "@/lib/observability/helicone";
 import { MODELS } from "@/lib/ai/models";
+import { getClient } from "@/lib/ai/gemini";
 
 const IMAGE_MODEL = MODELS.image;
 
@@ -19,45 +18,37 @@ export async function mermaidToImage(
   mermaidCode: string,
 ): Promise<{ type: "svg" | "image"; data: string } | null> {
   // Try Gemini image generation first
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (apiKey) {
-    try {
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const heliconeOpts = geminiHeliconeOptions();
-      const model = genAI.getGenerativeModel(
-        {
-          model: IMAGE_MODEL,
-          generationConfig: {
-            // @ts-expect-error -- Gemini image generation uses responseModalities
-            responseModalities: ["image", "text"],
-          },
-        },
-        heliconeOpts,
-      );
-
-      const prompt = `Create a clean, professional technical diagram based on this Mermaid diagram definition.
+  try {
+    const client = getClient();
+    const prompt = `Create a clean, professional technical diagram based on this Mermaid diagram definition.
 Use a modern, minimal style with a white background, clean lines, rounded rectangles for nodes, and a professional blue/gray color scheme.
 Make it look like a high-quality consulting deliverable diagram.
 
 Mermaid definition:
 ${mermaidCode}`;
 
-      const result = await model.generateContent(prompt);
-      const parts = result.response.candidates?.[0]?.content?.parts;
-      const imagePart = parts?.find(
-        (p: { inlineData?: unknown }) => p.inlineData,
-      );
+    const response = await client.models.generateContent({
+      model: IMAGE_MODEL,
+      contents: prompt,
+      config: {
+        responseModalities: ["IMAGE", "TEXT"],
+      },
+    });
 
-      if (imagePart?.inlineData) {
-        const { mimeType, data } = imagePart.inlineData;
-        return { type: "image", data: `data:${mimeType};base64,${data}` };
-      }
-    } catch (err) {
-      logger.warn(
-        "Gemini diagram generation failed, falling back to mermaid.ink",
-        { detail: err },
-      );
+    const parts = response.candidates?.[0]?.content?.parts;
+    const imagePart = parts?.find(
+      (p: { inlineData?: unknown }) => p.inlineData,
+    );
+
+    if (imagePart?.inlineData) {
+      const { mimeType, data } = imagePart.inlineData;
+      return { type: "image", data: `data:${mimeType};base64,${data}` };
     }
+  } catch (err) {
+    logger.warn(
+      "Gemini diagram generation failed, falling back to mermaid.ink",
+      { detail: err },
+    );
   }
 
   // Fallback to mermaid.ink SVG

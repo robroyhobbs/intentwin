@@ -1,26 +1,24 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { logger } from "@/lib/utils/logger";
 import type { WinStrategyData } from "@/types/outcomes";
 import type { BrandVoice } from "./persuasion";
 import { buildBrandVoiceSystemPrompt } from "./persuasion";
-import { geminiHeliconeOptions } from "@/lib/observability/helicone";
 import { MODELS, getModel } from "./models";
 
-let client: GoogleGenerativeAI | null = null;
+let client: GoogleGenAI | null = null;
 
-function getClient(): GoogleGenerativeAI {
+export function getClient(): GoogleGenAI {
   if (!client) {
-    const apiKey = process.env.GEMINI_API_KEY?.trim();
+    const apiKey = (
+      process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY
+    )?.trim();
     if (!apiKey) {
-      throw new Error("GEMINI_API_KEY is not set");
+      throw new Error("GOOGLE_API_KEY (or GEMINI_API_KEY) is not set");
     }
-    client = new GoogleGenerativeAI(apiKey);
+    client = new GoogleGenAI({ apiKey });
   }
   return client;
 }
-
-/** Helicone request options — merged into every getGenerativeModel call */
-const heliconeOpts = geminiHeliconeOptions();
 
 // Default system prompt - can be customized per organization
 const DEFAULT_SYSTEM_PROMPT = `You are a senior proposal strategist who writes presentation-ready proposal sections for consulting and technology services engagements.
@@ -187,36 +185,30 @@ export async function generateText(
     for (let attempt = 0; attempt < MAX_RETRIES_PER_MODEL; attempt++) {
       try {
         // Build generation config with optional thinking support
-        const genConfig: Record<string, unknown> = {
+        const config: Record<string, unknown> = {
           maxOutputTokens: options.maxTokens || 4096,
           temperature: options.temperature ?? 0.7,
+          systemInstruction: options.systemPrompt || SYSTEM_PROMPT,
         };
 
         if (options.jsonMode) {
-          genConfig.responseMimeType = "application/json";
+          config.responseMimeType = "application/json";
         }
 
         if (options.thinkingLevel && options.thinkingLevel !== "none") {
-          genConfig.thinkingConfig = {
+          config.thinkingConfig = {
             thinkingLevel: options.thinkingLevel.toUpperCase(),
           };
         }
 
-        const model = genAI.getGenerativeModel(
-          {
-            model: modelName,
-            systemInstruction: options.systemPrompt || SYSTEM_PROMPT,
-            generationConfig:
-              genConfig as import("@google/generative-ai").GenerationConfig,
-          },
-          heliconeOpts,
-        );
-
-        const result = await model.generateContent(prompt);
-        const response = result.response;
+        const response = await genAI.models.generateContent({
+          model: modelName,
+          contents: prompt,
+          config,
+        });
 
         // Validate response before extracting text — Gemini can return
-        // blocked/empty responses that cause cryptic errors in .text()
+        // blocked/empty responses that cause cryptic errors in .text
         const candidates = response.candidates;
         if (!candidates?.length) {
           const blockReason = response.promptFeedback?.blockReason;
@@ -234,7 +226,7 @@ export async function generateText(
         }
 
         // Strip <think> tags from thinking-mode responses
-        let text = response.text();
+        let text = response.text ?? "";
         text = text.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
         return text;
       } catch (error) {
