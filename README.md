@@ -35,10 +35,9 @@ IntentBid ingests an RFP or solicitation document, cross-references it against y
 - **Multi-Document Support** -- Multiple documents per proposal with priority-based merge and per-field source traceability
 - **Win/Loss Analytics** -- Interactive dashboard with trend analysis, industry breakdown, and outcome tracking
 
-
 ## The IntentBid Advantage: How We Beat Human Proposals
 
-To deliver quality that exceeds a $20,000 human-written proposal at a fraction of the cost, IntentBid systematically exploits the three reasons humans lose bids: **Compliance failures**, **Boilerplate fatigue**, and **Lack of specificity**. 
+To deliver quality that exceeds a $20,000 human-written proposal at a fraction of the cost, IntentBid systematically exploits the three reasons humans lose bids: **Compliance failures**, **Boilerplate fatigue**, and **Lack of specificity**.
 
 We engineer the platform around four core pillars to guarantee a superior outcome:
 
@@ -48,11 +47,13 @@ We engineer the platform around four core pillars to guarantee a superior outcom
 4. **Visual Density & Diagram Generation:** Humans submit 50-page walls of text. IntentBid automatically triggers Mermaid.js diagrams for Methodology, Timeline, and Architecture sections, combined with Markdown callout boxes for Win Themes, resulting in a highly scannable, visually expensive-looking document.
 
 ### Versatility Across Procurement Types
+
 IntentBid's dynamic generation pipelines are battle-tested to win across the entire SLED (State, Local, Education) spectrum, not just massive IT contracts:
-* **The IT / Consulting RFP:** (100+ pages) Deeply focuses on narrative, risk mitigation, and complex scoring matrices.
-* **The Hardware IFB / RFQ:** (Commodities) "Lowest-bid wins" strategy. IntentBid excels at extracting 50+ line items, matching them to catalogs, and generating flawless mathematical Bid Tabulation tables, replacing Junior Estimators.
-* **The Blue-Collar Services RFP:** (Landscaping, Janitorial, HVAC) Evaluators want proof of licenses and equipment. IntentBid takes sparse vendor inputs (bulleted lists of mowers) and transforms them into 15-page highly professional, safety-focused documents that win on perceived professionalism.
-* **The A/E SOQ (Architecture & Engineering):** (QBS / Qualifications-Based Selection). Zero price consideration. IntentBid dynamically generates visually dense, resume-heavy, past-performance-driven PDFs that rival expensive graphic design agencies.
+
+- **The IT / Consulting RFP:** (100+ pages) Deeply focuses on narrative, risk mitigation, and complex scoring matrices.
+- **The Hardware IFB / RFQ:** (Commodities) "Lowest-bid wins" strategy. IntentBid excels at extracting 50+ line items, matching them to catalogs, and generating flawless mathematical Bid Tabulation tables, replacing Junior Estimators.
+- **The Blue-Collar Services RFP:** (Landscaping, Janitorial, HVAC) Evaluators want proof of licenses and equipment. IntentBid takes sparse vendor inputs (bulleted lists of mowers) and transforms them into 15-page highly professional, safety-focused documents that win on perceived professionalism.
+- **The A/E SOQ (Architecture & Engineering):** (QBS / Qualifications-Based Selection). Zero price consideration. IntentBid dynamically generates visually dense, resume-heavy, past-performance-driven PDFs that rival expensive graphic design agencies.
 
 ## Architecture
 
@@ -97,20 +98,20 @@ IntentBid's dynamic generation pipelines are battle-tested to win across the ent
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | Next.js 16, React 19, TypeScript 5 |
-| Styling | Tailwind CSS 4 |
-| AI Generation | Google Gemini 3 Pro |
-| Embeddings | Voyage AI (voyage-3, 1024d) |
-| Database | Supabase (PostgreSQL 15 + pgvector) |
-| Auth | Supabase Auth with SSR cookies + RLS policies |
-| Email | Resend (transactional) |
-| Editor | TipTap (rich text editing) |
-| Export | Puppeteer + chromium-min (PDF), docx (DOCX), pptxgenjs (PPTX), Google Slides API |
-| Testing | Vitest (1,516 tests) + Playwright (E2E) |
-| CI/CD | GitHub Actions (lint, typecheck, test, coverage, build) |
-| Deployment | Vercel (with `@sparticuz/chromium-min` for serverless PDF) |
+| Layer         | Technology                                                                       |
+| ------------- | -------------------------------------------------------------------------------- |
+| Framework     | Next.js 16, React 19, TypeScript 5                                               |
+| Styling       | Tailwind CSS 4                                                                   |
+| AI Generation | Google Gemini 3 Pro                                                              |
+| Embeddings    | Voyage AI (voyage-3, 1024d)                                                      |
+| Database      | Supabase (PostgreSQL 15 + pgvector)                                              |
+| Auth          | Supabase Auth with SSR cookies + RLS policies                                    |
+| Email         | Resend (transactional)                                                           |
+| Editor        | TipTap (rich text editing)                                                       |
+| Export        | Puppeteer + chromium-min (PDF), docx (DOCX), pptxgenjs (PPTX), Google Slides API |
+| Testing       | Vitest (1,516 tests) + Playwright (E2E)                                          |
+| CI/CD         | GitHub Actions (lint, typecheck, test, coverage, build)                          |
+| Deployment    | Vercel (with `@sparticuz/chromium-min` for serverless PDF)                       |
 
 ## Engineering Quality
 
@@ -269,7 +270,7 @@ Every data table includes an `organization_id` column with Row Level Security po
 - Node.js 20+
 - npm (or pnpm)
 - Supabase project (with pgvector extension enabled)
-- Google Gemini API key
+- Google API key (for Gemini models)
 - Voyage AI API key
 
 ### Setup
@@ -280,7 +281,7 @@ cd intentwin
 npm install
 
 cp .env.example .env.local
-# Fill in: Supabase URL + keys, Gemini key, Voyage key
+# Fill in: Supabase URL + keys, GOOGLE_API_KEY, Voyage key
 
 npx supabase db push
 npm run dev
@@ -290,19 +291,19 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ### Environment Variables
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase anon/public key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Supabase service role key (server-only) |
-| `GOOGLE_AI_API_KEY` | Yes | Google Gemini API key |
-| `VOYAGE_API_KEY` | Yes | Voyage AI embedding key |
-| `GEMINI_MODEL` | No | Gemini model ID override (default: gemini-3.1-pro-preview) |
-| `RESEND_API_KEY` | No | Resend transactional email key |
-| `INNGEST_EVENT_KEY` | No | Inngest event key (for background job orchestration) |
-| `INNGEST_SIGNING_KEY` | No | Inngest signing key |
-| `LOG_LEVEL` | No | Logging level: debug, info, warn, error (default: warn in prod) |
-| `SENTRY_DSN` | No | Sentry error tracking DSN |
+| Variable                        | Required | Description                                                     |
+| ------------------------------- | -------- | --------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Yes      | Supabase project URL                                            |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes      | Supabase anon/public key                                        |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Yes      | Supabase service role key (server-only)                         |
+| `GOOGLE_API_KEY`                | Yes      | Google API key (Gemini via `@google/genai` SDK)                 |
+| `VOYAGE_API_KEY`                | Yes      | Voyage AI embedding key                                         |
+| `GEMINI_MODEL`                  | No       | Gemini model ID override (default: gemini-3.1-pro-preview)      |
+| `RESEND_API_KEY`                | No       | Resend transactional email key                                  |
+| `INNGEST_EVENT_KEY`             | No       | Inngest event key (for background job orchestration)            |
+| `INNGEST_SIGNING_KEY`           | No       | Inngest signing key                                             |
+| `LOG_LEVEL`                     | No       | Logging level: debug, info, warn, error (default: warn in prod) |
+| `SENTRY_DSN`                    | No       | Sentry error tracking DSN                                       |
 
 ## Scripts
 
