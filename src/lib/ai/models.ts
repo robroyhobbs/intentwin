@@ -7,14 +7,14 @@
  * - scoring: gemini-2.5-flash — bid-eval needs reliable structured JSON output
  * - review: gemini-3.1-flash-lite-preview — quality review with thinking
  * - image: gemini-3.1-flash-image-preview — diagram/image generation
- * - fallback: gemini-2.0-flash — stable, high-quota fallback for rate limit recovery
+ * - fallback: gemini-2.5-flash-lite — stable, high-quota fallback for rate limit recovery
  */
 export const MODEL_DEFAULTS = {
   primary: "gemini-3.1-flash-lite-preview",
   scoring: "gemini-2.5-flash",
   review: "gemini-3.1-flash-lite-preview",
   image: "gemini-3.1-flash-image-preview",
-  fallback: "gemini-2.0-flash",
+  fallback: "gemini-2.5-flash-lite",
 } as const;
 
 /** Strip literal escape sequences (e.g. trailing \n) that env var UIs sometimes inject. */
