@@ -24,6 +24,11 @@ import {
   serverError,
 } from "@/lib/api/response";
 import { apiError } from "@/lib/api/response";
+import { withRetry } from "@/lib/retry/with-retry";
+import {
+  createProgressTracker,
+  advanceProgress,
+} from "@/lib/progress/task-progress";
 
 /** Allow up to 5 minutes for AI extraction */
 export const maxDuration = 300;
@@ -217,14 +222,28 @@ export async function POST(request: NextRequest) {
 
     // Run extraction first, then assumptions — avoids 4 concurrent Gemini
     // calls which can trigger rate limits on the API key.
-    const extracted = await runParallelExtraction({
-      content: combinedContent,
-      contentType: resolvedContentType,
-      generateFn: generateText,
-      parseFn: extractJsonFromResponse,
-      systemPrompt: EXTRACTION_SYSTEM_PROMPT,
-      fallbackBuilder: buildExtractionPrompt,
-    });
+    const extracted = await withRetry(
+      () =>
+        runParallelExtraction({
+          content: combinedContent,
+          contentType: resolvedContentType,
+          generateFn: generateText,
+          parseFn: extractJsonFromResponse,
+          systemPrompt: EXTRACTION_SYSTEM_PROMPT,
+          fallbackBuilder: buildExtractionPrompt,
+        }),
+      {
+        maxRetries: 2,
+        baseDelay: 2000,
+        shouldRetry: () => true, // All extraction errors are transient (AI calls)
+        onRetry: (attempt, err) => {
+          logger.warn("Extraction retry", {
+            attempt,
+            error: err.message,
+          });
+        },
+      },
+    );
 
     const assumptionsResponseRaw = await generateText(assumptionsPromptEarly, {
       systemPrompt:
@@ -256,15 +275,28 @@ export async function POST(request: NextRequest) {
     }
 
     const assumptions = parseAssumptions(assumptionsResponseRaw);
-    return ok({ extracted, assumptions });
+
+    // Build progress summary for frontend diagnostics
+    let progress = createProgressTracker(4, "Parsing documents");
+    progress = advanceProgress(progress, "Extracting requirements");
+    progress = advanceProgress(progress, "Extracting structure");
+    progress = advanceProgress(progress, "Building summary");
+    progress = advanceProgress(progress, "Complete");
+
+    return ok({ extracted, assumptions, progress });
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : String(error);
+    const attempts =
+      error instanceof Error && "attempts" in error
+        ? (error as { attempts?: number }).attempts
+        : 1;
     logger.error("Extraction error", {
       message: errMsg,
+      attempts,
       stack: error instanceof Error ? error.stack : undefined,
     });
     return serverError(
-      `Failed to extract intake data: ${errMsg.slice(0, 200)}`,
+      `Extraction failed: ${errMsg.slice(0, 200)}${attempts && attempts > 1 ? ` (after ${attempts} attempts)` : ""}`,
       error,
     );
   }

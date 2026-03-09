@@ -19,6 +19,7 @@ import {
   notFound,
   withProposalRoute,
 } from "@/lib/api/response";
+import { withRetry } from "@/lib/retry/with-retry";
 
 export const maxDuration = 60;
 
@@ -131,11 +132,21 @@ async function generateAndRespond(
   log: ReturnType<typeof createLogger>,
 ) {
   try {
-    const result = await generateSingleSection(
-      sectionId,
-      sectionType,
-      ctx,
-      differentiators,
+    const result = await withRetry(
+      () => generateSingleSection(sectionId, sectionType, ctx, differentiators),
+      {
+        maxRetries: 2,
+        baseDelay: 2000,
+        shouldRetry: () => true,
+        onRetry: (attempt, err) => {
+          log.warn("Section generation retry", {
+            sectionId,
+            sectionType,
+            attempt,
+            error: err.message,
+          });
+        },
+      },
     );
 
     // Extract differentiators from executive summary for subsequent sections
@@ -156,15 +167,20 @@ async function generateAndRespond(
     });
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Unknown error";
+    const attempts =
+      err instanceof Error && "attempts" in err
+        ? (err as { attempts?: number }).attempts
+        : 1;
     log.error("Section generation failed", {
       sectionId,
       sectionType,
       error: errorMessage,
+      attempts,
     });
 
     return ok({
       status: "failed" as const,
-      error: errorMessage,
+      error: `${errorMessage}${attempts && attempts > 1 ? ` (after ${attempts} attempts)` : ""}`,
     });
   }
 }

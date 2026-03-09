@@ -3,6 +3,7 @@ import { getUserContext } from "@/lib/supabase/auth-api";
 import { scoreFromRequirements } from "@/lib/ai/bid-scoring";
 import { unauthorized, badRequest, ok, serverError } from "@/lib/api/response";
 import { logger } from "@/lib/utils/logger";
+import { withRetry } from "@/lib/retry/with-retry";
 
 /** AI scoring call + L1 context fetch */
 export const maxDuration = 300;
@@ -39,11 +40,26 @@ export async function POST(request: NextRequest) {
       hasSourceText: !!rfp_requirements.source_text,
     });
 
-    const evaluation = await scoreFromRequirements(
-      rfp_requirements,
-      context.organizationId,
-      service_line,
-      industry,
+    const evaluation = await withRetry(
+      () =>
+        scoreFromRequirements(
+          rfp_requirements,
+          context.organizationId,
+          service_line,
+          industry,
+        ),
+      {
+        maxRetries: 2,
+        baseDelay: 2000,
+        shouldRetry: () => true,
+        onRetry: (attempt, err) => {
+          logger.warn("Bid evaluation retry", {
+            attempt,
+            error: err.message,
+            orgId: context.organizationId,
+          });
+        },
+      },
     );
 
     logger.info("Bid evaluation scoring completed", {
@@ -58,12 +74,17 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
+    const attempts =
+      error instanceof Error && "attempts" in error
+        ? (error as { attempts?: number }).attempts
+        : 1;
     logger.error("Bid evaluation scoring failed", {
       error: errorMessage,
+      attempts,
       stack: error instanceof Error ? error.stack?.slice(0, 500) : undefined,
     });
     return serverError(
-      `Bid evaluation failed: ${errorMessage.slice(0, 200)}`,
+      `Bid evaluation failed: ${errorMessage.slice(0, 200)}${attempts && attempts > 1 ? ` (after ${attempts} attempts)` : ""}`,
       error,
     );
   }

@@ -418,7 +418,8 @@ describe("POST /api/proposals/[id]/generate/section", () => {
   it("returns failed status when generateSingleSection throws", async () => {
     const { generateSingleSection } =
       await import("@/lib/ai/pipeline/generate-single-section");
-    (generateSingleSection as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+    // Must reject consistently — withRetry will retry up to 2 additional times
+    (generateSingleSection as ReturnType<typeof vi.fn>).mockRejectedValue(
       new Error("Gemini rate limit"),
     );
 
@@ -432,6 +433,110 @@ describe("POST /api/proposals/[id]/generate/section", () => {
     expect(status).toBe(200); // Route returns 200 with status:"failed" in body
     expect(body.status).toBe("failed");
     expect(body.error).toContain("rate limit");
+  });
+
+  it("retries transient failure and returns content on success (retry integration)", async () => {
+    const { generateSingleSection } =
+      await import("@/lib/ai/pipeline/generate-single-section");
+    // First call fails, second succeeds
+    (generateSingleSection as ReturnType<typeof vi.fn>)
+      .mockRejectedValueOnce(new Error("AI timeout"))
+      .mockResolvedValueOnce({
+        generatedContent: "# Recovered Content\nRetry succeeded.",
+        chunkCount: 2,
+      });
+
+    const req = makeRequest(
+      "http://localhost/api/proposals/prop-1/generate/section",
+      { sectionId: "sec-1" },
+    );
+    const res = await POST(req, makeParams("prop-1"));
+    const { status, body } = await parseResponse(res);
+
+    expect(status).toBe(200);
+    expect(body.status).toBe("completed");
+    expect(body.content).toContain("Recovered Content");
+    expect(generateSingleSection).toHaveBeenCalledTimes(2);
+  });
+
+  it("server logs full error but client response has sanitized message only", async () => {
+    const { createLogger } = await import("@/lib/utils/logger");
+    const mockLog = (createLogger as ReturnType<typeof vi.fn>)();
+
+    const { generateSingleSection } =
+      await import("@/lib/ai/pipeline/generate-single-section");
+    (generateSingleSection as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error(
+        "Internal: model=gemini-2.0-flash, endpoint=https://api.internal/v1",
+      ),
+    );
+
+    const req = makeRequest(
+      "http://localhost/api/proposals/prop-1/generate/section",
+      { sectionId: "sec-1" },
+    );
+    const res = await POST(req, makeParams("prop-1"));
+    const { body } = await parseResponse(res);
+
+    // Server-side log should have been called with full error details
+    expect(mockLog.error).toHaveBeenCalled();
+    // Logger receives: ("Section generation failed", { sectionId, sectionType, error, attempts })
+    const logArgs = mockLog.error.mock.calls.find(
+      (args: unknown[]) =>
+        typeof args[0] === "string" && args[0].includes("failed"),
+    );
+    expect(logArgs).toBeDefined();
+
+    // Client response should include the error message but no stack
+    expect(body.status).toBe("failed");
+    expect(body.error).toBeDefined();
+    expect(body).not.toHaveProperty("stack");
+    expect(body).not.toHaveProperty("internalStack");
+  });
+
+  it("retry metadata does not expose timing details", async () => {
+    const { generateSingleSection } =
+      await import("@/lib/ai/pipeline/generate-single-section");
+    (generateSingleSection as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error("Service unavailable"),
+    );
+
+    const req = makeRequest(
+      "http://localhost/api/proposals/prop-1/generate/section",
+      { sectionId: "sec-1" },
+    );
+    const res = await POST(req, makeParams("prop-1"));
+    const { body } = await parseResponse(res);
+
+    // Error response must not reveal backoff timing or infrastructure
+    expect(body.error).not.toMatch(/delay|backoff|timeout.*ms|2000|4000/i);
+    expect(body).not.toHaveProperty("retryDelay");
+    expect(body).not.toHaveProperty("nextRetryAt");
+  });
+
+  it("retry of section generation does not create duplicate sections (idempotency)", async () => {
+    // Simulate: section already completed from a previous attempt
+    mockChains["proposal_sections"] = createChain({
+      section_type: "executive_summary",
+      generation_status: "completed",
+      generated_content: "Already generated content.",
+    });
+
+    const { generateSingleSection } =
+      await import("@/lib/ai/pipeline/generate-single-section");
+
+    const req = makeRequest(
+      "http://localhost/api/proposals/prop-1/generate/section",
+      { sectionId: "sec-1" },
+    );
+    const res = await POST(req, makeParams("prop-1"));
+    const { status, body } = await parseResponse(res);
+
+    expect(status).toBe(200);
+    expect(body.status).toBe("completed");
+    expect(body.content).toBe("Already generated content.");
+    // generateSingleSection should NOT have been called — cached result returned
+    expect(generateSingleSection).not.toHaveBeenCalled();
   });
 });
 
