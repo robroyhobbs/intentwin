@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { LogOut, User, ArrowLeft } from "lucide-react";
+import { CopilotNotificationLink } from "@/components/layout/copilot-notification-link";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 export function Header() {
@@ -39,6 +40,8 @@ export function Header() {
       </div>
 
       <ThemeToggle />
+
+      <CopilotNotificationLink />
 
       <div className="divider-vertical h-5" />
 
