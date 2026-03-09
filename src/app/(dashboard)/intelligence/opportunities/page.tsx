@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useDebounce } from "@/hooks/use-debounce";
+import { NaicsCombobox } from "@/components/naics-combobox";
+import type { NaicsEntry } from "@/lib/naics/lookup";
 import { useIntelligence } from "../_components/use-intelligence";
 import { IntelligenceLoading } from "../_components/intelligence-loading";
 import { NotConfigured } from "../_components/not-configured-view";
@@ -59,6 +61,10 @@ export default function OpportunitySearchPage() {
   const [state, setState] = useState(searchParams.get("state") ?? "");
   const [status, setStatus] = useState(searchParams.get("status") ?? "");
   const [naicsCode, setNaicsCode] = useState(searchParams.get("naics") ?? "");
+  const [selectedNaics, setSelectedNaics] = useState<NaicsEntry[]>(() => {
+    const initial = searchParams.get("naics");
+    return initial ? [{ code: initial, description: "" }] : [];
+  });
   const [source, setSource] = useState(searchParams.get("source") ?? "");
   const [setAsideType, setSetAsideType] = useState(
     searchParams.get("set_aside") ?? "",
@@ -282,16 +288,17 @@ export default function OpportunitySearchPage() {
                 ))}
               </select>
             </div>
-            <div className="w-28">
+            <div className="w-48">
               <label className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide block mb-1.5">
                 NAICS
               </label>
-              <input
-                type="text"
+              <NaicsCombobox
+                selected={selectedNaics}
+                onChange={(codes) => {
+                  setSelectedNaics(codes);
+                  setNaicsCode(codes.length > 0 ? codes[0].code : "");
+                }}
                 placeholder="e.g., 541512"
-                value={naicsCode}
-                onChange={(e) => setNaicsCode(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl text-sm"
               />
             </div>
           </div>

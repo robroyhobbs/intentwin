@@ -13,10 +13,16 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { Target, Loader2, ChevronRight } from "lucide-react";
 import type { ExtractedField } from "@/types/intake";
-import type { BidEvaluation, FactorKey } from "@/lib/ai/bid-scoring";
+import type { FactorKey } from "@/lib/ai/bid-scoring";
 import { SCORING_FACTORS } from "@/lib/ai/bid-scoring";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
 import { useWizard } from "./wizard-provider";
+import { ProductAlignmentPanel } from "@/components/product-alignment-panel";
+import {
+  computeProductAlignment,
+  type ProductAlignmentResult,
+} from "@/lib/ai/pipeline/product-alignment";
+import type { ProductContext } from "@/types/idd";
 
 export function StepBidDecision() {
   const { state, dispatch } = useWizard();
@@ -27,6 +33,57 @@ export function StepBidDecision() {
   const [bidOverrides, setBidOverrides] = useState<
     Partial<Record<FactorKey, number>>
   >({});
+
+  const [productAlignment, setProductAlignment] =
+    useState<ProductAlignmentResult | null>(null);
+  const [enabledProducts, setEnabledProducts] = useState<Set<string>>(
+    new Set(),
+  );
+
+  // Fetch products and compute alignment after bid evaluation completes
+  useEffect(() => {
+    if (!state.bidEvaluation || !state.extractedData || productAlignment)
+      return;
+
+    const fetchProducts = async () => {
+      try {
+        const res = await authFetch("/api/settings/products");
+        if (!res.ok) return;
+        const data = await res.json();
+        const products: ProductContext[] = data.products ?? [];
+        if (products.length === 0) {
+          setProductAlignment({ products: [], hasProducts: false });
+          return;
+        }
+
+        const ext = state.extractedData!.extracted as Record<
+          string,
+          ExtractedField<string | string[]> | undefined
+        >;
+        const requirementsText = [
+          state.extractedData!.input_summary,
+          ext?.scope_description?.value,
+          Array.isArray(ext?.key_requirements?.value)
+            ? ext.key_requirements.value.join(" ")
+            : ext?.key_requirements?.value,
+        ]
+          .filter(Boolean)
+          .join(" ");
+
+        const alignment = computeProductAlignment(products, requirementsText);
+        setProductAlignment(alignment);
+        setEnabledProducts(
+          new Set(
+            alignment.products.filter((p) => p.enabled).map((p) => p.productId),
+          ),
+        );
+      } catch {
+        // Products fetch failed — non-blocking
+      }
+    };
+    fetchProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.bidEvaluation]);
 
   // Auto-trigger bid evaluation on mount
   const autoScoreTriggered = useRef(false);
@@ -329,6 +386,27 @@ export function StepBidDecision() {
               </span>
             </div>
           </div>
+
+          {/* Product alignment */}
+          {productAlignment && (
+            <ProductAlignmentPanel
+              alignment={{
+                ...productAlignment,
+                products: productAlignment.products.map((p) => ({
+                  ...p,
+                  enabled: enabledProducts.has(p.productId),
+                })),
+              }}
+              onToggleProduct={(id, enabled) => {
+                setEnabledProducts((prev) => {
+                  const next = new Set(prev);
+                  if (enabled) next.add(id);
+                  else next.delete(id);
+                  return next;
+                });
+              }}
+            />
+          )}
 
           {/* Factor scores */}
           <div className="space-y-3">
