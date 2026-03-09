@@ -49,7 +49,10 @@ const eslintConfig = defineConfig([
       // ── Code size constraints ──────────────────────────────────────
       // Enforce maximum file length (300 lines). Warns at 300, errors would be too strict
       // for existing code. New code should target <300 lines per file.
-      "max-lines": ["warn", { max: 300, skipBlankLines: true, skipComments: true }],
+      "max-lines": [
+        "warn",
+        { max: 300, skipBlankLines: true, skipComments: true },
+      ],
       // Enforce maximum function length (50 lines of logic)
       "max-lines-per-function": [
         "warn",
@@ -63,7 +66,14 @@ const eslintConfig = defineConfig([
   },
   // Relax rules for test files
   {
-    files: ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.spec.tsx", "**/test-utils/**", "__tests__/**"],
+    files: [
+      "**/*.test.ts",
+      "**/*.test.tsx",
+      "**/*.spec.ts",
+      "**/*.spec.tsx",
+      "**/test-utils/**",
+      "__tests__/**",
+    ],
     rules: {
       "no-console": "off",
       "@typescript-eslint/no-shadow": "off",
@@ -88,6 +98,7 @@ const eslintConfig = defineConfig([
       "react-hooks/rules-of-hooks": "off",
       "max-lines": "off",
       "max-lines-per-function": "off",
+      "@typescript-eslint/no-require-imports": "off",
     },
   },
   // Relax function length for page components (orchestrators that wire sub-components)
@@ -103,9 +114,15 @@ const eslintConfig = defineConfig([
     ],
     rules: {
       // Page components are orchestrators — they can be longer but should still stay under 600
-      "max-lines": ["warn", { max: 600, skipBlankLines: true, skipComments: true }],
+      "max-lines": [
+        "warn",
+        { max: 600, skipBlankLines: true, skipComments: true },
+      ],
       // Page default exports wire state + JSX, naturally longer
-      "max-lines-per-function": ["warn", { max: 150, skipBlankLines: true, skipComments: true, IIFEs: true }],
+      "max-lines-per-function": [
+        "warn",
+        { max: 150, skipBlankLines: true, skipComments: true, IIFEs: true },
+      ],
     },
   },
   // Dynamic require() is needed for some Node.js libraries (docx, pptx generators)
