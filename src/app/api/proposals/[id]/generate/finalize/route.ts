@@ -10,6 +10,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { inngest } from "@/inngest/client";
 import { GenerationStatus, ProposalStatus } from "@/lib/constants/statuses";
+import { emitProposalGenerationFailedEvent } from "@/lib/copilot/proposal-generation-failure";
 import { createProposalVersion } from "@/lib/versioning/create-version";
 import { createLogger } from "@/lib/utils/logger";
 import { ok, serverError, withProposalRoute } from "@/lib/api/response";
@@ -20,7 +21,8 @@ export const maxDuration = 60;
 const SETTLE_TIMEOUT_MS = 30_000;
 const SETTLE_POLL_MS = 2_000;
 
-export const POST = withProposalRoute(async (_request, { id }, _context) => {
+// eslint-disable-next-line max-lines-per-function -- finalize coordinates timeout recovery, status updates, and downstream triggers in one route
+export const POST = withProposalRoute(async (_request, { id }, context) => {
   const log = createLogger({
     operation: "generate-finalize",
     proposalId: id,
@@ -32,6 +34,13 @@ export const POST = withProposalRoute(async (_request, { id }, _context) => {
   // sections as FAILED because the client called us too early.
   const sections = await waitForTerminalState(supabase, id, log);
   if (!sections) {
+    await emitFinalizeFailureEvent({
+      organizationId: context.organizationId,
+      proposalId: id,
+      retryable: true,
+      errorMessage: "Failed to finalize proposal",
+      log,
+    });
     return serverError("Failed to finalize proposal");
   }
 
@@ -51,29 +60,43 @@ export const POST = withProposalRoute(async (_request, { id }, _context) => {
       .in("id", nonTerminalIds);
   }
 
-  const { completedCount, failedCount, finalStatus, generationError } =
-    computeOutcome(sections, nonTerminalIds);
+  const outcome = computeOutcome(sections, nonTerminalIds);
 
   log.info("Section generation results", {
     total: sections?.length ?? 0,
-    completed: completedCount,
-    failed: failedCount,
+    completed: outcome.completedCount,
+    failed: outcome.failedCount,
   });
 
   // Update proposal status — keep generation_metadata for section regeneration
   await supabase
     .from("proposals")
     .update({
-      status: finalStatus,
+      status: outcome.finalStatus,
       generation_completed_at: new Date().toISOString(),
-      generation_error: generationError,
+      generation_error: outcome.generationError,
     })
     .eq("id", id);
 
-  // Version snapshot + quality/compliance triggers (non-blocking)
-  await runPostGeneration(id, completedCount, failedCount, log);
+  if (shouldEmitFinalizeFailure(outcome)) {
+    await emitFinalizeFailureEvent({
+      organizationId: context.organizationId,
+      proposalId: id,
+      retryable: false,
+      errorMessage:
+        outcome.generationError ?? "Proposal generation failed during finalize",
+      log,
+    });
+  }
 
-  return ok({ completedCount, failedCount, status: finalStatus });
+  // Version snapshot + quality/compliance triggers (non-blocking)
+  await runPostGeneration(id, outcome.completedCount, outcome.failedCount, log);
+
+  return ok({
+    completedCount: outcome.completedCount,
+    failedCount: outcome.failedCount,
+    status: outcome.finalStatus,
+  });
 });
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -185,6 +208,37 @@ function computeOutcome(
         : null;
 
   return { completedCount, failedCount, finalStatus, generationError };
+}
+
+function shouldEmitFinalizeFailure(outcome: {
+  completedCount: number;
+  failedCount: number;
+}): boolean {
+  return outcome.completedCount === 0 && outcome.failedCount > 0;
+}
+
+async function emitFinalizeFailureEvent(input: {
+  organizationId: string;
+  proposalId: string;
+  retryable: boolean;
+  errorMessage: string;
+  log: ReturnType<typeof createLogger>;
+}) {
+  const result = await emitProposalGenerationFailedEvent({
+    organizationId: input.organizationId,
+    proposalId: input.proposalId,
+    retryable: input.retryable,
+    stage: "finalize",
+    errorMessage: input.errorMessage,
+    correlationId: `proposal:${input.proposalId}:finalize`,
+  });
+
+  if (!result.ok) {
+    input.log.warn("Failed to emit copilot finalize failure event", {
+      proposalId: input.proposalId,
+      copilotError: result.message,
+    });
+  }
 }
 
 async function runPostGeneration(

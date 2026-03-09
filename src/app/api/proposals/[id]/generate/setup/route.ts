@@ -1,3 +1,4 @@
+/* eslint-disable max-lines, max-lines-per-function -- setup route is still the orchestration entrypoint for proposal generation setup */
 /**
  * POST /api/proposals/[id]/generate/setup
  *
@@ -16,6 +17,7 @@ import {
   type PreflightResult,
 } from "@/lib/ai/pipeline/preflight";
 import type { BidEvaluation } from "@/lib/ai/bid-scoring";
+import { emitProposalGenerationFailedEvent } from "@/lib/copilot/proposal-generation-failure";
 import type { RfpTaskStructure } from "@/lib/ai/pipeline/types";
 import { logger } from "@/lib/utils/logger";
 import { createLogger } from "@/lib/utils/logger";
@@ -118,6 +120,15 @@ export const POST = withProposalRoute(
           generation_completed_at: new Date().toISOString(),
         })
         .eq("id", id);
+      await emitProposalGenerationFailedEvent({
+        organizationId: context.organizationId,
+        proposalId: id,
+        retryable: false,
+        stage: "setup",
+        errorMessage:
+          ctxErr instanceof Error ? ctxErr.message : String(ctxErr),
+        correlationId: `proposal:${id}:setup:context`,
+      });
       return serverError("Failed to build generation context");
     }
 
@@ -166,6 +177,14 @@ export const POST = withProposalRoute(
           generation_error: `Section creation failed: ${sectionError?.message ?? "unknown"}`,
         })
         .eq("id", id);
+      await emitProposalGenerationFailedEvent({
+        organizationId: context.organizationId,
+        proposalId: id,
+        retryable: false,
+        stage: "setup",
+        errorMessage: sectionError?.message ?? "Section creation failed",
+        correlationId: `proposal:${id}:setup:sections`,
+      });
       return serverError("Failed to create sections");
     }
 
@@ -188,6 +207,14 @@ export const POST = withProposalRoute(
           generation_error: `Pipeline context storage failed: ${metaError.message}`,
         })
         .eq("id", id);
+      await emitProposalGenerationFailedEvent({
+        organizationId: context.organizationId,
+        proposalId: id,
+        retryable: false,
+        stage: "setup",
+        errorMessage: metaError.message,
+        correlationId: `proposal:${id}:setup:metadata`,
+      });
       return serverError(
         `Failed to store pipeline context: ${metaError.message}`,
       );

@@ -8,6 +8,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
+const mockIngestCopilotEvent = vi.fn();
+
 // ── Shared mock state ────────────────────────────────────────────────────────
 
 const mockUserContext = {
@@ -173,6 +175,15 @@ vi.mock("@/lib/versioning/create-version", () => ({
   createProposalVersion: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock("@/lib/copilot/ingest-event", () => ({
+  ingestCopilotEvent: mockIngestCopilotEvent,
+}));
+
+beforeEach(() => {
+  mockIngestCopilotEvent.mockReset();
+  mockIngestCopilotEvent.mockResolvedValue({ ok: true });
+});
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function makeRequest(url: string, body?: unknown): NextRequest {
@@ -255,6 +266,7 @@ describe("POST /api/proposals/[id]/generate/setup", () => {
     expect(body.sectionCount).toBe(2);
     expect(body.sections).toHaveLength(2);
     expect(body.sections[0].sectionType).toBe("executive_summary");
+    expect(mockIngestCopilotEvent).not.toHaveBeenCalled();
   });
 
   it("returns 403 when feature gate is disabled", async () => {
@@ -302,6 +314,49 @@ describe("POST /api/proposals/[id]/generate/setup", () => {
     expect(status).toBe(500);
     // Verify revert to DRAFT was attempted
     expect(mockFromFn).toHaveBeenCalledWith("proposals");
+    expect(mockIngestCopilotEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "proposal.generation.failed",
+        organizationId: mockUserContext.organizationId,
+        source: "intentwin",
+        payload: expect.objectContaining({
+          proposalId: "prop-1",
+          retryable: false,
+          stage: "setup",
+          errorMessage: "Gemini timeout",
+        }),
+      }),
+      {},
+    );
+  });
+
+  it("returns 500 and emits a copilot event when section creation fails", async () => {
+    mockChains["proposal_sections"] = createChain(null, {
+      message: "section insert failed",
+    });
+
+    const req = makeRequest(
+      "http://localhost/api/proposals/prop-1/generate/setup",
+    );
+    const res = await POST(req, makeParams("prop-1"));
+    const { status, body } = await parseResponse(res);
+
+    expect(status).toBe(500);
+    expect(body.error).toContain("Failed to create sections");
+    expect(mockIngestCopilotEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "proposal.generation.failed",
+        organizationId: mockUserContext.organizationId,
+        source: "intentwin",
+        payload: expect.objectContaining({
+          proposalId: "prop-1",
+          retryable: false,
+          stage: "setup",
+          errorMessage: "section insert failed",
+        }),
+      }),
+      {},
+    );
   });
 });
 
@@ -433,6 +488,23 @@ describe("POST /api/proposals/[id]/generate/section", () => {
     expect(status).toBe(200); // Route returns 200 with status:"failed" in body
     expect(body.status).toBe("failed");
     expect(body.error).toContain("rate limit");
+    expect(mockIngestCopilotEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "proposal.generation.failed",
+        organizationId: mockUserContext.organizationId,
+        source: "intentwin",
+        payload: expect.objectContaining({
+          proposalId: "prop-1",
+          retryable: true,
+          stage: "section",
+          sectionId: "sec-1",
+          sectionType: "executive_summary",
+          attempts: 3,
+          errorMessage: "Gemini rate limit",
+        }),
+      }),
+      {},
+    );
   });
 
   it("retries transient failure and returns content on success (retry integration)", async () => {
@@ -457,6 +529,7 @@ describe("POST /api/proposals/[id]/generate/section", () => {
     expect(body.status).toBe("completed");
     expect(body.content).toContain("Recovered Content");
     expect(generateSingleSection).toHaveBeenCalledTimes(2);
+    expect(mockIngestCopilotEvent).not.toHaveBeenCalled();
   });
 
   it("server logs full error but client response has sanitized message only", async () => {
@@ -586,6 +659,7 @@ describe("POST /api/proposals/[id]/generate/finalize", () => {
     expect(body.completedCount).toBe(2);
     expect(body.failedCount).toBe(0);
     expect(body.status).toBe("review");
+    expect(mockIngestCopilotEvent).not.toHaveBeenCalled();
   });
 
   it("finalizes with all sections failed → status DRAFT", async () => {
@@ -618,6 +692,21 @@ describe("POST /api/proposals/[id]/generate/finalize", () => {
     expect(body.completedCount).toBe(0);
     expect(body.failedCount).toBe(2);
     expect(body.status).toBe("draft");
+    expect(mockIngestCopilotEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "proposal.generation.failed",
+        organizationId: mockUserContext.organizationId,
+        source: "intentwin",
+        payload: expect.objectContaining({
+          proposalId: "prop-1",
+          retryable: false,
+          stage: "finalize",
+          errorMessage:
+            "All 2 sections failed to generate. Check AI service connectivity and retry.",
+        }),
+      }),
+      {},
+    );
   });
 
   it("handles mixed completed and failed sections", async () => {
@@ -650,6 +739,7 @@ describe("POST /api/proposals/[id]/generate/finalize", () => {
     expect(body.completedCount).toBe(1);
     expect(body.failedCount).toBe(1);
     expect(body.status).toBe("review"); // 1 completed = REVIEW
+    expect(mockIngestCopilotEvent).not.toHaveBeenCalled();
   });
 
   it("returns 500 when section fetch fails", async () => {
@@ -664,5 +754,19 @@ describe("POST /api/proposals/[id]/generate/finalize", () => {
     const { status } = await parseResponse(res);
 
     expect(status).toBe(500);
+    expect(mockIngestCopilotEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "proposal.generation.failed",
+        organizationId: mockUserContext.organizationId,
+        source: "intentwin",
+        payload: expect.objectContaining({
+          proposalId: "prop-1",
+          retryable: true,
+          stage: "finalize",
+          errorMessage: "Failed to finalize proposal",
+        }),
+      }),
+      {},
+    );
   });
 });
