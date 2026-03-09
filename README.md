@@ -23,6 +23,7 @@ IntentBid ingests an RFP or solicitation document, cross-references it against y
 - **Industry Intelligence** -- Sector-specific proposal tuning for healthcare, financial services, manufacturing, and public sector
 - **Persuasion Engine** -- AI-driven persuasive writing optimization layered into generated content
 - **Quality Overseer** -- Gemini-powered review with auto-remediation for sections scoring below threshold
+- **Copilot Operations Layer** -- Event-driven interventions, approval queues, and user-safe notifications turn generation failures and reliability issues into visible follow-up work
 - **Review Mode UI** -- Post-generation sidebar highlighting placeholders, unsubstantiated claims, and areas needing human review
 - **Evidence Library** -- Case studies, certifications, and metrics with verified sourcing and AI extraction
 - **Pricing Structure** -- Structured pricing tables with rate cards, labor categories, and fee schedules rather than vague cost language
@@ -140,6 +141,42 @@ IntentBid follows a 7-phase robustness improvement program:
 - **Pipeline metrics** -- Per-section timing, token usage tracking, success/failure rates, RAG retrieval stats
 - **Error tracking** -- Sentry-ready wrapper with automatic capture, user context, breadcrumbs (works without Sentry installed)
 - **Health checks** -- `/api/health` with parallel component checks (DB, storage, vector search, Voyage AI) and response timing
+- **Copilot activity stream** -- Proposal-generation failures and degraded health checks emit organization-scoped copilot events that drive interventions, notifications, and operator workflows
+
+## Copilot Operations: the Value Add
+
+IntentBid now includes an internal Copilot operations layer that turns AI and platform issues into actionable work instead of silent failures. This is part of the value add: operators can see what happened, what Copilot did automatically, and where a human decision is required.
+
+### What the current Copilot layer does
+
+- **Captures failure telemetry** from proposal generation setup, section generation, and finalize flows
+- **Turns degraded health checks into interventions** when critical components fail
+- **Routes interventions to the right agent** (for example, reliability or compliance)
+- **Separates auto-handled items from approval-required items**
+- **Generates user-safe copy** so internal AI/reliability events can surface in a clean UI without leaking raw backend detail
+
+### UI surfaces for activity
+
+Yes — there is now a UI to see activity:
+
+- **Header notification link** -- the dashboard header shows a Copilot notification badge with the current active count
+- **`/notifications`** -- operator-facing notification feed for active and resolved Copilot items
+- **`/copilot-console`** -- intervention queue for triage, approvals, and resolution workflows
+
+### How to use it going forward
+
+1. **Watch the header badge** after proposal generation or admin health checks
+2. **Open `/notifications`** for a quick activity feed and status overview
+3. **Open `/copilot-console`** when you need to triage issues or approve/reject intervention decisions
+4. **Extend the system** by emitting additional org-scoped Copilot events from high-value workflows through `/api/copilot/events` or the helper emitters in `src/lib/copilot/`
+
+### Current event producers
+
+- Proposal generation failures in:
+  - `POST /api/proposals/[id]/generate/setup`
+  - `POST /api/proposals/[id]/generate/section`
+  - `POST /api/proposals/[id]/generate/finalize`
+- Health degradation events from `GET /api/health`
 
 ### Performance
 
@@ -164,11 +201,14 @@ src/
 |   |   +-- proposals/         # Proposal list, editor, versions, export
 |   |   +-- evidence-library/  # Case studies, certs, metrics CRUD
 |   |   +-- knowledge-base/    # L2 document upload, search, L1 sources
+|   |   +-- notifications/     # Copilot notification feed for operator visibility
+|   |   +-- copilot-console/   # Copilot intervention queue and approval workflows
 |   |   +-- settings/          # Company context, products, brand voice, branding
 |   |   +-- analytics/         # Win/loss analytics with recharts
 |   |   +-- onboarding/        # New org setup wizard
 |   +-- (public)/              # Landing, product, intelligence, government, pricing, about, blog
 |   +-- api/                   # 60 API route files
+|       +-- copilot/           # Event ingestion, interventions, approvals, notifications
 |       +-- proposals/         # CRUD, generation, versioning, export, quality review
 |       +-- intake/            # RFP parsing, requirement extraction, bid evaluation
 |       +-- documents/         # Upload, process, chunk, embed, search
@@ -211,6 +251,7 @@ src/
 |   +-- rate-limit/            # Sliding window rate limiter + route configs
 |   +-- security/              # Input sanitization + request validation
 |   +-- observability/         # Error tracking, pipeline metrics
+|   +-- copilot/               # Event schemas, routing, ingestion, persistence, notifications
 |   +-- utils/logger.ts        # Structured logger with correlation IDs
 |   +-- utils/ttl-cache.ts     # In-memory TTL cache (used for L1 context)
 |   +-- documents/             # File parsing (PDF, DOCX, PPTX)
