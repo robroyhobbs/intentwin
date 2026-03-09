@@ -12,7 +12,7 @@ fi
 git fetch --no-tags --depth=1 origin "$BASE_REF" >/dev/null 2>&1 || true
 
 changed_files="$(git diff --name-only "origin/$BASE_REF"...HEAD -- 'src/**/*.ts' 'src/**/*.tsx' || true)"
-changed_files="$(printf '%s\n' "$changed_files" | grep -Ev '(^|/)(__tests__/|.*\\.test\\.tsx?$)' || true)"
+changed_files="$(printf '%s\n' "$changed_files" | grep -Ev '(^|/)(__tests__/|.*\.test\.tsx?$)' || true)"
 if [[ -z "$changed_files" ]]; then
   echo "No changed TypeScript files under src/; skipping complexity check."
   exit 0
