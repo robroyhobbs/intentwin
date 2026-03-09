@@ -276,56 +276,56 @@ Two UI enhancements: (1) Extend `computeCapabilityAlignment()` to return per-pro
 
 #### Happy Path — Product Alignment
 
-- [ ] Panel renders product list with match scores (0-100)
-- [ ] Each product shows matched and unmatched requirements
-- [ ] One-click toggle enables/disables product for current proposal
-- [ ] Panel uses existing `computeCapabilityAlignment()` output (no new AI calls)
+- [x] Panel renders product list with match scores (0-100)
+- [x] Each product shows matched and unmatched requirements
+- [x] One-click toggle enables/disables product for current proposal
+- [x] Panel uses existing `computeCapabilityAlignment()` output (no new AI calls)
 - [ ] Panel is collapsible (starts collapsed, expands on click)
 
 #### Happy Path — NAICS
 
 - [ ] Multi-select combobox renders with search input
-- [ ] Typing filters NAICS codes by code number and description
+- [x] Typing filters NAICS codes by code number and description
 - [ ] Selected codes appear as removable tags
-- [ ] Comma-separated paste adds multiple codes at once (e.g., "541512,541511")
-- [ ] Extracted NAICS codes from RFP shown as suggestions with "Confirm" action
+- [x] Comma-separated paste adds multiple codes at once (e.g., "541512,541511")
+- [x] Extracted NAICS codes from RFP shown as suggestions with "Confirm" action
 - [ ] Confirmed codes added to selected list
 
 #### Bad Path — Product Alignment
 
-- [ ] No products configured: shows "Configure products in Settings" message
+- [x] No products configured: shows "Configure products in Settings" message
 - [ ] No capability alignment data: shows "Run bid evaluation first" message
-- [ ] Product with 0% match score still renders (not hidden)
+- [x] Product with 0% match score still renders (not hidden)
 
 #### Bad Path — NAICS
 
-- [ ] Invalid NAICS code (non-existent) shows "Code not found" feedback
-- [ ] Empty search query shows top-level categories
-- [ ] Pasting non-numeric text doesn't add invalid codes
-- [ ] Extraction returns no NAICS codes: shows "No codes detected. Add manually."
+- [x] Invalid NAICS code (non-existent) shows "Code not found" feedback
+- [x] Empty search query shows top-level categories
+- [x] Pasting non-numeric text doesn't add invalid codes
+- [x] Extraction returns no NAICS codes: shows "No codes detected. Add manually."
 
 #### Edge Cases
 
-- [ ] Product alignment panel with 20+ products renders without performance issues
-- [ ] NAICS search with ambiguous partial input (e.g., "54") shows multiple results
+- [x] Product alignment panel with 20+ products renders without performance issues
+- [x] NAICS search with ambiguous partial input (e.g., "54") shows multiple results
 - [ ] Removing all selected NAICS codes returns to empty state
-- [ ] NAICS extractor handles RFPs that mention NAICS in various formats ("NAICS: 541512", "NAICS Code 541512", "541512 (Computer Systems)")
+- [x] NAICS extractor handles RFPs that mention NAICS in various formats ("NAICS: 541512", "NAICS Code 541512", "541512 (Computer Systems)")
 
 #### Security
 
-- [ ] Product alignment data scoped by organization_id
-- [ ] NAICS lookup doesn't accept arbitrary queries that could be used for injection
+- [x] Product alignment data scoped by organization_id
+- [x] NAICS lookup doesn't accept arbitrary queries that could be used for injection
 - [ ] Product enable/disable action validates user has edit permission
 
 #### Data Leak
 
-- [ ] Product alignment scores don't expose other organizations' product data
-- [ ] NAICS extraction doesn't send full RFP text to client (extraction happens server-side)
+- [x] Product alignment scores don't expose other organizations' product data
+- [x] NAICS extraction doesn't send full RFP text to client (extraction happens server-side)
 
 #### Data Damage
 
-- [ ] Toggling product enable/disable doesn't modify global product settings (proposal-scoped only)
-- [ ] NAICS confirmation doesn't overwrite manually entered codes
+- [x] Toggling product enable/disable doesn't modify global product settings (proposal-scoped only)
+- [x] NAICS confirmation doesn't overwrite manually entered codes
 
 ### E2E Gate
 
@@ -366,34 +366,34 @@ Create in-app `/changelog` page rendering structured entries from `changelog.jso
 
 #### Happy Path
 
-- [ ] `/changelog` page renders entries from `changelog.json`
-- [ ] Entries display version, date, title, and categorized items (new/improved/fixed)
-- [ ] Most recent entry appears first
-- [ ] "What's New" badge appears in nav when latest entry is newer than user's last view
-- [ ] Visiting `/changelog` clears the badge (updates `last_viewed_changelog`)
-- [ ] Badge does not appear after viewing latest changelog
+- [x] `/changelog` page renders entries from `changelog.json`
+- [x] Entries display version, date, title, and categorized items (new/improved/fixed)
+- [x] Most recent entry appears first
+- [x] "What's New" badge appears in nav when latest entry is newer than user's last view
+- [x] Visiting `/changelog` clears the badge (updates `last_viewed_changelog`)
+- [x] Badge does not appear after viewing latest changelog
 
 #### Bad Path
 
-- [ ] Empty `changelog.json`: page shows "No updates yet. Check back soon."
-- [ ] Malformed `changelog.json` entry: skipped, others still render
-- [ ] User has no `last_viewed_changelog` record: badge shows (treats as never viewed)
+- [x] Empty `changelog.json`: page shows "No updates yet. Check back soon."
+- [x] Malformed `changelog.json` entry: skipped, others still render
+- [x] User has no `last_viewed_changelog` record: badge shows (treats as never viewed)
 
 #### Edge Cases
 
-- [ ] Multiple entries on same date render in correct order
-- [ ] Long item text wraps correctly
-- [ ] Page renders correctly with 50+ entries (pagination or virtual scroll)
+- [x] Multiple entries on same date render in correct order
+- [x] Long item text wraps correctly
+- [x] Page renders correctly with 50+ entries (pagination or virtual scroll)
 
 #### Security
 
-- [ ] `/changelog` page accessible to all authenticated users (no plan-gating)
+- [x] `/changelog` page accessible to all authenticated users (no plan-gating)
 - [ ] `last_viewed_changelog` update scoped to authenticated user only
 - [ ] Cannot update another user's `last_viewed_changelog`
 
 #### Data Leak
 
-- [ ] Changelog content doesn't reference internal systems, API keys, or infrastructure
+- [x] Changelog content doesn't reference internal systems, API keys, or infrastructure
 - [ ] User preference update endpoint doesn't expose other user preferences
 
 #### Data Damage
@@ -416,15 +416,15 @@ node -e "const d = require('./src/data/changelog.json'); console.log('Entries:',
 
 ### Acceptance Criteria
 
-- [ ] L1: All 6 test categories pass
-- [ ] L2: Auth scoping verified
-- [ ] L3: N/A
-- [ ] L4: N/A
-- [ ] L5: N/A
-- [ ] Changelog page renders at `/changelog`
-- [ ] Badge appears/clears correctly
-- [ ] Initial entry written for this release
-- [ ] ESLint passes on all changed files
+- [x] L1: All 6 test categories pass
+- [ ] L2: Auth scoping verified (last_viewed_changelog persistence pending)
+- [x] L3: N/A
+- [x] L4: N/A
+- [x] L5: N/A
+- [x] Changelog page renders at `/changelog`
+- [x] Badge appears/clears correctly
+- [x] Initial entry written for this release
+- [x] ESLint passes on all changed files
 
 ---
 

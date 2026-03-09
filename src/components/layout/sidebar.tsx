@@ -20,6 +20,7 @@ import {
   FileText,
   Info,
   Briefcase,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
@@ -81,6 +82,7 @@ const navGroups = [
       },
       { name: "Branding", href: "/settings/branding", icon: Palette },
       { name: "Billing & Plan", href: "/settings", icon: Settings },
+      { name: "What's New", href: "/changelog", icon: Sparkles },
     ],
   },
 ];

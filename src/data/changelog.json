@@ -1,0 +1,25 @@
+[
+  {
+    "version": "1.3.0",
+    "date": "2026-03-09",
+    "title": "Reliability & UX Improvements",
+    "items": {
+      "new": [
+        "SAM.gov workspace URL detection — paste workspace links and they auto-redirect to public format",
+        "Product alignment panel in bid evaluation showing per-product match scores",
+        "NAICS multi-select combobox with search, paste, and RFP extraction",
+        "In-app changelog with What's New badge"
+      ],
+      "improved": [
+        "Proposal generation now runs in parallel batches of 3 for faster completion",
+        "Progress tracking during extraction with step-by-step updates",
+        "Better error messages with attempt counts and retry indicators"
+      ],
+      "fixed": [
+        "Steps failing silently now retry automatically (up to 2 retries with exponential backoff)",
+        "Extraction, bid evaluation, and section generation all have built-in retry logic",
+        "Empty SAM.gov pages now show helpful guidance about authentication requirements"
+      ]
+    }
+  }
+]
