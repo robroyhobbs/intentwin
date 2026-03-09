@@ -19,11 +19,13 @@ import {
   notFound,
   withProposalRoute,
 } from "@/lib/api/response";
+import { emitProposalGenerationFailedEvent } from "@/lib/copilot/proposal-generation-failure";
 import { withRetry } from "@/lib/retry/with-retry";
 
 export const maxDuration = 60;
 
-export const POST = withProposalRoute(async (request, { id }, _context) => {
+// eslint-disable-next-line max-lines-per-function -- route orchestrates validation, caching, and context loading before generation
+export const POST = withProposalRoute(async (request, { id }, context) => {
   const log = createLogger({ operation: "generate-section", proposalId: id });
 
   // Parse request body — only sectionId is required from client
@@ -100,11 +102,15 @@ export const POST = withProposalRoute(async (request, { id }, _context) => {
   log.info("Generating section", { sectionId, sectionType });
 
   return generateAndRespond(
-    sectionId,
-    sectionType,
-    pipelineCtx,
-    differentiators,
-    log,
+    {
+      organizationId: context.organizationId,
+      proposalId: id,
+      sectionId,
+      sectionType,
+      ctx: pipelineCtx,
+      differentiators,
+      log,
+    },
   );
 });
 
@@ -124,13 +130,26 @@ function reconstructContext(ctx: PipelineContext): PipelineContext {
   };
 }
 
-async function generateAndRespond(
-  sectionId: string,
-  sectionType: string,
-  ctx: PipelineContext,
-  differentiators: string[] | undefined,
-  log: ReturnType<typeof createLogger>,
-) {
+interface GenerateAndRespondInput {
+  organizationId: string;
+  proposalId: string;
+  sectionId: string;
+  sectionType: string;
+  ctx: PipelineContext;
+  differentiators: string[] | undefined;
+  log: ReturnType<typeof createLogger>;
+}
+
+// eslint-disable-next-line max-lines-per-function -- retry handling and copilot emission stay together to preserve route behavior
+async function generateAndRespond({
+  organizationId,
+  proposalId,
+  sectionId,
+  sectionType,
+  ctx,
+  differentiators,
+  log,
+}: GenerateAndRespondInput) {
   try {
     const result = await withRetry(
       () => generateSingleSection(sectionId, sectionType, ctx, differentiators),
@@ -167,20 +186,72 @@ async function generateAndRespond(
     });
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Unknown error";
-    const attempts =
-      err instanceof Error && "attempts" in err
-        ? (err as { attempts?: number }).attempts
-        : 1;
+    const attempts = getAttemptCount(err);
     log.error("Section generation failed", {
       sectionId,
       sectionType,
       error: errorMessage,
       attempts,
     });
+    await emitSectionFailureEvent(
+      {
+        organizationId,
+        proposalId,
+        sectionId,
+        sectionType,
+        errorMessage,
+        attempts,
+        log,
+      },
+    );
 
     return ok({
       status: "failed" as const,
       error: `${errorMessage}${attempts && attempts > 1 ? ` (after ${attempts} attempts)` : ""}`,
+    });
+  }
+}
+
+function getAttemptCount(err: unknown): number {
+  if (
+    err instanceof Error &&
+    "attempts" in err &&
+    typeof (err as { attempts?: unknown }).attempts === "number"
+  ) {
+    return (err as { attempts: number }).attempts;
+  }
+
+  return 1;
+}
+
+async function emitSectionFailureEvent(
+  input: {
+    organizationId: string;
+    proposalId: string;
+    sectionId: string;
+    sectionType: string;
+    errorMessage: string;
+    attempts: number;
+    log: ReturnType<typeof createLogger>;
+  },
+) {
+  const result = await emitProposalGenerationFailedEvent({
+    organizationId: input.organizationId,
+    proposalId: input.proposalId,
+    retryable: true,
+    stage: "section",
+    errorMessage: input.errorMessage,
+    attempts: input.attempts,
+    correlationId: `proposal:${input.proposalId}:section:${input.sectionId}`,
+    sectionId: input.sectionId,
+    sectionType: input.sectionType,
+  });
+
+  if (!result.ok) {
+    input.log.warn("Failed to emit copilot section failure event", {
+      proposalId: input.proposalId,
+      sectionId: input.sectionId,
+      copilotError: result.message,
     });
   }
 }

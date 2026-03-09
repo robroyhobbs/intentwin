@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { emitHealthDegradationEvents } from "@/lib/copilot/health-degradation-event";
 import { getUserContext } from "@/lib/supabase/auth-api";
 import { logger } from "@/lib/utils/logger";
 
@@ -8,6 +9,15 @@ interface HealthCheck {
   message: string;
   responseTimeMs?: number;
 }
+
+const HEALTH_CHECK_RUNNERS: Record<string, () => Promise<HealthCheck>> = {
+  supabase: checkSupabase,
+  storage: checkStorage,
+  documents: checkDocuments,
+  vector_search: checkVectorSearch,
+  voyage: checkVoyageAI,
+  gemini: checkGeminiAI,
+};
 
 /**
  * Health check endpoint that tests all pipeline dependencies.
@@ -18,87 +28,105 @@ interface HealthCheck {
  */
 export async function GET(request: NextRequest) {
   const overallStart = performance.now();
-
-  // Check authentication - unauthenticated users get minimal response
   const context = await getUserContext(request);
   if (!context) {
-    return NextResponse.json({
-      status: "ok",
-      timestamp: new Date().toISOString(),
-    });
+    return buildUnauthenticatedHealthResponse();
   }
 
-  const checks: Record<string, HealthCheck> = {};
-
-  // Run independent checks in parallel for faster response
-  const [supabaseCheck, storageCheck, documentsCheck, vectorCheck, voyageCheck, geminiCheck] =
-    await Promise.allSettled([
-      checkSupabase(),
-      checkStorage(),
-      checkDocuments(),
-      checkVectorSearch(),
-      checkVoyageAI(),
-      checkGeminiAI(),
-    ]);
-
-  // Collect results
-  checks.supabase =
-    supabaseCheck.status === "fulfilled"
-      ? supabaseCheck.value
-      : { ok: false, message: `${supabaseCheck.reason}` };
-
-  checks.storage =
-    storageCheck.status === "fulfilled"
-      ? storageCheck.value
-      : { ok: false, message: `${storageCheck.reason}` };
-
-  checks.documents =
-    documentsCheck.status === "fulfilled"
-      ? documentsCheck.value
-      : { ok: false, message: `${documentsCheck.reason}` };
-
-  checks.vector_search =
-    vectorCheck.status === "fulfilled"
-      ? vectorCheck.value
-      : { ok: false, message: `${vectorCheck.reason}` };
-
-  checks.voyage =
-    voyageCheck.status === "fulfilled"
-      ? voyageCheck.value
-      : { ok: false, message: `${voyageCheck.reason}` };
-
-  checks.gemini =
-    geminiCheck.status === "fulfilled"
-      ? geminiCheck.value
-      : { ok: false, message: `${geminiCheck.reason}` };
-
-  // Note: Anthropic SDK was removed — project uses Gemini. No claude check needed.
-
-  const allOk = Object.values(checks).every((c) => c.ok);
-  const failedChecks = Object.entries(checks)
-    .filter(([, c]) => !c.ok)
-    .map(([name]) => name);
-
+  const checks = await collectHealthChecks();
+  const failedChecks = getFailedChecks(checks);
   const totalResponseTimeMs = Math.round(performance.now() - overallStart);
+  const status = failedChecks.length === 0 ? "healthy" : "degraded";
 
-  const status = allOk ? "healthy" : "degraded";
-
-  // Log health check result
   logger.event("health.check", {
     status,
     totalResponseTimeMs,
     failedChecks: failedChecks.length > 0 ? failedChecks : undefined,
   });
 
+  await emitDegradationEventsIfNeeded({
+    organizationId: context.organizationId,
+    checks,
+    failedChecks,
+    totalResponseTimeMs,
+  });
+
+  return buildAuthenticatedHealthResponse({
+    checks,
+    failedChecks,
+    status,
+    totalResponseTimeMs,
+  });
+}
+
+function buildUnauthenticatedHealthResponse() {
+  return NextResponse.json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+  });
+}
+
+async function collectHealthChecks(): Promise<Record<string, HealthCheck>> {
+  const entries = await Promise.all(
+    Object.entries(HEALTH_CHECK_RUNNERS).map(async ([name, runCheck]) => {
+      try {
+        return [name, await runCheck()] as const;
+      } catch (error) {
+        return [name, { ok: false, message: String(error) }] as const;
+      }
+    }),
+  );
+
+  return Object.fromEntries(entries);
+}
+
+function getFailedChecks(checks: Record<string, HealthCheck>): string[] {
+  return Object.entries(checks)
+    .filter(([, check]) => !check.ok)
+    .map(([name]) => name);
+}
+
+async function emitDegradationEventsIfNeeded(input: {
+  organizationId: string;
+  checks: Record<string, HealthCheck>;
+  failedChecks: string[];
+  totalResponseTimeMs: number;
+}) {
+  if (input.failedChecks.length === 0) {
+    return;
+  }
+
+  const emissionResult = await emitHealthDegradationEvents({
+    organizationId: input.organizationId,
+    checks: input.checks,
+    totalResponseTimeMs: input.totalResponseTimeMs,
+  });
+
+  if (!emissionResult.ok) {
+    logger.warn("Health degradation event emission failed", {
+      emittedCount: emissionResult.emitted,
+      failedComponents: emissionResult.failures.map((failure) => failure.component),
+    });
+  }
+}
+
+function buildAuthenticatedHealthResponse(input: {
+  checks: Record<string, HealthCheck>;
+  failedChecks: string[];
+  status: "healthy" | "degraded";
+  totalResponseTimeMs: number;
+}) {
   return NextResponse.json(
     {
-      status,
+      status: input.status,
       timestamp: new Date().toISOString(),
-      responseTimeMs: totalResponseTimeMs,
-      checks,
-      ...(failedChecks.length > 0 ? { failedChecks } : {}),
+      responseTimeMs: input.totalResponseTimeMs,
+      checks: input.checks,
+      ...(input.failedChecks.length > 0
+        ? { failedChecks: input.failedChecks }
+        : {}),
     },
-    { status: allOk ? 200 : 503 },
+    { status: input.failedChecks.length === 0 ? 200 : 503 },
   );
 }
 
