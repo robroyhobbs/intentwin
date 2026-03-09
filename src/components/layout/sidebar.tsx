@@ -23,6 +23,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
+import { useChangelogBadge } from "@/hooks/use-changelog-badge";
 
 const navGroups = [
   {
@@ -89,6 +90,7 @@ const navGroups = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const hasUnseenChangelog = useChangelogBadge();
 
   // Hide sidebar during proposal creation for a focused workspace
   if (pathname.startsWith("/proposals/create")) return null;
@@ -212,6 +214,13 @@ export function Sidebar() {
                         +
                       </span>
                     )}
+
+                    {/* Unseen changelog badge */}
+                    {item.name === "What's New" &&
+                      hasUnseenChangelog &&
+                      !isActive && (
+                        <span className="ml-auto h-2 w-2 rounded-full bg-[var(--accent)] shadow-[0_0_6px_var(--accent)]" />
+                      )}
                   </Link>
                 );
               })}

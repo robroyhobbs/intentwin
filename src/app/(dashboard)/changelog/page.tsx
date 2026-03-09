@@ -1,9 +1,13 @@
+"use client";
+
+import { useEffect } from "react";
 import changelogData from "@/data/changelog.json";
 import {
   isValidEntry,
   sortEntries,
   type ChangelogEntry,
 } from "@/lib/changelog/types";
+import { markChangelogViewed } from "@/hooks/use-changelog-badge";
 
 const CATEGORY_CONFIG = {
   new: { label: "New", color: "text-green-600 dark:text-green-400", bg: "bg-green-100 dark:bg-green-900/30" },
@@ -64,6 +68,10 @@ export default function ChangelogPage() {
   const validEntries = (changelogData as unknown[])
     .filter(isValidEntry) as ChangelogEntry[];
   const sorted = sortEntries(validEntries);
+
+  useEffect(() => {
+    markChangelogViewed();
+  }, []);
 
   return (
     <div className="max-w-2xl mx-auto py-8">
