@@ -186,10 +186,7 @@ async function generateAndRespond({
     });
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Unknown error";
-    const attempts =
-      err instanceof Error && "attempts" in err
-        ? (err as { attempts?: number }).attempts
-        : 1;
+    const attempts = getAttemptCount(err);
     log.error("Section generation failed", {
       sectionId,
       sectionType,
@@ -213,6 +210,18 @@ async function generateAndRespond({
       error: `${errorMessage}${attempts && attempts > 1 ? ` (after ${attempts} attempts)` : ""}`,
     });
   }
+}
+
+function getAttemptCount(err: unknown): number {
+  if (
+    err instanceof Error &&
+    "attempts" in err &&
+    typeof (err as { attempts?: unknown }).attempts === "number"
+  ) {
+    return (err as { attempts: number }).attempts;
+  }
+
+  return 1;
 }
 
 async function emitSectionFailureEvent(
