@@ -11,11 +11,12 @@ import {
 } from "@/lib/proposals/generation-poll";
 import { startBackgroundGeneration } from "@/lib/proposals/background-generation";
 import {
-  fetchProposalGenerationSnapshot,
-  summarizeProposalGeneration,
-} from "@/lib/proposals/proposal-generation-status";
+  startProposalGenerationPoll,
+  type ProposalGenerationPollHandle,
+} from "@/lib/proposals/proposal-generation-runner";
 
 type FetchFn = (url: string, options?: RequestInit) => Promise<Response>;
+type PollHandleRef = { current: ProposalGenerationPollHandle | null };
 
 // ── API response types ──────────────────────────────────────────────────────
 
@@ -240,38 +241,20 @@ async function pollDraftGeneration(
   proposalId: string,
   dispatch: Dispatch<CreateAction>,
   mountedRef: { current: boolean },
+  pollHandleRef: PollHandleRef,
   fetchFn: FetchFn,
   existingSections: SectionDraft[] = [],
 ): Promise<void> {
-  const startedAt = Date.now();
   const reviewedById = new Map(
     existingSections.map((section) => [section.id, section.reviewed] as const),
   );
   let knownSections = existingSections;
-
-  for (let attempt = 0; ; attempt++) {
-    if (!mountedRef.current) return;
-
-    if (attempt > 0) {
-      await new Promise((resolve) =>
-        setTimeout(resolve, calculateGenerationPollDelay(attempt - 1)),
-      );
-    }
-
-    if (hasGenerationPollingTimedOut(startedAt, Date.now())) {
-      dispatch({ type: "GENERATION_FAIL" });
-      return;
-    }
-
-    try {
-      const proposalData =
-        await fetchProposalGenerationSnapshot<ProposalPollSection>(
-          proposalId,
-          fetchFn,
-        );
-      if (!proposalData) continue;
+  const handle = startProposalGenerationPoll<ProposalPollSection>({
+    proposalId,
+    fetchFn,
+    shouldContinue: () => mountedRef.current,
+    onSnapshot: (proposalData, summary) => {
       const apiSections = proposalData.sections ?? [];
-      const summary = summarizeProposalGeneration(proposalData);
 
       if (apiSections.length > 0) {
         const existingById = new Map(
@@ -286,18 +269,27 @@ async function pollDraftGeneration(
         }));
         dispatch({ type: "SET_SECTIONS", sections: knownSections });
       }
+    },
+    onTerminal: (_proposalData, summary) => {
+      dispatch({
+        type:
+          summary.phase === "complete"
+            ? "GENERATION_COMPLETE"
+            : "GENERATION_FAIL",
+      });
+    },
+    onTimeout: () => {
+      dispatch({ type: "GENERATION_FAIL" });
+    },
+  });
 
-      if (summary.phase !== "generating") {
-        dispatch({
-          type:
-            summary.phase === "complete"
-              ? "GENERATION_COMPLETE"
-              : "GENERATION_FAIL",
-        });
-        return;
-      }
-    } catch {
-      // Retry until timeout
+  pollHandleRef.current = handle;
+
+  try {
+    await handle.promise;
+  } finally {
+    if (pollHandleRef.current === handle) {
+      pollHandleRef.current = null;
     }
   }
 }
@@ -308,6 +300,7 @@ export async function runDraftFlow(
   state: CreateFlowState,
   dispatch: Dispatch<CreateAction>,
   mountedRef: { current: boolean },
+  pollHandleRef: PollHandleRef,
   fetchFn: FetchFn,
 ): Promise<void> {
   dispatch({ type: "GENERATION_START" });
@@ -322,6 +315,7 @@ export async function runDraftFlow(
       proposalId,
       dispatch,
       mountedRef,
+      pollHandleRef,
       fetchFn,
     );
 
@@ -350,13 +344,20 @@ export async function resumeDraftFlow(
   proposalId: string,
   dispatch: Dispatch<CreateAction>,
   mountedRef: { current: boolean },
+  pollHandleRef: PollHandleRef,
   fetchFn: FetchFn,
 ): Promise<void> {
   dispatch({ type: "SET_PROPOSAL_ID", id: proposalId });
   dispatch({ type: "GENERATION_START" });
 
   try {
-    await executeDraftGeneration(proposalId, dispatch, mountedRef, fetchFn);
+    await executeDraftGeneration(
+      proposalId,
+      dispatch,
+      mountedRef,
+      pollHandleRef,
+      fetchFn,
+    );
     logger.info("Resume draft flow complete", { proposalId });
   } catch (err) {
     if (!mountedRef.current) return;
@@ -369,6 +370,7 @@ async function executeDraftGeneration(
   proposalId: string,
   dispatch: Dispatch<CreateAction>,
   mountedRef: { current: boolean },
+  pollHandleRef: PollHandleRef,
   fetchFn: FetchFn,
 ): Promise<number> {
   const sections = await setupDraftGeneration(proposalId, dispatch, fetchFn);
@@ -378,6 +380,7 @@ async function executeDraftGeneration(
     proposalId,
     dispatch,
     mountedRef,
+    pollHandleRef,
     fetchFn,
     sections.map((section, index) => mapSetupSection(section, index)),
   );

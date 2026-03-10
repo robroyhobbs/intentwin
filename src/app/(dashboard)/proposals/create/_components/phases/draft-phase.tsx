@@ -6,6 +6,7 @@ import { useAuthFetch } from "@/hooks/use-auth-fetch";
 import { PhaseIcon } from "../shared/phase-icon";
 import { runDraftFlow, resumeDraftFlow } from "./draft-helpers";
 import { computeCapabilityAlignment } from "@/lib/ai/pipeline/capability-alignment";
+import type { ProposalGenerationPollHandle } from "@/lib/proposals/proposal-generation-runner";
 import { CapabilityWarningGate } from "@/components/capability-warning-gate";
 import { WaitLoader } from "../shared/wait-loader";
 import { ErrorBanner } from "../shared/error-banner";
@@ -46,6 +47,7 @@ function useDraftFlow() {
   const authFetch = useAuthFetch();
   const mountedRef = useRef(true);
   const startedRef = useRef(false);
+  const pollHandleRef = useRef<ProposalGenerationPollHandle | null>(null);
   const [gateAcknowledged, setGateAcknowledged] = useState(false);
 
   const alignment = useMemo(
@@ -58,6 +60,7 @@ function useDraftFlow() {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
+      pollHandleRef.current?.cancel();
     };
   }, []);
 
@@ -68,7 +71,13 @@ function useDraftFlow() {
     // Resume interrupted generation (e.g., browser refresh mid-flow)
     if (state.proposalId !== null && state.generationStatus === "generating") {
       startedRef.current = true;
-      void resumeDraftFlow(state.proposalId, dispatch, mountedRef, authFetch);
+      void resumeDraftFlow(
+        state.proposalId,
+        dispatch,
+        mountedRef,
+        pollHandleRef,
+        authFetch,
+      );
       return;
     }
 
@@ -76,7 +85,7 @@ function useDraftFlow() {
     if (state.proposalId !== null) return;
     if (state.generationStatus !== "idle") return;
     startedRef.current = true;
-    void runDraftFlow(state, dispatch, mountedRef, authFetch);
+    void runDraftFlow(state, dispatch, mountedRef, pollHandleRef, authFetch);
   }, [state, dispatch, authFetch, needsGate]);
 
   const handleAcknowledgeGate = useCallback(() => {
@@ -86,10 +95,16 @@ function useDraftFlow() {
   const handleRetry = useCallback(() => {
     startedRef.current = true;
     if (state.proposalId) {
-      void resumeDraftFlow(state.proposalId, dispatch, mountedRef, authFetch);
+      void resumeDraftFlow(
+        state.proposalId,
+        dispatch,
+        mountedRef,
+        pollHandleRef,
+        authFetch,
+      );
       return;
     }
-    void runDraftFlow(state, dispatch, mountedRef, authFetch);
+    void runDraftFlow(state, dispatch, mountedRef, pollHandleRef, authFetch);
   }, [state, dispatch, authFetch]);
 
   const completed = state.sections.filter(

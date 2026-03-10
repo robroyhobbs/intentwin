@@ -87,6 +87,7 @@ describe("runDraftFlow", () => {
     const state = createBaseState();
     const dispatch = vi.fn<(action: CreateAction) => void>();
     const mountedRef = { current: true };
+    const pollHandleRef = { current: null };
     let proposalPolls = 0;
     const fetchFn = vi.fn<
       (url: string, options?: RequestInit) => Promise<Response>
@@ -172,7 +173,7 @@ describe("runDraftFlow", () => {
       throw new Error(`Unexpected URL: ${url}`);
     });
 
-    await runDraftFlow(state, dispatch, mountedRef, fetchFn);
+    await runDraftFlow(state, dispatch, mountedRef, pollHandleRef, fetchFn);
 
     expect(fetchFn).not.toHaveBeenCalledWith(
       "/api/proposals",
@@ -205,6 +206,7 @@ describe("runDraftFlow", () => {
   it("resumes an interrupted generation by reusing setup plus proposal polling", async () => {
     const dispatch = vi.fn<(action: CreateAction) => void>();
     const mountedRef = { current: true };
+    const pollHandleRef = { current: null };
     let proposalPolls = 0;
     const fetchFn = vi.fn<
       (url: string, options?: RequestInit) => Promise<Response>
@@ -275,7 +277,13 @@ describe("runDraftFlow", () => {
       throw new Error(`Unexpected URL: ${url}`);
     });
 
-    await resumeDraftFlow("prop-existing", dispatch, mountedRef, fetchFn);
+    await resumeDraftFlow(
+      "prop-existing",
+      dispatch,
+      mountedRef,
+      pollHandleRef,
+      fetchFn,
+    );
 
     expect(orchestrateGenerationMock).toHaveBeenCalledWith(
       "prop-existing",

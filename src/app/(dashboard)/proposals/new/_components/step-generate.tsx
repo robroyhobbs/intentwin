@@ -36,15 +36,11 @@ import { useWizard } from "./wizard-provider";
 import type { SectionProgress } from "@/lib/proposal-core/wizard-state";
 import { computeCapabilityAlignment } from "@/lib/ai/pipeline/capability-alignment";
 import { CapabilityWarningGate } from "@/components/capability-warning-gate";
-import {
-  calculateGenerationPollDelay,
-  hasGenerationPollingTimedOut,
-} from "@/lib/proposals/generation-poll";
 import { startBackgroundGeneration } from "@/lib/proposals/background-generation";
 import {
-  fetchProposalGenerationSnapshot,
-  summarizeProposalGeneration,
-} from "@/lib/proposals/proposal-generation-status";
+  startProposalGenerationPoll,
+  type ProposalGenerationPollHandle,
+} from "@/lib/proposals/proposal-generation-runner";
 
 // ────────────────────────────────────────────────────────
 // Constants
@@ -173,8 +169,7 @@ export function StepGenerate() {
   const needsGate = alignment.level !== "high" && !gateAcknowledged;
 
   // Refs for polling lifecycle
-  const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const pollCountRef = useRef(0);
+  const pollHandleRef = useRef<ProposalGenerationPollHandle | null>(null);
   const startTimeRef = useRef(Date.now());
   const generationStartedRef = useRef(false);
   const progressShownAtRef = useRef<number | null>(null);
@@ -188,9 +183,7 @@ export function StepGenerate() {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
-      if (pollTimerRef.current) {
-        clearTimeout(pollTimerRef.current);
-      }
+      pollHandleRef.current?.cancel();
       if (viewDelayTimerRef.current) {
         clearTimeout(viewDelayTimerRef.current);
       }
@@ -291,104 +284,81 @@ export function StepGenerate() {
     [authFetch],
   );
 
-  // ── Step 3: Poll for progress ──
-  // Use a ref to break the circular dependency between pollProgress and schedulePoll
-  const pollProgressRef = useRef<((id: string) => Promise<void>) | undefined>(
-    undefined,
-  );
-
-  const schedulePoll = useCallback((id: string) => {
-    if (!mountedRef.current) return;
-    const interval = calculateGenerationPollDelay(pollCountRef.current);
-    pollCountRef.current++;
-    pollTimerRef.current = setTimeout(
-      () => pollProgressRef.current?.(id),
-      interval,
-    );
+  const cancelPollProgress = useCallback(() => {
+    pollHandleRef.current?.cancel();
+    pollHandleRef.current = null;
   }, []);
 
-  const pollProgress = useCallback(
-    async (id: string) => {
-      if (!mountedRef.current) return;
+  // ── Step 3: Poll for progress ──
+  const beginPolling = useCallback(
+    (id: string) => {
+      cancelPollProgress();
 
-      // Check timeout
-      if (hasGenerationPollingTimedOut(startTimeRef.current, Date.now())) {
-        setPhase("timeout");
-        dispatch({ type: "GENERATION_FAIL" });
-        return;
-      }
+      const handle = startProposalGenerationPoll<ApiSection>({
+        proposalId: id,
+        fetchFn: authFetch,
+        startedAt: startTimeRef.current,
+        shouldContinue: () => mountedRef.current,
+        onSnapshot: (data, summary) => {
+          const apiSections: ApiSection[] = data.sections || [];
+          setSections(apiSections);
 
-      try {
-        if (!mountedRef.current) return;
-        const data =
-          await fetchProposalGenerationSnapshot<ApiSection>(id, authFetch);
-        if (!mountedRef.current) return;
-        if (!data) {
-          schedulePoll(id);
-          return;
-        }
+          const sectionProgress: SectionProgress[] = apiSections.map(
+            (section: ApiSection) => ({
+              type: section.section_type,
+              title: section.title,
+              status:
+                section.generation_status === "completed" ||
+                section.generation_status === "failed" ||
+                section.generation_status === "generating"
+                  ? (section.generation_status as
+                      | "completed"
+                      | "failed"
+                      | "generating")
+                  : ("pending" as const),
+            }),
+          );
+          dispatch({ type: "SECTION_STATUS_UPDATE", sections: sectionProgress });
 
-        const apiSections: ApiSection[] = data.sections || [];
-        const summary = summarizeProposalGeneration(data);
+          if (summary.totalCount > 0 && !progressShownAtRef.current) {
+            progressShownAtRef.current = Date.now();
+          }
 
-        setSections(apiSections);
+          if (summary.completedCount > 0 || summary.failedCount > 0) {
+            lastStatusChangeRef.current = Date.now();
+            setSoftTimeoutReached(false);
+          }
 
-        // Map to wizard's SectionProgress format
-        const sectionProgress: SectionProgress[] = apiSections.map(
-          (s: ApiSection) => ({
-            type: s.section_type,
-            title: s.title,
-            status:
-              s.generation_status === "completed" ||
-              s.generation_status === "failed" ||
-              s.generation_status === "generating"
-                ? (s.generation_status as "completed" | "failed" | "generating")
-                : ("pending" as const),
-          }),
-        );
-        dispatch({ type: "SECTION_STATUS_UPDATE", sections: sectionProgress });
-
-        // Track when we first show progress
-        if (summary.totalCount > 0 && !progressShownAtRef.current) {
-          progressShownAtRef.current = Date.now();
-        }
-
-        // Track status changes for soft timeout
-        const hasStatusChange =
-          summary.completedCount > 0 || summary.failedCount > 0;
-        if (hasStatusChange) {
-          lastStatusChangeRef.current = Date.now();
-          setSoftTimeoutReached(false);
-        }
-
-        // Check if generation is complete
-        if (summary.phase !== "generating") {
+          if (summary.phase === "generating") {
+            setPhase("generating");
+          }
+        },
+        onTerminal: (_data, summary) => {
           if (summary.phase === "failed") {
-            // All sections failed
             setPhase("failed");
             setError("All sections failed to generate. Please try again.");
             dispatch({ type: "GENERATION_FAIL" });
-          } else {
-            // Generation complete (possibly with some failed sections)
-            setPhase("complete");
-            dispatch({ type: "GENERATION_COMPLETE" });
+            return;
           }
-          return;
+
+          setPhase("complete");
+          dispatch({ type: "GENERATION_COMPLETE" });
+        },
+        onTimeout: () => {
+          setPhase("timeout");
+          dispatch({ type: "GENERATION_FAIL" });
+        },
+      });
+
+      pollHandleRef.current = handle;
+      void handle.promise.finally(() => {
+        if (pollHandleRef.current === handle) {
+          pollHandleRef.current = null;
         }
-
-        // Continue polling
-        setPhase("generating");
-        schedulePoll(id);
-      } catch {
-        // Network error — retry
-        if (mountedRef.current) schedulePoll(id);
-      }
+      });
     },
-    [authFetch, dispatch, schedulePoll],
+    [authFetch, cancelPollProgress, dispatch],
   );
-
-  // Keep the ref in sync with the latest pollProgress
-  pollProgressRef.current = pollProgress;
 
   // ── Orchestrate: create → trigger → poll ──
   const startGeneration = useCallback(async () => {
@@ -397,8 +367,9 @@ export function StepGenerate() {
     generationStartedRef.current = true;
 
     startTimeRef.current = Date.now();
-    pollCountRef.current = 0;
     progressShownAtRef.current = null;
+    lastStatusChangeRef.current = Date.now();
+    setSoftTimeoutReached(false);
 
     const id = await createProposal();
     if (!id) {
@@ -413,8 +384,8 @@ export function StepGenerate() {
     }
 
     setPhase("generating");
-    pollProgress(id);
-  }, [createProposal, triggerGeneration, pollProgress]);
+    beginPolling(id);
+  }, [beginPolling, createProposal, triggerGeneration]);
 
   // ── Auto-start on mount (respects capability gate) ──
   useEffect(() => {
@@ -426,7 +397,10 @@ export function StepGenerate() {
       // Resume polling for an in-progress generation
       setPhase("generating");
       setProposalId(state.proposalId);
-      pollProgress(state.proposalId);
+      startTimeRef.current = Date.now();
+      lastStatusChangeRef.current = Date.now();
+      setSoftTimeoutReached(false);
+      beginPolling(state.proposalId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [needsGate]);
@@ -439,13 +413,13 @@ export function StepGenerate() {
         proposalId &&
         phase === "generating"
       ) {
-        pollProgress(proposalId);
+        beginPolling(proposalId);
       }
     };
     document.addEventListener("visibilitychange", handleVisibility);
     return () =>
       document.removeEventListener("visibilitychange", handleVisibility);
-  }, [proposalId, phase, pollProgress]);
+  }, [beginPolling, phase, proposalId]);
 
   // ── Soft timeout: warn after 3 min with no section status changes ──
   useEffect(() => {
@@ -471,24 +445,31 @@ export function StepGenerate() {
   const handleRetry = useCallback(async () => {
     setError(null);
     setSections([]);
-    if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
+    cancelPollProgress();
     startTimeRef.current = Date.now();
-    pollCountRef.current = 0;
     progressShownAtRef.current = null;
+    lastStatusChangeRef.current = Date.now();
+    setSoftTimeoutReached(false);
 
     if (proposalId) {
       // Proposal exists — just re-trigger generation and poll
       const triggered = await triggerGeneration(proposalId);
       if (triggered) {
         setPhase("generating");
-        pollProgress(proposalId);
+        beginPolling(proposalId);
       }
     } else {
       // No proposal yet — full restart
       generationStartedRef.current = false;
       startGeneration();
     }
-  }, [proposalId, triggerGeneration, pollProgress, startGeneration]);
+  }, [
+    beginPolling,
+    cancelPollProgress,
+    proposalId,
+    startGeneration,
+    triggerGeneration,
+  ]);
 
   // ── Navigate to proposal ──
   const handleViewProposal = () => {
@@ -694,7 +675,7 @@ export function StepGenerate() {
             onClick={() => {
               setSoftTimeoutReached(false);
               lastStatusChangeRef.current = Date.now();
-              pollProgress(proposalId);
+              beginPolling(proposalId);
             }}
             className="inline-flex items-center gap-2 rounded-lg bg-amber-500/10 px-4 py-2 text-sm font-medium text-amber-700 hover:bg-amber-500/20 transition-colors"
           >
