@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   Upload,
   FileText,
@@ -51,6 +51,25 @@ export function FlexibleIntake({
   const [processingStep, setProcessingStep] = useState<
     "extracting" | "researching" | null
   >(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const elapsedRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Elapsed timer — ticks every second while processing
+  useEffect(() => {
+    if (isProcessing) {
+      setElapsedSeconds(0);
+      elapsedRef.current = setInterval(
+        () => setElapsedSeconds((s) => s + 1),
+        1000,
+      );
+    } else if (elapsedRef.current) {
+      clearInterval(elapsedRef.current);
+      elapsedRef.current = null;
+    }
+    return () => {
+      if (elapsedRef.current) clearInterval(elapsedRef.current);
+    };
+  }, [isProcessing]);
+
   const [uploadProgress, setUploadProgress] = useState<Record<string, string>>(
     {},
   );
@@ -101,7 +120,10 @@ export function FlexibleIntake({
             return { success: true };
           }
           if (data.processing_status === ProcessingStatus.FAILED) {
-            logger.error("Document processing failed", undefined, { fileName, processingError: data.processing_error });
+            logger.error("Document processing failed", undefined, {
+              fileName,
+              processingError: data.processing_error,
+            });
             return {
               success: false,
               error: data.processing_error || undefined,
@@ -118,7 +140,8 @@ export function FlexibleIntake({
     }
     return {
       success: false,
-      error: "Processing timed out. Large documents may take longer — please refresh the page in a minute to check.",
+      error:
+        "Processing timed out. Large documents may take longer — please refresh the page in a minute to check.",
     };
   };
 
@@ -226,7 +249,10 @@ export function FlexibleIntake({
       const roleMap: Record<string, DocumentRole> | undefined =
         uploadedDocIds.length > 1
           ? Object.fromEntries(
-              Object.values(documentRoles).map(({ docId, role }) => [docId, role]),
+              Object.values(documentRoles).map(({ docId, role }) => [
+                docId,
+                role,
+              ]),
             )
           : undefined;
 
@@ -249,8 +275,12 @@ export function FlexibleIntake({
           errorMessage = err.error || errorMessage;
         } catch {
           // Non-JSON response (e.g., Vercel timeout HTML page)
-          if (extractResponse.status === 504 || extractResponse.status === 502) {
-            errorMessage = "The analysis timed out. Please try again — large documents may take a moment.";
+          if (
+            extractResponse.status === 504 ||
+            extractResponse.status === 502
+          ) {
+            errorMessage =
+              "The analysis timed out. Please try again — large documents may take a moment.";
           }
         }
         throw new Error(errorMessage);
@@ -266,7 +296,8 @@ export function FlexibleIntake({
       if (!extracted.inferred) extracted.inferred = {};
       if (!extracted.gaps) extracted.gaps = [];
       if (!extracted.input_type) extracted.input_type = "other";
-      if (!extracted.input_summary) extracted.input_summary = "Document analyzed";
+      if (!extracted.input_summary)
+        extracted.input_summary = "Document analyzed";
 
       // If research enabled, call research API
       let research: ClientResearch | null = null;
@@ -508,7 +539,9 @@ export function FlexibleIntake({
                     <div className="flex items-center justify-between p-3">
                       <div className="flex items-center gap-3">
                         <File className="h-5 w-5 text-[var(--foreground-muted)] shrink-0" />
-                        <span className="text-sm font-medium truncate max-w-[200px]">{file.name}</span>
+                        <span className="text-sm font-medium truncate max-w-[200px]">
+                          {file.name}
+                        </span>
                         <span className="text-xs text-[var(--foreground-muted)]">
                           {(file.size / 1024 / 1024).toFixed(1)} MB
                         </span>
@@ -581,7 +614,10 @@ export function FlexibleIntake({
               {/* Role legend — shown when multiple ready files have roles assigned */}
               {files.length > 1 && anyFileSucceeded && (
                 <p className="text-xs text-[var(--foreground-muted)] pt-1">
-                  Label each document so the AI knows how to prioritize them during extraction. Amendments override the Primary RFP; Q&amp;A Addenda are authoritative for any questions they address.
+                  Label each document so the AI knows how to prioritize them
+                  during extraction. Amendments override the Primary RFP;
+                  Q&amp;A Addenda are authoritative for any questions they
+                  address.
                 </p>
               )}
             </div>
@@ -632,7 +668,10 @@ export function FlexibleIntake({
               <input
                 type="url"
                 value={urlInput}
-                onChange={(e) => { setUrlInput(e.target.value); setUrlFetched(false); }}
+                onChange={(e) => {
+                  setUrlInput(e.target.value);
+                  setUrlFetched(false);
+                }}
                 placeholder="https://sam.gov/opp/... or any public solicitation page"
                 className="flex-1 px-4 py-2 rounded-xl border border-[var(--border)] bg-[var(--input-bg)] text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:border-[var(--accent)] focus:outline-none text-sm"
               />
@@ -655,10 +694,14 @@ export function FlexibleIntake({
                     setPastedContent(data.content);
                     setUrlFetched(true);
                     if (data.truncated) {
-                      setError("Page was very large — content was trimmed to the first 100,000 characters.");
+                      setError(
+                        "Page was very large — content was trimmed to the first 100,000 characters.",
+                      );
                     }
                   } catch {
-                    setError("Failed to fetch URL. Check the link and try again.");
+                    setError(
+                      "Failed to fetch URL. Check the link and try again.",
+                    );
                   } finally {
                     setUrlFetching(false);
                   }
@@ -666,12 +709,18 @@ export function FlexibleIntake({
                 disabled={urlFetching || !urlInput.trim()}
                 className="btn-primary px-4 py-2 text-sm flex items-center gap-2 disabled:opacity-50"
               >
-                {urlFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
+                {urlFetching ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Link2 className="h-4 w-4" />
+                )}
                 {urlFetching ? "Fetching..." : "Fetch"}
               </button>
             </div>
             <p className="text-xs text-[var(--foreground-muted)]">
-              Works with public SAM.gov pages, agency portals, and any publicly accessible solicitation page. For login-protected or PDF-only pages, download the file and use Upload instead.
+              Works with public SAM.gov pages, agency portals, and any publicly
+              accessible solicitation page. For login-protected or PDF-only
+              pages, download the file and use Upload instead.
             </p>
           </div>
 
@@ -681,7 +730,9 @@ export function FlexibleIntake({
                 <label className="block text-sm font-medium text-[var(--foreground-muted)]">
                   Extracted content — review and edit if needed
                 </label>
-                <span className="text-xs text-[var(--foreground-muted)]">{pastedContent.length.toLocaleString()} chars</span>
+                <span className="text-xs text-[var(--foreground-muted)]">
+                  {pastedContent.length.toLocaleString()} chars
+                </span>
               </div>
               <textarea
                 value={pastedContent}
@@ -697,6 +748,25 @@ export function FlexibleIntake({
       {/* Processing progress indicator */}
       {isProcessing && (
         <div className="rounded-xl border border-[var(--accent-muted)] bg-[var(--accent-subtle)] p-5">
+          {/* Progress bar */}
+          <div className="mb-4">
+            <div
+              className="h-2 rounded-full bg-[var(--background-tertiary)] overflow-hidden"
+              role="progressbar"
+              aria-valuenow={processingStep === "researching" ? 66 : 33}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label={`Extraction progress: ${processingStep === "researching" ? "Researching client" : "Extracting fields"}`}
+            >
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-[var(--accent)] to-emerald-500 transition-all duration-700 ease-out"
+                style={{
+                  width: processingStep === "researching" ? "66%" : "33%",
+                }}
+              />
+            </div>
+          </div>
+
           <div className="space-y-3">
             <ExtractionStep
               label="Reading & parsing document content"
@@ -704,7 +774,13 @@ export function FlexibleIntake({
             />
             <ExtractionStep
               label="Extracting structured fields with AI"
-              status={processingStep === "extracting" ? "active" : processingStep === "researching" ? "done" : "pending"}
+              status={
+                processingStep === "extracting"
+                  ? "active"
+                  : processingStep === "researching"
+                    ? "done"
+                    : "pending"
+              }
             />
             {researchEnabled && (
               <ExtractionStep
@@ -713,8 +789,11 @@ export function FlexibleIntake({
               />
             )}
           </div>
+
           <p className="mt-4 text-xs text-[var(--foreground-subtle)]">
-            This typically takes 15-45 seconds depending on document complexity.
+            {elapsedSeconds >= 30
+              ? `Still working... ${elapsedSeconds}s elapsed`
+              : "This typically takes 15-45 seconds depending on document complexity."}
           </p>
         </div>
       )}
@@ -731,7 +810,9 @@ export function FlexibleIntake({
           {isProcessing ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              {processingStep === "researching" ? "Researching client..." : "Extracting..."}
+              {processingStep === "researching"
+                ? "Researching client..."
+                : "Extracting..."}
             </>
           ) : anyFilesProcessing ? (
             <>

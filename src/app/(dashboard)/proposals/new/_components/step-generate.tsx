@@ -131,7 +131,14 @@ function ProgressBar({
           {percent}%
         </span>
       </div>
-      <div className="h-2.5 rounded-full bg-[var(--background-tertiary)] overflow-hidden">
+      <div
+        className="h-2.5 rounded-full bg-[var(--background-tertiary)] overflow-hidden"
+        role="progressbar"
+        aria-valuenow={percent}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={`Generation progress: ${completed} of ${total} sections complete`}
+      >
         <div
           className="h-full rounded-full bg-gradient-to-r from-[var(--accent)] to-emerald-500 transition-all duration-500 ease-out"
           style={{ width: `${percent}%` }}
