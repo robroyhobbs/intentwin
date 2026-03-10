@@ -129,6 +129,13 @@ All tables now have `organization_id` columns with RLS policies:
 
 <!-- Updated nightly by compound review -->
 
+### 2026-03-09 - Copilot Schema Fallback, ARIA Progress UX, ESLint Script Overrides
+
+- **Schema-missing fallback pattern for incremental DB migrations**: When new tables (e.g. `copilot_interventions`, `copilot_events`) haven't been migrated yet in all environments, API routes need a compatibility layer. The `isMissingCopilotSchemaError()` pattern detects PostgreSQL error codes (`PGRST205`, `42P01`) and falls back to querying existing tables (`proposals` with `generation_error`). Pattern: always build a compatibility/fallback path when adding new tables that dependent features query — don't assume migrations run before code deploys
+- **ARIA accessibility on progress indicators is a first-class requirement**: Progress bars for extraction/generation now include `role=progressbar`, `aria-valuenow`, `aria-valuemin`, `aria-valuemax` attributes plus elapsed-time timer fallback. Pattern: treat ARIA attributes as part of the component contract, not a post-hoc addition — add them in the same PR as the visual component
+- **ESLint overrides for script directories prevent false-positive CI failures**: Scripts using `require()` (e.g. CJS scripts in `scripts/`) trigger `@typescript-eslint/no-require-imports`. Fix: add targeted ESLint config overrides scoped to `scripts/**` rather than disabling the rule globally. Pattern: scope lint rule exceptions to the narrowest file glob possible
+- **Large PRs (5000+ LOC) spanning new subsystems need schema fallback from day one**: The copilot telemetry PR (#12) added 51 files and new DB tables. A follow-up PR (#13) was immediately needed to handle environments without the migration. Pattern: when a PR introduces new DB schema, include the fallback/compatibility layer in the same PR, not as a follow-up
+
 ### 2026-03-07 - SDK Migration Finalization, Model Availability, Env Var Cleanup
 
 - **Gemini model availability changes without notice — fallback models must be verified**: `gemini-2.0-flash` was set as the fallback model but became unavailable to new API keys. Replaced with `gemini-2.5-flash-lite` as the stable, high-quota equivalent. Pattern: pin fallback models to current "stable" tier, not previous-gen models — Google retires older models from new key provisioning without deprecation warnings
