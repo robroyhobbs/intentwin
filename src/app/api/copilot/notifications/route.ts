@@ -8,10 +8,15 @@ import {
 import {
   ACTIVE_NOTIFICATION_STATUSES,
   canManageCopilotInterventions,
+  type CopilotNotification,
   mapCopilotNotification,
   type CopilotNotificationFilter,
   type CopilotNotificationStatus,
 } from "@/lib/copilot/notifications";
+import {
+  fetchCompatibilityNotifications,
+  isMissingCopilotSchemaError,
+} from "@/lib/copilot/compatibility";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext } from "@/lib/supabase/auth-api";
 import { createRequestLogger } from "@/lib/utils/logger";
@@ -92,9 +97,21 @@ async function fetchNotificationData(
   ]);
 
   if (error || activeCountResult.error) {
+    if (isMissingCopilotSchemaError(error ?? activeCountResult.error)) {
+      const fallbackLimit =
+        filters.status === "all" || filters.status === "active" || filters.status === "open"
+          ? filters.limit
+          : 0;
+      return fetchCompatibilityNotifications(
+        adminClient,
+        organizationId,
+        fallbackLimit,
+      );
+    }
+
     return {
       error: error ?? activeCountResult.error,
-      notifications: [] as NotificationRow[],
+      notifications: [] as CopilotNotification[],
       activeCount: 0,
     };
   }

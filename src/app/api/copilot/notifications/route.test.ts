@@ -29,7 +29,7 @@ function mockContext(role: "admin" | "manager" | "member" = "member") {
 function setupMockSupabase(opts?: {
   queries: Array<{
     data?: unknown[] | null;
-    error?: { message: string } | null;
+    error?: { code?: string; message: string } | null;
     count?: number | null;
   }>;
 }) {
@@ -42,18 +42,20 @@ function setupMockSupabase(opts?: {
     const select = vi.fn(() => chain);
     const eq = vi.fn(() => chain);
     const inFilter = vi.fn(() => chain);
+    const not = vi.fn(() => chain);
     const order = vi.fn(() => chain);
     const limit = vi.fn(() => Promise.resolve(result));
     const chain = {
       select,
       eq,
       in: inFilter,
+      not,
       order,
       limit,
       then: Promise.resolve(result).then.bind(Promise.resolve(result)),
     };
 
-    return { chain, select, eq, inFilter, order, limit };
+    return { chain, select, eq, inFilter, not, order, limit };
   });
 
   let queryIndex = 0;
@@ -265,5 +267,72 @@ describe("GET /api/copilot/notifications", () => {
       "open",
       "awaiting_approval",
     ]);
+  });
+
+  it("falls back to proposal failures when copilot tables are unavailable", async () => {
+    (getUserContext as ReturnType<typeof vi.fn>).mockResolvedValue(
+      mockContext("admin"),
+    );
+    const mockDb = setupMockSupabase({
+      queries: [
+        {
+          error: {
+            code: "PGRST205",
+            message: "Could not find the table 'public.copilot_interventions' in the schema cache",
+          },
+        },
+        {
+          error: {
+            code: "PGRST205",
+            message: "Could not find the table 'public.copilot_interventions' in the schema cache",
+          },
+          count: 0,
+        },
+        {
+          data: [
+            {
+              id: "proposal-compat-1",
+              title: "Apex Federal Capture Plan",
+              generation_error: "Timed out while generating sections",
+              updated_at: "2026-03-09T09:03:07.775Z",
+            },
+          ],
+        },
+        {
+          count: 1,
+        },
+      ],
+    });
+
+    const { GET } = await loadRoute();
+    const response = await GET(makeRequest(`${BASE_URL}?limit=5`));
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      notifications: [
+        {
+          id: "compat-proposal-compat-1",
+          title: "Proposal generation issue detected",
+          message:
+            "Apex Federal Capture Plan hit a generation issue. Open the proposal to review the latest error and retry failed sections.",
+          status: "open",
+          assignedAgent: "reliability-overseer",
+          actionMode: "automatic",
+          createdAt: "2026-03-09T09:03:07.775Z",
+          href: "/proposals/proposal-compat-1",
+          hrefLabel: "View proposal",
+          requiresApproval: false,
+        },
+      ],
+      activeCount: 1,
+      canManageInterventions: true,
+    });
+    expect(mockDb.from).toHaveBeenNthCalledWith(3, "proposals");
+    expect(mockDb.from).toHaveBeenNthCalledWith(4, "proposals");
+    expect(mockDb.queries[2]?.not).toHaveBeenCalledWith(
+      "generation_error",
+      "is",
+      null,
+    );
   });
 });
