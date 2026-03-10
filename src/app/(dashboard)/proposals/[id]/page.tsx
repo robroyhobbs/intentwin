@@ -25,11 +25,11 @@ import {
   isRegenerationTerminal,
   markSectionGenerating,
 } from "@/lib/proposals/regeneration-poll";
-import {
-  calculateGenerationPollDelay,
-  hasGenerationPollingTimedOut,
-} from "@/lib/proposals/generation-poll";
 import { startBackgroundGeneration } from "@/lib/proposals/background-generation";
+import {
+  startProposalGenerationPoll,
+  type ProposalGenerationPollHandle,
+} from "@/lib/proposals/proposal-generation-runner";
 
 import type { Proposal, Section } from "./_components/types";
 import { ProposalTopBar } from "./_components/proposal-top-bar";
@@ -140,23 +140,33 @@ export default function ProposalPage() {
   const authFetch = useAuthFetch();
   const initialSectionSet = useRef(false);
   const regenPollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const generationPollHandleRef = useRef<ProposalGenerationPollHandle | null>(
+    null,
+  );
+
+  const applyProposalSnapshot = useCallback(
+    (data: { proposal: Proposal; sections?: Section[] }) => {
+      setProposal(data.proposal);
+      setSections(data.sections || []);
+
+      if (!initialSectionSet.current && data.sections?.length) {
+        const firstCompleted = data.sections.find(
+          (section) =>
+            section.generation_status === GenerationStatus.COMPLETED,
+        );
+        setActiveSection(firstCompleted?.id || data.sections[0].id);
+        initialSectionSet.current = true;
+      }
+    },
+    [],
+  );
 
   const fetchProposal = useCallback(async () => {
     try {
       const response = await authFetch(`/api/proposals/${id}`);
       if (!response.ok) throw new Error("Failed to fetch proposal");
       const data = await response.json();
-      setProposal(data.proposal);
-      setSections(data.sections || []);
-
-      // Only set initial active section once
-      if (!initialSectionSet.current && data.sections?.length > 0) {
-        const firstCompleted = data.sections?.find(
-          (s: Section) => s.generation_status === GenerationStatus.COMPLETED,
-        );
-        setActiveSection(firstCompleted?.id || data.sections[0].id);
-        initialSectionSet.current = true;
-      }
+      applyProposalSnapshot(data);
     } catch (error) {
       logger.error("Failed to fetch proposal", error);
       toast.error("Failed to load proposal");
@@ -164,7 +174,7 @@ export default function ProposalPage() {
       setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [applyProposalSnapshot, id]);
 
   const fetchReviews = useCallback(async () => {
     try {
@@ -258,40 +268,39 @@ export default function ProposalPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [proposalInReview, sections]);
 
-  // Poll during generation with exponential backoff and 10-minute timeout
   useEffect(() => {
+    generationPollHandleRef.current?.cancel();
+    generationPollHandleRef.current = null;
+
     if (proposal?.status !== ProposalStatus.GENERATING) return;
-    const startedAt = Date.now();
-    let stopped = false;
-    let pollCount = 0;
 
-    const poll = async () => {
-      if (stopped) return;
-
-      if (hasGenerationPollingTimedOut(startedAt, Date.now())) {
+    const handle = startProposalGenerationPoll<Section>({
+      proposalId: id,
+      fetchFn: authFetch,
+      onSnapshot: (snapshot) => {
+        if (snapshot.proposal) {
+          applyProposalSnapshot({
+            proposal: snapshot.proposal as Proposal,
+            sections: (snapshot.sections as Section[] | undefined) ?? [],
+          });
+        }
+      },
+      onTimeout: async () => {
         await fetchProposal();
         toast.error(
           "Generation is taking longer than expected. Please refresh the page.",
         );
-        return;
-      }
-
-      await fetchProposal();
-      pollCount++;
-
-      if (!stopped) {
-        const delay = calculateGenerationPollDelay(pollCount);
-        setTimeout(poll, delay);
-      }
-    };
-
-    // Start first poll immediately
-    poll();
+      },
+    });
+    generationPollHandleRef.current = handle;
 
     return () => {
-      stopped = true;
+      handle.cancel();
+      if (generationPollHandleRef.current === handle) {
+        generationPollHandleRef.current = null;
+      }
     };
-  }, [proposal?.status, fetchProposal]);
+  }, [applyProposalSnapshot, authFetch, fetchProposal, id, proposal?.status]);
 
   async function handleGenerate() {
     setGenerating(true);
@@ -427,6 +436,7 @@ export default function ProposalPage() {
   // Cleanup regen polling on unmount
   useEffect(() => {
     return () => {
+      generationPollHandleRef.current?.cancel();
       if (regenPollTimerRef.current) clearTimeout(regenPollTimerRef.current);
     };
   }, []);
