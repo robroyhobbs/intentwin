@@ -6,7 +6,6 @@ import type {
 } from "../create-types";
 import { logger } from "@/lib/utils/logger";
 import {
-  areAllSectionsTerminal,
   calculateGenerationPollDelay,
   hasGenerationPollingTimedOut,
 } from "@/lib/proposals/generation-poll";
