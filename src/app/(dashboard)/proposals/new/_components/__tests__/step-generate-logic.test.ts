@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest";
 import type { WizardState } from "../wizard-types";
 import { INITIAL_STATE } from "../wizard-reducer";
+import {
+  calculateGenerationPollDelay,
+  hasGenerationPollingTimedOut,
+} from "@/lib/proposals/generation-poll";
 
 /**
  * Tests for logic extracted from step-generate.tsx.
@@ -13,26 +17,11 @@ import { INITIAL_STATE } from "../wizard-reducer";
 // Constants (mirrored from step-generate.tsx)
 // ────────────────────────────────────────────────────────
 
-const POLL_MIN_INTERVAL = 2000;
-const POLL_MAX_INTERVAL = 10000;
-const POLL_BACKOFF_FACTOR = 1.5;
-const POLL_TIMEOUT = 10 * 60 * 1000;
 const MIN_PROGRESS_DISPLAY_MS = 3000;
 
 // ────────────────────────────────────────────────────────
 // Extracted logic functions (same logic as in the component)
 // ────────────────────────────────────────────────────────
-
-function calculatePollInterval(pollCount: number): number {
-  return Math.min(
-    POLL_MIN_INTERVAL * Math.pow(POLL_BACKOFF_FACTOR, pollCount),
-    POLL_MAX_INTERVAL,
-  );
-}
-
-function isTimedOut(startTime: number, now: number): boolean {
-  return now - startTime > POLL_TIMEOUT;
-}
 
 function buildProposalTitle(state: Pick<WizardState, "clientName" | "solicitationType">): string {
   return state.clientName
@@ -59,6 +48,7 @@ function buildProposalBody(state: WizardState) {
       competitive_intel: state.competitiveIntel,
       tone: state.tone,
       selected_sections: state.selectedSections,
+      selected_product_ids: state.selectedProductIds,
     },
     win_strategy_data: state.winStrategy,
     bid_evaluation: state.bidEvaluation,
@@ -116,42 +106,48 @@ function shouldDelayNavigation(progressShownAt: number | null, now: number): num
 describe("step-generate logic", () => {
   describe("polling backoff", () => {
     it("starts at 2 seconds", () => {
-      expect(calculatePollInterval(0)).toBe(2000);
+      expect(calculateGenerationPollDelay(0)).toBe(2000);
     });
 
     it("increases by 1.5x each poll", () => {
-      expect(calculatePollInterval(1)).toBe(3000);
-      expect(calculatePollInterval(2)).toBe(4500);
-      expect(calculatePollInterval(3)).toBe(6750);
+      expect(calculateGenerationPollDelay(1)).toBe(3000);
+      expect(calculateGenerationPollDelay(2)).toBe(4500);
+      expect(calculateGenerationPollDelay(3)).toBe(6750);
     });
 
     it("caps at 10 seconds", () => {
-      expect(calculatePollInterval(10)).toBe(10000);
-      expect(calculatePollInterval(20)).toBe(10000);
-      expect(calculatePollInterval(100)).toBe(10000);
+      expect(calculateGenerationPollDelay(10)).toBe(10000);
+      expect(calculateGenerationPollDelay(20)).toBe(10000);
+      expect(calculateGenerationPollDelay(100)).toBe(10000);
     });
 
     it("reaches cap around poll count 5", () => {
       // 2000 * 1.5^4 = 10125 > 10000
-      expect(calculatePollInterval(4)).toBe(10000);
+      expect(calculateGenerationPollDelay(4)).toBe(10000);
     });
   });
 
   describe("timeout detection", () => {
     it("returns false within timeout window", () => {
       const start = Date.now();
-      expect(isTimedOut(start, start + 1000)).toBe(false);
-      expect(isTimedOut(start, start + 5 * 60 * 1000)).toBe(false);
+      expect(hasGenerationPollingTimedOut(start, start + 1000)).toBe(false);
+      expect(
+        hasGenerationPollingTimedOut(start, start + 5 * 60 * 1000),
+      ).toBe(false);
     });
 
     it("returns true after 10 minutes", () => {
       const start = Date.now();
-      expect(isTimedOut(start, start + POLL_TIMEOUT + 1)).toBe(true);
+      expect(
+        hasGenerationPollingTimedOut(start, start + 10 * 60 * 1000 + 1),
+      ).toBe(true);
     });
 
     it("returns false at exactly 10 minutes", () => {
       const start = Date.now();
-      expect(isTimedOut(start, start + POLL_TIMEOUT)).toBe(false);
+      expect(
+        hasGenerationPollingTimedOut(start, start + 10 * 60 * 1000),
+      ).toBe(false);
     });
   });
 
@@ -193,6 +189,7 @@ describe("step-generate logic", () => {
         competitiveIntel: "Deloitte",
         tone: "executive",
         selectedSections: ["exec_summary", "approach"],
+        selectedProductIds: ["prod-1", "prod-2"],
         winStrategy: {
           win_themes: ["Cloud"],
           success_metrics: [],
@@ -208,6 +205,7 @@ describe("step-generate logic", () => {
       expect(body.intake_data.client_name).toBe("Test Corp");
       expect(body.intake_data.tone).toBe("executive");
       expect(body.intake_data.selected_sections).toEqual(["exec_summary", "approach"]);
+      expect(body.intake_data.selected_product_ids).toEqual(["prod-1", "prod-2"]);
       expect(body.win_strategy_data?.win_themes).toEqual(["Cloud"]);
       expect(body.bid_evaluation).toBeNull();
       expect(body.client_research).toBeNull();
@@ -218,6 +216,7 @@ describe("step-generate logic", () => {
       expect(body.title).toBe("RFP Proposal");
       expect(body.intake_data.client_name).toBe("");
       expect(body.intake_data.selected_sections).toEqual([]);
+      expect(body.intake_data.selected_product_ids).toEqual([]);
       expect(body.win_strategy_data).toBeNull();
     });
   });

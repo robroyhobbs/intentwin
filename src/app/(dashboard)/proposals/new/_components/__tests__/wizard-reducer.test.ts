@@ -294,6 +294,14 @@ describe("wizardReducer", () => {
       });
       expect(s.selectedSections).toEqual(["executive_summary", "approach"]);
     });
+
+    it("stores selected product ids", () => {
+      const s = dispatch(INITIAL_STATE, {
+        type: "UPDATE_CONFIG",
+        payload: { selectedProductIds: ["prod-1", "prod-2"] },
+      });
+      expect(s.selectedProductIds).toEqual(["prod-1", "prod-2"]);
+    });
   });
 
   describe("generation", () => {
@@ -302,6 +310,18 @@ describe("wizardReducer", () => {
       expect(s.proposalId).toBe("abc-123");
       expect(s.generationStatus).toBe("generating");
       expect(s.currentStep).toBe(5);
+    });
+
+    it("GENERATION_START preserves selected product ids", () => {
+      const base = dispatch(INITIAL_STATE, {
+        type: "UPDATE_CONFIG",
+        payload: { selectedProductIds: ["prod-9"] },
+      });
+      const s = dispatch(base, {
+        type: "GENERATION_START",
+        proposalId: "abc-123",
+      });
+      expect(s.selectedProductIds).toEqual(["prod-9"]);
     });
 
     it("SECTION_STATUS_UPDATE updates section progress", () => {

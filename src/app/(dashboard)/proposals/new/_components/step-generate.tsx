@@ -36,16 +36,20 @@ import { useWizard } from "./wizard-provider";
 import type { SectionProgress } from "@/lib/proposal-core/wizard-state";
 import { computeCapabilityAlignment } from "@/lib/ai/pipeline/capability-alignment";
 import { CapabilityWarningGate } from "@/components/capability-warning-gate";
-import { orchestrateGeneration } from "@/lib/ai/pipeline/client-orchestrate";
+import {
+  calculateGenerationPollDelay,
+  hasGenerationPollingTimedOut,
+} from "@/lib/proposals/generation-poll";
+import { startBackgroundGeneration } from "@/lib/proposals/background-generation";
+import {
+  fetchProposalGenerationSnapshot,
+  summarizeProposalGeneration,
+} from "@/lib/proposals/proposal-generation-status";
 
 // ────────────────────────────────────────────────────────
 // Constants
 // ────────────────────────────────────────────────────────
 
-const POLL_MIN_INTERVAL = 2000; // 2 seconds
-const POLL_MAX_INTERVAL = 10000; // 10 seconds
-const POLL_BACKOFF_FACTOR = 1.5;
-const POLL_TIMEOUT = 10 * 60 * 1000; // 10 minutes
 const MIN_PROGRESS_DISPLAY_MS = 3000; // Show progress for at least 3s before redirect
 const SOFT_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes — show "taking longer" warning
 const SOFT_TIMEOUT_CHECK_INTERVAL = 30_000; // Check every 30 seconds
@@ -225,6 +229,7 @@ export function StepGenerate() {
           competitive_intel: state.competitiveIntel,
           tone: state.tone,
           selected_sections: state.selectedSections,
+          selected_product_ids: state.selectedProductIds,
           rfp_analysis: state.extractedData?.rfp_analysis ?? null,
         },
         win_strategy_data: state.winStrategy,
@@ -273,31 +278,7 @@ export function StepGenerate() {
       setPhase("triggering");
 
       try {
-        const response = await authFetch(
-          `/api/proposals/${id}/generate/setup`,
-          { method: "POST" },
-        );
-
-        if (!response.ok) {
-          const data = await response.json().catch(() => ({}));
-          if (response.status === 409) {
-            // Already generating — continue to polling
-            return true;
-          }
-          throw new Error(
-            (data as Record<string, string>).error ||
-              `Failed to start generation (${response.status})`,
-          );
-        }
-
-        const setupData = await response.json();
-        const setupSections = (setupData.sections ?? []) as Array<{
-          id: string;
-          sectionType: string;
-          title: string;
-        }>;
-        // Fire-and-forget: generate sections in background; polling handles UI
-        void orchestrateGeneration(id, setupSections, authFetch);
+        await startBackgroundGeneration(id, authFetch);
         return true;
       } catch (err) {
         const message =
@@ -318,10 +299,7 @@ export function StepGenerate() {
 
   const schedulePoll = useCallback((id: string) => {
     if (!mountedRef.current) return;
-    const interval = Math.min(
-      POLL_MIN_INTERVAL * Math.pow(POLL_BACKOFF_FACTOR, pollCountRef.current),
-      POLL_MAX_INTERVAL,
-    );
+    const interval = calculateGenerationPollDelay(pollCountRef.current);
     pollCountRef.current++;
     pollTimerRef.current = setTimeout(
       () => pollProgressRef.current?.(id),
@@ -334,27 +312,24 @@ export function StepGenerate() {
       if (!mountedRef.current) return;
 
       // Check timeout
-      if (Date.now() - startTimeRef.current > POLL_TIMEOUT) {
+      if (hasGenerationPollingTimedOut(startTimeRef.current, Date.now())) {
         setPhase("timeout");
         dispatch({ type: "GENERATION_FAIL" });
         return;
       }
 
       try {
-        const response = await authFetch(`/api/proposals/${id}`);
         if (!mountedRef.current) return;
-
-        if (!response.ok) {
-          // Retry on poll failure (network issues)
+        const data =
+          await fetchProposalGenerationSnapshot<ApiSection>(id, authFetch);
+        if (!mountedRef.current) return;
+        if (!data) {
           schedulePoll(id);
           return;
         }
 
-        const data = await response.json();
-        if (!mountedRef.current) return;
-
         const apiSections: ApiSection[] = data.sections || [];
-        const proposalStatus: string = data.proposal?.status || "";
+        const summary = summarizeProposalGeneration(data);
 
         setSections(apiSections);
 
@@ -373,37 +348,22 @@ export function StepGenerate() {
         );
         dispatch({ type: "SECTION_STATUS_UPDATE", sections: sectionProgress });
 
-        const completedCount = apiSections.filter(
-          (s: ApiSection) => s.generation_status === "completed",
-        ).length;
-        const failedCount = apiSections.filter(
-          (s: ApiSection) => s.generation_status === "failed",
-        ).length;
-        const totalCount = apiSections.length;
-
         // Track when we first show progress
-        if (totalCount > 0 && !progressShownAtRef.current) {
+        if (summary.totalCount > 0 && !progressShownAtRef.current) {
           progressShownAtRef.current = Date.now();
         }
 
         // Track status changes for soft timeout
-        const hasStatusChange = apiSections.some(
-          (s: ApiSection) =>
-            s.generation_status === "completed" ||
-            s.generation_status === "failed",
-        );
+        const hasStatusChange =
+          summary.completedCount > 0 || summary.failedCount > 0;
         if (hasStatusChange) {
           lastStatusChangeRef.current = Date.now();
           setSoftTimeoutReached(false);
         }
 
         // Check if generation is complete
-        if (
-          proposalStatus !== "generating" &&
-          totalCount > 0 &&
-          completedCount + failedCount === totalCount
-        ) {
-          if (failedCount === totalCount) {
+        if (summary.phase !== "generating") {
+          if (summary.phase === "failed") {
             // All sections failed
             setPhase("failed");
             setError("All sections failed to generate. Please try again.");

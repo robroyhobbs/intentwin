@@ -4,6 +4,7 @@ import { scoreFromRequirements } from "@/lib/ai/bid-scoring";
 import { unauthorized, badRequest, ok, serverError } from "@/lib/api/response";
 import { logger } from "@/lib/utils/logger";
 import { withRetry } from "@/lib/retry/with-retry";
+import { isTransientAiError } from "@/lib/retry/retry-policy";
 
 /** AI scoring call + L1 context fetch */
 export const maxDuration = 300;
@@ -51,7 +52,8 @@ export async function POST(request: NextRequest) {
       {
         maxRetries: 2,
         baseDelay: 2000,
-        shouldRetry: () => true,
+        jitterRatio: 0.2,
+        shouldRetry: isTransientAiError,
         onRetry: (attempt, err) => {
           logger.warn("Bid evaluation retry", {
             attempt,

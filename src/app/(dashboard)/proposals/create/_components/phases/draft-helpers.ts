@@ -5,6 +5,16 @@ import type {
   SectionDraft,
 } from "../create-types";
 import { logger } from "@/lib/utils/logger";
+import {
+  areAllSectionsTerminal,
+  calculateGenerationPollDelay,
+  hasGenerationPollingTimedOut,
+} from "@/lib/proposals/generation-poll";
+import { startBackgroundGeneration } from "@/lib/proposals/background-generation";
+import {
+  fetchProposalGenerationSnapshot,
+  summarizeProposalGeneration,
+} from "@/lib/proposals/proposal-generation-status";
 
 type FetchFn = (url: string, options?: RequestInit) => Promise<Response>;
 
@@ -20,17 +30,14 @@ interface SetupSection {
   title: string;
 }
 
-interface SetupResponse {
-  sections: SetupSection[];
-  sectionCount: number;
-  warnings?: string[];
-}
-
-interface SectionResult {
-  status: "completed" | "failed";
-  content?: string;
-  error?: string;
-  differentiators?: string[];
+interface ProposalPollSection {
+  id: string;
+  section_type: string;
+  title: string;
+  section_order?: number;
+  generation_status: string;
+  generation_error?: string | null;
+  generated_content?: string | null;
 }
 
 // ── Build payload ───────────────────────────────────────────────────────────
@@ -164,24 +171,9 @@ export async function regenerateSection(
   }
 }
 
-// ── Extract error message from response ─────────────────────────────────────
-
-async function extractError(res: Response): Promise<string> {
-  try {
-    const body = await res.json();
-    return (
-      (body as Record<string, string>).error ??
-      (body as Record<string, string>).message ??
-      res.statusText
-    );
-  } catch {
-    return res.statusText;
-  }
-}
-
 // ── Map setup section to SectionDraft ───────────────────────────────────────
 
-function mapSetupSection(s: SetupSection): SectionDraft {
+function mapSetupSection(s: SetupSection, order: number): SectionDraft {
   return {
     id: s.id,
     sectionType: s.sectionType,
@@ -189,8 +181,126 @@ function mapSetupSection(s: SetupSection): SectionDraft {
     content: "",
     generationStatus: "pending",
     reviewed: false,
-    order: 0,
+    order,
   };
+}
+
+function mapProposalSection(
+  section: ProposalPollSection,
+  order: number,
+  existing?: SectionDraft,
+): SectionDraft {
+  const generationStatus =
+    section.generation_status === "completed"
+      ? "complete"
+      : section.generation_status === "failed"
+        ? "failed"
+        : section.generation_status === "generating"
+          ? "generating"
+          : "pending";
+
+  return {
+    id: section.id,
+    sectionType: section.section_type,
+    title: section.title,
+    content:
+      generationStatus === "complete"
+        ? (section.generated_content ?? "")
+        : (existing?.content ?? ""),
+    generationStatus,
+    generationError: section.generation_error ?? undefined,
+    reviewed: existing?.reviewed ?? false,
+    order: section.section_order ?? existing?.order ?? order,
+  };
+}
+
+async function setupDraftGeneration(
+  proposalId: string,
+  dispatch: Dispatch<CreateAction>,
+  fetchFn: FetchFn,
+): Promise<SetupSection[]> {
+  const { sections, status } = await startBackgroundGeneration(proposalId, fetchFn);
+
+  if (!sections || sections.length === 0) {
+    throw new Error(
+      status === "already-generating"
+        ? "Generation is already in progress. Please refresh and try again."
+        : "Setup returned zero sections — cannot generate",
+    );
+  }
+
+  dispatch({
+    type: "SET_SECTIONS",
+    sections: sections.map((section, index) => mapSetupSection(section, index)),
+  });
+
+  return sections;
+}
+
+async function pollDraftGeneration(
+  proposalId: string,
+  dispatch: Dispatch<CreateAction>,
+  mountedRef: { current: boolean },
+  fetchFn: FetchFn,
+  existingSections: SectionDraft[] = [],
+): Promise<void> {
+  const startedAt = Date.now();
+  const reviewedById = new Map(
+    existingSections.map((section) => [section.id, section.reviewed] as const),
+  );
+  let knownSections = existingSections;
+
+  for (let attempt = 0; ; attempt++) {
+    if (!mountedRef.current) return;
+
+    if (attempt > 0) {
+      await new Promise((resolve) =>
+        setTimeout(resolve, calculateGenerationPollDelay(attempt - 1)),
+      );
+    }
+
+    if (hasGenerationPollingTimedOut(startedAt, Date.now())) {
+      dispatch({ type: "GENERATION_FAIL" });
+      return;
+    }
+
+    try {
+      const proposalData =
+        await fetchProposalGenerationSnapshot<ProposalPollSection>(
+          proposalId,
+          fetchFn,
+        );
+      if (!proposalData) continue;
+      const apiSections = proposalData.sections ?? [];
+      const summary = summarizeProposalGeneration(proposalData);
+
+      if (apiSections.length > 0) {
+        const existingById = new Map(
+          knownSections.map((section) => [section.id, section] as const),
+        );
+        knownSections = apiSections.map((section, index) =>
+          mapProposalSection(section, index, existingById.get(section.id)),
+        );
+        knownSections = knownSections.map((section) => ({
+          ...section,
+          reviewed: reviewedById.get(section.id) ?? section.reviewed,
+        }));
+        dispatch({ type: "SET_SECTIONS", sections: knownSections });
+      }
+
+      if (summary.phase !== "generating") {
+        dispatch({
+          type:
+            summary.phase === "complete"
+              ? "GENERATION_COMPLETE"
+              : "GENERATION_FAIL",
+        });
+        return;
+      }
+    } catch {
+      // Retry until timeout
+    }
+  }
 }
 
 // ── Orchestrate full draft flow (client-orchestrated) ───────────────────────
@@ -204,85 +314,21 @@ export async function runDraftFlow(
   dispatch({ type: "GENERATION_START" });
 
   try {
-    // Step 1: Create proposal
-    const proposalId = await createProposal(state, dispatch, fetchFn);
+    // Step 1: Reuse existing proposal on retry/resume instead of creating duplicates
+    const proposalId =
+      state.proposalId ?? (await createProposal(state, dispatch, fetchFn));
     if (!mountedRef.current) return;
 
-    // Step 2: Setup — build context + create sections
-    const setupRes = await fetchFn(
-      `/api/proposals/${proposalId}/generate/setup`,
-      { method: "POST" },
+    const sectionCount = await executeDraftGeneration(
+      proposalId,
+      dispatch,
+      mountedRef,
+      fetchFn,
     );
-    if (!setupRes.ok) throw new Error(await extractError(setupRes));
-    const setupData = (await setupRes.json()) as SetupResponse;
-    const { sections } = setupData;
-    if (setupData.warnings?.length) {
-      logger.warn("Pipeline setup warnings", {
-        warnings: setupData.warnings,
-      });
-    }
-    if (!mountedRef.current) return;
-
-    if (!sections || sections.length === 0) {
-      throw new Error("Setup returned zero sections — cannot generate");
-    }
-
-    // Dispatch initial section list (all pending)
-    dispatch({ type: "SET_SECTIONS", sections: sections.map(mapSetupSection) });
-
-    // Step 3: Generate sections sequentially
-    const { orderedSections, execIndex } = orderSections(sections);
-    let differentiators: string[] = [];
-
-    for (let i = 0; i < orderedSections.length; i++) {
-      if (!mountedRef.current) return;
-      const section = orderedSections[i];
-
-      dispatch({
-        type: "UPDATE_SECTION",
-        sectionId: section.id,
-        updates: { generationStatus: "generating" },
-      });
-
-      const result = await generateOneSection(
-        proposalId,
-        section,
-        differentiators,
-        fetchFn,
-      );
-
-      dispatch({
-        type: "UPDATE_SECTION",
-        sectionId: section.id,
-        updates: {
-          generationStatus:
-            result.status === "completed" ? "complete" : "failed",
-          content: result.content ?? "",
-          generationError: result.error,
-        },
-      });
-
-      // Extract differentiators from exec summary for subsequent sections
-      if (i === execIndex && result.differentiators) {
-        differentiators = result.differentiators;
-      }
-    }
-
-    // Step 4: Finalize
-    if (!mountedRef.current) return;
-    const finalizeRes = await fetchFn(
-      `/api/proposals/${proposalId}/generate/finalize`,
-      { method: "POST" },
-    );
-    if (!finalizeRes.ok) {
-      logger.warn("Finalize returned non-OK", { status: finalizeRes.status });
-    }
-
-    dispatch({ type: "GENERATION_COMPLETE" });
 
     logger.info("Draft flow complete", {
       proposalId,
-      sectionCount: sections.length,
+      sectionCount,
     });
   } catch (err) {
     if (!mountedRef.current) return;
@@ -311,74 +357,7 @@ export async function resumeDraftFlow(
   dispatch({ type: "GENERATION_START" });
 
   try {
-    // Setup returns existing sections if proposal is already generating
-    const setupRes = await fetchFn(
-      `/api/proposals/${proposalId}/generate/setup`,
-      { method: "POST" },
-    );
-    if (!setupRes.ok) throw new Error(await extractError(setupRes));
-    const setupData = (await setupRes.json()) as SetupResponse;
-    if (!mountedRef.current) return;
-
-    if (!setupData.sections || setupData.sections.length === 0) {
-      throw new Error("Setup returned zero sections — cannot resume");
-    }
-
-    dispatch({
-      type: "SET_SECTIONS",
-      sections: setupData.sections.map(mapSetupSection),
-    });
-
-    // Re-run all sections — server-side idempotency returns cached results
-    // for already-completed sections (no wasted Gemini calls)
-    const { orderedSections, execIndex } = orderSections(setupData.sections);
-    let differentiators: string[] = [];
-
-    for (let i = 0; i < orderedSections.length; i++) {
-      if (!mountedRef.current) return;
-      const section = orderedSections[i];
-
-      dispatch({
-        type: "UPDATE_SECTION",
-        sectionId: section.id,
-        updates: { generationStatus: "generating" },
-      });
-
-      const result = await generateOneSection(
-        proposalId,
-        section,
-        differentiators,
-        fetchFn,
-      );
-
-      dispatch({
-        type: "UPDATE_SECTION",
-        sectionId: section.id,
-        updates: {
-          generationStatus:
-            result.status === "completed" ? "complete" : "failed",
-          content: result.content ?? "",
-          generationError: result.error,
-        },
-      });
-
-      if (i === execIndex && result.differentiators) {
-        differentiators = result.differentiators;
-      }
-    }
-
-    if (!mountedRef.current) return;
-    const finalizeRes = await fetchFn(
-      `/api/proposals/${proposalId}/generate/finalize`,
-      { method: "POST" },
-    );
-    if (!finalizeRes.ok) {
-      logger.warn("Resume finalize returned non-OK", {
-        status: finalizeRes.status,
-      });
-    }
-
-    dispatch({ type: "GENERATION_COMPLETE" });
+    await executeDraftGeneration(proposalId, dispatch, mountedRef, fetchFn);
     logger.info("Resume draft flow complete", { proposalId });
   } catch (err) {
     if (!mountedRef.current) return;
@@ -387,26 +366,32 @@ export async function resumeDraftFlow(
   }
 }
 
-// ── Helpers ─────────────────────────────────────────────────────────────────
+async function executeDraftGeneration(
+  proposalId: string,
+  dispatch: Dispatch<CreateAction>,
+  mountedRef: { current: boolean },
+  fetchFn: FetchFn,
+): Promise<number> {
+  const sections = await setupDraftGeneration(proposalId, dispatch, fetchFn);
+  if (!mountedRef.current) return 0;
 
-function orderSections(sections: SetupSection[]) {
-  const execSection = sections.find(
-    (s) => s.sectionType === "executive_summary",
+  await pollDraftGeneration(
+    proposalId,
+    dispatch,
+    mountedRef,
+    fetchFn,
+    sections.map((section, index) => mapSetupSection(section, index)),
   );
-  const otherSections = sections.filter(
-    (s) => s.sectionType !== "executive_summary",
-  );
 
-  const orderedSections = execSection
-    ? [execSection, ...otherSections]
-    : otherSections;
-  const execIndex = execSection ? 0 : -1;
-
-  return { orderedSections, execIndex };
+  return sections.length;
 }
 
-const POLL_INTERVAL_MS = 3_000;
-const MAX_POLL_ATTEMPTS = 25; // ~75s max wait
+const REGEN_POLL_TIMEOUT_MS = 75_000;
+const REGEN_POLL_CONFIG = {
+  minIntervalMs: 3_000,
+  maxIntervalMs: 8_000,
+  backoffFactor: 1.35,
+} as const;
 
 async function pollSectionStatus(
   proposalId: string,
@@ -414,8 +399,14 @@ async function pollSectionStatus(
   dispatch: Dispatch<CreateAction>,
   fetchFn: FetchFn,
 ): Promise<void> {
-  for (let i = 0; i < MAX_POLL_ATTEMPTS; i++) {
-    await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+  const startedAt = Date.now();
+  for (let i = 0; ; i++) {
+    if (hasGenerationPollingTimedOut(startedAt, Date.now(), REGEN_POLL_TIMEOUT_MS)) {
+      break;
+    }
+    await new Promise((r) =>
+      setTimeout(r, calculateGenerationPollDelay(i, REGEN_POLL_CONFIG)),
+    );
     try {
       const res = await fetchFn(`/api/proposals/${proposalId}`);
       if (!res.ok) continue;
@@ -453,34 +444,4 @@ async function pollSectionStatus(
     sectionId,
     updates: { generationStatus: "failed" },
   });
-}
-
-async function generateOneSection(
-  proposalId: string,
-  section: SetupSection,
-  differentiators: string[],
-  fetchFn: FetchFn,
-): Promise<SectionResult> {
-  try {
-    const res = await fetchFn(`/api/proposals/${proposalId}/generate/section`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sectionId: section.id,
-        sectionType: section.sectionType,
-        differentiators,
-      }),
-    });
-
-    if (!res.ok) {
-      return { status: "failed", error: await extractError(res) };
-    }
-
-    return (await res.json()) as SectionResult;
-  } catch (err) {
-    return {
-      status: "failed",
-      error: err instanceof Error ? err.message : "Network error",
-    };
-  }
 }

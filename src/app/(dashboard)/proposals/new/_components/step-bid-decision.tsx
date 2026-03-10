@@ -37,7 +37,7 @@ export function StepBidDecision() {
   const [productAlignment, setProductAlignment] =
     useState<ProductAlignmentResult | null>(null);
   const [enabledProducts, setEnabledProducts] = useState<Set<string>>(
-    new Set(),
+    () => new Set(state.selectedProductIds),
   );
 
   // Fetch products and compute alignment after bid evaluation completes
@@ -73,9 +73,13 @@ export function StepBidDecision() {
         const alignment = computeProductAlignment(products, requirementsText);
         setProductAlignment(alignment);
         setEnabledProducts(
-          new Set(
-            alignment.products.filter((p) => p.enabled).map((p) => p.productId),
-          ),
+          state.selectedProductIds.length > 0
+            ? new Set(state.selectedProductIds)
+            : new Set(
+                alignment.products
+                  .filter((p) => p.enabled)
+                  .map((p) => p.productId),
+              ),
         );
       } catch {
         // Products fetch failed — non-blocking
@@ -83,7 +87,7 @@ export function StepBidDecision() {
     };
     fetchProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.bidEvaluation]);
+  }, [state.bidEvaluation, state.selectedProductIds]);
 
   // Auto-trigger bid evaluation on mount
   const autoScoreTriggered = useRef(false);
@@ -166,6 +170,10 @@ export function StepBidDecision() {
   };
 
   const handleDecision = (decision: "proceed" | "skip") => {
+    dispatch({
+      type: "UPDATE_CONFIG",
+      payload: { selectedProductIds: [...enabledProducts] },
+    });
     if (state.bidEvaluation) {
       let finalEvaluation = { ...state.bidEvaluation };
       finalEvaluation.user_decision = decision;

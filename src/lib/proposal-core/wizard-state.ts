@@ -30,6 +30,7 @@ export interface WizardState {
   selectedTemplate: string;
   tone: "professional" | "conversational" | "technical" | "executive";
   selectedSections: string[];
+  selectedProductIds: string[];
   showAdvanced: boolean;
   clientName: string;
   clientIndustry: string;
@@ -60,7 +61,7 @@ export type WizardAction =
   | { type: "EXTRACTION_FAIL"; error: string }
   | { type: "UPDATE_EDITED_FIELDS"; payload: Record<string, string | string[]> }
   | { type: "BID_EVALUATION_UPDATE"; payload: Partial<Pick<WizardState, "bidEvaluation" | "bidPhase">> }
-  | { type: "UPDATE_CONFIG"; payload: Partial<Pick<WizardState, "selectedTemplate" | "tone" | "selectedSections" | "showAdvanced">> }
+  | { type: "UPDATE_CONFIG"; payload: Partial<Pick<WizardState, "selectedTemplate" | "tone" | "selectedSections" | "selectedProductIds" | "showAdvanced">> }
   | { type: "UPDATE_FORM_FIELDS"; payload: Partial<Pick<WizardState, "clientName" | "clientIndustry" | "clientSize" | "solicitationType" | "opportunityType" | "scopeDescription" | "currentStatePains" | "desiredOutcomes" | "budgetRange" | "timelineExpectation" | "technicalEnvironment" | "complianceRequirements" | "competitiveIntel">> }
   | { type: "POPULATE_FROM_EXTRACTION" }
   | { type: "SET_WIN_STRATEGY"; winStrategy: WinStrategyData }
@@ -104,6 +105,7 @@ export const INITIAL_STATE: WizardState = {
   selectedTemplate: "",
   tone: "professional",
   selectedSections: [],
+  selectedProductIds: [],
   showAdvanced: false,
   clientName: "",
   clientIndustry: "",

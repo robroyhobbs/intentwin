@@ -1,7 +1,17 @@
-import { describe, it, expect } from "vitest";
-import { detectSamGovUrl, constructPublicSamUrl } from "../route";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  detectSamGovUrl,
+  constructPublicSamUrl,
+  isAllowedExternalUrl,
+  fetchSamOpportunityDescription,
+} from "../route";
 
 describe("SAM.gov URL Detection", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+  });
+
   // ── Happy Path ──────────────────────────────────────────────
 
   describe("Happy Path", () => {
@@ -106,18 +116,40 @@ describe("SAM.gov URL Detection", () => {
   // ── Security ────────────────────────────────────────────────
 
   describe("Security", () => {
-    it("does not follow redirects to non-SAM.gov domains (SSRF check)", () => {
-      const result = detectSamGovUrl("https://evil.com/sam.gov/workspace/contract/opp/da51523c-7f5d-47b7-b5fd-c269a0177be4/view");
-      // The regex matches on the path, but the domain is evil.com
-      // This is OK — the URL detection is just for redirect logic,
-      // the actual fetch validates the final URL
-      expect(result.isWorkspace).toBe(true);
-      // The constructed public URL will be sam.gov, not evil.com
-      if (result.opportunityId) {
-        const publicUrl = constructPublicSamUrl(result.opportunityId);
-        expect(publicUrl).toContain("sam.gov");
-        expect(publicUrl).not.toContain("evil.com");
-      }
+    it("rejects non-allowlisted domains even if the path looks like SAM.gov", () => {
+      expect(
+        isAllowedExternalUrl(
+          new URL(
+            "https://evil.com/sam.gov/workspace/contract/opp/da51523c-7f5d-47b7-b5fd-c269a0177be4/view",
+          ),
+        ),
+      ).toBe(false);
+    });
+
+    it("allows supported procurement hosts", () => {
+      expect(
+        isAllowedExternalUrl(
+          new URL(
+            "https://sam.gov/workspace/contract/opp/da51523c-7f5d-47b7-b5fd-c269a0177be4/view",
+          ),
+        ),
+      ).toBe(true);
+      expect(
+        isAllowedExternalUrl(
+          new URL(
+            "https://secure.fedbidspeed.com/Handler.ashx?act=link&req=nav",
+          ),
+        ),
+      ).toBe(true);
+    });
+
+    it("rejects link-local and localhost targets", () => {
+      expect(isAllowedExternalUrl(new URL("http://127.0.0.1/test"))).toBe(
+        false,
+      );
+      expect(isAllowedExternalUrl(new URL("http://localhost/test"))).toBe(
+        false,
+      );
     });
   });
 
@@ -144,6 +176,62 @@ describe("SAM.gov URL Detection", () => {
       const urlCopy = url;
       detectSamGovUrl(url);
       expect(url).toBe(urlCopy);
+    });
+  });
+
+  describe("Direct Description Fallback", () => {
+    it("uses the intelligence service first when configured", async () => {
+      vi.stubEnv("INTELLIGENCE_API_URL", "https://intel.example.com");
+      vi.stubEnv("INTELLIGENCE_SERVICE_KEY", "svc-key");
+
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              description:
+                "A".repeat(80),
+            }),
+            {
+              status: 200,
+              headers: { "Content-Type": "application/json" },
+            },
+          ),
+        );
+      vi.stubGlobal("fetch", fetchMock);
+
+      const description = await fetchSamOpportunityDescription("notice-1");
+
+      expect(description).toBe("A".repeat(80));
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(String(fetchMock.mock.calls[0][0])).toContain(
+        "/api/v1/opportunities/source/sam_gov/notice-1/description",
+      );
+    });
+
+    it("falls back to the direct SAM description API when intelligence is unavailable", async () => {
+      vi.stubEnv("SAM_API_KEY", "sam-key");
+
+      const fetchMock = vi.fn().mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            description: "Federal opportunity description from SAM.gov",
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          },
+        ),
+      );
+      vi.stubGlobal("fetch", fetchMock);
+
+      const description = await fetchSamOpportunityDescription("notice-2");
+
+      expect(description).toBe("Federal opportunity description from SAM.gov");
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(String(fetchMock.mock.calls[0][0])).toContain(
+        "noticeid=notice-2",
+      );
     });
   });
 });

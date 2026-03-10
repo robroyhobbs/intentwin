@@ -507,6 +507,49 @@ describe("POST /api/proposals/[id]/generate/section", () => {
     );
   });
 
+  it("does not retry permanent validation errors", async () => {
+    const { generateSingleSection } =
+      await import("@/lib/ai/pipeline/generate-single-section");
+    (generateSingleSection as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error("validation error"),
+    );
+
+    const req = makeRequest(
+      "http://localhost/api/proposals/prop-1/generate/section",
+      { sectionId: "sec-1" },
+    );
+    const res = await POST(req, makeParams("prop-1"));
+    const { status, body } = await parseResponse(res);
+
+    expect(status).toBe(200);
+    expect(body.status).toBe("failed");
+    expect(body.error).toContain("validation error");
+    expect(generateSingleSection).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns failed status with fallback content when manual completion is required", async () => {
+    const { generateSingleSection } =
+      await import("@/lib/ai/pipeline/generate-single-section");
+    (generateSingleSection as ReturnType<typeof vi.fn>).mockResolvedValue({
+      generatedContent: "## Executive Summary\n\nManual completion required.",
+      chunkCount: 0,
+      requiresManualCompletion: true,
+      failureReason: "AI provider unavailable",
+    });
+
+    const req = makeRequest(
+      "http://localhost/api/proposals/prop-1/generate/section",
+      { sectionId: "sec-1" },
+    );
+    const res = await POST(req, makeParams("prop-1"));
+    const { status, body } = await parseResponse(res);
+
+    expect(status).toBe(200);
+    expect(body.status).toBe("failed");
+    expect(body.content).toContain("Manual completion required");
+    expect(body.error).toContain("AI provider unavailable");
+  });
+
   it("retries transient failure and returns content on success (retry integration)", async () => {
     const { generateSingleSection } =
       await import("@/lib/ai/pipeline/generate-single-section");

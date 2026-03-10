@@ -15,6 +15,13 @@ interface SamGovDetection {
 const SAM_WORKSPACE_PATTERN =
   /sam\.gov\/workspace\/contract\/opp\/([0-9a-f-]{36})\/view/i;
 const SAM_PUBLIC_PATTERN = /sam\.gov\/opp\/([0-9a-f-]{36})\/view/i;
+const ALLOWED_HOSTS = new Set([
+  "sam.gov",
+  "www.sam.gov",
+  "secure.sam.gov",
+  "beta.sam.gov",
+  "secure.fedbidspeed.com",
+]);
 
 export function detectSamGovUrl(url: string): SamGovDetection {
   const workspaceMatch = url.match(SAM_WORKSPACE_PATTERN);
@@ -32,6 +39,95 @@ export function detectSamGovUrl(url: string): SamGovDetection {
 
 export function constructPublicSamUrl(opportunityId: string): string {
   return `https://sam.gov/opp/${opportunityId}/view`;
+}
+
+export function isAllowedExternalUrl(url: URL): boolean {
+  const hostname = url.hostname.toLowerCase();
+  if (hostname === "localhost") return false;
+  if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(hostname)) return false;
+  return ALLOWED_HOSTS.has(hostname);
+}
+
+function looksLikeSamGovShell(html: string): boolean {
+  return (
+    html.includes("<app></app>") &&
+    html.includes("/sfe/main.") &&
+    html.includes("<title>SAM.gov</title>")
+  );
+}
+
+async function fetchSamDescriptionFromIntelligence(
+  opportunityId: string,
+): Promise<string | null> {
+  const baseUrl = process.env.INTELLIGENCE_API_URL?.trim();
+  const apiKey = process.env.INTELLIGENCE_SERVICE_KEY?.trim();
+  if (!baseUrl || !apiKey) return null;
+
+  try {
+    const res = await fetch(
+      `${baseUrl}/api/v1/opportunities/source/sam_gov/${encodeURIComponent(opportunityId)}/description`,
+      {
+        headers: {
+          "X-Service-Key": apiKey,
+          Accept: "application/json",
+        },
+        signal: AbortSignal.timeout(10_000),
+      },
+    );
+
+    if (!res.ok) return null;
+    const body = (await res.json()) as { description?: string | null };
+    const description = body.description?.trim() ?? "";
+    return description.length >= 50 ? description : null;
+  } catch (error) {
+    logger.warn("SAM description fetch via intelligence failed", {
+      opportunityId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+}
+
+async function fetchSamDescriptionDirect(
+  opportunityId: string,
+): Promise<string | null> {
+  const apiKey = process.env.SAM_API_KEY?.trim();
+  if (!apiKey) return null;
+
+  try {
+    const res = await fetch(
+      `https://api.sam.gov/prod/opportunities/v1/noticedesc?noticeid=${encodeURIComponent(opportunityId)}&api_key=${encodeURIComponent(apiKey)}`,
+      {
+        headers: { Accept: "application/json" },
+        signal: AbortSignal.timeout(10_000),
+      },
+    );
+
+    if (!res.ok) return null;
+    const body = (await res.json()) as {
+      description?: string | null;
+      content?: string | null;
+    };
+    const description =
+      body.description?.trim() ?? body.content?.trim() ?? "";
+    return description.length > 0 ? description : null;
+  } catch (error) {
+    logger.warn("Direct SAM description fetch failed", {
+      opportunityId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+}
+
+export async function fetchSamOpportunityDescription(
+  opportunityId: string,
+): Promise<string | null> {
+  const intelligenceDescription = await fetchSamDescriptionFromIntelligence(
+    opportunityId,
+  );
+  if (intelligenceDescription) return intelligenceDescription;
+  return fetchSamDescriptionDirect(opportunityId);
 }
 
 // Strip HTML tags and collapse whitespace into readable plain text
@@ -74,6 +170,11 @@ export async function POST(request: NextRequest) {
     if (!["http:", "https:"].includes(parsedUrl.protocol)) {
       return badRequest("Only http and https URLs are supported");
     }
+    if (!isAllowedExternalUrl(parsedUrl)) {
+      return badRequest(
+        "This host is not supported for URL import. Use SAM.gov or another supported procurement portal.",
+      );
+    }
   } catch {
     return badRequest("Invalid URL format");
   }
@@ -90,6 +191,21 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    if (samDetection.opportunityId) {
+      const samDescription = await fetchSamOpportunityDescription(
+        samDetection.opportunityId,
+      );
+      if (samDescription) {
+        return ok({
+          content: samDescription.slice(0, 100_000),
+          truncated: samDescription.length > 100_000,
+          url: parsedUrl.toString(),
+          hostname: parsedUrl.hostname,
+          source: "sam_description_api",
+        });
+      }
+    }
+
     const response = await fetch(parsedUrl.toString(), {
       headers: {
         "User-Agent":
@@ -110,6 +226,20 @@ export async function POST(request: NextRequest) {
 
     if (contentType.includes("text/html")) {
       const html = await response.text();
+      if (samDetection.opportunityId && looksLikeSamGovShell(html)) {
+        const samDescription = await fetchSamOpportunityDescription(
+          samDetection.opportunityId,
+        );
+        if (samDescription) {
+          return ok({
+            content: samDescription.slice(0, 100_000),
+            truncated: samDescription.length > 100_000,
+            url: parsedUrl.toString(),
+            hostname: parsedUrl.hostname,
+            source: "intelligence_service",
+          });
+        }
+      }
       text = htmlToText(html);
     } else if (contentType.includes("text/plain")) {
       text = await response.text();

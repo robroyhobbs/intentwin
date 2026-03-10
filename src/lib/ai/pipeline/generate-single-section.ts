@@ -138,7 +138,12 @@ export async function generateSingleSection(
   sectionType: string,
   ctx: PipelineContext,
   differentiators?: string[],
-): Promise<{ chunkCount: number; generatedContent?: string }> {
+): Promise<{
+  chunkCount: number;
+  generatedContent?: string;
+  requiresManualCompletion?: boolean;
+  failureReason?: string | null;
+}> {
   const supabase = createAdminClient();
 
   // For rfp_task sections, we don't look up SECTION_CONFIGS — we use task metadata
@@ -369,10 +374,18 @@ export async function generateSingleSection(
       string,
       unknown
     >;
+    const requiresManualCompletion = Boolean(
+      generatedContentRaw.fallbackReason,
+    );
+    const failureReason =
+      generatedContentRaw.fallbackReason ??
+      (requiresManualCompletion ? "Manual completion required" : null);
+
     const mergedMeta: Record<string, unknown> = {
       ...existingMeta,
       grounding_level: groundingLevel,
       generation_provider: generatedContentRaw.provider,
+      requires_manual_completion: requiresManualCompletion,
     };
     if (generatedContentRaw.fallbackReason) {
       mergedMeta.provider_fallback_reason =
@@ -384,7 +397,12 @@ export async function generateSingleSection(
       .from("proposal_sections")
       .update({
         generated_content: generatedContent,
-        generation_status: GenerationStatus.COMPLETED,
+        generation_status: requiresManualCompletion
+          ? GenerationStatus.FAILED
+          : GenerationStatus.COMPLETED,
+        generation_error: requiresManualCompletion
+          ? (failureReason ?? "Manual completion required")
+          : null,
         generation_prompt: prompt.slice(0, 2000),
         retrieved_context_ids: chunkIds,
       })
@@ -459,7 +477,12 @@ export async function generateSingleSection(
       }
     }
 
-    return { chunkCount: chunkIds.length, generatedContent };
+    return {
+      chunkCount: chunkIds.length,
+      generatedContent,
+      requiresManualCompletion,
+      failureReason,
+    };
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Unknown error";
     const errorStack = err instanceof Error ? err.stack : undefined;

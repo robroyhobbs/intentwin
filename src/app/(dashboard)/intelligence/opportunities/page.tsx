@@ -54,16 +54,20 @@ const SET_ASIDE_OPTIONS = [
 export default function OpportunitySearchPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const initialNaicsCsv = searchParams.get("naics") ?? "";
+  const initialNaicsCodes = initialNaicsCsv
+    .split(",")
+    .map((code) => code.trim())
+    .filter(Boolean);
 
   const [keyword, setKeyword] = useState(searchParams.get("q") ?? "");
   const [agency, setAgency] = useState(searchParams.get("agency") ?? "");
   const [city, setCity] = useState(searchParams.get("city") ?? "");
   const [state, setState] = useState(searchParams.get("state") ?? "");
   const [status, setStatus] = useState(searchParams.get("status") ?? "");
-  const [naicsCode, setNaicsCode] = useState(searchParams.get("naics") ?? "");
+  const [naicsCode, setNaicsCode] = useState(initialNaicsCsv);
   const [selectedNaics, setSelectedNaics] = useState<NaicsEntry[]>(() => {
-    const initial = searchParams.get("naics");
-    return initial ? [{ code: initial, description: "" }] : [];
+    return initialNaicsCodes.map((code) => ({ code, description: "" }));
   });
   const [source, setSource] = useState(searchParams.get("source") ?? "");
   const [setAsideType, setSetAsideType] = useState(
@@ -292,14 +296,14 @@ export default function OpportunitySearchPage() {
               <label className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide block mb-1.5">
                 NAICS
               </label>
-              <NaicsCombobox
-                selected={selectedNaics}
-                onChange={(codes) => {
-                  setSelectedNaics(codes);
-                  setNaicsCode(codes.length > 0 ? codes[0].code : "");
-                }}
-                placeholder="e.g., 541512"
-              />
+                <NaicsCombobox
+                  selected={selectedNaics}
+                  onChange={(codes) => {
+                    setSelectedNaics(codes);
+                    setNaicsCode(codes.map((code) => code.code).join(","));
+                  }}
+                  placeholder="e.g., 541512"
+                />
             </div>
           </div>
 

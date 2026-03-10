@@ -40,6 +40,8 @@ export interface RetryOptions {
    * Return true to retry, false to propagate immediately.
    */
   shouldRetry?: (error: Error) => boolean;
+  /** Adds randomization to backoff delays. 0.2 => +/-20%. */
+  jitterRatio?: number;
 }
 
 function validateOptions(options: RetryOptions): void {
@@ -51,6 +53,11 @@ function validateOptions(options: RetryOptions): void {
   }
   if (options.backoffFactor !== undefined && options.backoffFactor <= 0) {
     throw new Error("backoffFactor must be > 0");
+  }
+  if (options.jitterRatio !== undefined) {
+    if (options.jitterRatio < 0 || options.jitterRatio > 1) {
+      throw new Error("jitterRatio must be between 0 and 1");
+    }
   }
 }
 
@@ -67,6 +74,7 @@ export async function withRetry<T>(
   const maxRetries = options.maxRetries ?? 2;
   const baseDelay = options.baseDelay ?? 2000;
   const backoffFactor = options.backoffFactor ?? 2;
+  const jitterRatio = options.jitterRatio ?? 0;
 
   let lastError: Error | undefined;
   const totalAttempts = maxRetries + 1;
@@ -103,7 +111,12 @@ export async function withRetry<T>(
       }
 
       // Wait with exponential backoff
-      const waitMs = baseDelay * Math.pow(backoffFactor, attempt);
+      const baseWaitMs = baseDelay * Math.pow(backoffFactor, attempt);
+      const jitterMultiplier =
+        jitterRatio > 0
+          ? 1 - jitterRatio + Math.random() * (2 * jitterRatio)
+          : 1;
+      const waitMs = Math.max(0, Math.round(baseWaitMs * jitterMultiplier));
       await delay(waitMs);
     }
   }

@@ -202,6 +202,32 @@ describe("withRetry", () => {
       vi.useRealTimers();
     });
 
+    it("applies jitter when jitterRatio is configured", async () => {
+      vi.useFakeTimers();
+      const randomSpy = vi.spyOn(Math, "random").mockReturnValue(1);
+
+      const fn = vi
+        .fn()
+        .mockRejectedValueOnce(new RetryableError("fail1"))
+        .mockResolvedValue("ok");
+
+      const promise = withRetry(fn, {
+        baseDelay: 1000,
+        backoffFactor: 1,
+        jitterRatio: 0.2,
+      });
+
+      await vi.advanceTimersByTimeAsync(1199);
+      expect(fn).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(fn).toHaveBeenCalledTimes(2);
+
+      await promise;
+
+      randomSpy.mockRestore();
+      vi.useRealTimers();
+    });
+
     it("concurrent retries don't interfere", async () => {
       let callCount = 0;
       const fn1 = vi.fn().mockImplementation(() => {

@@ -25,6 +25,7 @@ import {
 } from "@/lib/api/response";
 import { apiError } from "@/lib/api/response";
 import { withRetry } from "@/lib/retry/with-retry";
+import { isTransientAiError } from "@/lib/retry/retry-policy";
 import {
   createProgressTracker,
   advanceProgress,
@@ -235,7 +236,8 @@ export async function POST(request: NextRequest) {
       {
         maxRetries: 2,
         baseDelay: 2000,
-        shouldRetry: () => true, // All extraction errors are transient (AI calls)
+        jitterRatio: 0.2,
+        shouldRetry: isTransientAiError,
         onRetry: (attempt, err) => {
           logger.warn("Extraction retry", {
             attempt,

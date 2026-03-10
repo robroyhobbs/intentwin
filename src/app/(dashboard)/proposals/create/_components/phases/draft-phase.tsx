@@ -85,6 +85,10 @@ function useDraftFlow() {
 
   const handleRetry = useCallback(() => {
     startedRef.current = true;
+    if (state.proposalId) {
+      void resumeDraftFlow(state.proposalId, dispatch, mountedRef, authFetch);
+      return;
+    }
     void runDraftFlow(state, dispatch, mountedRef, authFetch);
   }, [state, dispatch, authFetch]);
 

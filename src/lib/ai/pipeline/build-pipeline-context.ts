@@ -118,7 +118,7 @@ export async function buildPipelineContext(
   const naicsCode = (intakeData.naics_code as string) ?? null;
 
   // Fetch L1 + intelligence in parallel (intelligence is non-blocking)
-  const [l1Context, intelligence] = await Promise.all([
+  const [rawL1Context, intelligence] = await Promise.all([
     fetchL1Context(supabase, serviceLine, industry, proposal.organization_id),
     intelligenceClient.getProposalIntelligence({
       agencyName,
@@ -126,6 +126,22 @@ export async function buildPipelineContext(
       laborCategories: extractLaborCategoriesFromIntake(intakeData),
     }),
   ]);
+
+  const selectedProductIds = Array.isArray(intakeData.selected_product_ids)
+    ? intakeData.selected_product_ids.filter(
+        (value): value is string => typeof value === "string" && value.length > 0,
+      )
+    : [];
+
+  const l1Context =
+    selectedProductIds.length > 0
+      ? {
+          ...rawL1Context,
+          productContexts: rawL1Context.productContexts.filter((product) =>
+            selectedProductIds.includes(product.id),
+          ),
+        }
+      : rawL1Context;
 
   const ctxLog = createLogger({
     operation: "buildPipelineContext",

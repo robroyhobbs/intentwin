@@ -21,6 +21,7 @@ import {
 } from "@/lib/api/response";
 import { emitProposalGenerationFailedEvent } from "@/lib/copilot/proposal-generation-failure";
 import { withRetry } from "@/lib/retry/with-retry";
+import { isTransientAiError } from "@/lib/retry/retry-policy";
 
 export const maxDuration = 60;
 
@@ -156,7 +157,8 @@ async function generateAndRespond({
       {
         maxRetries: 2,
         baseDelay: 2000,
-        shouldRetry: () => true,
+        jitterRatio: 0.2,
+        shouldRetry: isTransientAiError,
         onRetry: (attempt, err) => {
           log.warn("Section generation retry", {
             sectionId,
@@ -167,6 +169,16 @@ async function generateAndRespond({
         },
       },
     );
+
+    if (result.requiresManualCompletion) {
+      return ok({
+        status: "failed" as const,
+        content: result.generatedContent ?? "",
+        error:
+          result.failureReason ??
+          "AI generation was unavailable. Manual completion required.",
+      });
+    }
 
     // Extract differentiators from executive summary for subsequent sections
     let extractedDifferentiators: string[] | undefined;

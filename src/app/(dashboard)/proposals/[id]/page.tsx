@@ -19,7 +19,17 @@ import { exportAnnotationsAsMarkdown } from "@/lib/review/export-annotations";
 import { extractPlaceholders } from "@/components/preflight/review-mode-sidebar";
 import type { PreflightResult } from "@/lib/ai/pipeline/preflight";
 import { logger } from "@/lib/utils/logger";
-import { orchestrateGeneration } from "@/lib/ai/pipeline/client-orchestrate";
+import {
+  calculateRegenerationPollDelay,
+  hasRegenerationTimedOut,
+  isRegenerationTerminal,
+  markSectionGenerating,
+} from "@/lib/proposals/regeneration-poll";
+import {
+  calculateGenerationPollDelay,
+  hasGenerationPollingTimedOut,
+} from "@/lib/proposals/generation-poll";
+import { startBackgroundGeneration } from "@/lib/proposals/background-generation";
 
 import type { Proposal, Section } from "./_components/types";
 import { ProposalTopBar } from "./_components/proposal-top-bar";
@@ -129,7 +139,7 @@ export default function ProposalPage() {
   >(initialTab);
   const authFetch = useAuthFetch();
   const initialSectionSet = useRef(false);
-  const regenIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const regenPollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchProposal = useCallback(async () => {
     try {
@@ -252,16 +262,13 @@ export default function ProposalPage() {
   useEffect(() => {
     if (proposal?.status !== ProposalStatus.GENERATING) return;
     const startedAt = Date.now();
-    const MAX_POLL_MS = 10 * 60 * 1000; // 10 minutes
-    const MIN_INTERVAL = 2000;
-    const MAX_INTERVAL = 10000;
     let stopped = false;
     let pollCount = 0;
 
     const poll = async () => {
       if (stopped) return;
 
-      if (Date.now() - startedAt > MAX_POLL_MS) {
+      if (hasGenerationPollingTimedOut(startedAt, Date.now())) {
         await fetchProposal();
         toast.error(
           "Generation is taking longer than expected. Please refresh the page.",
@@ -273,11 +280,7 @@ export default function ProposalPage() {
       pollCount++;
 
       if (!stopped) {
-        // Exponential backoff: 2s, 3s, 4.5s, 6.75s, 10s (capped)
-        const delay = Math.min(
-          MIN_INTERVAL * Math.pow(1.5, pollCount),
-          MAX_INTERVAL,
-        );
+        const delay = calculateGenerationPollDelay(pollCount);
         setTimeout(poll, delay);
       }
     };
@@ -293,28 +296,15 @@ export default function ProposalPage() {
   async function handleGenerate() {
     setGenerating(true);
     try {
-      const response = await authFetch(`/api/proposals/${id}/generate/setup`, {
-        method: "POST",
-      });
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(
-          (data as Record<string, string>).error ||
-            `Generation setup failed (${response.status})`,
-        );
-      }
-      const setupData = await response.json();
-      const setupSections = (setupData.sections ?? []) as Array<{
-        id: string;
-        sectionType: string;
-        title: string;
-      }>;
-      toast.success("Proposal generation started");
+      const result = await startBackgroundGeneration(id, authFetch);
       setProposal((prev) =>
         prev ? { ...prev, status: ProposalStatus.GENERATING } : null,
       );
-      // Fire-and-forget: generate sections in background; polling handles UI
-      void orchestrateGeneration(id, setupSections, authFetch);
+      toast.success(
+        result.status === "already-generating"
+          ? "Proposal generation is already in progress"
+          : "Proposal generation started",
+      );
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Generation failed");
     } finally {
@@ -350,7 +340,14 @@ export default function ProposalPage() {
   }
 
   async function handleRegenerate(sectionId: string) {
+    if (regeneratingSection && regeneratingSection !== sectionId) {
+      toast.error("Wait for the current section regeneration to finish.");
+      return;
+    }
+
     setRegeneratingSection(sectionId);
+    setSections((prev) => markSectionGenerating(prev, sectionId));
+
     try {
       const response = await authFetch(
         `/api/proposals/${id}/sections/${sectionId}/regenerate`,
@@ -361,37 +358,64 @@ export default function ProposalPage() {
         throw new Error(err.error || "Regeneration failed");
       }
       toast.success("Regenerating section...");
-      // Poll until section is no longer generating
-      if (regenIntervalRef.current) clearInterval(regenIntervalRef.current);
-      regenIntervalRef.current = setInterval(async () => {
+
+      if (regenPollTimerRef.current) {
+        clearTimeout(regenPollTimerRef.current);
+        regenPollTimerRef.current = null;
+      }
+
+      const startedAt = Date.now();
+      let pollCount = 0;
+
+      const poll = async () => {
         try {
           const res = await authFetch(`/api/proposals/${id}`);
-          if (!res.ok) return;
+          if (!res.ok) {
+            throw new Error(`Proposal refresh failed (${res.status})`);
+          }
           const data = await res.json();
           setProposal(data.proposal);
           setSections(data.sections || []);
           const section = data.sections?.find(
             (s: Section) => s.id === sectionId,
           );
-          if (
-            section &&
-            section.generation_status !== GenerationStatus.GENERATING
-          ) {
+          if (section && isRegenerationTerminal(section.generation_status)) {
             setRegeneratingSection(null);
-            if (regenIntervalRef.current) {
-              clearInterval(regenIntervalRef.current);
-              regenIntervalRef.current = null;
+            if (regenPollTimerRef.current) {
+              clearTimeout(regenPollTimerRef.current);
+              regenPollTimerRef.current = null;
             }
             if (section.generation_status === GenerationStatus.COMPLETED) {
               toast.success("Section regenerated successfully");
             } else if (section.generation_status === GenerationStatus.FAILED) {
               toast.error("Section regeneration failed");
             }
+            return;
           }
         } catch {
           // Polling error, will retry
         }
-      }, 3000);
+
+        pollCount++;
+        if (hasRegenerationTimedOut(startedAt, Date.now())) {
+          setRegeneratingSection(null);
+          if (regenPollTimerRef.current) {
+            clearTimeout(regenPollTimerRef.current);
+            regenPollTimerRef.current = null;
+          }
+          toast.error(
+            "Section regeneration is taking longer than expected. Please refresh the page.",
+          );
+          return;
+        }
+
+        regenPollTimerRef.current = setTimeout(
+          poll,
+          calculateRegenerationPollDelay(pollCount),
+        );
+      };
+
+      void poll();
     } catch (error) {
       setRegeneratingSection(null);
       toast.error(
@@ -403,7 +427,7 @@ export default function ProposalPage() {
   // Cleanup regen polling on unmount
   useEffect(() => {
     return () => {
-      if (regenIntervalRef.current) clearInterval(regenIntervalRef.current);
+      if (regenPollTimerRef.current) clearTimeout(regenPollTimerRef.current);
     };
   }, []);
 
