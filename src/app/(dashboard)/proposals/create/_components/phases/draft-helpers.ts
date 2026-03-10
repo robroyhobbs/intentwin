@@ -10,6 +10,7 @@ import {
   hasGenerationPollingTimedOut,
 } from "@/lib/proposals/generation-poll";
 import { startBackgroundGeneration } from "@/lib/proposals/background-generation";
+import { normalizeDraftSectionStatus } from "@/lib/proposals/proposal-section-state";
 import {
   startProposalGenerationPoll,
   type ProposalGenerationPollHandle,
@@ -190,14 +191,9 @@ function mapProposalSection(
   order: number,
   existing?: SectionDraft,
 ): SectionDraft {
-  const generationStatus =
-    section.generation_status === "completed"
-      ? "complete"
-      : section.generation_status === "failed"
-        ? "failed"
-        : section.generation_status === "generating"
-          ? "generating"
-          : "pending";
+  const generationStatus = normalizeDraftSectionStatus(
+    section.generation_status,
+  );
 
   return {
     id: section.id,
@@ -294,7 +290,7 @@ async function pollDraftGeneration(
   }
 }
 
-// ── Orchestrate full draft flow (client-orchestrated) ───────────────────────
+// ── Run full draft flow using shared background generation + poller ─────────
 
 export async function runDraftFlow(
   state: CreateFlowState,
@@ -336,9 +332,8 @@ export async function runDraftFlow(
 
 /**
  * Resume a generation that was interrupted (e.g., browser refresh).
- * Calls setup (which returns existing sections if already generating),
- * then re-runs all sections. Already-completed sections return instantly
- * via server-side idempotency (cached content, no re-generation).
+ * Setup returns the current section structure, and the shared poller
+ * continues observing the existing background generation.
  */
 export async function resumeDraftFlow(
   proposalId: string,

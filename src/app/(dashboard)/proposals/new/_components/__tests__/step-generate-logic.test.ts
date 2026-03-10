@@ -5,6 +5,7 @@ import {
   calculateGenerationPollDelay,
   hasGenerationPollingTimedOut,
 } from "@/lib/proposals/generation-poll";
+import { mapProposalSectionsToProgress } from "@/lib/proposals/proposal-section-state";
 
 /**
  * Tests for logic extracted from step-generate.tsx.
@@ -62,16 +63,6 @@ interface ApiSection {
   title: string;
   generation_status: string;
   generation_error: string | null;
-}
-
-function mapApiSectionsToProgress(apiSections: ApiSection[]) {
-  return apiSections.map((s) => ({
-    type: s.section_type,
-    title: s.title,
-    status: (s.generation_status === "completed" || s.generation_status === "failed" || s.generation_status === "generating")
-      ? s.generation_status as "completed" | "failed" | "generating"
-      : "pending" as const,
-  }));
 }
 
 function determineCompletionState(apiSections: ApiSection[], proposalStatus: string) {
@@ -223,28 +214,28 @@ describe("step-generate logic", () => {
 
   describe("section status mapping", () => {
     it("maps completed sections correctly", () => {
-      const result = mapApiSectionsToProgress([
+      const result = mapProposalSectionsToProgress([
         { id: "1", section_type: "exec", title: "Exec Summary", generation_status: "completed", generation_error: null },
       ]);
       expect(result[0].status).toBe("completed");
     });
 
     it("maps generating sections correctly", () => {
-      const result = mapApiSectionsToProgress([
+      const result = mapProposalSectionsToProgress([
         { id: "1", section_type: "exec", title: "Exec", generation_status: "generating", generation_error: null },
       ]);
       expect(result[0].status).toBe("generating");
     });
 
     it("maps failed sections correctly", () => {
-      const result = mapApiSectionsToProgress([
+      const result = mapProposalSectionsToProgress([
         { id: "1", section_type: "exec", title: "Exec", generation_status: "failed", generation_error: "AI error" },
       ]);
       expect(result[0].status).toBe("failed");
     });
 
     it("maps unknown statuses to pending", () => {
-      const result = mapApiSectionsToProgress([
+      const result = mapProposalSectionsToProgress([
         { id: "1", section_type: "exec", title: "Exec", generation_status: "pending", generation_error: null },
         { id: "2", section_type: "team", title: "Team", generation_status: "queued", generation_error: null },
         { id: "3", section_type: "cost", title: "Cost", generation_status: "regenerating", generation_error: null },
@@ -255,11 +246,11 @@ describe("step-generate logic", () => {
     });
 
     it("handles empty section list", () => {
-      expect(mapApiSectionsToProgress([])).toEqual([]);
+      expect(mapProposalSectionsToProgress([])).toEqual([]);
     });
 
     it("preserves section type and title", () => {
-      const result = mapApiSectionsToProgress([
+      const result = mapProposalSectionsToProgress([
         { id: "1", section_type: "executive_summary", title: "Executive Summary", generation_status: "completed", generation_error: null },
       ]);
       expect(result[0].type).toBe("executive_summary");

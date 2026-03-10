@@ -1,21 +1,13 @@
 "use client";
 
 /**
- * StepGenerate — Step 4 of the proposal wizard.
+ * StepGenerate — final wizard step.
  *
- * On entry:
- *   1. Creates proposal via POST /api/proposals with all wizard state data
- *   2. Triggers generation via POST /api/proposals/{id}/generate
- *   3. Polls GET /api/proposals/{id} for section progress (exponential backoff)
- *   4. Shows per-section status list + progress bar
- *   5. Redirects to /proposals/{id} on completion
- *
- * Error handling:
- *   - Proposal creation failure → retry option
- *   - Generation trigger failure → retry option
- *   - Poll failure → retries with backoff
- *   - All sections failed → "Start Over" option
- *   - 10-minute timeout → timeout message
+ * Flow:
+ *   1. Create proposal via POST /api/proposals
+ *   2. Start shared background generation via /generate/setup
+ *   3. Observe proposal status through the shared generation poll runner
+ *   4. Render section progress and redirect once generation is complete
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -37,6 +29,7 @@ import type { SectionProgress } from "@/lib/proposal-core/wizard-state";
 import { computeCapabilityAlignment } from "@/lib/ai/pipeline/capability-alignment";
 import { CapabilityWarningGate } from "@/components/capability-warning-gate";
 import { startBackgroundGeneration } from "@/lib/proposals/background-generation";
+import { mapProposalSectionsToProgress } from "@/lib/proposals/proposal-section-state";
 import {
   startProposalGenerationPoll,
   type ProposalGenerationPollHandle,
@@ -265,7 +258,7 @@ export function StepGenerate() {
     }
   }, [authFetch, dispatch, state]);
 
-  // ── Step 2: Trigger generation (client-orchestrated) ──
+  // ── Step 2: Start shared background generation ──
   const triggerGeneration = useCallback(
     async (id: string): Promise<boolean> => {
       setPhase("triggering");
@@ -289,7 +282,7 @@ export function StepGenerate() {
     pollHandleRef.current = null;
   }, []);
 
-  // ── Step 3: Poll for progress ──
+  // ── Step 3: Observe progress via the shared poll runner ──
   const beginPolling = useCallback(
     (id: string) => {
       cancelPollProgress();
@@ -302,22 +295,8 @@ export function StepGenerate() {
         onSnapshot: (data, summary) => {
           const apiSections: ApiSection[] = data.sections || [];
           setSections(apiSections);
-
-          const sectionProgress: SectionProgress[] = apiSections.map(
-            (section: ApiSection) => ({
-              type: section.section_type,
-              title: section.title,
-              status:
-                section.generation_status === "completed" ||
-                section.generation_status === "failed" ||
-                section.generation_status === "generating"
-                  ? (section.generation_status as
-                      | "completed"
-                      | "failed"
-                      | "generating")
-                  : ("pending" as const),
-            }),
-          );
+          const sectionProgress: SectionProgress[] =
+            mapProposalSectionsToProgress(apiSections);
           dispatch({ type: "SECTION_STATUS_UPDATE", sections: sectionProgress });
 
           if (summary.totalCount > 0 && !progressShownAtRef.current) {
