@@ -1,5 +1,9 @@
 import { NextRequest } from "next/server";
 import { badRequest, forbidden, ok, serverError, unauthorized } from "@/lib/api/response";
+import {
+  fetchCompatibilityInterventions,
+  isMissingCopilotSchemaError,
+} from "@/lib/copilot/compatibility";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserContext } from "@/lib/supabase/auth-api";
 import { createRequestLogger } from "@/lib/utils/logger";
@@ -27,6 +31,11 @@ const ALLOWED_STATUSES: InterventionStatus[] = [
 ];
 const DEFAULT_LIMIT = 25;
 const MAX_LIMIT = 100;
+type ParsedFilters = {
+  status: InterventionStatus | null;
+  assignedAgent: string | null;
+  limit: number;
+};
 
 export async function GET(request: NextRequest): Promise<Response> {
   const { log } = createRequestLogger(request, {
@@ -48,36 +57,11 @@ export async function GET(request: NextRequest): Promise<Response> {
       return badRequest(filters.message);
     }
 
-    const adminClient = createAdminClient();
-    let query = adminClient
-      .from("copilot_interventions")
-      .select(
-        "id, assigned_agent, action_mode, status, user_safe_title, user_safe_message, internal_reason, proposal_id, opportunity_id, created_at, updated_at",
-      )
-      .eq("organization_id", context.organizationId);
-
-    if (filters.status) {
-      query = query.eq("status", filters.status);
-    }
-
-    if (filters.assignedAgent) {
-      query = query.eq("assigned_agent", filters.assignedAgent);
-    }
-
-    const { data, error } = await query
-      .order("created_at", { ascending: false })
-      .limit(filters.limit);
-
-    if (error) {
-      log.error("Failed to fetch copilot interventions", error);
-      return serverError("Failed to fetch copilot interventions", error);
-    }
-
-    return ok({
-      interventions: (data ?? []).map((row) =>
-        mapIntervention(row as CopilotInterventionRow),
-      ),
-    });
+    return await fetchInterventionsResponse(
+      context.organizationId,
+      filters,
+      log,
+    );
   } catch (error) {
     log.error("Unhandled copilot interventions error", error);
     return serverError("Internal server error", error);
@@ -108,6 +92,64 @@ function parseFilters(
     assignedAgent: assignedAgent?.trim() || null,
     limit: parsedLimit,
   };
+}
+
+async function fetchInterventionsResponse(
+  organizationId: string,
+  filters: ParsedFilters,
+  log: ReturnType<typeof createRequestLogger>["log"],
+) {
+  const adminClient = createAdminClient();
+  let query = adminClient
+    .from("copilot_interventions")
+    .select(
+      "id, assigned_agent, action_mode, status, user_safe_title, user_safe_message, internal_reason, proposal_id, opportunity_id, created_at, updated_at",
+    )
+    .eq("organization_id", organizationId);
+
+  if (filters.status) {
+    query = query.eq("status", filters.status);
+  }
+
+  if (filters.assignedAgent) {
+    query = query.eq("assigned_agent", filters.assignedAgent);
+  }
+
+  const { data, error } = await query
+    .order("created_at", { ascending: false })
+    .limit(filters.limit);
+
+  if (!error) {
+    return ok({
+      interventions: (data ?? []).map((row) =>
+        mapIntervention(row as CopilotInterventionRow),
+      ),
+    });
+  }
+
+  if (isMissingCopilotSchemaError(error)) {
+    if (filters.assignedAgent && filters.assignedAgent !== "reliability-overseer") {
+      return ok({ interventions: [] });
+    }
+
+    const fallbackLimit =
+      filters.status === null || filters.status === "open" ? filters.limit : 0;
+    const fallback = await fetchCompatibilityInterventions(
+      adminClient,
+      organizationId,
+      fallbackLimit,
+    );
+
+    if (!fallback.error) {
+      return ok({ interventions: fallback.interventions });
+    }
+
+    log.error("Failed to fetch compatibility copilot interventions", fallback.error);
+    return serverError("Failed to fetch copilot interventions", fallback.error);
+  }
+
+  log.error("Failed to fetch copilot interventions", error);
+  return serverError("Failed to fetch copilot interventions", error);
 }
 
 function mapIntervention(row: CopilotInterventionRow) {

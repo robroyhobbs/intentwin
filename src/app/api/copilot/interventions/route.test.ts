@@ -28,8 +28,52 @@ function mockContext(role: "admin" | "manager" | "member" = "admin") {
 
 function setupMockSupabase(opts?: {
   data?: unknown[];
-  error?: { message: string } | null;
+  error?: { code?: string; message: string } | null;
+  queries?: Array<{
+    data?: unknown[] | null;
+    error?: { code?: string; message: string } | null;
+    count?: number | null;
+  }>;
 }) {
+  if (opts?.queries) {
+    const queries = opts.queries.map((query) => {
+      const result = {
+        data: query.data ?? null,
+        error: query.error ?? null,
+        count: query.count ?? null,
+      };
+      const select = vi.fn(() => chain);
+      const eq = vi.fn(() => chain);
+      const not = vi.fn(() => chain);
+      const order = vi.fn(() => chain);
+      const limit = vi.fn(() => Promise.resolve(result));
+      const chain = {
+        select,
+        eq,
+        not,
+        order,
+        limit,
+        then: Promise.resolve(result).then.bind(Promise.resolve(result)),
+      };
+
+      return { chain, select, eq, not, order, limit };
+    });
+
+    let queryIndex = 0;
+    const from = vi.fn(() => {
+      const query = queries[queryIndex];
+      queryIndex += 1;
+      if (!query) {
+        throw new Error("Unexpected query");
+      }
+
+      return query.chain;
+    });
+
+    (createAdminClient as ReturnType<typeof vi.fn>).mockReturnValue({ from });
+    return { from, queries };
+  }
+
   const eq = vi.fn(() => chain);
   const order = vi.fn(() => chain);
   const limit = vi.fn(() =>
@@ -40,7 +84,6 @@ function setupMockSupabase(opts?: {
   );
   const select = vi.fn(() => chain);
   const from = vi.fn(() => chain);
-
   const chain = {
     select,
     eq,
@@ -139,5 +182,59 @@ describe("GET /api/copilot/interventions", () => {
     expect(mockDb.eq).toHaveBeenNthCalledWith(1, "organization_id", TEST_ORG_ID);
     expect(mockDb.eq).toHaveBeenNthCalledWith(2, "status", "open");
     expect(mockDb.limit).toHaveBeenCalledWith(10);
+  });
+
+  it("falls back to proposal failures when copilot tables are unavailable", async () => {
+    (getUserContext as ReturnType<typeof vi.fn>).mockResolvedValue(
+      mockContext("manager"),
+    );
+    const mockDb = setupMockSupabase({
+      queries: [
+        {
+          error: {
+            code: "PGRST205",
+            message: "Could not find the table 'public.copilot_interventions' in the schema cache",
+          },
+        },
+        {
+          data: [
+            {
+              id: "proposal-compat-1",
+              title: "Apex Federal Capture Plan",
+              generation_error: "Timed out while generating sections",
+              updated_at: "2026-03-09T09:03:07.775Z",
+            },
+          ],
+        },
+        {
+          count: 1,
+        },
+      ],
+    });
+
+    const { GET } = await loadRoute();
+    const response = await GET(makeRequest(`${BASE_URL}?limit=10`));
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      interventions: [
+        {
+          id: "compat-proposal-compat-1",
+          assignedAgent: "reliability-overseer",
+          actionMode: "automatic",
+          status: "open",
+          userSafeTitle: "Proposal generation issue detected",
+          userSafeMessage:
+            "Apex Federal Capture Plan hit a generation issue. Open the proposal to review the latest error and retry failed sections.",
+          internalReason: "Timed out while generating sections",
+          proposalId: "proposal-compat-1",
+          opportunityId: null,
+          createdAt: "2026-03-09T09:03:07.775Z",
+          updatedAt: "2026-03-09T09:03:07.775Z",
+        },
+      ],
+    });
+    expect(mockDb.from).toHaveBeenNthCalledWith(2, "proposals");
+    expect(mockDb.from).toHaveBeenNthCalledWith(3, "proposals");
   });
 });
