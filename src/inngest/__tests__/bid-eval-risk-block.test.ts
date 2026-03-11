@@ -3,7 +3,7 @@
  * weak-factor guidance into section generation prompts.
  */
 import { describe, it, expect } from "vitest";
-import { buildBidEvalRiskBlock } from "../functions/generate-single-section";
+import { buildBidEvalRiskBlock } from "@/lib/ai/pipeline/generate-single-section";
 import type { BidEvaluation } from "@/lib/ai/bid-scoring";
 
 function makeBidEval(overrides: Partial<Record<string, { score: number; rationale: string }>> = {}): BidEvaluation {

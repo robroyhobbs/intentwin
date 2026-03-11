@@ -2,11 +2,7 @@
  * Generate Single Section
  *
  * Generates a single proposal section with L1 context, persuasion layers,
- * industry context, and repetition limiting. Extracted from generate-proposal.ts
- * for file size compliance.
- *
- * Moved from src/inngest/functions/generate-single-section.ts to decouple
- * from Inngest runtime. This is a pure async function with no Inngest dependencies.
+ * industry context, and repetition limiting.
  */
 
 import { createAdminClient } from "@/lib/supabase/admin";
