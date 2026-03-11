@@ -264,7 +264,7 @@ async function runPostGeneration(
     }
 
     // Trigger quality review + compliance assessment via Inngest
-    // Same event contract as the Inngest generate-proposal function
+    // Emits the shared post-generation event consumed by review/compliance jobs
     try {
       await inngest.send({
         name: "proposal/generated",

@@ -7,13 +7,6 @@
  */
 
 export interface InngestEvents {
-  /** Trigger full proposal generation (10 sections) */
-  "proposal/generate.requested": {
-    data: {
-      proposalId: string;
-    };
-  };
-
   /** Fired after proposal generation completes successfully */
   "proposal/generated": {
     data: {
