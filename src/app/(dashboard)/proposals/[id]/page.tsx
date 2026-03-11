@@ -30,6 +30,7 @@ import {
   startProposalGenerationPoll,
   type ProposalGenerationPollHandle,
 } from "@/lib/proposals/proposal-generation-runner";
+import { prepareProposalDetailSnapshot } from "@/lib/proposals/proposal-detail-snapshot";
 
 import type { Proposal, Section } from "./_components/types";
 import { ProposalTopBar } from "./_components/proposal-top-bar";
@@ -146,15 +147,17 @@ export default function ProposalPage() {
 
   const applyProposalSnapshot = useCallback(
     (data: { proposal: Proposal; sections?: Section[] }) => {
-      setProposal(data.proposal);
-      setSections(data.sections || []);
+      const snapshot = prepareProposalDetailSnapshot({
+        proposal: data.proposal,
+        sections: data.sections,
+        initialSectionSet: initialSectionSet.current,
+      });
 
-      if (!initialSectionSet.current && data.sections?.length) {
-        const firstCompleted = data.sections.find(
-          (section) =>
-            section.generation_status === GenerationStatus.COMPLETED,
-        );
-        setActiveSection(firstCompleted?.id || data.sections[0].id);
+      setProposal(snapshot.proposal);
+      setSections(snapshot.sections);
+
+      if (snapshot.shouldSetInitialSection && snapshot.activeSectionId) {
+        setActiveSection(snapshot.activeSectionId);
         initialSectionSet.current = true;
       }
     },
@@ -383,8 +386,7 @@ export default function ProposalPage() {
             throw new Error(`Proposal refresh failed (${res.status})`);
           }
           const data = await res.json();
-          setProposal(data.proposal);
-          setSections(data.sections || []);
+          applyProposalSnapshot(data);
           const section = data.sections?.find(
             (s: Section) => s.id === sectionId,
           );
@@ -439,7 +441,7 @@ export default function ProposalPage() {
       generationPollHandleRef.current?.cancel();
       if (regenPollTimerRef.current) clearTimeout(regenPollTimerRef.current);
     };
-  }, []);
+  }, [applyProposalSnapshot]);
 
   async function handleApplyAIFixes(sectionId: string) {
     setApplyingFixes(true);

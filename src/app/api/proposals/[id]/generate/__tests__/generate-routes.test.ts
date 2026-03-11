@@ -203,6 +203,22 @@ async function parseResponse(res: Response) {
   return { status: res.status, body: await res.json() };
 }
 
+describe("POST /api/proposals/[id]/generate (deprecated)", () => {
+  it("returns 410 Gone with migration guidance", async () => {
+    const { POST } = await import("../route");
+
+    const response = await POST();
+    const data = await parseResponse(response);
+
+    expect(data.status).toBe(410);
+    expect(data.body).toEqual({
+      error:
+        "This endpoint has been replaced. Use /generate/setup, /generate/section, and /generate/finalize instead.",
+      code: "DEPRECATED",
+    });
+  });
+});
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // SETUP ROUTE
 // ═══════════════════════════════════════════════════════════════════════════════
