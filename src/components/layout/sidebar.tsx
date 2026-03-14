@@ -20,6 +20,7 @@ import {
   FileText,
   Info,
   Briefcase,
+  Bookmark,
   Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
@@ -67,6 +68,11 @@ const navGroups = [
         name: "Opportunity Matches",
         href: "/intelligence/matches",
         icon: Sparkles,
+      },
+      {
+        name: "Saved Matches",
+        href: "/intelligence/saved-matches",
+        icon: Bookmark,
       },
       {
         name: "Opportunities",

@@ -8,10 +8,11 @@ CREATE TABLE IF NOT EXISTS "public"."opportunity_match_feedback" (
     "agency" "text",
     "portal_url" "text",
     "status" "text" NOT NULL,
+    "proposal_id" "uuid",
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     CONSTRAINT "opportunity_match_feedback_status_check"
-      CHECK (("status" = ANY (ARRAY['saved'::"text", 'dismissed'::"text"])))
+      CHECK (("status" = ANY (ARRAY['saved'::"text", 'reviewing'::"text", 'proposal_started'::"text", 'dismissed'::"text"])))
 );
 
 ALTER TABLE ONLY "public"."opportunity_match_feedback"
@@ -24,6 +25,10 @@ ALTER TABLE ONLY "public"."opportunity_match_feedback"
 ALTER TABLE ONLY "public"."opportunity_match_feedback"
     ADD CONSTRAINT "opportunity_match_feedback_user_id_fkey"
     FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+ALTER TABLE ONLY "public"."opportunity_match_feedback"
+    ADD CONSTRAINT "opportunity_match_feedback_proposal_id_fkey"
+    FOREIGN KEY ("proposal_id") REFERENCES "public"."proposals"("id") ON DELETE SET NULL;
 
 CREATE UNIQUE INDEX "idx_opportunity_match_feedback_org_opportunity"
     ON "public"."opportunity_match_feedback" USING "btree" ("organization_id", "opportunity_id");

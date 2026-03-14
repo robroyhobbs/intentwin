@@ -70,4 +70,37 @@ describe("buildOpportunityProposalPrefill", () => {
       }).scope_description,
     ).toBe("ERP Support");
   });
+
+  it("preserves linked opportunity metadata for later proposal linkage", () => {
+    expect(
+      buildOpportunityProposalPrefill({
+        id: "opp-3",
+        source: "socrata:chi",
+        source_id: "src-3",
+        title: "Network Upgrade",
+        description: "Modernize municipal switching",
+        agency: "City Infrastructure",
+        jurisdiction: null,
+        city: "Chicago",
+        state: "IL",
+        agency_level: "local",
+        naics_code: "541512",
+        native_category_code: null,
+        native_category_name: null,
+        posted_date: null,
+        response_deadline: null,
+        estimated_value: null,
+        set_aside_type: null,
+        contact_name: null,
+        contact_email: null,
+        contact_phone: null,
+        portal_url: "https://example.com/opp-3",
+        status: "open",
+      }).opportunity_source,
+    ).toEqual({
+      id: "opp-3",
+      title: "Network Upgrade",
+      portal_url: "https://example.com/opp-3",
+    });
+  });
 });

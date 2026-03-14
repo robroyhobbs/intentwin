@@ -132,6 +132,36 @@ export async function POST(request: NextRequest) {
       return serverError("Failed to create proposal", error);
     }
 
+    const opportunitySource =
+      intake_data &&
+      typeof intake_data === "object" &&
+      !Array.isArray(intake_data)
+        ? (intake_data as Record<string, unknown>).opportunity_source
+        : null;
+
+    const opportunitySourceId =
+      opportunitySource &&
+      typeof opportunitySource === "object" &&
+      !Array.isArray(opportunitySource) &&
+      typeof (opportunitySource as Record<string, unknown>).id === "string"
+        ? (opportunitySource as Record<string, unknown>).id
+        : null;
+
+    if (proposal?.id && opportunitySourceId) {
+      const { error: feedbackError } = await adminClient
+        .from("opportunity_match_feedback")
+        .update({
+          proposal_id: proposal.id,
+          status: "proposal_started",
+        })
+        .eq("organization_id", context.organizationId)
+        .eq("opportunity_id", opportunitySourceId);
+
+      if (feedbackError) {
+        logger.error("Failed to link proposal to saved match", feedbackError);
+      }
+    }
+
     // Increment usage counter
     await incrementUsage(context.organizationId, "proposals_created");
 

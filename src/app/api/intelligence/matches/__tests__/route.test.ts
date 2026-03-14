@@ -7,6 +7,7 @@ const {
   mockFrom,
   mockGetOpportunityMatches,
   mockIntelligenceClient,
+  mockNotFound,
 } = vi.hoisted(() => {
   const getOpportunityMatches = vi.fn();
   return {
@@ -18,6 +19,7 @@ const {
       isConfigured: true,
       getOpportunityMatches: (...args: unknown[]) => getOpportunityMatches(...args),
     },
+    mockNotFound: vi.fn(),
   };
 });
 
@@ -213,11 +215,13 @@ describe("GET /api/intelligence/matches", () => {
                     opportunity_id: "opp-1",
                     status: "saved",
                     updated_at: "2026-03-14T12:00:00.000Z",
+                    proposal_id: null,
                   },
                   {
                     opportunity_id: "opp-2",
                     status: "dismissed",
                     updated_at: "2026-03-14T12:01:00.000Z",
+                    proposal_id: null,
                   },
                 ],
                 error: null,
@@ -322,10 +326,12 @@ describe("GET /api/intelligence/matches", () => {
       "opp-1": {
         status: "saved",
         updated_at: "2026-03-14T12:00:00.000Z",
+        proposal_id: null,
       },
       "opp-2": {
         status: "dismissed",
         updated_at: "2026-03-14T12:01:00.000Z",
+        proposal_id: null,
       },
     });
   });
@@ -408,6 +414,7 @@ describe("PATCH /api/intelligence/matches", () => {
         opportunity_id: "opp-1",
         status: "saved",
         updated_at: "2026-03-14T12:00:00.000Z",
+        proposal_id: null,
       },
       error: null,
     });
@@ -450,6 +457,56 @@ describe("PATCH /api/intelligence/matches", () => {
         agency: "City IT",
         portal_url: "https://example.com/opp-1",
         status: "saved",
+        proposal_id: null,
+      }),
+      { onConflict: "organization_id,opportunity_id" },
+    );
+  });
+
+  it("accepts reviewing and proposal_started lifecycle statuses", async () => {
+    const mockSingle = vi.fn().mockResolvedValue({
+      data: {
+        opportunity_id: "opp-1",
+        status: "proposal_started",
+        updated_at: "2026-03-14T12:00:00.000Z",
+        proposal_id: "proposal-123",
+      },
+      error: null,
+    });
+    const mockSelect = vi.fn().mockReturnValue({ single: mockSingle });
+    const mockUpsert = vi.fn().mockReturnValue({ select: mockSelect });
+
+    mockGetUserContext.mockResolvedValue(fakeContext);
+    mockCheckFeature.mockResolvedValue(true);
+    mockFrom.mockImplementation((table: string) => {
+      if (table !== "opportunity_match_feedback") {
+        throw new Error(`Unexpected table ${table}`);
+      }
+      return {
+        upsert: mockUpsert,
+      };
+    });
+
+    const res = await PATCH(
+      makePatchRequest({
+        opportunity_id: "opp-1",
+        status: "proposal_started",
+        proposal_id: "proposal-123",
+        opportunity: {
+          id: "opp-1",
+          source: "socrata:la",
+          title: "Managed IT Services",
+          agency: "City IT",
+          portal_url: "https://example.com/opp-1",
+        },
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(mockUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "proposal_started",
+        proposal_id: "proposal-123",
       }),
       { onConflict: "organization_id,opportunity_id" },
     );
@@ -486,5 +543,86 @@ describe("PATCH /api/intelligence/matches", () => {
     expect(mockDelete).toHaveBeenCalledTimes(1);
     expect(mockDeleteEqOrg).toHaveBeenCalledWith("organization_id", "org-1");
     expect(mockDeleteEqOpportunity).toHaveBeenCalledWith("opportunity_id", "opp-1");
+  });
+});
+
+describe("GET /api/intelligence/matches/saved", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns saved matches with linked proposal metadata", async () => {
+    mockGetUserContext.mockResolvedValue(fakeContext);
+    mockCheckFeature.mockResolvedValue(true);
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "opportunity_match_feedback") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              in: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: [
+                    {
+                      opportunity_id: "opp-1",
+                      source: "socrata:la",
+                      title: "Managed IT Services",
+                      agency: "City IT",
+                      portal_url: "https://example.com/opp-1",
+                      status: "saved",
+                      updated_at: "2026-03-14T12:00:00.000Z",
+                      proposal_id: "proposal-123",
+                    },
+                  ],
+                  error: null,
+                }),
+              }),
+            }),
+          }),
+        };
+      }
+
+      if (table === "proposals") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              in: vi.fn().mockResolvedValue({
+                data: [
+                  {
+                    id: "proposal-123",
+                    title: "City IT Proposal",
+                    status: "drafting",
+                    updated_at: "2026-03-14T12:05:00.000Z",
+                  },
+                ],
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
+
+      throw new Error(`Unexpected table ${table}`);
+    });
+
+    const module = await import("../saved/route");
+    const res = await module.GET(
+      new NextRequest("http://localhost/api/intelligence/matches/saved"),
+    );
+
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({
+      saved_matches: [
+        expect.objectContaining({
+          opportunity_id: "opp-1",
+          status: "saved",
+          proposal: {
+            id: "proposal-123",
+            title: "City IT Proposal",
+            status: "drafting",
+            updated_at: "2026-03-14T12:05:00.000Z",
+          },
+        }),
+      ],
+    });
   });
 });

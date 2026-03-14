@@ -30,7 +30,12 @@ function parseNaicsCodes(value: string | null): string[] {
 function isFeedbackStatus(
   value: unknown,
 ): value is OpportunityMatchFeedbackStatus {
-  return value === "saved" || value === "dismissed";
+  return (
+    value === "saved" ||
+    value === "reviewing" ||
+    value === "proposal_started" ||
+    value === "dismissed"
+  );
 }
 
 function normalizeText(value: unknown, maxLength = 240): string | null {
@@ -132,13 +137,17 @@ export async function GET(request: NextRequest) {
     const opportunityIds = response.matches.map((match) => match.opportunity_id);
     let feedbackByOpportunityId: Record<
       string,
-      { status: OpportunityMatchFeedbackStatus; updated_at: string }
+      {
+        status: OpportunityMatchFeedbackStatus;
+        updated_at: string;
+        proposal_id: string | null;
+      }
     > = {};
 
     if (opportunityIds.length > 0) {
       const feedbackRes = await adminClient
         .from("opportunity_match_feedback")
-        .select("opportunity_id, status, updated_at")
+        .select("opportunity_id, status, updated_at, proposal_id")
         .eq("organization_id", context.organizationId)
         .in("opportunity_id", opportunityIds);
 
@@ -149,7 +158,14 @@ export async function GET(request: NextRequest) {
       feedbackByOpportunityId = Object.fromEntries(
         (feedbackRes.data ?? []).flatMap((row) =>
           isFeedbackStatus(row.status)
-            ? [[row.opportunity_id, { status: row.status, updated_at: row.updated_at }]]
+            ? [[
+                row.opportunity_id,
+                {
+                  status: row.status,
+                  updated_at: row.updated_at,
+                  proposal_id: row.proposal_id ?? null,
+                },
+              ]]
             : [],
         ),
       );
@@ -198,8 +214,12 @@ export async function PATCH(request: NextRequest) {
 
     const status = body.status;
     if (status !== null && !isFeedbackStatus(status)) {
-      return badRequest("status must be 'saved', 'dismissed', or null");
+      return badRequest(
+        "status must be 'saved', 'reviewing', 'proposal_started', 'dismissed', or null",
+      );
     }
+
+    const proposalId = normalizeText(body.proposal_id, 120);
 
     const adminClient = createAdminClient();
 
@@ -241,10 +261,11 @@ export async function PATCH(request: NextRequest) {
           agency: normalizeText(opportunity?.agency, 240),
           portal_url: normalizeText(opportunity?.portal_url, 500),
           status,
+          proposal_id: proposalId,
         },
         { onConflict: "organization_id,opportunity_id" },
       )
-      .select("opportunity_id, status, updated_at")
+      .select("opportunity_id, status, updated_at, proposal_id")
       .single();
 
     if (upsertRes.error || !upsertRes.data) {
@@ -256,6 +277,7 @@ export async function PATCH(request: NextRequest) {
         opportunity_id: upsertRes.data.opportunity_id,
         status: upsertRes.data.status,
         updated_at: upsertRes.data.updated_at,
+        proposal_id: upsertRes.data.proposal_id ?? null,
       },
     });
   } catch (error) {
