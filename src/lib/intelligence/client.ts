@@ -14,6 +14,8 @@ import type {
   ProposalIntelligence,
   WinProbabilityResponse,
   CompetitiveLandscapeResponse,
+  OpportunityMatchesParams,
+  OpportunityMatchesResponse,
 } from "./types";
 import type {
   IntelligenceService,
@@ -117,6 +119,17 @@ class IntelligenceClient implements IntelligenceService {
     return this.cachedGet<AwardsSearchResponse>(
       `/api/v1/awards/search?${searchParams.toString()}`,
       `awards:${searchParams.toString()}`,
+    );
+  }
+
+  // ── Opportunity Matching ───────────────────────────────────────────────
+
+  async getOpportunityMatches(
+    params: OpportunityMatchesParams,
+  ): Promise<OpportunityMatchesResponse | null> {
+    return this.postJson<OpportunityMatchesResponse>(
+      "/api/v1/opportunities/matches",
+      params,
     );
   }
 
@@ -292,6 +305,71 @@ class IntelligenceClient implements IntelligenceService {
       cacheWritesSinceCleanup++;
       if (cacheWritesSinceCleanup % CACHE_CLEANUP_INTERVAL === 0) {
         cleanupCache(Date.now());
+      }
+
+      return data;
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        logger.warn("Intelligence API request timed out", { path });
+      } else {
+        logger.warn("Intelligence API request failed", {
+          error: err instanceof Error ? err.message : String(err),
+          path,
+        });
+      }
+      return null;
+    }
+  }
+
+  private async postJson<T>(path: string, body: unknown): Promise<T | null> {
+    if (!this.isConfigured) return null;
+
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
+      const requestStartedAt = Date.now();
+
+      const response = await fetch(`${this.baseUrl}${path}`, {
+        method: "POST",
+        headers: {
+          "X-Service-Key": this.apiKey!,
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeout);
+      const requestDurationMs = Date.now() - requestStartedAt;
+      if (requestDurationMs > REQUEST_SLOW_WARN_MS) {
+        logger.warn("Intelligence API request exceeded SLO threshold", {
+          path,
+          durationMs: requestDurationMs,
+          sloMs: REQUEST_SLOW_WARN_MS,
+        });
+      }
+
+      if (!response.ok) {
+        logger.warn("Intelligence API returned non-OK status", {
+          status: response.status,
+          path,
+        });
+        return null;
+      }
+
+      const data = (await response.json()) as T;
+      if (
+        data &&
+        typeof data === "object" &&
+        "error" in data &&
+        Object.keys(data).length <= 2
+      ) {
+        logger.warn("Intelligence API returned error payload", {
+          path,
+          error: (data as Record<string, unknown>).error,
+        });
+        return null;
       }
 
       return data;

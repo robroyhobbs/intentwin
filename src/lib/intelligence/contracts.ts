@@ -5,6 +5,8 @@ import type {
   ProposalIntelligence,
   WinProbabilityResponse,
   CompetitiveLandscapeResponse,
+  OpportunityMatchesParams,
+  OpportunityMatchesResponse,
 } from "./types";
 
 export interface AgencyProfileParams {
@@ -49,6 +51,7 @@ export interface IntelligenceService {
   getAgencyProfile(agencyName: AgencyProfileParams["agencyName"]): Promise<AgencyProfileResponse | null>;
   getPricingRates(params: PricingRatesParams): Promise<PricingLookupResponse | null>;
   searchAwards(params: AwardsSearchParams): Promise<AwardsSearchResponse | null>;
+  getOpportunityMatches(params: OpportunityMatchesParams): Promise<OpportunityMatchesResponse | null>;
   getWinProbability(params: WinProbabilityParams): Promise<WinProbabilityResponse | null>;
   getCompetitiveLandscape(params: CompetitiveLandscapeParams): Promise<CompetitiveLandscapeResponse | null>;
   getProposalIntelligence(params: ProposalIntelligenceParams): Promise<ProposalIntelligence | null>;

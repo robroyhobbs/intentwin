@@ -246,6 +246,59 @@ export interface OpportunityStatsResponse {
   by_state: Record<string, number>;
 }
 
+// ── Opportunity Matching ────────────────────────────────────────────────────
+
+export interface OpportunityMatchProfile {
+  naics_codes?: string[];
+  service_lines?: string[];
+  capability_keywords?: string[];
+  certifications?: string[];
+  preferred_states?: string[];
+  preferred_cities?: string[];
+  eligible_set_asides?: string[];
+}
+
+export interface OpportunityMatchesParams {
+  profile: OpportunityMatchProfile;
+  filters?: {
+    source?: string;
+    agency_level?: "local" | "state" | "federal";
+    naics_codes?: string[];
+    city?: string;
+    state?: string;
+    q?: string;
+    deadline_after?: string;
+    deadline_before?: string;
+    posted_after?: string;
+  };
+  limit?: number;
+}
+
+export interface OpportunityMatchBreakdown {
+  naics: number;
+  capabilities: number;
+  geography: number;
+  certifications: number;
+  set_aside: number;
+  deadline: number;
+}
+
+export interface OpportunityMatch {
+  opportunity_id: string;
+  score: number;
+  confidence: "high" | "medium" | "low";
+  breakdown: OpportunityMatchBreakdown;
+  reasons: string[];
+  risks: string[];
+  opportunity: OpportunityRecord;
+}
+
+export interface OpportunityMatchesResponse {
+  matches: OpportunityMatch[];
+  total_candidates: number;
+  limit: number;
+}
+
 // ── Composite: Proposal Intelligence Bundle ──────────────────────────────────
 
 export interface ProposalIntelligence {

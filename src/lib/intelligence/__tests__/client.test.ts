@@ -156,6 +156,52 @@ const MOCK_COMPETITIVE_LANDSCAPE = {
   query: { agency: "VA", naics_code: "541511" },
 };
 
+const MOCK_OPPORTUNITY_MATCHES = {
+  matches: [
+    {
+      opportunity_id: "opp-1",
+      score: 82,
+      confidence: "high" as const,
+      breakdown: {
+        naics: 30,
+        capabilities: 30,
+        geography: 10,
+        certifications: 7,
+        set_aside: 5,
+        deadline: 0,
+      },
+      reasons: ["NAICS match: 541512"],
+      risks: [],
+      opportunity: {
+        id: "opp-1",
+        source: "socrata:la",
+        source_id: "src-1",
+        title: "Managed IT Services",
+        description: "Cloud migration support",
+        agency: "City IT",
+        jurisdiction: null,
+        city: "Los Angeles",
+        state: "CA",
+        agency_level: "local" as const,
+        naics_code: "541512",
+        native_category_code: null,
+        native_category_name: null,
+        posted_date: "2026-03-01",
+        response_deadline: "2026-03-28T00:00:00.000Z",
+        estimated_value: 100000,
+        set_aside_type: "small business",
+        contact_name: null,
+        contact_email: null,
+        contact_phone: null,
+        portal_url: "https://example.com",
+        status: "open" as const,
+      },
+    },
+  ],
+  total_candidates: 12,
+  limit: 10,
+};
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // Tests
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -233,6 +279,44 @@ describe("IntelligenceClient", () => {
       expect(calledUrl).toContain("agency=VA");
       expect(calledUrl).toContain("naics_code=541511");
       expect(calledUrl).toContain("limit=10");
+    });
+
+    it("posts opportunity matches successfully", async () => {
+      mockFetch.mockResolvedValueOnce(mockResponse(MOCK_OPPORTUNITY_MATCHES));
+      const client = await getClient();
+
+      const result = await client.getOpportunityMatches({
+        profile: {
+          naics_codes: ["541512"],
+          capability_keywords: ["cloud migration"],
+        },
+        filters: {
+          state: "CA",
+        },
+        limit: 10,
+      });
+
+      expect(result).toEqual(MOCK_OPPORTUNITY_MATCHES);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "http://localhost:3100/api/v1/opportunities/matches",
+        expect.objectContaining({
+          method: "POST",
+          headers: expect.objectContaining({
+            "X-Service-Key": "test-service-key",
+            "Content-Type": "application/json",
+          }),
+          body: JSON.stringify({
+            profile: {
+              naics_codes: ["541512"],
+              capability_keywords: ["cloud migration"],
+            },
+            filters: {
+              state: "CA",
+            },
+            limit: 10,
+          }),
+        }),
+      );
     });
 
     it("fetches composite proposal intelligence in parallel", async () => {

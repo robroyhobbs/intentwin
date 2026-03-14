@@ -19,4 +19,9 @@ export type {
   OpportunityRecord,
   OpportunitySearchResponse,
   OpportunityStatsResponse,
+  OpportunityMatchProfile,
+  OpportunityMatchesParams,
+  OpportunityMatchBreakdown,
+  OpportunityMatch,
+  OpportunityMatchesResponse,
 } from "@/lib/intelligence/types";

@@ -64,6 +64,11 @@ const navGroups = [
         icon: DollarSign,
       },
       {
+        name: "Opportunity Matches",
+        href: "/intelligence/matches",
+        icon: Sparkles,
+      },
+      {
         name: "Opportunities",
         href: "/intelligence/opportunities",
         icon: Briefcase,
