@@ -4,10 +4,15 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Briefcase, Search, Settings2, Sparkles } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
 import { useDebounce } from "@/hooks/use-debounce";
 import { NaicsCombobox } from "@/components/naics-combobox";
 import type { NaicsEntry } from "@/lib/naics/lookup";
+import {
+  buildOpportunityProposalPrefill,
+  type OpportunityMatchFeedbackStatus,
+} from "@/lib/intelligence";
 import { IntelligenceLoading } from "../_components/intelligence-loading";
 import { NotConfigured } from "../_components/not-configured-view";
 import { SourceAttribution } from "../_components/source-attribution";
@@ -27,6 +32,10 @@ interface OpportunityMatchesApiResponse extends OpportunityMatchesResponse {
     certificationCount: number;
     naicsCount: number;
   };
+  feedback_by_opportunity_id: Record<
+    string,
+    { status: OpportunityMatchFeedbackStatus; updated_at: string }
+  >;
 }
 
 function buildQuery(params: Record<string, string>): string {
@@ -61,6 +70,11 @@ export default function OpportunityMatchesPage() {
   const [configured, setConfigured] = useState(true);
   const [selectedOpportunity, setSelectedOpportunity] =
     useState<OpportunityRecord | null>(null);
+  const [feedbackByOpportunityId, setFeedbackByOpportunityId] = useState<
+    Record<string, { status: OpportunityMatchFeedbackStatus; updated_at: string }>
+  >({});
+  const [pendingFeedbackByOpportunityId, setPendingFeedbackByOpportunityId] =
+    useState<Record<string, boolean>>({});
 
   const debouncedKeyword = useDebounce(keyword);
   const debouncedCity = useDebounce(city);
@@ -106,6 +120,7 @@ export default function OpportunityMatchesPage() {
 
         const result = (await res.json()) as OpportunityMatchesApiResponse;
         setData(result);
+        setFeedbackByOpportunityId(result.feedback_by_opportunity_id ?? {});
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : "Network error");
@@ -127,19 +142,118 @@ export default function OpportunityMatchesPage() {
   function handleStartProposal(opp: OpportunityRecord) {
     sessionStorage.setItem(
       "opportunity-prefill",
-      JSON.stringify({
-        client_name: opp.agency,
-        scope_description: opp.description ?? opp.title,
-        solicitation_type: "RFP",
-        timeline_expectation: opp.response_deadline ?? "",
-        opportunity_source: {
-          id: opp.id,
-          title: opp.title,
-          portal_url: opp.portal_url,
-        },
-      }),
+      JSON.stringify(buildOpportunityProposalPrefill(opp)),
     );
     router.push("/proposals/create");
+  }
+
+  async function updateFeedback(
+    opportunity: OpportunityRecord,
+    nextStatus: OpportunityMatchFeedbackStatus | null,
+  ) {
+    const previous = feedbackByOpportunityId[opportunity.id];
+    const optimistic =
+      nextStatus === null
+        ? { ...feedbackByOpportunityId }
+        : {
+            ...feedbackByOpportunityId,
+            [opportunity.id]: {
+              status: nextStatus,
+              updated_at: new Date().toISOString(),
+            },
+          };
+
+    if (nextStatus === null) {
+      delete optimistic[opportunity.id];
+    }
+
+    setFeedbackByOpportunityId(optimistic);
+    setPendingFeedbackByOpportunityId((current) => ({
+      ...current,
+      [opportunity.id]: true,
+    }));
+
+    try {
+      const res = await authFetch("/api/intelligence/matches", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          opportunity_id: opportunity.id,
+          status: nextStatus,
+          opportunity: {
+            id: opportunity.id,
+            source: opportunity.source,
+            title: opportunity.title,
+            agency: opportunity.agency,
+            portal_url: opportunity.portal_url,
+          },
+        }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? `Request failed (${res.status})`);
+      }
+
+      const result = (await res.json()) as {
+        feedback: {
+          opportunity_id: string;
+          status: OpportunityMatchFeedbackStatus;
+          updated_at: string;
+        } | null;
+      };
+
+      setFeedbackByOpportunityId((current) => {
+        const next = { ...current };
+        if (result.feedback) {
+          next[opportunity.id] = {
+            status: result.feedback.status,
+            updated_at: result.feedback.updated_at,
+          };
+        } else {
+          delete next[opportunity.id];
+        }
+        return next;
+      });
+
+      if (nextStatus === "saved") {
+        toast.success("Match saved");
+      } else if (nextStatus === "dismissed") {
+        toast.success("Match dismissed");
+        if (selectedOpportunity?.id === opportunity.id) {
+          setSelectedOpportunity(null);
+        }
+      } else {
+        toast.success("Match feedback cleared");
+      }
+    } catch (err) {
+      setFeedbackByOpportunityId((current) => {
+        const next = { ...current };
+        if (previous) {
+          next[opportunity.id] = previous;
+        } else {
+          delete next[opportunity.id];
+        }
+        return next;
+      });
+      toast.error(err instanceof Error ? err.message : "Failed to update match");
+    } finally {
+      setPendingFeedbackByOpportunityId((current) => ({
+        ...current,
+        [opportunity.id]: false,
+      }));
+    }
+  }
+
+  function handleSave(opportunity: OpportunityRecord) {
+    const existing = feedbackByOpportunityId[opportunity.id];
+    void updateFeedback(opportunity, existing?.status === "saved" ? null : "saved");
+  }
+
+  function handleDismiss(opportunity: OpportunityRecord) {
+    void updateFeedback(opportunity, "dismissed");
   }
 
   if (loading && !data) {
@@ -150,7 +264,14 @@ export default function OpportunityMatchesPage() {
     return <NotConfigured />;
   }
 
-  const matches = data?.matches ?? [];
+  const matches = (data?.matches ?? [])
+    .filter((match) => feedbackByOpportunityId[match.opportunity_id]?.status !== "dismissed")
+    .sort((a, b) => {
+      const aSaved = feedbackByOpportunityId[a.opportunity_id]?.status === "saved";
+      const bSaved = feedbackByOpportunityId[b.opportunity_id]?.status === "saved";
+      if (aSaved === bSaved) return 0;
+      return aSaved ? -1 : 1;
+    });
   const profileSummary = data?.profile_summary ?? {
     productCount: 0,
     serviceLineCount: 0,
@@ -297,8 +418,16 @@ export default function OpportunityMatchesPage() {
             <MatchCard
               key={match.opportunity_id}
               match={match}
+              feedbackStatus={
+                feedbackByOpportunityId[match.opportunity_id]?.status ?? null
+              }
+              feedbackPending={
+                pendingFeedbackByOpportunityId[match.opportunity_id] ?? false
+              }
               onViewDetails={() => setSelectedOpportunity(match.opportunity)}
               onStartProposal={() => handleStartProposal(match.opportunity)}
+              onSave={() => handleSave(match.opportunity)}
+              onDismiss={() => handleDismiss(match.opportunity)}
             />
           ))}
         </div>
@@ -315,6 +444,10 @@ export default function OpportunityMatchesPage() {
             router.push(`/intelligence/agencies?select=${encodeURIComponent(agency)}`)
           }
           onNaicsClick={(code) => router.push(`/intelligence/naics/${code}`)}
+          feedbackStatus={feedbackByOpportunityId[selectedOpportunity.id]?.status ?? null}
+          feedbackPending={pendingFeedbackByOpportunityId[selectedOpportunity.id] ?? false}
+          onSaveMatch={handleSave}
+          onDismissMatch={handleDismiss}
         />
       )}
     </div>

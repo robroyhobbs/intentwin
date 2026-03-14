@@ -293,6 +293,14 @@ export interface OpportunityMatch {
   opportunity: OpportunityRecord;
 }
 
+export type OpportunityMatchFeedbackStatus = "saved" | "dismissed";
+
+export interface OpportunityMatchFeedback {
+  opportunity_id: string;
+  status: OpportunityMatchFeedbackStatus;
+  updated_at: string;
+}
+
 export interface OpportunityMatchesResponse {
   matches: OpportunityMatch[];
   total_candidates: number;

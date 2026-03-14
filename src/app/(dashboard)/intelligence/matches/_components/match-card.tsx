@@ -2,19 +2,26 @@
 
 import {
   ArrowRight,
+  Bookmark,
   Building2,
   Calendar,
   CheckCircle2,
   CircleAlert,
+  EyeOff,
   MapPin,
   Sparkles,
 } from "lucide-react";
+import type { OpportunityMatchFeedbackStatus } from "@/lib/intelligence/types";
 import type { OpportunityMatch } from "../../_components/types";
 
 interface MatchCardProps {
   match: OpportunityMatch;
+  feedbackStatus: OpportunityMatchFeedbackStatus | null;
+  feedbackPending: boolean;
   onViewDetails: () => void;
   onStartProposal: () => void;
+  onSave: () => void;
+  onDismiss: () => void;
 }
 
 function formatDeadline(value: string | null): string {
@@ -41,10 +48,19 @@ const CONFIDENCE_STYLES = {
 
 export function MatchCard({
   match,
+  feedbackStatus,
+  feedbackPending,
   onViewDetails,
   onStartProposal,
+  onSave,
+  onDismiss,
 }: MatchCardProps) {
   const opportunity = match.opportunity;
+  const saveLabel = feedbackPending
+    ? "Saving..."
+    : feedbackStatus === "saved"
+      ? "Saved"
+      : "Save match";
 
   return (
     <div className="card p-5">
@@ -151,6 +167,22 @@ export function MatchCard({
       </div>
 
       <div className="mt-5 flex flex-wrap gap-3">
+        <button
+          onClick={onSave}
+          disabled={feedbackPending}
+          className="btn-ghost inline-flex items-center gap-2 text-sm"
+        >
+          <Bookmark className="h-4 w-4" />
+          {saveLabel}
+        </button>
+        <button
+          onClick={onDismiss}
+          disabled={feedbackPending}
+          className="btn-ghost inline-flex items-center gap-2 text-sm"
+        >
+          <EyeOff className="h-4 w-4" />
+          Dismiss
+        </button>
         <button onClick={onViewDetails} className="btn-ghost text-sm">
           View details
         </button>

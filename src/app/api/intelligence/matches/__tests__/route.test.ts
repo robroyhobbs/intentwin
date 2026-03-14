@@ -1,10 +1,25 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
-const mockGetUserContext = vi.fn();
-const mockCheckFeature = vi.fn();
-const mockFrom = vi.fn();
-const mockGetOpportunityMatches = vi.fn();
+const {
+  mockGetUserContext,
+  mockCheckFeature,
+  mockFrom,
+  mockGetOpportunityMatches,
+  mockIntelligenceClient,
+} = vi.hoisted(() => {
+  const getOpportunityMatches = vi.fn();
+  return {
+    mockGetUserContext: vi.fn(),
+    mockCheckFeature: vi.fn(),
+    mockFrom: vi.fn(),
+    mockGetOpportunityMatches: getOpportunityMatches,
+    mockIntelligenceClient: {
+      isConfigured: true,
+      getOpportunityMatches: (...args: unknown[]) => getOpportunityMatches(...args),
+    },
+  };
+});
 
 vi.mock("@/lib/supabase/auth-api", () => ({
   getUserContext: (...args: unknown[]) => mockGetUserContext(...args),
@@ -19,17 +34,23 @@ vi.mock("@/lib/supabase/admin", () => ({
 }));
 
 vi.mock("@/lib/intelligence", () => ({
-  intelligenceClient: {
-    isConfigured: true,
-    getOpportunityMatches: (...args: unknown[]) =>
-      mockGetOpportunityMatches(...args),
-  },
+  intelligenceClient: mockIntelligenceClient,
 }));
 
-import { GET } from "../route";
+import { GET, PATCH } from "../route";
 
 function makeRequest(url = "http://localhost/api/intelligence/matches") {
   return new NextRequest(url);
+}
+
+function makePatchRequest(body: unknown) {
+  return new NextRequest("http://localhost/api/intelligence/matches", {
+    method: "PATCH",
+    body: JSON.stringify(body),
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
 }
 
 const fakeContext = {
@@ -41,6 +62,7 @@ const fakeContext = {
 describe("GET /api/intelligence/matches", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockIntelligenceClient.isConfigured = true;
   });
 
   it("returns 401 when unauthenticated", async () => {
@@ -155,6 +177,159 @@ describe("GET /api/intelligence/matches", () => {
     });
   });
 
+  it("merges saved and dismissed feedback into the response payload", async () => {
+    mockGetUserContext.mockResolvedValue(fakeContext);
+    mockCheckFeature.mockResolvedValue(true);
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "company_context") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: [], error: null }),
+            }),
+          }),
+        };
+      }
+
+      if (table === "product_contexts") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({ data: [], error: null }),
+              }),
+            }),
+          }),
+        };
+      }
+
+      if (table === "opportunity_match_feedback") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              in: vi.fn().mockResolvedValue({
+                data: [
+                  {
+                    opportunity_id: "opp-1",
+                    status: "saved",
+                    updated_at: "2026-03-14T12:00:00.000Z",
+                  },
+                  {
+                    opportunity_id: "opp-2",
+                    status: "dismissed",
+                    updated_at: "2026-03-14T12:01:00.000Z",
+                  },
+                ],
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
+
+      throw new Error(`Unexpected table ${table}`);
+    });
+    mockGetOpportunityMatches.mockResolvedValue({
+      matches: [
+        {
+          opportunity_id: "opp-1",
+          score: 88,
+          confidence: "high",
+          breakdown: {
+            naics: 30,
+            capabilities: 30,
+            geography: 10,
+            certifications: 8,
+            set_aside: 5,
+            deadline: 5,
+          },
+          reasons: [],
+          risks: [],
+          opportunity: {
+            id: "opp-1",
+            source: "socrata:la",
+            source_id: "src-1",
+            title: "Managed IT Services",
+            description: null,
+            agency: "City IT",
+            jurisdiction: null,
+            city: "Los Angeles",
+            state: "CA",
+            agency_level: "local",
+            naics_code: "541512",
+            native_category_code: null,
+            native_category_name: null,
+            posted_date: null,
+            response_deadline: null,
+            estimated_value: null,
+            set_aside_type: null,
+            contact_name: null,
+            contact_email: null,
+            contact_phone: null,
+            portal_url: null,
+            status: "open",
+          },
+        },
+        {
+          opportunity_id: "opp-2",
+          score: 61,
+          confidence: "medium",
+          breakdown: {
+            naics: 20,
+            capabilities: 20,
+            geography: 10,
+            certifications: 5,
+            set_aside: 3,
+            deadline: 3,
+          },
+          reasons: [],
+          risks: [],
+          opportunity: {
+            id: "opp-2",
+            source: "socrata:nyc",
+            source_id: "src-2",
+            title: "ERP Support",
+            description: null,
+            agency: "City Finance",
+            jurisdiction: null,
+            city: "New York",
+            state: "NY",
+            agency_level: "local",
+            naics_code: "541511",
+            native_category_code: null,
+            native_category_name: null,
+            posted_date: null,
+            response_deadline: null,
+            estimated_value: null,
+            set_aside_type: null,
+            contact_name: null,
+            contact_email: null,
+            contact_phone: null,
+            portal_url: null,
+            status: "open",
+          },
+        },
+      ],
+      total_candidates: 2,
+      limit: 10,
+    });
+
+    const res = await GET(makeRequest());
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.feedback_by_opportunity_id).toEqual({
+      "opp-1": {
+        status: "saved",
+        updated_at: "2026-03-14T12:00:00.000Z",
+      },
+      "opp-2": {
+        status: "dismissed",
+        updated_at: "2026-03-14T12:01:00.000Z",
+      },
+    });
+  });
+
   it("returns 502 when the intelligence service call fails", async () => {
     mockGetUserContext.mockResolvedValue(fakeContext);
     mockCheckFeature.mockResolvedValue(true);
@@ -184,5 +359,132 @@ describe("GET /api/intelligence/matches", () => {
     const res = await GET(makeRequest());
 
     expect(res.status).toBe(502);
+  });
+});
+
+describe("PATCH /api/intelligence/matches", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockIntelligenceClient.isConfigured = true;
+  });
+
+  it("returns 401 when unauthenticated", async () => {
+    mockGetUserContext.mockResolvedValue(null);
+
+    const res = await PATCH(
+      makePatchRequest({
+        opportunity_id: "opp-1",
+        status: "saved",
+        opportunity: {
+          id: "opp-1",
+          source: "socrata:la",
+          title: "Managed IT Services",
+          agency: "City IT",
+          portal_url: "https://example.com/opp-1",
+        },
+      }),
+    );
+
+    expect(res.status).toBe(401);
+  });
+
+  it("rejects invalid statuses", async () => {
+    mockGetUserContext.mockResolvedValue(fakeContext);
+    mockCheckFeature.mockResolvedValue(true);
+
+    const res = await PATCH(
+      makePatchRequest({
+        opportunity_id: "opp-1",
+        status: "archived",
+      }),
+    );
+
+    expect(res.status).toBe(400);
+  });
+
+  it("upserts feedback for the authenticated organization", async () => {
+    const mockSingle = vi.fn().mockResolvedValue({
+      data: {
+        opportunity_id: "opp-1",
+        status: "saved",
+        updated_at: "2026-03-14T12:00:00.000Z",
+      },
+      error: null,
+    });
+    const mockSelect = vi.fn().mockReturnValue({ single: mockSingle });
+    const mockUpsert = vi.fn().mockReturnValue({ select: mockSelect });
+
+    mockGetUserContext.mockResolvedValue(fakeContext);
+    mockCheckFeature.mockResolvedValue(true);
+    mockFrom.mockImplementation((table: string) => {
+      if (table !== "opportunity_match_feedback") {
+        throw new Error(`Unexpected table ${table}`);
+      }
+      return {
+        upsert: mockUpsert,
+      };
+    });
+
+    const res = await PATCH(
+      makePatchRequest({
+        opportunity_id: "opp-1",
+        status: "saved",
+        opportunity: {
+          id: "opp-1",
+          source: "socrata:la",
+          title: "Managed IT Services",
+          agency: "City IT",
+          portal_url: "https://example.com/opp-1",
+        },
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(mockUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        organization_id: "org-1",
+        user_id: "user-1",
+        opportunity_id: "opp-1",
+        source: "socrata:la",
+        title: "Managed IT Services",
+        agency: "City IT",
+        portal_url: "https://example.com/opp-1",
+        status: "saved",
+      }),
+      { onConflict: "organization_id,opportunity_id" },
+    );
+  });
+
+  it("clears feedback when status is null", async () => {
+    const mockDeleteEqOpportunity = vi.fn().mockResolvedValue({ error: null });
+    const mockDeleteEqOrg = vi.fn().mockReturnValue({
+      eq: mockDeleteEqOpportunity,
+    });
+    const mockDelete = vi.fn().mockReturnValue({
+      eq: mockDeleteEqOrg,
+    });
+
+    mockGetUserContext.mockResolvedValue(fakeContext);
+    mockCheckFeature.mockResolvedValue(true);
+    mockFrom.mockImplementation((table: string) => {
+      if (table !== "opportunity_match_feedback") {
+        throw new Error(`Unexpected table ${table}`);
+      }
+      return {
+        delete: mockDelete,
+      };
+    });
+
+    const res = await PATCH(
+      makePatchRequest({
+        opportunity_id: "opp-1",
+        status: null,
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(mockDelete).toHaveBeenCalledTimes(1);
+    expect(mockDeleteEqOrg).toHaveBeenCalledWith("organization_id", "org-1");
+    expect(mockDeleteEqOpportunity).toHaveBeenCalledWith("opportunity_id", "opp-1");
   });
 });

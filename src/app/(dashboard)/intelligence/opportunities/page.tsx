@@ -12,6 +12,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useDebounce } from "@/hooks/use-debounce";
 import { NaicsCombobox } from "@/components/naics-combobox";
 import type { NaicsEntry } from "@/lib/naics/lookup";
+import { buildOpportunityProposalPrefill } from "@/lib/intelligence/opportunity-prefill";
 import { useIntelligence } from "../_components/use-intelligence";
 import { IntelligenceLoading } from "../_components/intelligence-loading";
 import { NotConfigured } from "../_components/not-configured-view";
@@ -127,17 +128,7 @@ export default function OpportunitySearchPage() {
   function handleStartProposal(opp: OpportunityRecord) {
     sessionStorage.setItem(
       "opportunity-prefill",
-      JSON.stringify({
-        client_name: opp.agency,
-        scope_description: opp.description ?? opp.title,
-        solicitation_type: "RFP",
-        timeline_expectation: opp.response_deadline ?? "",
-        opportunity_source: {
-          id: opp.id,
-          title: opp.title,
-          portal_url: opp.portal_url,
-        },
-      }),
+      JSON.stringify(buildOpportunityProposalPrefill(opp)),
     );
     router.push("/proposals/create");
   }

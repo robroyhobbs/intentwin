@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Bookmark,
   X,
   ExternalLink,
   MapPin,
@@ -11,7 +12,9 @@ import {
   Mail,
   User,
   Briefcase,
+  EyeOff,
 } from "lucide-react";
+import type { OpportunityMatchFeedbackStatus } from "@/lib/intelligence/types";
 import type { OpportunityRecord } from "../../_components/types";
 
 interface Props {
@@ -20,6 +23,10 @@ interface Props {
   onStartProposal: (opp: OpportunityRecord) => void;
   onAgencyClick?: (agency: string) => void;
   onNaicsClick?: (code: string) => void;
+  feedbackStatus?: OpportunityMatchFeedbackStatus | null;
+  feedbackPending?: boolean;
+  onSaveMatch?: (opp: OpportunityRecord) => void;
+  onDismissMatch?: (opp: OpportunityRecord) => void;
 }
 
 export function OpportunityDetailPanel({
@@ -28,6 +35,10 @@ export function OpportunityDetailPanel({
   onStartProposal,
   onAgencyClick,
   onNaicsClick,
+  feedbackStatus = null,
+  feedbackPending = false,
+  onSaveMatch,
+  onDismissMatch,
 }: Props) {
   const formatValue = (v: number | null) => {
     if (v == null) return "Not disclosed";
@@ -89,15 +100,45 @@ export function OpportunityDetailPanel({
 
         <div className="px-6 py-5 space-y-6">
           {/* Start Proposal CTA */}
-          {opportunity.status === "open" && !deadlinePassed && (
-            <button
-              onClick={() => onStartProposal(opportunity)}
-              className="btn-primary w-full py-3 text-sm font-semibold flex items-center justify-center gap-2"
-            >
-              <Briefcase className="h-4 w-4" />
-              Start Proposal
-            </button>
-          )}
+          <div className="grid gap-3">
+            {opportunity.status === "open" && !deadlinePassed && (
+              <button
+                onClick={() => onStartProposal(opportunity)}
+                className="btn-primary w-full py-3 text-sm font-semibold flex items-center justify-center gap-2"
+              >
+                <Briefcase className="h-4 w-4" />
+                Start Proposal
+              </button>
+            )}
+            {(onSaveMatch || onDismissMatch) && (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {onSaveMatch && (
+                  <button
+                    onClick={() => onSaveMatch(opportunity)}
+                    disabled={feedbackPending}
+                    className="btn-ghost inline-flex items-center justify-center gap-2 text-sm"
+                  >
+                    <Bookmark className="h-4 w-4" />
+                    {feedbackPending
+                      ? "Saving..."
+                      : feedbackStatus === "saved"
+                        ? "Saved"
+                        : "Save match"}
+                  </button>
+                )}
+                {onDismissMatch && (
+                  <button
+                    onClick={() => onDismissMatch(opportunity)}
+                    disabled={feedbackPending}
+                    className="btn-ghost inline-flex items-center justify-center gap-2 text-sm"
+                  >
+                    <EyeOff className="h-4 w-4" />
+                    Dismiss
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Estimated value banner */}
           <div className="rounded-xl bg-[var(--accent-subtle)] border border-[var(--accent-muted)] p-4 text-center">

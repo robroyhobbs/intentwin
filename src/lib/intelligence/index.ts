@@ -5,6 +5,7 @@
  */
 
 export { intelligenceClient, getIntelligenceClient } from "./client";
+export { buildOpportunityProposalPrefill } from "./opportunity-prefill";
 export {
   buildIntelligenceContext,
   buildWinProbabilityContext,
@@ -25,6 +26,8 @@ export type {
   OpportunityMatchesParams,
   OpportunityMatchBreakdown,
   OpportunityMatch,
+  OpportunityMatchFeedbackStatus,
+  OpportunityMatchFeedback,
   OpportunityMatchesResponse,
   DashboardStatsResponse,
   NaicsListItem,
