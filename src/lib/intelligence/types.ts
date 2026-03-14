@@ -312,6 +312,29 @@ export interface OpportunityMatchesResponse {
   limit: number;
 }
 
+export interface OpportunityMatchAlert {
+  opportunity_id: string;
+  title: string;
+  agency: string | null;
+  portal_url: string | null;
+  response_deadline: string | null;
+  score: number;
+  status: OpportunityMatchFeedbackStatus | null;
+  days_until_deadline: number | null;
+}
+
+export interface OpportunityMatchAlertsResponse {
+  summary: {
+    new_high_signal_count: number;
+    urgent_saved_count: number;
+    total_attention_count: number;
+    high_signal_threshold: number;
+    urgent_deadline_days: number;
+  };
+  new_high_signal_matches: OpportunityMatchAlert[];
+  urgent_saved_matches: OpportunityMatchAlert[];
+}
+
 // ── Composite: Proposal Intelligence Bundle ──────────────────────────────────
 
 export interface ProposalIntelligence {

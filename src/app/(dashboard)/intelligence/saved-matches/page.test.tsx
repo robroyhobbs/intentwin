@@ -15,6 +15,16 @@ vi.mock("@/hooks/use-auth-fetch", () => ({
   useAuthFetch: () => mockAuthFetch,
 }));
 
+vi.mock("@/hooks/use-match-alerts", () => ({
+  useMatchAlerts: () => ({
+    response: null,
+    loading: false,
+    loadError: null,
+    attentionCount: 0,
+    loadAlerts: vi.fn(),
+  }),
+}));
+
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
 }));

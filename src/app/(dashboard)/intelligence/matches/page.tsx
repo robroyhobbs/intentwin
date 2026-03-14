@@ -6,6 +6,7 @@ import { Briefcase, Search, Settings2, Sparkles } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
+import { useMatchAlerts } from "@/hooks/use-match-alerts";
 import { useDebounce } from "@/hooks/use-debounce";
 import { NaicsCombobox } from "@/components/naics-combobox";
 import type { NaicsEntry } from "@/lib/naics/lookup";
@@ -16,6 +17,7 @@ import {
 import { IntelligenceLoading } from "../_components/intelligence-loading";
 import { NotConfigured } from "../_components/not-configured-view";
 import { SourceAttribution } from "../_components/source-attribution";
+import { MatchAlertSummary } from "../_components/match-alert-summary";
 import { OpportunityDetailPanel } from "../opportunities/_components/opportunity-detail-panel";
 import { MatchCard } from "./_components/match-card";
 import type {
@@ -50,6 +52,7 @@ export default function OpportunityMatchesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const authFetch = useAuthFetch();
+  const { response: matchAlerts } = useMatchAlerts();
 
   const initialNaicsCsv = searchParams.get("naics") ?? "";
   const initialNaicsCodes = initialNaicsCsv
@@ -300,6 +303,18 @@ export default function OpportunityMatchesPage() {
           </p>
         </div>
       </div>
+
+      {matchAlerts && (
+        <MatchAlertSummary
+          response={matchAlerts}
+          onOpenMatches={() => {
+            if (selectedOpportunity) {
+              setSelectedOpportunity(null);
+            }
+          }}
+          onOpenSavedMatches={() => router.push("/intelligence/saved-matches")}
+        />
+      )}
 
       <div className="card p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">

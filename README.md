@@ -21,6 +21,7 @@ IntentBid ingests an RFP or solicitation document, cross-references it against y
 - **Auto-Generated Assumptions** -- Standard assumptions and compliance boilerplate injected based on solicitation type
 - **Sunshine Law & FOIA Engine** -- Automated public records request generator tailored to state-specific statutes to acquire incumbent contracts and SLED pricing data.
 - **Industry Intelligence** -- Sector-specific proposal tuning for healthcare, financial services, manufacturing, and public sector
+- **Opportunity Match Alerts** -- In-app alerts highlight new high-signal matches and saved opportunities with deadlines approaching so users can triage without re-running searches
 - **Persuasion Engine** -- AI-driven persuasive writing optimization layered into generated content
 - **Quality Overseer** -- Gemini-powered review with auto-remediation for sections scoring below threshold
 - **Copilot Operations Layer** -- Event-driven interventions, approval queues, and user-safe notifications turn generation failures and reliability issues into visible follow-up work

@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { useChangelogBadge } from "@/hooks/use-changelog-badge";
+import { useMatchAlerts } from "@/hooks/use-match-alerts";
 
 const navGroups = [
   {
@@ -102,6 +103,7 @@ const navGroups = [
 export function Sidebar() {
   const pathname = usePathname();
   const hasUnseenChangelog = useChangelogBadge();
+  const { attentionCount } = useMatchAlerts();
 
   // Hide sidebar during proposal creation for a focused workspace
   if (pathname.startsWith("/proposals/create")) return null;
@@ -231,6 +233,14 @@ export function Sidebar() {
                       hasUnseenChangelog &&
                       !isActive && (
                         <span className="ml-auto h-2 w-2 rounded-full bg-[var(--accent)] shadow-[0_0_6px_var(--accent)]" />
+                      )}
+
+                    {item.name === "Opportunity Matches" &&
+                      attentionCount > 0 &&
+                      !isActive && (
+                        <span className="ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-[var(--accent)] px-1.5 py-0.5 text-[10px] font-bold text-black tabular-nums">
+                          {attentionCount > 9 ? "9+" : attentionCount}
+                        </span>
                       )}
                   </Link>
                 );

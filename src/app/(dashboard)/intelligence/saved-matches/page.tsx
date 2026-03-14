@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import { Bookmark, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
+import { useMatchAlerts } from "@/hooks/use-match-alerts";
 import type { OpportunityMatchFeedbackStatus } from "@/lib/intelligence";
 import { IntelligenceLoading } from "../_components/intelligence-loading";
+import { MatchAlertSummary } from "../_components/match-alert-summary";
 import { NotConfigured } from "../_components/not-configured-view";
 import { SavedMatchCard } from "./_components/saved-match-card";
 
@@ -33,6 +35,7 @@ interface SavedMatchResponse {
 export default function SavedMatchesPage() {
   const router = useRouter();
   const authFetch = useAuthFetch();
+  const { response: matchAlerts } = useMatchAlerts();
   const [data, setData] = useState<SavedMatchResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -226,6 +229,13 @@ export default function SavedMatchesPage() {
           and continue active opportunities without searching again.
         </p>
       </div>
+
+      {matchAlerts && matchAlerts.summary.urgent_saved_count > 0 && (
+        <MatchAlertSummary
+          response={matchAlerts}
+          onOpenMatches={() => router.push("/intelligence/matches")}
+        />
+      )}
 
       {error && (
         <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6 text-sm text-[var(--foreground-muted)]">
