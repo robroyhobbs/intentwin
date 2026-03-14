@@ -1,3 +1,4 @@
+"use client";
 import { Sparkles } from "lucide-react";
 import { IntelligenceLoading } from "../_components/intelligence-loading";
 
