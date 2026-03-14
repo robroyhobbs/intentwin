@@ -4,27 +4,30 @@ import { useEffect, useState } from "react";
 import { Bookmark, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
+import type { OpportunityMatchFeedbackStatus } from "@/lib/intelligence";
 import { IntelligenceLoading } from "../_components/intelligence-loading";
 import { NotConfigured } from "../_components/not-configured-view";
 import { SavedMatchCard } from "./_components/saved-match-card";
 
-interface SavedMatchResponse {
-  saved_matches: Array<{
-    opportunity_id: string;
-    source: string;
+interface SavedMatchItem {
+  opportunity_id: string;
+  source: string;
+  title: string;
+  agency: string | null;
+  portal_url: string | null;
+  status: "saved" | "reviewing" | "proposal_started";
+  updated_at: string;
+  proposal_id: string | null;
+  proposal: {
+    id: string;
     title: string;
-    agency: string | null;
-    portal_url: string | null;
-    status: "saved" | "reviewing" | "proposal_started";
+    status: string;
     updated_at: string;
-    proposal_id: string | null;
-    proposal: {
-      id: string;
-      title: string;
-      status: string;
-      updated_at: string;
-    } | null;
-  }>;
+  } | null;
+}
+
+interface SavedMatchResponse {
+  saved_matches: SavedMatchItem[];
 }
 
 export default function SavedMatchesPage() {
@@ -34,6 +37,12 @@ export default function SavedMatchesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [configured, setConfigured] = useState(true);
+  const [pendingByOpportunityId, setPendingByOpportunityId] = useState<
+    Record<string, boolean>
+  >({});
+  const [actionErrorByOpportunityId, setActionErrorByOpportunityId] = useState<
+    Record<string, string>
+  >({});
 
   useEffect(() => {
     let cancelled = false;
@@ -76,6 +85,115 @@ export default function SavedMatchesPage() {
     };
   }, [authFetch]);
 
+  async function updateSavedMatch(
+    item: SavedMatchItem,
+    nextStatus: OpportunityMatchFeedbackStatus,
+  ) {
+    const previousData = data;
+
+    setActionErrorByOpportunityId((current) => ({
+      ...current,
+      [item.opportunity_id]: "",
+    }));
+    setPendingByOpportunityId((current) => ({
+      ...current,
+      [item.opportunity_id]: true,
+    }));
+
+    setData((current) => {
+      if (!current) return current;
+
+      if (nextStatus === "dismissed") {
+        return {
+          saved_matches: current.saved_matches.filter(
+            (savedItem) => savedItem.opportunity_id !== item.opportunity_id,
+          ),
+        };
+      }
+
+      return {
+        saved_matches: current.saved_matches.map((savedItem) =>
+          savedItem.opportunity_id === item.opportunity_id
+            ? {
+                ...savedItem,
+                status: nextStatus as SavedMatchItem["status"],
+                updated_at: new Date().toISOString(),
+              }
+            : savedItem,
+        ),
+      };
+    });
+
+    try {
+      const res = await authFetch("/api/intelligence/matches", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          opportunity_id: item.opportunity_id,
+          status: nextStatus,
+          opportunity: {
+            id: item.opportunity_id,
+            source: item.source,
+            title: item.title,
+            agency: item.agency,
+            portal_url: item.portal_url,
+          },
+        }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? `Request failed (${res.status})`);
+      }
+
+      const result = (await res.json()) as {
+        feedback: {
+          opportunity_id: string;
+          status: OpportunityMatchFeedbackStatus;
+          updated_at: string;
+        } | null;
+      };
+
+      setData((current) => {
+        if (!current) return current;
+        const feedback = result.feedback;
+        if (!feedback || feedback.status === "dismissed") {
+          return {
+            saved_matches: current.saved_matches.filter(
+              (savedItem) => savedItem.opportunity_id !== item.opportunity_id,
+            ),
+          };
+        }
+
+        return {
+          saved_matches: current.saved_matches.map((savedItem) =>
+            savedItem.opportunity_id === item.opportunity_id
+              ? {
+                  ...savedItem,
+                  status: feedback.status as SavedMatchItem["status"],
+                  updated_at: feedback.updated_at,
+                }
+              : savedItem,
+          ),
+        };
+      });
+    } catch (err) {
+      setData(previousData);
+      setActionErrorByOpportunityId((current) => ({
+        ...current,
+        [item.opportunity_id]:
+          err instanceof Error ? err.message : "Failed to update saved match",
+      }));
+    } finally {
+      setPendingByOpportunityId((current) => ({
+        ...current,
+        [item.opportunity_id]: false,
+      }));
+    }
+  }
+
   if (loading && !data) {
     return <IntelligenceLoading icon={Bookmark} label="saved matches" />;
   }
@@ -93,17 +211,17 @@ export default function SavedMatchesPage() {
           <Bookmark className="h-6 w-6 text-black" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-[var(--foreground)]">
+          <h1 className="text-balance text-2xl font-bold text-[var(--foreground)]">
             Saved Matches
           </h1>
-          <p className="mt-0.5 text-sm text-[var(--foreground-muted)]">
+          <p className="mt-0.5 text-pretty text-sm text-[var(--foreground-muted)]">
             Triage saved opportunities and reopen proposals already started from a match
           </p>
         </div>
       </div>
 
       <div className="card p-5">
-        <p className="text-sm text-[var(--foreground-muted)]">
+        <p className="text-pretty text-sm text-[var(--foreground-muted)]">
           Saved matches stay here after they drop out of the ranked feed, so your team can review, revisit,
           and continue active opportunities without searching again.
         </p>
@@ -121,7 +239,7 @@ export default function SavedMatchesPage() {
           <h2 className="text-base font-semibold text-[var(--foreground)]">
             No saved matches yet
           </h2>
-          <p className="mx-auto mt-2 max-w-2xl text-sm text-[var(--foreground-muted)]">
+          <p className="mx-auto mt-2 max-w-2xl text-pretty text-sm text-[var(--foreground-muted)]">
             Save strong opportunities from the matches feed to keep a working shortlist here.
           </p>
           <button
@@ -139,8 +257,12 @@ export default function SavedMatchesPage() {
             <SavedMatchCard
               key={item.opportunity_id}
               item={item}
+              pending={pendingByOpportunityId[item.opportunity_id] ?? false}
+              error={actionErrorByOpportunityId[item.opportunity_id] ?? null}
               onOpenProposal={(proposalId) => router.push(`/proposals/${proposalId}`)}
               onOpenMatches={() => router.push("/intelligence/matches")}
+              onMarkReviewing={() => void updateSavedMatch(item, "reviewing")}
+              onDismiss={() => void updateSavedMatch(item, "dismissed")}
             />
           ))}
         </div>

@@ -1,6 +1,15 @@
 "use client";
 
-import { ArrowRight, Bookmark, Clock3, ExternalLink, FileText } from "lucide-react";
+import {
+  ArrowRight,
+  Bookmark,
+  CheckCircle2,
+  Clock3,
+  ExternalLink,
+  EyeOff,
+  FileText,
+} from "lucide-react";
+import { cn } from "@/lib/utils/cn";
 
 type SavedMatchStatus = "saved" | "reviewing" | "proposal_started";
 
@@ -20,8 +29,12 @@ interface Props {
       updated_at: string;
     } | null;
   };
+  pending: boolean;
+  error: string | null;
   onOpenProposal: (proposalId: string) => void;
   onOpenMatches: () => void;
+  onMarkReviewing: () => void;
+  onDismiss: () => void;
 }
 
 const STATUS_LABELS: Record<SavedMatchStatus, string> = {
@@ -30,23 +43,43 @@ const STATUS_LABELS: Record<SavedMatchStatus, string> = {
   proposal_started: "Proposal started",
 };
 
+const STATUS_STYLES: Record<SavedMatchStatus, string> = {
+  saved: "border-[var(--accent-muted)] bg-[var(--accent-subtle)] text-[var(--accent)]",
+  reviewing: "border-amber-500/20 bg-amber-500/10 text-amber-600",
+  proposal_started: "border-green-500/20 bg-green-500/10 text-green-600",
+};
+
 export function SavedMatchCard({
   item,
+  pending,
+  error,
   onOpenProposal,
   onOpenMatches,
+  onMarkReviewing,
+  onDismiss,
 }: Props) {
   const updatedLabel = new Date(item.updated_at).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
   });
+  const reviewLabel = pending
+    ? "Updating..."
+    : item.status === "reviewing"
+      ? "Reviewing"
+      : "Mark reviewing";
 
   return (
     <div className="card p-5">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="inline-flex items-center gap-1 rounded-full border border-[var(--accent-muted)] bg-[var(--accent-subtle)] px-2.5 py-1 font-semibold text-[var(--accent)]">
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 font-semibold",
+                STATUS_STYLES[item.status],
+              )}
+            >
               <Bookmark className="h-3.5 w-3.5" />
               {STATUS_LABELS[item.status]}
             </span>
@@ -60,10 +93,10 @@ export function SavedMatchCard({
           </div>
 
           <div>
-            <h2 className="text-lg font-semibold text-[var(--foreground)]">
+            <h2 className="text-balance text-lg font-semibold text-[var(--foreground)]">
               {item.title}
             </h2>
-            <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+            <p className="mt-1 text-pretty text-sm text-[var(--foreground-muted)]">
               {item.agency || "Agency not listed"}
             </p>
           </div>
@@ -79,13 +112,31 @@ export function SavedMatchCard({
               Open proposal
             </button>
           ) : (
-            <button
-              onClick={onOpenMatches}
-              className="btn-primary inline-flex items-center gap-2 text-sm"
-            >
-              Continue review
-              <ArrowRight className="h-4 w-4" />
-            </button>
+            <>
+              <button
+                onClick={onMarkReviewing}
+                disabled={pending || item.status === "reviewing"}
+                className="btn-ghost inline-flex items-center gap-2 text-sm"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                {reviewLabel}
+              </button>
+              <button
+                onClick={onDismiss}
+                disabled={pending}
+                className="btn-ghost inline-flex items-center gap-2 text-sm"
+              >
+                <EyeOff className="h-4 w-4" />
+                Dismiss
+              </button>
+              <button
+                onClick={onOpenMatches}
+                className="btn-primary inline-flex items-center gap-2 text-sm"
+              >
+                Continue review
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </>
           )}
           {item.portal_url && (
             <a
@@ -100,6 +151,12 @@ export function SavedMatchCard({
           )}
         </div>
       </div>
+
+      {error && (
+        <p className="mt-4 text-pretty text-sm text-red-600">
+          {error}
+        </p>
+      )}
 
       {item.proposal && (
         <div className="mt-4 rounded-2xl border border-[var(--border)] bg-[var(--background-tertiary)] p-4">
